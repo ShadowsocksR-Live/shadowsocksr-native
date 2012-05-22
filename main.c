@@ -20,6 +20,7 @@
 #include <unistd.h>
 
 #define PORT 1090
+#define REPLY "HTTP/1.1 200 OK\n\nhello"
 
 // every watcher type has its own typedef'd struct
 // with the name ev_TYPE
@@ -54,7 +55,7 @@ int create_and_bind(char *port) {
 	hints.ai_socktype = SOCK_STREAM; /* We want a TCP socket */
 	hints.ai_flags = AI_PASSIVE; /* All interfaces */
 
-	s = getaddrinfo(NULL, port, &hints, &result);
+	s = getaddrinfo("0.0.0.0", port, &hints, &result);
 	if (s != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
 		return -1;
@@ -85,7 +86,14 @@ int create_and_bind(char *port) {
 
 	return listen_sock;
 }
-
+static void
+write_cb (EV_P_ ev_io *w, int revents)
+{
+	struct client_ctx *client = (struct client_ctx *)w;
+	ev_io_stop(EV_A_ &client->io);
+	close(client->fd);
+	free(client);
+}
 static void
 read_cb (EV_P_ ev_io *w, int revents)
 {
@@ -95,12 +103,17 @@ read_cb (EV_P_ ev_io *w, int revents)
 	if (n == 0) {
 		ev_io_stop(EV_A_ &client->io);
 	  	close(client->fd);
+		free(client);
 		return;
 	} else if (n < 0) {
 		perror("recv");
 		return;
 	}
-	write(1, buf, n);
+	//write(1, buf, n);
+	send(client->fd, REPLY, sizeof(REPLY), 0);
+	ev_io_stop(EV_A_ &client->io);
+  	ev_io_init(&client->io, write_cb, client->fd, EV_WRITE);
+	ev_io_start(EV_A_ &client->io);
 }
 
 
@@ -112,7 +125,6 @@ static struct client_ctx* client_new(int fd) {
   //client->server = server;
   setnonblocking(client->fd);
   ev_io_init(&client->io, read_cb, client->fd, EV_READ);
-
   return client;
 }
 // all watcher callbacks have a similar signature
@@ -120,7 +132,7 @@ static struct client_ctx* client_new(int fd) {
 	static void
 server_cb (EV_P_ ev_io *w, int revents)
 {
-	puts ("clients connected");
+//	puts ("clients connected");
 	struct server_ctx *server = (struct server_ctx *)w;
 	int connectfd;
 	while (1) {
