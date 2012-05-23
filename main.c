@@ -23,6 +23,10 @@
 #define PORT 1090
 #define REPLY "HTTP/1.1 200 OK\n\nhello"
 
+#define min(a,b) \
+	({ typeof (a) _a = (a); \
+	 typeof (b) _b = (b); \
+	 _a < _b ? _a : _b; })
 
 // every watcher type has its own typedef'd struct
 // with the name ev_TYPE
@@ -82,80 +86,52 @@ int create_and_bind(char *port) {
 
 	return listen_sock;
 }
-void send_cb (EV_P_ ev_io *w, int revents)
-{
-	struct client_ctx *client = (struct client_ctx *)w;
-	ev_io_stop(EV_A_ &client->io);
-	close(client->fd);
-	free(client);
-}
-void recv_cb (EV_P_ ev_io *w, int revents)
-{
-	struct client_ctx *client = (struct client_ctx *)w;
-	char buf[4096];
-	int n = recv(client->fd, buf, 4096, 0);
-	if (n == 0) {
-		ev_io_stop(EV_A_ &client->io);
-		close(client->fd);
-		free(client);
-		return;
-	} else if (n < 0) {
-		perror("recv");
-		return;
-	}
-	send(client->fd, REPLY, sizeof(REPLY), MSG_NOSIGNAL);
-	ev_io_stop(EV_A_ &client->io);
-	ev_io_init(&client->io, send_cb, client->fd, EV_WRITE);
-	ev_io_start(EV_A_ &client->io);
-}
-
-
-struct client_ctx* client_new(int fd) {
-	struct client_ctx* client;
-
-	client = malloc(sizeof(struct client_ctx));
-	client->fd = fd;
-	//client->server = server;
-	setnonblocking(client->fd);
-	ev_io_init(&client->io, recv_cb, client->fd, EV_READ);
-	return client;
-}
 
 static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 	struct server_ctx *server_recv_ctx = (struct server_ctx *)w;
 	struct server *server = server_recv_ctx->server;
 	struct remote *remote = server->remote;
 	while (1) {
-		ssize_t r = recv(server->fd, server->buf, BUF_SIZE, 0);
+		ssize_t r = recv(server->fd, remote->buf, BUF_SIZE, 0);
 		if (r == 0) {
-			// TODO connection closed
+			// connection closed
+			remote->buf_len = 0;
+			close_and_free_server(EV_A_ server);
+			if (remote != NULL) {
+				ev_io_start(EV_A_ &remote->send_ctx->io);
+			}
 			return;
-		} else if(r == -1) {
+		} else if(r < 0) {
 			perror("recv");
 			if (errno == EAGAIN) {
 				// no data
 				// continue to wait for recv
 				break;
+			} else {
+				close_and_free_server(EV_A_ server);
+				close_and_free_remote(EV_A_ remote);
+				return;
 			}
 		}
-		int w = send(remote->fd, server->buf, r, MSG_NOSIGNAL);
-		if (w == 0) {
-			// TODO connection closed
-			return;
-		} else if(w == -1) {
+		int w = send(remote->fd, remote->buf, r, MSG_NOSIGNAL);
+		if(w == -1) {
 			perror("send");
 			if (errno == EAGAIN) {
 				// no data, wait for send
 				ev_io_stop(EV_A_ &server_recv_ctx->io);
 				ev_io_start(EV_A_ &remote->send_ctx->io);
 				break;
+			} else {
+				close_and_free_server(EV_A_ server);
+				close_and_free_remote(EV_A_ remote);
+				return;
 			}
 		} else if(w < r) {
 			char *pt;
-			for (pt = server->buf; pt < pt + w; pt++) {
+			for (pt = remote->buf; pt < pt + min(w, BUF_SIZE); pt++) {
 				*pt = *(pt + w);
 			}
-			server->buf_len = w;
+			remote->buf_len = r - w;
 			ev_io_stop(EV_A_ &server_recv_ctx->io);
 			ev_io_start(EV_A_ &remote->send_ctx->io);
 			break;
@@ -166,29 +142,44 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
 	struct server_ctx *server_send_ctx = (struct server_ctx *)w;
 	struct server *server = server_send_ctx->server;
 	struct remote *remote = server->remote;
-	if (remote->buf_len == 0) {
-		// TODO close and free
+	if (server->buf_len == 0) {
+		// close and free
+		close_and_free_server(EV_A_ server);
+		close_and_free_remote(EV_A_ remote);
+		return;
 	} else {
 		// has data to send
-		ssize_t r = send(server->fd, remote->buf,
-				remote->buf_len, 0);
+		ssize_t r = send(server->fd, server->buf,
+				server->buf_len, 0);
 		if (r < 0) {
 			perror("send");
-			// TODO close and free
+			if (errno != EAGAIN) {
+				close_and_free_server(EV_A_ server);
+				close_and_free_remote(EV_A_ remote);
+				return;
+			}
 			return;
 		}
-		if (r < remote->buf_len) {
+		if (r < server->buf_len) {
+			// printf("r=%d\n", r);
+			// printf("server->buf_len=%d\n", server->buf_len);
 			// partly sent, move memory, wait for the next time to send
 			char *pt;
-			for (pt = remote->buf; pt < pt + r; pt++) {
+			for (pt = server->buf; pt < pt + min(r, BUF_SIZE); pt++) {
 				*pt = *(pt + r);
 			}
-			remote->buf_len = r;
+			server->buf_len -= r;
 			return;
 		} else {
 			// all sent out, wait for reading
 			ev_io_stop(EV_A_ &server_send_ctx->io);
-			ev_io_start(EV_A_ &remote->recv_ctx->io);
+			if (remote != NULL) {
+				ev_io_start(EV_A_ &remote->recv_ctx->io);
+			} else {
+				close_and_free_server(EV_A_ server);
+				close_and_free_remote(EV_A_ remote);
+				return;
+			}
 		}
 	}
 
@@ -198,36 +189,48 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
 	struct remote *remote = remote_recv_ctx->remote;
 	struct server *server = remote->server;
 	while (1) {
-		ssize_t r = recv(remote->fd, remote->buf, BUF_SIZE, 0);
+		ssize_t r = recv(remote->fd, server->buf, BUF_SIZE, 0);
+		// printf("after recv: r=%d\n", r);
 		if (r == 0) {
-			// TODO connection closed
+			// connection closed
+			server->buf_len = 0;
+			close_and_free_remote(EV_A_ remote);
+			if (server != NULL) {
+				ev_io_start(EV_A_ &server->send_ctx->io);
+			}
 			return;
-		} else if(r == -1) {
+		} else if(r < 0) {
 			perror("recv");
 			if (errno == EAGAIN) {
 				// no data
 				// continue to wait for recv
 				break;
+			} else {
+				close_and_free_server(EV_A_ server);
+				close_and_free_remote(EV_A_ remote);
+				return;
 			}
 		}
-		int w = send(server->fd, remote->buf, r, MSG_NOSIGNAL);
-		if (w == 0) {
-			// TODO connection closed
-			return;
-		} else if(w == -1) {
+		int w = send(server->fd, server->buf, r, MSG_NOSIGNAL);
+		// printf("after send: w=%d\n", w);
+		if(w == -1) {
 			perror("send");
 			if (errno == EAGAIN) {
 				// no data, wait for send
 				ev_io_stop(EV_A_ &remote_recv_ctx->io);
 				ev_io_start(EV_A_ &server->send_ctx->io);
 				break;
+			} else {
+				close_and_free_server(EV_A_ server);
+				close_and_free_remote(EV_A_ remote);
+				return;
 			}
 		} else if(w < r) {
 			char *pt;
-			for (pt = remote->buf; pt < pt + w; pt++) {
+			for (pt = server->buf; pt < pt + min(w, BUF_SIZE); pt++) {
 				*pt = *(pt + w);
 			}
-			remote->buf_len = w;
+			server->buf_len = r - w;
 			ev_io_stop(EV_A_ &remote_recv_ctx->io);
 			ev_io_start(EV_A_ &server->send_ctx->io);
 			break;
@@ -253,35 +256,51 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
 		} else {
 			perror("getpeername");
 			// not connected
-			// TODO
+			close_and_free_remote(EV_A_ remote);
+			close_and_free_server(EV_A_ server);
 			return;
 		}
 	} else {
-		if (server->buf_len == 0) {
-			// TODO close and free
+		if (remote->buf_len == 0) {
+			// close and free
+			close_and_free_remote(EV_A_ remote);
+			close_and_free_server(EV_A_ server);
+			return;
 		} else {
 			// has data to send
-			ssize_t r = send(remote->fd, server->buf,
-				server->buf_len, 0);
+			ssize_t r = send(remote->fd, remote->buf,
+					remote->buf_len, 0);
 			if (r < 0) {
 				perror("send");
-				// TODO close and free
+				if (errno != EAGAIN) {
+					// close and free
+					close_and_free_remote(EV_A_ remote);
+					close_and_free_server(EV_A_ server);
+					return;
+				}
 				return;
 			}
-			if (r < server->buf_len) {
+			if (r < remote->buf_len) {
 				// partly sent, move memory, wait for the next time to send
 				char *pt;
-				for (pt = server->buf; pt < pt + r; pt++) {
+				for (pt = remote->buf; pt < pt + min(r, BUF_SIZE); pt++) {
 					*pt = *(pt + r);
 				}
-				server->buf_len = r;
+				remote->buf_len -= r;
 				return;
 			} else {
 				// all sent out, wait for reading
 				ev_io_stop(EV_A_ &remote_send_ctx->io);
-				ev_io_start(EV_A_ &server->recv_ctx->io);
+				if (server != NULL) {
+					ev_io_start(EV_A_ &server->recv_ctx->io);
+				} else {
+					close_and_free_remote(EV_A_ remote);
+					close_and_free_server(EV_A_ server);
+					return;
+				}
 			}
 		}
+
 	}
 }
 
@@ -297,7 +316,27 @@ struct remote* new_remote(int fd) {
 	remote->recv_ctx->connected = 0;
 	remote->send_ctx->remote = remote;
 	remote->send_ctx->connected = 0;
+	fprintf(stderr, "new remote\n");
 	return remote;
+}
+void free_remote(struct remote *remote) {
+	if (remote != NULL) {
+		if (remote->server != NULL) {
+			remote->server->remote = NULL;
+		}
+		free(remote->recv_ctx);
+		free(remote->send_ctx);
+		free(remote);
+		fprintf(stderr, "free remote\n");
+	}
+}
+void close_and_free_remote(EV_P_ struct remote *remote) {
+	if (remote != NULL) {
+		ev_io_stop(EV_A_ &remote->send_ctx->io);
+		ev_io_stop(EV_A_ &remote->recv_ctx->io);
+		close(remote->fd);
+		free_remote(remote);
+	}
 }
 struct server* new_server(int fd) {
 	struct server *server;
@@ -311,9 +350,28 @@ struct server* new_server(int fd) {
 	server->recv_ctx->connected = 0;
 	server->send_ctx->server = server;
 	server->send_ctx->connected = 0;
+	fprintf(stderr, "new server\n");
 	return server;
 }
-
+void free_server(struct server *server) {
+	if (server != NULL) {
+		if (server->remote != NULL) {
+			server->remote->server = NULL;
+		}
+		free(server->recv_ctx);
+		free(server->send_ctx);
+		free(server);
+		fprintf(stderr, "free server\n");
+	}
+}
+void close_and_free_server(EV_P_ struct server *server) {
+	if (server != NULL) {
+		ev_io_stop(EV_A_ &server->send_ctx->io);
+		ev_io_stop(EV_A_ &server->recv_ctx->io);
+		close(server->fd);
+		free_server(server);
+	}
+}
 static void accept_cb (EV_P_ ev_io *w, int revents)
 {
 	struct listen_ctx *listener = (struct listen_ctx *)w;
@@ -334,7 +392,9 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
 		sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 		if (sockfd < 0) {
 			perror("socket");
-			exit(1); // TODO close, free and return
+			close(sockfd);
+			free_server(server);
+			continue;
 		}
 		setnonblocking(sockfd);
 		struct remote *remote = new_remote(sockfd);
