@@ -3,7 +3,6 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <errno.h>
-#include <ev.h>
 #include <fcntl.h>
 #include <langinfo.h>
 #include <locale.h>
@@ -19,13 +18,15 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "main.h"
+
 #define PORT 1090
 #define REPLY "HTTP/1.1 200 OK\n\nhello"
+
 
 // every watcher type has its own typedef'd struct
 // with the name ev_TYPE
 ev_io stdin_watcher;
-ev_timer timeout_watcher;
 
 struct server_ctx {
 	ev_io io;
