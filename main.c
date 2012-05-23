@@ -91,6 +91,10 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 	struct server_ctx *server_recv_ctx = (struct server_ctx *)w;
 	struct server *server = server_recv_ctx->server;
 	struct remote *remote = server->remote;
+	if (remote == NULL) {
+		close_and_free_server(EV_A_ server);
+		return;
+	}
 	while (1) {
 		ssize_t r = recv(server->fd, remote->buf, BUF_SIZE, 0);
 		if (r == 0) {
@@ -188,6 +192,10 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
 	struct remote_ctx *remote_recv_ctx = (struct remote_ctx *)w;
 	struct remote *remote = remote_recv_ctx->remote;
 	struct server *server = remote->server;
+	if (server == NULL) {
+		close_and_free_remote(EV_A_ remote);
+		return;
+	}
 	while (1) {
 		ssize_t r = recv(remote->fd, server->buf, BUF_SIZE, 0);
 		// printf("after recv: r=%d\n", r);
