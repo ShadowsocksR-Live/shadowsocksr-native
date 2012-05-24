@@ -32,7 +32,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = local$(EXEEXT)
+bin_PROGRAMS = local$(EXEEXT) server$(EXEEXT)
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -52,6 +52,9 @@ PROGRAMS = $(bin_PROGRAMS)
 am_local_OBJECTS = encrypt.$(OBJEXT) local.$(OBJEXT)
 local_OBJECTS = $(am_local_OBJECTS)
 local_LDADD = $(LDADD)
+am_server_OBJECTS = encrypt.$(OBJEXT) server.$(OBJEXT)
+server_OBJECTS = $(am_server_OBJECTS)
+server_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -60,8 +63,8 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(local_SOURCES)
-DIST_SOURCES = $(local_SOURCES)
+SOURCES = $(local_SOURCES) $(server_SOURCES)
+DIST_SOURCES = $(local_SOURCES) $(server_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -166,6 +169,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 local_SOURCES = encrypt.c encrypt.h local.c local.h
+server_SOURCES = encrypt.c encrypt.h server.c server.h socks5.h
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -260,6 +264,9 @@ clean-binPROGRAMS:
 local$(EXEEXT): $(local_OBJECTS) $(local_DEPENDENCIES) $(EXTRA_local_DEPENDENCIES) 
 	@rm -f local$(EXEEXT)
 	$(LINK) $(local_OBJECTS) $(local_LDADD) $(LIBS)
+server$(EXEEXT): $(server_OBJECTS) $(server_DEPENDENCIES) $(EXTRA_server_DEPENDENCIES) 
+	@rm -f server$(EXEEXT)
+	$(LINK) $(server_OBJECTS) $(server_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -269,6 +276,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/encrypt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/local.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/server.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
