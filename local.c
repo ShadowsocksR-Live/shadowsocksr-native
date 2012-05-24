@@ -18,9 +18,14 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "main.h"
+#include "local.h"
+#include "encrypt.h"
 
-#define PORT 1090
+#define SERVER "127.0.0.1"
+#define REMOTE_PORT "8499"
+#define PORT "1080"
+#define KEY "foobar!"
+
 #define REPLY "HTTP/1.1 200 OK\n\nhello"
 
 #define min(a,b) \
@@ -72,6 +77,8 @@ int create_and_bind(char *port) {
 		if (s == 0) {
 			/* We managed to bind successfully! */
 			break;
+		} else {
+			perror("bind");
 		}
 
 		close(listen_sock);
@@ -117,6 +124,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 				return;
 			}
 		}
+		encrypt(remote->buf, r);
 		int w = send(remote->fd, remote->buf, r, MSG_NOSIGNAL);
 		if(w == -1) {
 			perror("send");
@@ -219,6 +227,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
 				return;
 			}
 		}
+		decrypt(server->buf, r);
 		int w = send(server->fd, server->buf, r, MSG_NOSIGNAL);
 		// printf("after send: w=%d\n", w);
 		if(w == -1) {
@@ -396,7 +405,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
 		memset(&hints, 0, sizeof hints);
 		hints.ai_family = AF_UNSPEC;
 		hints.ai_socktype = SOCK_STREAM;
-		getaddrinfo("www.sina.com.cn", "80", &hints, &res);
+		getaddrinfo(SERVER, REMOTE_PORT, &hints, &res);
 		sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 		if (sockfd < 0) {
 			perror("socket");
@@ -417,12 +426,19 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
 
 int main (void)
 {
+	fprintf(stderr, "calculating ciphers\n");
+	get_table(KEY);
+
 	int listenfd;
-	listenfd = create_and_bind("1090");
+	listenfd = create_and_bind(PORT);
+	if (listenfd < 0) {
+		return 1;
+	}
 	if (listen(listenfd, SOMAXCONN) == -1) {
 		perror("listen() error.");
 		return 1;
 	}
+	fprintf(stderr, "server listening at port %s\n", PORT);
 	setnonblocking(listenfd);
 	struct listen_ctx listen_ctx;
 	listen_ctx.fd = listenfd;

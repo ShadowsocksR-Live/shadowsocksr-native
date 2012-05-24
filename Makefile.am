@@ -1,3 +1,3 @@
-bin_PROGRAMS = main
-main_SOURCES = encrypt.c encrypt.h main.c main.h
+bin_PROGRAMS = local
+local_SOURCES = encrypt.c encrypt.h local.c local.h
 

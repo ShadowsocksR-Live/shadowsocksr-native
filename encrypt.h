@@ -1,5 +1,4 @@
-#ifndef ENCRYPT_H
-#define ENCRYPT_H
+#pragma once
 
 #include <sys/socket.h>
 #include <string.h>
@@ -14,4 +13,3 @@ void decrypt(char *buf, int len);
 int send_encrypt(int sock, char *buf, int len, int flags);
 int recv_decrypt(int sock, char *buf, int len, int flags);
 
-#endif // ENCRYPT_H

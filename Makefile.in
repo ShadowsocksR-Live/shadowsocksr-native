@@ -32,7 +32,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = main$(EXEEXT)
+bin_PROGRAMS = local$(EXEEXT)
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -49,9 +49,9 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_main_OBJECTS = encrypt.$(OBJEXT) main.$(OBJEXT)
-main_OBJECTS = $(am_main_OBJECTS)
-main_LDADD = $(LDADD)
+am_local_OBJECTS = encrypt.$(OBJEXT) local.$(OBJEXT)
+local_OBJECTS = $(am_local_OBJECTS)
+local_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -60,8 +60,8 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(main_SOURCES)
-DIST_SOURCES = $(main_SOURCES)
+SOURCES = $(local_SOURCES)
+DIST_SOURCES = $(local_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -165,7 +165,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-main_SOURCES = encrypt.c encrypt.h main.c main.h
+local_SOURCES = encrypt.c encrypt.h local.c local.h
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -257,9 +257,9 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
-main$(EXEEXT): $(main_OBJECTS) $(main_DEPENDENCIES) $(EXTRA_main_DEPENDENCIES) 
-	@rm -f main$(EXEEXT)
-	$(LINK) $(main_OBJECTS) $(main_LDADD) $(LIBS)
+local$(EXEEXT): $(local_OBJECTS) $(local_DEPENDENCIES) $(EXTRA_local_DEPENDENCIES) 
+	@rm -f local$(EXEEXT)
+	$(LINK) $(local_OBJECTS) $(local_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -268,7 +268,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/encrypt.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/local.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
