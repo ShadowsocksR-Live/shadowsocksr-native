@@ -14,6 +14,7 @@ struct server {
 	int fd;
 	char buf[BUF_SIZE]; // server send from, remote recv into
 	int buf_len;
+	char stage;
 	struct server_ctx *recv_ctx;
 	struct server_ctx *send_ctx;
 	struct remote *remote;

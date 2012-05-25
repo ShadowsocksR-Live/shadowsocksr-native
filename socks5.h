@@ -5,6 +5,7 @@
 #define IPV4 0x01
 #define DOMAIN 0x03
 #define IPV6 0x04
+#define CMD_NOT_SUPPORTED 0x07
 
 struct method_select_request
 {
@@ -15,7 +16,7 @@ struct method_select_request
 
 struct method_select_response
 {
-	char version;
+	char ver;
 	char method;
 };
 
