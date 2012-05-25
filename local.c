@@ -418,6 +418,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
 		server->remote = remote;
 		remote->server = server;
 		connect(sockfd, res->ai_addr, res->ai_addrlen);
+		freeaddrinfo(res);
 		// listen to remote connected event
 		ev_io_start(EV_A_ &remote->send_ctx->io);
 		break;
