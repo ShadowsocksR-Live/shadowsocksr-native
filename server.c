@@ -177,7 +177,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 				response.rsv = 0;
 				response.atyp = 1;
 				char *send_buf = (char *)&response;
-				send_encrypt(server->fd, send_buf, sizeof(response), MSG_NOSIGNAL);
+				send_encrypt(server->fd, send_buf, 4, MSG_NOSIGNAL);
 				close_and_free_server(EV_A_ server);
 				return;
 			}
@@ -191,20 +191,20 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 				// IP V4
 				struct sockaddr_in *addrp = (struct sockaddr_in *)&remote_sockaddr;
 				struct in_addr *in_addr;
-				in_addr = (struct in_addr *)(server->buf + sizeof(request));
+				in_addr = (struct in_addr *)(server->buf + 4);
 				addrp->sin_addr = *in_addr;
 				// get port
-				addrp->sin_port = *(unsigned short *)(server->buf + sizeof(request) + 4);
+				addrp->sin_port = *(unsigned short *)(server->buf + 4 + 4);
 			} else if (request->atyp == 3) {
 				struct addrinfo hints, *res;
 				memset(&hints, 0, sizeof hints);
 				hints.ai_family = AF_UNSPEC;
 				hints.ai_socktype = SOCK_STREAM;
 				char name_buf[256];
-				unsigned char name_len = *(unsigned char *)(server->buf + sizeof(request));
-				memcpy(name_buf, server->buf + sizeof(request) + 1, name_len);
+				unsigned char name_len = *(unsigned char *)(server->buf + 4);
+				memcpy(name_buf, server->buf + 4 + 1, name_len);
 				name_buf[name_len] = 0; // append NUL
-				fprintf(stderr, "%s\n", name_buf);
+				fprintf(stderr, "connecting: %s\n", name_buf);
 				if ((rv = getaddrinfo(name_buf, "80", &hints, &res)) != 0) {
 					perror("getaddrinfo");
 					// TODO send reply
@@ -217,7 +217,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 
 				// get port
 				struct sockaddr_in *addrp = (struct sockaddr_in *)&remote_sockaddr;
-				addrp->sin_port = *(unsigned short *)(server->buf + sizeof(request) + 1 + name_len);
+				addrp->sin_port = *(unsigned short *)(server->buf + 4 + 1 + name_len);
 				freeaddrinfo(res);
 			} else {
 				fprintf(stderr, "unsupported addrtype: %d\n", request->atyp);
@@ -358,8 +358,10 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
 	struct remote_ctx *remote_send_ctx = (struct remote_ctx *)w;
 	struct remote *remote = remote_send_ctx->remote;
 	struct server *server = remote->server;
+	printf("remote_send_cb\n");
 	if (!remote_send_ctx->connected) {
 
+		printf("not connected\n");
 		socklen_t len;
 		struct sockaddr_storage addr;
 		char ipstr[INET6_ADDRSTRLEN];
@@ -369,6 +371,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
 		if (r == 0) {
 			remote_send_ctx->connected = 1;
 
+			printf("send reply\n");
 			// send reply
 			struct sockaddr_in sockaddr;
 			socklen_t sockaddrlen = sizeof(sockaddr);
@@ -385,15 +388,15 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
 			response.rsv = 0;
 			response.atyp = 1;
 
-			memcpy(server->buf, &response, sizeof(response));
-			memcpy(server->buf + sizeof(response), &sockaddr.sin_addr, sizeof(struct in_addr));
-			memcpy(server->buf + sizeof(response) + sizeof(struct in_addr), &sockaddr.sin_port, 
+			memcpy(server->buf, &response, 4);
+			memcpy(server->buf + 4, &sockaddr.sin_addr, sizeof(struct in_addr));
+			memcpy(server->buf + 4 + sizeof(struct in_addr), &sockaddr.sin_port, 
 					sizeof(struct in_addr));
 
 			fprintf(stderr, "send reply\n");
-			int r = send_encrypt(server->fd, server->buf, sizeof(response) + sizeof(struct in_addr) + 
+			int r = send_encrypt(server->fd, server->buf, 4 + sizeof(struct in_addr) + 
 					sizeof(unsigned short), 0);
-			if (r < sizeof(response) + sizeof(struct in_addr) + sizeof(unsigned short)) {
+			if (r < 4 + sizeof(struct in_addr) + sizeof(unsigned short)) {
 				fprintf(stderr, "header not complete sent\n");
 				close_and_free_remote(EV_A_ remote);
 				close_and_free_server(EV_A_ server);
@@ -411,6 +414,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
 			return;
 		}
 	} else {
+		printf("is connected\n");
 		if (remote->buf_len == 0) {
 			// close and free
 			close_and_free_remote(EV_A_ remote);
@@ -537,6 +541,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
 			perror("accept");
 			break;
 		}
+ 		setnonblocking(serverfd);
 		struct server *server = new_server(serverfd);
 // 		struct addrinfo hints, *res;
 // 		int sockfd;

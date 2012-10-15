@@ -399,6 +399,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
 			perror("accept");
 			break;
 		}
+		setnonblocking(serverfd);
 		struct server *server = new_server(serverfd);
 		struct addrinfo hints, *res;
 		int sockfd;

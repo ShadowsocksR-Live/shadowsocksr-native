@@ -7,6 +7,8 @@
 #define IPV6 0x04
 #define CMD_NOT_SUPPORTED 0x07
 
+#pragma pack(1)
+
 struct method_select_request
 {
 	char ver;
@@ -35,4 +37,6 @@ struct socks5_response
 	char rsv;
 	char atyp;
 };
+
+#pragma pack()
 
