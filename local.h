@@ -2,7 +2,7 @@
 
 #include <ev.h>
 
-#define BUF_SIZE 1500
+#define BUF_SIZE 1024
 
 struct listen_ctx {
 	ev_io io;
@@ -14,6 +14,7 @@ struct server {
 	int fd;
 	char buf[BUF_SIZE]; // server send from, remote recv into
 	int buf_len;
+    char stage;
 	struct server_ctx *recv_ctx;
 	struct server_ctx *send_ctx;
 	struct remote *remote;
