@@ -452,7 +452,7 @@ struct remote* new_remote(int fd) {
     remote->recv_ctx->connected = 0;
     remote->send_ctx->remote = remote;
     remote->send_ctx->connected = 0;
-    remtoe->buf_len = 0;
+    remote->buf_len = 0;
     return remote;
 }
 
