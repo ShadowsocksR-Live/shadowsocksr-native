@@ -1,6 +1,7 @@
-#pragma once
+#ifndef _SOCKS5_H
+#define _SOCKS5_H
 
-#define VERSION 0x05
+#define SVERSION 0x05
 #define CONNECT 0x01
 #define IPV4 0x01
 #define DOMAIN 0x03
@@ -38,5 +39,5 @@ struct socks5_response
 	char atyp;
 };
 
-#pragma pack()
+#endif //_SOCKS5_H
 

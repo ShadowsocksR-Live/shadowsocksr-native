@@ -18,6 +18,23 @@ AC_SEARCH_LIBS([ev_io_start], [ev], [ ], AC_MSG_ERROR([libev not found.]))
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h langinfo.h locale.h netdb.h netinet/in.h stdlib.h string.h strings.h sys/socket.h unistd.h])
 
+[echo -n "checking for little or big endian... " ]
+AC_TRY_RUN([
+#include <sys/types.h>
+int main()
+{
+	uint16_t  s   = 1;
+	uint16_t* ptr = &s;
+	uint8_t   n   = *((uint8_t*)ptr);
+	return n;     
+}
+]
+, AC_DEFINE([BIGENDIAN], [1], [Define to 1 if system is big endian])
+  [echo "big"]
+, AC_DEFINE([LITTLEENDIAN], [1], [Define to 1 if system is little endian])
+  [echo "little"] 
+)
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
 AC_TYPE_SSIZE_T

@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define to 1 if system is big endian */
+#undef BIGENDIAN
+
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 
@@ -57,6 +60,9 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Define to 1 if system is little endian */
+#undef LITTLEENDIAN
 
 /* Name of package */
 #undef PACKAGE
