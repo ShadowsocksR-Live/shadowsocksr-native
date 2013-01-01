@@ -54,7 +54,7 @@ int create_and_bind(const char *port) {
 
     s = getaddrinfo("0.0.0.0", port, &hints, &result);
     if (s != 0) {
-        LOGD("getaddrinfo: %s", gai_strerror(s));
+        LOGD("getaddrinfo: %s\n", gai_strerror(s));
         return -1;
     }
 
@@ -81,7 +81,7 @@ int create_and_bind(const char *port) {
     }
 
     if (rp == NULL) {
-        LOGE("Could not bind");
+        LOGE("Could not bind\n");
         return -1;
     }
 
@@ -297,7 +297,7 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents) {
     struct remote *remote = remote_ctx->remote;
     struct server *server = remote->server;
 
-    LOGD("remote timeout");
+    LOGD("remote timeout\n");
 
     ev_timer_stop(EV_A_ watcher);
 
@@ -698,7 +698,7 @@ int main (int argc, char **argv)
         }
     }
 
-    LOGD("calculating ciphers %d", _method);
+    LOGD("calculating ciphers %d\n", _method);
     if (_method != RC4) {
         get_table(key);
     }
@@ -706,11 +706,11 @@ int main (int argc, char **argv)
     int listenfd;
     listenfd = create_and_bind(port);
     if (listenfd < 0) {
-        LOGE("bind() error..");
+        LOGE("bind() error..\n");
         return 1;
     }
     if (listen(listenfd, SOMAXCONN) == -1) {
-        LOGE("listen() error.");
+        LOGE("listen() error.\n");
         return 1;
     }
     LOGD("server listening at port %s\n", port);
@@ -720,7 +720,6 @@ int main (int argc, char **argv)
     listen_ctx.fd = listenfd;
     struct ev_loop *loop = ev_default_loop(0);
     if (!loop) {
-        LOGE("no epoll found here, maybe it hides under your chair");
         return 1;
     }
     ev_io_init (&listen_ctx.io, accept_cb, listenfd, EV_READ);
