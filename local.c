@@ -452,6 +452,7 @@ struct remote* new_remote(int fd) {
     remote->recv_ctx->connected = 0;
     remote->send_ctx->remote = remote;
     remote->send_ctx->connected = 0;
+    remtoe->buf_len = 0;
     return remote;
 }
 
@@ -496,6 +497,7 @@ struct server* new_server(int fd) {
         server->e_ctx = NULL;
         server->d_ctx = NULL;
     }
+    server->buf_len = 0;
     return server;
 }
 void free_server(struct server *server) {
