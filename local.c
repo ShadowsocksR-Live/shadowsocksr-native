@@ -29,6 +29,10 @@
 #define MSG_NOSIGNAL MSG_HAVEMORE
 #endif
 
+#ifndef EAGAIN
+#define EAGAIN EWOULDBLOCK
+#endif
+
 #define min(a,b) (((a)<(b))?(a):(b))
 
 static char *_server;

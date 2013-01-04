@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([libev-hello], [0.1], [clowwindy42@gmail.com])
+AC_INIT([shadowsocks], [0.9], [clowwindy42@gmail.com|max.c.lv@gmail.com])
 AC_CONFIG_SRCDIR([encrypt.c])
 AC_CONFIG_HEADERS([config.h])
 
