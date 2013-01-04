@@ -6,9 +6,9 @@
 
 #include "encrypt.h"
 
-#ifdef BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 #include <endian.h>
-#elif LITTLEENDIAN
+#else
 #define htole64(x)      (x)
 #endif
 
