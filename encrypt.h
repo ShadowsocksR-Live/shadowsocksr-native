@@ -13,13 +13,23 @@
 #define TABLE 0
 #define RC4   1
 
-unsigned char encrypt_table[256];
-unsigned char decrypt_table[256];
+union {
+    struct {
+        unsigned char *encrypt_table;
+        unsigned char *decrypt_table;
+    } table;
+
+    struct {
+        unsigned char *key;
+        int key_len;
+    } rc4;
+} enc_ctx;
 
 void get_table(const char* key);
 void encrypt_ctx(char *buf, int len, EVP_CIPHER_CTX *ctx);
 void decrypt_ctx(char *buf, int len, EVP_CIPHER_CTX *ctx);
-void enc_ctx_init(EVP_CIPHER_CTX *ctx, const char *pass, int enc);
+void enc_ctx_init(EVP_CIPHER_CTX *ctx, int enc);
+void enc_key_init(const char *pass);
 
 unsigned int _i;
 unsigned long long _a;

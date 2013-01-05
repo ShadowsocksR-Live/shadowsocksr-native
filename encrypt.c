@@ -125,13 +125,14 @@ static void merge_sort(uint8_t array[], int length)
 void encrypt_ctx(char *buf, int len, EVP_CIPHER_CTX *ctx) {
     if (ctx != NULL) {
         int outlen;
-        unsigned char mybuf[BUF_SIZE];
+        unsigned char *mybuf = malloc(BUF_SIZE);
         EVP_CipherUpdate(ctx, mybuf, &outlen, (unsigned char*)buf, len);
         memcpy(buf, mybuf, len);
+        free(mybuf);
     } else {
         char *end = buf + len;
         while (buf < end) {
-            *buf = (char)encrypt_table[(uint8_t)*buf];
+            *buf = (char)enc_ctx.table.encrypt_table[(uint8_t)*buf];
             buf++;
         }
     }
@@ -140,48 +141,69 @@ void encrypt_ctx(char *buf, int len, EVP_CIPHER_CTX *ctx) {
 void decrypt_ctx(char *buf, int len, EVP_CIPHER_CTX *ctx) {
     if (ctx != NULL) {
         int outlen;
-        unsigned char mybuf[BUF_SIZE];
+        unsigned char *mybuf = malloc(BUF_SIZE);
         EVP_CipherUpdate(ctx, mybuf, &outlen, (unsigned char*) buf, len);
         memcpy(buf, mybuf, len);
+        free(mybuf);
     } else {
         char *end = buf + len;
         while (buf < end) {
-            *buf = (char)decrypt_table[(uint8_t)*buf];
+            *buf = (char)enc_ctx.table.decrypt_table[(uint8_t)*buf];
             buf++;
         }
     }
 }
 
-void enc_ctx_init(EVP_CIPHER_CTX *ctx, const char *pass, int enc) {
-    unsigned char key[EVP_MAX_KEY_LENGTH];
-    unsigned char iv[EVP_MAX_IV_LENGTH];
-    int key_len = EVP_BytesToKey(EVP_rc4(), EVP_md5(), NULL, (unsigned char*) pass, 
-            strlen(pass), 1, key, iv);
+void enc_ctx_init(EVP_CIPHER_CTX *ctx, int enc) {
+    uint8_t *key = enc_ctx.rc4.key;
+    int key_len = enc_ctx.rc4.key_len;
     EVP_CIPHER_CTX_init(ctx);
     EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, NULL, NULL, enc);
     if (!EVP_CIPHER_CTX_set_key_length(ctx, key_len)) {
-        LOGE("Invalid key length: %d", key_len);
+        LOGE("Invalid key length: %d\n", key_len);
         EVP_CIPHER_CTX_cleanup(ctx);
         exit(EXIT_FAILURE);
     }
-    EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, enc);
+    EVP_CipherInit_ex(ctx, NULL, NULL, key, NULL, enc);
+}
+
+void enc_key_init(const char *pass) {
+    unsigned char key[EVP_MAX_KEY_LENGTH];
+    unsigned char iv[EVP_MAX_IV_LENGTH];
+    int key_len = EVP_BytesToKey(EVP_rc4(), EVP_md5(), NULL, (unsigned char*) pass,
+            strlen(pass), 1, key, iv);
+    if (!key_len) {
+        LOGE("Invalid key length: %d\n", key_len);
+        exit(EXIT_FAILURE);
+    }
+    enc_ctx.rc4.key_len = key_len;
+    enc_ctx.rc4.key = malloc(key_len);
+    memcpy(enc_ctx.rc4.key, key, key_len);
 }
 
 void get_table(const char *pass) {
-    uint8_t *table = encrypt_table;
+    uint8_t *enc_table = enc_ctx.table.encrypt_table;
+    uint8_t *dec_table = enc_ctx.table.decrypt_table;
     uint8_t *tmp_hash = MD5((unsigned char *) pass, strlen(pass), NULL);
-    _a = htole64(*(uint64_t *) tmp_hash);
     uint32_t i;
 
+    _a = htole64(*(uint64_t *) tmp_hash);
+
+    enc_table = malloc(256);
+    dec_table = malloc(256);
+
     for(i = 0; i < 256; ++i) {
-        table[i] = i;
+        enc_table[i] = i;
     }
     for(i = 1; i < 1024; ++i) {
         _i = i;
-        merge_sort(table, 256);
+        merge_sort(enc_table, 256);
     }
     for(i = 0; i < 256; ++i) {
         // gen decrypt table from encrypt table
-        decrypt_table[encrypt_table[i]] = i;
+        dec_table[enc_table[i]] = i;
     }
+
+    enc_ctx.table.encrypt_table = enc_table;
+    enc_ctx.table.decrypt_table = dec_table;
 }

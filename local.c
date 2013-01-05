@@ -38,7 +38,6 @@
 static char *_server;
 static char *_remote_port;
 static int   _timeout;
-static char *_key;
 
 int setnonblocking(int fd) {
     int flags;
@@ -495,8 +494,8 @@ struct server* new_server(int fd) {
     if (_method == RC4) {
         server->e_ctx = malloc(sizeof(EVP_CIPHER_CTX));
         server->d_ctx = malloc(sizeof(EVP_CIPHER_CTX));
-        enc_ctx_init(server->e_ctx, _key, 1);
-        enc_ctx_init(server->d_ctx, _key, 0);
+        enc_ctx_init(server->e_ctx, 1);
+        enc_ctx_init(server->d_ctx, 0);
     } else {
         server->e_ctx = NULL;
         server->d_ctx = NULL;
@@ -694,7 +693,6 @@ int main (int argc, char **argv)
     _server = strdup(server);
     _remote_port = strdup(remote_port);
     _timeout = atoi(timeout);
-    _key = key;
     _method = TABLE;
     if (method != NULL) {
         if (strcmp(method, "rc4") == 0) {
@@ -703,7 +701,9 @@ int main (int argc, char **argv)
     }
 
     LOGD("calculating ciphers %d\n", _method);
-    if (_method != RC4) {
+    if (_method == RC4) {
+        enc_key_init(key);
+    } else {
         get_table(key);
     }
 
