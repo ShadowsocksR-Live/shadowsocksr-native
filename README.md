@@ -15,8 +15,7 @@ Build the binary like this:
 
 ```bash
     sudo apt-get install build-essential autoconf libtool libev-dev libssl-dev
-    automake --add-missing
-    autoreconf
+
     ./configure && make
 ```
 

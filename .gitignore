@@ -1,3 +1,14 @@
+.deps/
+Makefile
+autom4te.cache/
+config.h
+config.log
+config.status
+libtool
+pid
+ss
+stamp-h1
+
 #	Do not edit the following section
 # 	Edit Compile Debug Document Distribute
 *~
