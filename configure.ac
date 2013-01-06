@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.68])
-AC_INIT([shadowsocks], [0.9], [clowwindy42@gmail.com|max.c.lv@gmail.com])
+AC_PREREQ([2.67])
+AC_INIT([shadowsocks], [0.9], [max.c.lv@gmail.com])
 AC_CONFIG_SRCDIR([encrypt.c])
 AC_CONFIG_HEADERS([config.h])
 
@@ -27,8 +27,9 @@ AC_C_INLINE
 AC_TYPE_SSIZE_T
 
 # Checks for library functions.
-AC_FUNC_MALLOC
-AC_CHECK_FUNCS([memset socket])
+AC_CHECK_FUNCS([malloc memset socket])
+
+AC_CONFIG_MACRO_DIR([m4])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
