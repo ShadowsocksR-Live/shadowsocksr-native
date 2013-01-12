@@ -26,11 +26,15 @@
 #endif
 
 #ifndef MSG_NOSIGNAL
-#define MSG_NOSIGNAL MSG_HAVEMORE
+#define MSG_NOSIGNAL SO_NOSIGPIPE
 #endif
 
 #ifndef EAGAIN
 #define EAGAIN EWOULDBLOCK
+#endif
+
+#ifndef EWOULDBLOCK
+#define EWOULDBLOCK EAGAIN
 #endif
 
 #define min(a,b) (((a)<(b))?(a):(b))
@@ -119,7 +123,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             close_and_free_server(EV_A_ server);
             return;
         } else if(r < 0) {
-            if (errno == EAGAIN) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 // no data
                 // continue to wait for recv
                 break;
@@ -136,8 +140,9 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             encrypt_ctx(remote->buf, r, server->e_ctx);
             int w = send(remote->fd, remote->buf, r, 0);
             if(w == -1) {
-                if (errno == EAGAIN) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
                     // no data, wait for send
+                    remote->buf_len = r;
                     ev_io_stop(EV_A_ &server_recv_ctx->io);
                     ev_io_start(EV_A_ &remote->send_ctx->io);
                     break;
@@ -260,11 +265,10 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
         ssize_t r = send(server->fd, server->buf,
                 server->buf_len, 0);
         if (r < 0) {
-            if (errno != EAGAIN) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 perror("send");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
-                return;
             }
             return;
         }
@@ -330,7 +334,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
             close_and_free_server(EV_A_ server);
             return;
         } else if(r < 0) {
-            if (errno == EAGAIN) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 // no data
                 // continue to wait for recv
                 break;
@@ -344,8 +348,9 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         decrypt_ctx(server->buf, r, server->d_ctx);
         int w = send(server->fd, server->buf, r, MSG_NOSIGNAL);
         if(w == -1) {
-            if (errno == EAGAIN) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 // no data, wait for send
+                server->buf_len = r;
                 ev_io_stop(EV_A_ &remote_recv_ctx->io);
                 ev_io_start(EV_A_ &server->send_ctx->io);
                 break;
@@ -406,12 +411,11 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
             ssize_t r = send(remote->fd, remote->buf,
                     remote->buf_len, 0);
             if (r < 0) {
-                if (errno != EAGAIN) {
+                if (errno != EAGAIN && errno != EWOULDBLOCK) {
                     perror("send");
                     // close and free
                     close_and_free_remote(EV_A_ remote);
                     close_and_free_server(EV_A_ server);
-                    return;
                 }
                 return;
             }
