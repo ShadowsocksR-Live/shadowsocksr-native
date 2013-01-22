@@ -492,8 +492,8 @@ struct server* new_server(int fd) {
     server->send_ctx->connected = 0;
     server->stage = 0;
     if (_method == RC4) {
-        server->e_ctx = malloc(sizeof(EVP_CIPHER_CTX));
-        server->d_ctx = malloc(sizeof(EVP_CIPHER_CTX));
+        server->e_ctx = malloc(sizeof(struct rc4_state));
+        server->d_ctx = malloc(sizeof(struct rc4_state));
         enc_ctx_init(server->e_ctx, 1);
         enc_ctx_init(server->d_ctx, 0);
     } else {
@@ -509,8 +509,6 @@ void free_server(struct server *server) {
             server->remote->server = NULL;
         }
         if (_method == RC4) {
-            EVP_CIPHER_CTX_cleanup(server->e_ctx);
-            EVP_CIPHER_CTX_cleanup(server->d_ctx);
             free(server->e_ctx);
             free(server->d_ctx);
         }

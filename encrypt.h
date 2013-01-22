@@ -5,8 +5,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <openssl/md5.h>
-#include <openssl/evp.h>
+
+#include "md5.h"
+#include "rc4.h"
 
 #define BUF_SIZE 4096
 
@@ -26,9 +27,9 @@ union {
 } enc_ctx;
 
 void get_table(const char* key);
-void encrypt_ctx(char *buf, int len, EVP_CIPHER_CTX *ctx);
-void decrypt_ctx(char *buf, int len, EVP_CIPHER_CTX *ctx);
-void enc_ctx_init(EVP_CIPHER_CTX *ctx, int enc);
+void encrypt_ctx(char *buf, int len, struct rc4_state *ctx);
+void decrypt_ctx(char *buf, int len, struct rc4_state *ctx);
+void enc_ctx_init(struct rc4_state *ctx, int enc);
 void enc_key_init(const char *pass);
 
 unsigned int _i;

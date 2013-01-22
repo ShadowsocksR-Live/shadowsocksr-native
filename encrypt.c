@@ -6,11 +6,14 @@
 
 #include "encrypt.h"
 
-#ifdef WORDS_BIGENDIAN
-#include <endian.h>
-#else
-#define htole64(x)      (x)
-#endif
+#define OFFSET_ROL(p, o) ((u_int64_t)(*(p + o)) << (8 * o))
+
+static md5(const char *text, char *digest) {
+    md5_state_t state;
+    md5_init(&state);
+    md5_append(&state, text, strlen(text));
+    md5_finish(&state, digest);
+}
 
 static int random_compare(const void *_x, const void *_y) {
     uint32_t i = _i;
@@ -122,13 +125,9 @@ static void merge_sort(uint8_t array[], int length)
 	merge(left, llength, right, middle);
 }
 
-void encrypt_ctx(char *buf, int len, EVP_CIPHER_CTX *ctx) {
+void encrypt_ctx(char *buf, int len, struct rc4_state *ctx) {
     if (ctx != NULL) {
-        int outlen;
-        unsigned char *mybuf = malloc(BUF_SIZE);
-        EVP_CipherUpdate(ctx, mybuf, &outlen, (unsigned char*)buf, len);
-        memcpy(buf, mybuf, len);
-        free(mybuf);
+        rc4_crypt(ctx, (unsigned char*) buf, (unsigned char*) buf, len);
     } else {
         char *end = buf + len;
         while (buf < end) {
@@ -138,13 +137,9 @@ void encrypt_ctx(char *buf, int len, EVP_CIPHER_CTX *ctx) {
     }
 }
 
-void decrypt_ctx(char *buf, int len, EVP_CIPHER_CTX *ctx) {
+void decrypt_ctx(char *buf, int len, struct rc4_state *ctx) {
     if (ctx != NULL) {
-        int outlen;
-        unsigned char *mybuf = malloc(BUF_SIZE);
-        EVP_CipherUpdate(ctx, mybuf, &outlen, (unsigned char*) buf, len);
-        memcpy(buf, mybuf, len);
-        free(mybuf);
+        rc4_crypt(ctx, (unsigned char*) buf, (unsigned char*) buf, len);
     } else {
         char *end = buf + len;
         while (buf < end) {
@@ -154,40 +149,29 @@ void decrypt_ctx(char *buf, int len, EVP_CIPHER_CTX *ctx) {
     }
 }
 
-void enc_ctx_init(EVP_CIPHER_CTX *ctx, int enc) {
+void enc_ctx_init(struct rc4_state *ctx, int enc) {
     uint8_t *key = enc_ctx.rc4.key;
     int key_len = enc_ctx.rc4.key_len;
-    EVP_CIPHER_CTX_init(ctx);
-    EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, NULL, NULL, enc);
-    if (!EVP_CIPHER_CTX_set_key_length(ctx, key_len)) {
-        LOGE("Invalid key length: %d\n", key_len);
-        EVP_CIPHER_CTX_cleanup(ctx);
-        exit(EXIT_FAILURE);
-    }
-    EVP_CipherInit_ex(ctx, NULL, NULL, key, NULL, enc);
+    rc4_init(ctx, key, key_len);
 }
 
 void enc_key_init(const char *pass) {
-    unsigned char key[EVP_MAX_KEY_LENGTH];
-    unsigned char iv[EVP_MAX_IV_LENGTH];
-    int key_len = EVP_BytesToKey(EVP_rc4(), EVP_md5(), NULL, (unsigned char*) pass,
-            strlen(pass), 1, key, iv);
-    if (!key_len) {
-        LOGE("Invalid key length: %d\n", key_len);
-        exit(EXIT_FAILURE);
-    }
-    enc_ctx.rc4.key_len = key_len;
-    enc_ctx.rc4.key = malloc(key_len);
-    memcpy(enc_ctx.rc4.key, key, key_len);
+    enc_ctx.rc4.key_len = 16;
+    enc_ctx.rc4.key = malloc(16);
+    md5(pass, enc_ctx.rc4.key);
 }
 
 void get_table(const char *pass) {
     uint8_t *enc_table = enc_ctx.table.encrypt_table;
     uint8_t *dec_table = enc_ctx.table.decrypt_table;
-    uint8_t *tmp_hash = MD5((unsigned char *) pass, strlen(pass), NULL);
+    uint8_t digest[16];
     uint32_t i;
 
-    _a = htole64(*(uint64_t *) tmp_hash);
+    md5(pass, digest);
+
+    for (i = 0; i < 8; i++) {
+        _a += OFFSET_ROL(digest, i);
+    }
 
     enc_table = malloc(256);
     dec_table = malloc(256);

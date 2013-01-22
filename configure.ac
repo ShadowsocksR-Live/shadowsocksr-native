@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.67])
-AC_INIT([shadowsocks], [0.9], [max.c.lv@gmail.com])
+AC_INIT([shadowsocks], [1.0], [max.c.lv@gmail.com])
 AC_CONFIG_SRCDIR([encrypt.c])
 AC_CONFIG_HEADERS([config.h])
 
@@ -14,7 +14,6 @@ AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 
 # Checks for libraries.
-AC_SEARCH_LIBS([MD5], [crypto], [ ], AC_MSG_ERROR([libcrypto not found.]))
 AC_SEARCH_LIBS([ev_io_start], [ev], [ ], AC_MSG_ERROR([libev not found.]))
 
 # Checks for header files.
