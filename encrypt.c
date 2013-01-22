@@ -8,10 +8,10 @@
 
 #define OFFSET_ROL(p, o) ((u_int64_t)(*(p + o)) << (8 * o))
 
-static md5(const char *text, char *digest) {
+static void md5(const unsigned char *text, unsigned char *digest) {
     md5_state_t state;
     md5_init(&state);
-    md5_append(&state, text, strlen(text));
+    md5_append(&state, text, strlen((char*)text));
     md5_finish(&state, digest);
 }
 
@@ -158,7 +158,7 @@ void enc_ctx_init(struct rc4_state *ctx, int enc) {
 void enc_key_init(const char *pass) {
     enc_ctx.rc4.key_len = 16;
     enc_ctx.rc4.key = malloc(16);
-    md5(pass, enc_ctx.rc4.key);
+    md5((const unsigned char*)pass, enc_ctx.rc4.key);
 }
 
 void get_table(const char *pass) {
@@ -167,7 +167,7 @@ void get_table(const char *pass) {
     uint8_t digest[16];
     uint32_t i;
 
-    md5(pass, digest);
+    md5((const unsigned char*)pass, digest);
 
     for (i = 0; i < 8; i++) {
         _a += OFFSET_ROL(digest, i);
