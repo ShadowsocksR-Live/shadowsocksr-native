@@ -23,7 +23,6 @@ static int random_compare(const void *_x, const void *_y) {
     return (a % (x + i) - a % (y + i));
 }
 
-
 static void merge(uint8_t *left, int llength, uint8_t *right, int rlength)
 {
 	/* Temporary memory locations for the 2 segments of the array to merge. */
@@ -162,8 +161,8 @@ void enc_key_init(const char *pass) {
 }
 
 void get_table(const char *pass) {
-    uint8_t *enc_table = enc_ctx.table.encrypt_table;
-    uint8_t *dec_table = enc_ctx.table.decrypt_table;
+    uint8_t *enc_table = malloc(256);
+    uint8_t *dec_table = malloc(256);
     uint8_t digest[16];
     uint32_t i;
 
@@ -172,9 +171,6 @@ void get_table(const char *pass) {
     for (i = 0; i < 8; i++) {
         _a += OFFSET_ROL(digest, i);
     }
-
-    enc_table = malloc(256);
-    dec_table = malloc(256);
 
     for(i = 0; i < 256; ++i) {
         enc_table[i] = i;
