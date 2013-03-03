@@ -33,9 +33,12 @@
 #define EWOULDBLOCK EAGAIN
 #endif
 
+#define MAX_SERVER_NUM 10
+
 #define min(a,b) (((a)<(b))?(a):(b))
 
-static char *_server;
+static char *_servers[MAX_SERVER_NUM];
+static int _server_num;
 static char *_remote_port;
 static int   _timeout;
 
@@ -542,7 +545,8 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
         memset(&hints, 0, sizeof hints);
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
-        int err = getaddrinfo(_server, _remote_port, &hints, &res);
+        int index = clock() % _server_num;
+        int err = getaddrinfo(_servers[index], _remote_port, &hints, &res);
         if (err) {
             perror("getaddrinfo");
             close_and_free_server(EV_A_ server);
@@ -593,7 +597,6 @@ static void print_usage() {
 int main (int argc, char **argv)
 {
 
-    char *server = NULL;
     char *remote_port = NULL;
     char *port = NULL;
     char *key = NULL;
@@ -604,11 +607,12 @@ int main (int argc, char **argv)
     char *f_path = NULL;
 
     opterr = 0;
+    _server_num = 0;
 
     while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:")) != -1) {
         switch (c) {
             case 's':
-                server = optarg;
+                _servers[_server_num++] = strdup(optarg);
                 break;
             case 'p':
                 remote_port = optarg;
@@ -632,7 +636,7 @@ int main (int argc, char **argv)
         }
     }
 
-    if (server == NULL || remote_port == NULL ||
+    if (_server_num == 0 || remote_port == NULL ||
             port == NULL || key == NULL) {
         print_usage();
         exit(EXIT_FAILURE);
@@ -690,7 +694,6 @@ int main (int argc, char **argv)
     signal(SIGPIPE, SIG_IGN);
 
     // init global variables
-    _server = strdup(server);
     _remote_port = strdup(remote_port);
     _timeout = atoi(timeout);
     _method = TABLE;
@@ -700,7 +703,8 @@ int main (int argc, char **argv)
         }
     }
 
-    LOGD("calculating ciphers %d\n", _method);
+    LOGD("calculating ciphers\n");
+
     if (_method == RC4) {
         enc_key_init(key);
     } else {
