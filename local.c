@@ -33,14 +33,7 @@
 #define EWOULDBLOCK EAGAIN
 #endif
 
-#define MAX_SERVER_NUM 10
-
 #define min(a,b) (((a)<(b))?(a):(b))
-
-static char *_servers[MAX_SERVER_NUM];
-static int _server_num;
-static char *_remote_port;
-static int   _timeout;
 
 int setnonblocking(int fd) {
     int flags;
@@ -232,9 +225,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             inet_aton("0.0.0.0", &sin_addr);
 
             memcpy(server->buf, &response, 4);
-            memcpy(server->buf + 4, &sin_addr, sizeof(struct in_addr));
-            *((unsigned short *)(server->buf + 4 + sizeof(struct in_addr))) 
-                = (unsigned short) htons(atoi(_remote_port));
+            memset(server->buf + 4, 0, sizeof(struct in_addr) + sizeof(unsigned short));
 
             int reply_size = 4 + sizeof(struct in_addr) + sizeof(unsigned short);
             int r = send(server->fd, server->buf, reply_size, 0);
@@ -445,7 +436,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
     }
 }
 
-struct remote* new_remote(int fd) {
+struct remote* new_remote(int fd, int timeout) {
     struct remote *remote;
     remote = malloc(sizeof(struct remote));
     remote->recv_ctx = malloc(sizeof(struct remote_ctx));
@@ -453,7 +444,7 @@ struct remote* new_remote(int fd) {
     remote->fd = fd;
     ev_io_init(&remote->recv_ctx->io, remote_recv_cb, fd, EV_READ);
     ev_io_init(&remote->send_ctx->io, remote_send_cb, fd, EV_WRITE);
-    ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb, _timeout, 0);
+    ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb, timeout, 0);
     remote->recv_ctx->remote = remote;
     remote->recv_ctx->connected = 0;
     remote->send_ctx->remote = remote;
@@ -494,7 +485,7 @@ struct server* new_server(int fd) {
     server->send_ctx->server = server;
     server->send_ctx->connected = 0;
     server->stage = 0;
-    if (_method == RC4) {
+    if (enc_conf.method == RC4) {
         server->e_ctx = malloc(sizeof(struct rc4_state));
         server->d_ctx = malloc(sizeof(struct rc4_state));
         enc_ctx_init(server->e_ctx, 1);
@@ -511,7 +502,7 @@ void free_server(struct server *server) {
         if (server->remote != NULL) {
             server->remote->server = NULL;
         }
-        if (_method == RC4) {
+        if (enc_conf.method == RC4) {
             free(server->e_ctx);
             free(server->d_ctx);
         }
@@ -545,8 +536,8 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
         memset(&hints, 0, sizeof hints);
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
-        int index = clock() % _server_num;
-        int err = getaddrinfo(_servers[index], _remote_port, &hints, &res);
+        int index = clock() % listener->remote_num;
+        int err = getaddrinfo(listener->remote_host[index], listener->remote_port, &hints, &res);
         if (err) {
             perror("getaddrinfo");
             close_and_free_server(EV_A_ server);
@@ -563,7 +554,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
         }
 
         struct timeval timeout;
-        timeout.tv_sec = _timeout;
+        timeout.tv_sec = listener->timeout;
         timeout.tv_usec = 0;
         err = setsockopt(sockfd, SOL_SOCKET, 
                 SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
@@ -573,7 +564,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
         if (err) perror("setsockopt");
 
         setnonblocking(sockfd);
-        struct remote *remote = new_remote(sockfd);
+        struct remote *remote = new_remote(sockfd, listener->timeout);
         server->remote = remote;
         remote->server = server;
         connect(sockfd, res->ai_addr, res->ai_addrlen);
@@ -589,30 +580,77 @@ static void print_usage() {
     printf("usage: ss  -s server_host -p server_port -l local_port\n");
     printf("           -k password [-m encrypt_method] [-f pid_file]\n");
     printf("\n");
-    printf("info:\n");
+    printf("options:\n");
     printf("       encrypt_method:  table, rc4\n");
     printf("       pid_file:        valid path to the pid file\n");
+}
+
+static void demonize(const char* path) {
+
+    /* Our process ID and Session ID */
+    pid_t pid, sid;
+
+    /* Fork off the parent process */
+    pid = fork();
+    if (pid < 0) {
+        exit(EXIT_FAILURE);
+    }
+
+    /* If we got a good PID, then
+       we can exit the parent process. */
+    if (pid > 0) {
+        FILE *file = fopen(path, "w");
+        fprintf(file, "%d", pid);
+        fclose(file);
+        exit(EXIT_SUCCESS);
+    }
+
+    /* Change the file mode mask */
+    umask(0);
+
+    /* Open any logs here */        
+
+    /* Create a new SID for the child process */
+    sid = setsid();
+    if (sid < 0) {
+        /* Log the failure */
+        exit(EXIT_FAILURE);
+    }
+
+    /* Change the current working directory */
+    if ((chdir("/")) < 0) {
+        /* Log the failure */
+        exit(EXIT_FAILURE);
+    }
+
+    /* Close out the standard file descriptors */
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+
 }
 
 int main (int argc, char **argv)
 {
 
-    char *remote_port = NULL;
     char *port = NULL;
-    char *key = NULL;
+    char *password = NULL;
     char *timeout = "10";
     char *method = NULL;
     int c;
     int f_flags = 0;
     char *f_path = NULL;
 
+    int remote_num = 0;
+    char *remote_host[MAX_REMOTE_NUM];
+    char *remote_port = NULL;
+
     opterr = 0;
-    _server_num = 0;
 
     while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:")) != -1) {
         switch (c) {
             case 's':
-                _servers[_server_num++] = strdup(optarg);
+                remote_host[remote_num++] = optarg;
                 break;
             case 'p':
                 remote_port = optarg;
@@ -621,7 +659,7 @@ int main (int argc, char **argv)
                 port = optarg;
                 break;
             case 'k':
-                key = optarg;
+                password = optarg;
                 break;
             case 'f':
                 f_flags = 1;
@@ -636,8 +674,8 @@ int main (int argc, char **argv)
         }
     }
 
-    if (_server_num == 0 || remote_port == NULL ||
-            port == NULL || key == NULL) {
+    if (remote_num == 0 || remote_port == NULL ||
+            port == NULL || password == NULL) {
         print_usage();
         exit(EXIT_FAILURE);
     }
@@ -649,68 +687,17 @@ int main (int argc, char **argv)
             exit(EXIT_FAILURE);
         }
 
-        /* Our process ID and Session ID */
-        pid_t pid, sid;
+        demonize(f_path);
 
-        /* Fork off the parent process */
-        pid = fork();
-        if (pid < 0) {
-            exit(EXIT_FAILURE);
-        }
-        /* If we got a good PID, then
-           we can exit the parent process. */
-        if (pid > 0) {
-            FILE *file = fopen(f_path, "w");
-            fprintf(file, "%d", pid);
-            fclose(file);
-            exit(EXIT_SUCCESS);
-        }
-
-        /* Change the file mode mask */
-        umask(0);
-
-        /* Open any logs here */        
-
-        /* Create a new SID for the child process */
-        sid = setsid();
-        if (sid < 0) {
-            /* Log the failure */
-            exit(EXIT_FAILURE);
-        }
-
-
-        /* Change the current working directory */
-        if ((chdir("/")) < 0) {
-            /* Log the failure */
-            exit(EXIT_FAILURE);
-        }
-
-        /* Close out the standard file descriptors */
-        close(STDIN_FILENO);
-        close(STDOUT_FILENO);
-        close(STDERR_FILENO);
     }
 
     signal(SIGPIPE, SIG_IGN);
 
-    // init global variables
-    _remote_port = strdup(remote_port);
-    _timeout = atoi(timeout);
-    _method = TABLE;
-    if (method != NULL) {
-        if (strcmp(method, "rc4") == 0) {
-            _method = RC4;
-        }
-    }
-
+    // Setup keys
     LOGD("calculating ciphers\n");
+    enc_conf_init(password, method);
 
-    if (_method == RC4) {
-        enc_key_init(key);
-    } else {
-        get_table(key);
-    }
-
+    // Setup socket
     int listenfd;
     listenfd = create_and_bind(port);
     if (listenfd < 0) {
@@ -721,11 +708,21 @@ int main (int argc, char **argv)
         LOGE("listen() error.\n");
         return 1;
     }
+    setnonblocking(listenfd);
     LOGD("server listening at port %s\n", port);
 
-    setnonblocking(listenfd);
+    // Setup proxy context
     struct listen_ctx listen_ctx;
+    listen_ctx.remote_num = remote_num;
+    listen_ctx.remote_host = malloc(sizeof(char *) * remote_num);
+    while (remote_num > 0) {
+        int index = --remote_num;
+        listen_ctx.remote_host[index] = strdup(remote_host[index]);
+    }
+    listen_ctx.remote_port = strdup(remote_port);
+    listen_ctx.timeout = atoi(timeout);
     listen_ctx.fd = listenfd;
+
     struct ev_loop *loop = ev_default_loop(0);
     if (!loop) {
         return 1;
