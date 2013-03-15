@@ -10,12 +10,16 @@ void FATAL(const char *msg) {
 }
 
 void usage() {
-    printf("usage: ss  -s server_host -p server_port -l local_port\n");
-    printf("           -k password [-m encrypt_method] [-f pid_file]\n");
+    printf("usage:\n\n");
+    printf("    ss -s server_host -p server_port -l local_port -k password\n");
+    printf("       [-m encrypt_method] [-f pid_file] [-t timeout] [-c config_file]\n");
     printf("\n");
-    printf("options:\n");
-    printf("       encrypt_method:  table, rc4\n");
-    printf("       pid_file:        valid path to the pid file\n");
+    printf("options:\n\n");
+    printf("    encrypt_method:     table, rc4\n");
+    printf("          pid_file:     valid path to the pid file\n");
+    printf("           timeout:     socket timeout in senconds\n");
+    printf("       config_file:     json format config file\n");
+    printf("\n\n");
 }
 
 void demonize(const char* path) {
