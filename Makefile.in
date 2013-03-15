@@ -55,8 +55,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_ss_OBJECTS = rc4.$(OBJEXT) md5.$(OBJEXT) encrypt.$(OBJEXT) \
-	local.$(OBJEXT)
+am_ss_OBJECTS = utils.$(OBJEXT) jconf.$(OBJEXT) json.$(OBJEXT) \
+	rc4.$(OBJEXT) md5.$(OBJEXT) encrypt.$(OBJEXT) local.$(OBJEXT)
 ss_OBJECTS = $(am_ss_OBJECTS)
 ss_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@
@@ -204,8 +204,8 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-ss_SOURCES = rc4.c rc4.h md5.c md5.h encrypt.c encrypt.h local.c local.h socks5.h
-AM_CFLAGS = -Wall -fno-strict-aliasing 
+ss_SOURCES = utils.c jconf.c json.c rc4.c rc4.h md5.c md5.h encrypt.c encrypt.h local.c local.h socks5.h
+AM_CFLAGS = -O2 -Wall -fno-strict-aliasing 
 ACLOCAL_AMFLAGS = -I m4
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -315,9 +315,12 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/encrypt.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jconf.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/json.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/local.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/md5.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rc4.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/utils.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

@@ -3,8 +3,7 @@
 
 #include <ev.h>
 #include "encrypt.h"
-
-#define MAX_REMOTE_NUM 10
+#include "jconf.h"
 
 struct listen_ctx {
 	ev_io io;

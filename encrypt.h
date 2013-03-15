@@ -1,10 +1,18 @@
 #ifndef _ENCRYPT_H
 #define _ENCRYPT_H
 
+#include "config.h"
+
 #include <sys/socket.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#elif HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
 
 #include "md5.h"
 #include "rc4.h"
@@ -35,8 +43,5 @@ void encrypt_ctx(char *buf, int len, struct rc4_state *ctx);
 void decrypt_ctx(char *buf, int len, struct rc4_state *ctx);
 void enc_ctx_init(struct rc4_state *ctx, int enc);
 void enc_conf_init(const char *pass, const char *method);
-
-#define LOGD(...) ((void)fprintf(stdout, __VA_ARGS__))
-#define LOGE(...) ((void)fprintf(stderr, __VA_ARGS__))
 
 #endif // _ENCRYPT_H

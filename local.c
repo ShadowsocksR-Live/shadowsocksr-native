@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <assert.h>
 
+#include "utils.h"
 #include "local.h"
 #include "socks5.h"
 
@@ -576,70 +577,17 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
     }
 }
 
-static void print_usage() {
-    printf("usage: ss  -s server_host -p server_port -l local_port\n");
-    printf("           -k password [-m encrypt_method] [-f pid_file]\n");
-    printf("\n");
-    printf("options:\n");
-    printf("       encrypt_method:  table, rc4\n");
-    printf("       pid_file:        valid path to the pid file\n");
-}
-
-static void demonize(const char* path) {
-
-    /* Our process ID and Session ID */
-    pid_t pid, sid;
-
-    /* Fork off the parent process */
-    pid = fork();
-    if (pid < 0) {
-        exit(EXIT_FAILURE);
-    }
-
-    /* If we got a good PID, then
-       we can exit the parent process. */
-    if (pid > 0) {
-        FILE *file = fopen(path, "w");
-        fprintf(file, "%d", pid);
-        fclose(file);
-        exit(EXIT_SUCCESS);
-    }
-
-    /* Change the file mode mask */
-    umask(0);
-
-    /* Open any logs here */        
-
-    /* Create a new SID for the child process */
-    sid = setsid();
-    if (sid < 0) {
-        /* Log the failure */
-        exit(EXIT_FAILURE);
-    }
-
-    /* Change the current working directory */
-    if ((chdir("/")) < 0) {
-        /* Log the failure */
-        exit(EXIT_FAILURE);
-    }
-
-    /* Close out the standard file descriptors */
-    close(STDIN_FILENO);
-    close(STDOUT_FILENO);
-    close(STDERR_FILENO);
-
-}
-
 int main (int argc, char **argv)
 {
 
-    char *port = NULL;
+    int i, c;
+    int pid_flags = 0;
+    char *local_port = NULL;
     char *password = NULL;
-    char *timeout = "10";
+    char *timeout = NULL;
     char *method = NULL;
-    int c;
-    int f_flags = 0;
-    char *f_path = NULL;
+    char *pid_path = NULL;
+    char *conf_path = NULL;
 
     int remote_num = 0;
     char *remote_host[MAX_REMOTE_NUM];
@@ -647,7 +595,7 @@ int main (int argc, char **argv)
 
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:")) != -1) {
+    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:c:")) != -1) {
         switch (c) {
             case 's':
                 remote_host[remote_num++] = optarg;
@@ -656,14 +604,14 @@ int main (int argc, char **argv)
                 remote_port = optarg;
                 break;
             case 'l':
-                port = optarg;
+                local_port = optarg;
                 break;
             case 'k':
                 password = optarg;
                 break;
             case 'f':
-                f_flags = 1;
-                f_path = optarg;
+                pid_flags = 1;
+                pid_path = optarg;
                 break;
             case 't':
                 timeout = optarg;
@@ -671,45 +619,62 @@ int main (int argc, char **argv)
             case 'm':
                 method = optarg;
                 break;
+            case 'c':
+                conf_path = optarg;
+                break;
         }
     }
 
-    if (remote_num == 0 || remote_port == NULL ||
-            port == NULL || password == NULL) {
-        print_usage();
+    if (opterr) {
+        usage();
         exit(EXIT_FAILURE);
     }
 
-    if (f_flags) {
-
-        if (f_path == NULL) {
-            print_usage();
-            exit(EXIT_FAILURE);
+    if (conf_path != NULL) {
+        jconf_t *conf = read_jconf(conf_path);
+        if (remote_num == 0) {
+            remote_num = conf->remote_num;
+            for (i = 0; i < remote_num; i++) {
+                remote_host[i] = conf->remote_host[i];
+            }
         }
-
-        demonize(f_path);
-
+        if (remote_port == NULL) remote_port = conf->remote_port;
+        if (local_port == NULL) local_port = conf->local_port;
+        if (password == NULL) password = conf->password;
+        if (method == NULL) method = conf->method;
+        if (timeout == NULL) timeout = conf->timeout;
     }
 
+    if (remote_num == 0 || remote_port == NULL ||
+            local_port == NULL || password == NULL) {
+        usage();
+        exit(EXIT_FAILURE);
+    }
+
+    if (timeout == NULL) timeout = "10";
+
+    if (pid_flags) {
+        demonize(pid_path);
+    }
+
+    // ignore SIGPIPE
     signal(SIGPIPE, SIG_IGN);
 
     // Setup keys
-    LOGD("calculating ciphers\n");
+    LOGD("calculating ciphers...\n");
     enc_conf_init(password, method);
 
     // Setup socket
     int listenfd;
-    listenfd = create_and_bind(port);
+    listenfd = create_and_bind(local_port);
     if (listenfd < 0) {
-        LOGE("bind() error..\n");
-        return 1;
+        FATAL("bind() error..\n");
     }
     if (listen(listenfd, SOMAXCONN) == -1) {
-        LOGE("listen() error.\n");
-        return 1;
+        FATAL("listen() error.\n");
     }
     setnonblocking(listenfd);
-    LOGD("server listening at port %s\n", port);
+    LOGD("server listening at port %s.\n", local_port);
 
     // Setup proxy context
     struct listen_ctx listen_ctx;
@@ -725,7 +690,7 @@ int main (int argc, char **argv)
 
     struct ev_loop *loop = ev_default_loop(0);
     if (!loop) {
-        return 1;
+        FATAL("ev_loop error.\n");
     }
     ev_io_init (&listen_ctx.io, accept_cb, listenfd, EV_READ);
     ev_io_start (loop, &listen_ctx.io);

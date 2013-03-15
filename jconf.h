@@ -1,0 +1,19 @@
+#ifndef _JCONF_H
+#define _JCONF_H
+
+#define MAX_REMOTE_NUM 10
+#define MAX_CONF_SIZE 512 * 1024
+
+typedef struct {
+    int  remote_num;
+    char *remote_host[MAX_REMOTE_NUM];
+    char *remote_port;
+    char *local_port;
+    char *password;
+    char *method;
+    char *timeout;
+} jconf_t;
+
+jconf_t *read_jconf(const char* file);
+
+#endif // _JCONF_H
