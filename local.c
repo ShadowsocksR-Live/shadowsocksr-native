@@ -464,6 +464,7 @@ void free_remote(struct remote *remote) {
         free(remote);
     }
 }
+
 void close_and_free_remote(EV_P_ struct remote *remote) {
     if (remote != NULL) {
         ev_timer_stop(EV_A_ &remote->send_ctx->watcher);
@@ -473,6 +474,7 @@ void close_and_free_remote(EV_P_ struct remote *remote) {
         free_remote(remote);
     }
 }
+
 struct server* new_server(int fd) {
     struct server *server;
     server = malloc(sizeof(struct server));
@@ -498,6 +500,7 @@ struct server* new_server(int fd) {
     server->buf_len = 0;
     return server;
 }
+
 void free_server(struct server *server) {
     if (server != NULL) {
         if (server->remote != NULL) {
@@ -512,6 +515,7 @@ void free_server(struct server *server) {
         free(server);
     }
 }
+
 void close_and_free_server(EV_P_ struct server *server) {
     if (server != NULL) {
         ev_io_stop(EV_A_ &server->send_ctx->io);
@@ -520,8 +524,8 @@ void close_and_free_server(EV_P_ struct server *server) {
         free_server(server);
     }
 }
-static void accept_cb (EV_P_ ev_io *w, int revents)
-{
+
+static void accept_cb (EV_P_ ev_io *w, int revents) {
     struct listen_ctx *listener = (struct listen_ctx *)w;
     int serverfd;
     while (1) {
@@ -577,8 +581,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
     }
 }
 
-int main (int argc, char **argv)
-{
+int main (int argc, char **argv) {
 
     int i, c;
     int pid_flags = 0;

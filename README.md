@@ -1,6 +1,8 @@
 shadowsocks-libev
 =================
 
+[![Build Status](https://secure.travis-ci.org/madeye/gaeproxy.png)](http://travis-ci.org/madeye/shadowsocks-libev)
+
 Intro
 -----
 
