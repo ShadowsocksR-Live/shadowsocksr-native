@@ -175,20 +175,19 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         // handshake and transmit data
         if (server->stage == 5) {
             int w = send(remote->fd, remote->buf, r, 0);
-            if(w == -1) {
+            if (w == -1) {
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
                     // no data, wait for send
                     remote->buf_len = r;
                     ev_io_stop(EV_A_ &server_recv_ctx->io);
                     ev_io_start(EV_A_ &remote->send_ctx->io);
-                    return;
                 } else {
                     perror("server_recv_send");
                     close_and_free_remote(EV_A_ remote);
                     close_and_free_server(EV_A_ server);
-                    return;
                 }
-            } else if(w < r) {
+                return;
+            } else if (w < r) {
                 char *pt = remote->buf;
                 char *et = pt + r;
                 while (pt + w < et) {
@@ -283,7 +282,7 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
         ssize_t r = send(server->fd, server->buf,
                 server->buf_len, 0);
         if (r < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            if (errno != EAGAIN && errno != EWOULDBLOCK) {
                 perror("server_send_send");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
