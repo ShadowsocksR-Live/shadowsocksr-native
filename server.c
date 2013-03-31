@@ -91,7 +91,7 @@ int create_and_bind(const char *host, const char *port) {
     return listen_sock;
 }
 
-struct remote *connect_to_remote(char *remote_host, char *remote_port, struct timeval timeout) {
+struct remote *connect_to_remote(char *remote_host, char *remote_port, int timeout) {
     struct addrinfo hints, *res;
     int sockfd;
     memset(&hints, 0, sizeof hints);
@@ -114,12 +114,6 @@ struct remote *connect_to_remote(char *remote_host, char *remote_port, struct ti
     }
 
     // setup remote socks
-    err = setsockopt(sockfd, SOL_SOCKET,
-            SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
-    if (err) perror("setsockopt");
-    err = setsockopt(sockfd, SOL_SOCKET,
-            SO_SNDTIMEO, (char *)&timeout, sizeof(timeout));
-    if (err) perror("setsockopt");
     setnonblocking(sockfd);
 
     struct remote *remote = new_remote(sockfd, timeout);
@@ -147,124 +141,121 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         buf_len = &remote->buf_len;
     }
 
-    while (1) {
+    ssize_t r = recv(server->fd, buf, BUF_SIZE, 0);
 
-        ssize_t r = recv(server->fd, buf, BUF_SIZE, 0);
-
-        if (r == 0) {
-            // connection closed
-            *buf_len = 0;
+    if (r == 0) {
+        // connection closed
+        *buf_len = 0;
+        close_and_free_server(EV_A_ server);
+        if (remote != NULL) {
+            ev_io_start(EV_A_ &remote->send_ctx->io);
+        }
+        return;
+    } else if (r < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            // no data
+            // continue to wait for recv
+            return;
+        } else {
+            perror("server recv");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
-        } else if(r < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                // no data
-                // continue to wait for recv
-                return;
-            } else {
-                perror("server recv");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
         }
+    }
 
-        decrypt_ctx(buf, r, server->d_ctx);
+    decrypt_ctx(buf, r, server->d_ctx);
 
-        // handshake and transmit data
-        if (server->stage == 5) {
-            int w = send(remote->fd, remote->buf, r, 0);
-            if (w == -1) {
-                if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    // no data, wait for send
-                    remote->buf_len = r;
-                    ev_io_stop(EV_A_ &server_recv_ctx->io);
-                    ev_io_start(EV_A_ &remote->send_ctx->io);
-                } else {
-                    perror("server_recv_send");
-                    close_and_free_remote(EV_A_ remote);
-                    close_and_free_server(EV_A_ server);
-                }
-                return;
-            } else if (w < r) {
-                char *pt = remote->buf;
-                char *et = pt + r;
-                while (pt + w < et) {
-                    *pt = *(pt + w);
-                    pt++;
-                }
-                remote->buf_len = r - w;
-                assert(remote->buf_len >= 0);
+    // handshake and transmit data
+    if (server->stage == 5) {
+        int s = send(remote->fd, remote->buf, r, 0);
+        if (s == -1) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // no data, wait for send
+                remote->buf_len = r;
                 ev_io_stop(EV_A_ &server_recv_ctx->io);
                 ev_io_start(EV_A_ &remote->send_ctx->io);
-                return;
-            }
-        } else if (server->stage == 0) {
-
-            /*
-             * Shadowsocks Protocol:
-             *
-             *    +------+----------+----------+
-             *    | ATYP | DST.ADDR | DST.PORT |
-             *    +------+----------+----------+
-             *    |  1   | Variable |    2     |
-             *    +------+----------+----------+
-             */
-
-            int offset = 0;
-            char atyp = server->buf[offset++];
-            char host[256];
-            memset(host, 0, 256);
-            int port = 0;
-
-            // get remote addr and port
-            if (atyp == 1) {
-                // IP V4
-                size_t in_addr_len = sizeof(struct in_addr);
-                char *a = inet_ntoa(*(struct in_addr*)(server->buf + offset));
-                memcpy(host, a, strlen(a));
-                offset += in_addr_len;
-
-            } else if (atyp == 3) {
-                // Domain name
-                uint8_t name_len = *(uint8_t *)(server->buf + offset);
-                memcpy(host, server->buf + offset + 1, name_len);
-                offset += name_len + 1;
-
             } else {
-                LOGE("unsupported addrtype: %d\n", atyp);
+                perror("server_recv_send");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
-                return;
             }
-
-            port += *(uint8_t *)(server->buf + offset++) << 8;
-            port += *(uint8_t *)(server->buf + offset);
-
-            if (verbose) {
-                LOGD("connect to: %s:%s\n", host, itoa(port));
+            return;
+        } else if (s < r) {
+            char *pt = remote->buf;
+            char *et = pt + r;
+            while (pt + s < et) {
+                *pt = *(pt + s);
+                pt++;
             }
-
-            struct remote *remote = connect_to_remote(host, itoa(port), server->timeout);
-            if (remote == NULL) {
-                close_and_free_server(EV_A_ server);
-                return;
-            }
-
-            // listen to remote connected event
-            ev_io_stop(EV_A_ &server->recv_ctx->io);
+            remote->buf_len = r - s;
+            assert(remote->buf_len >= 0);
+            ev_io_stop(EV_A_ &server_recv_ctx->io);
             ev_io_start(EV_A_ &remote->send_ctx->io);
-            ev_timer_start(EV_A_ &remote->send_ctx->watcher);
-
-            remote->server = server;
-            server->remote = remote;
-
-            server->buf_len = 0;
-
-            server->stage = 5;
             return;
         }
+    } else if (server->stage == 0) {
+
+        /*
+         * Shadowsocks Protocol:
+         *
+         *    +------+----------+----------+
+         *    | ATYP | DST.ADDR | DST.PORT |
+         *    +------+----------+----------+
+         *    |  1   | Variable |    2     |
+         *    +------+----------+----------+
+         */
+
+        int offset = 0;
+        char atyp = server->buf[offset++];
+        char host[256];
+        memset(host, 0, 256);
+        int port = 0;
+
+        // get remote addr and port
+        if (atyp == 1) {
+            // IP V4
+            size_t in_addr_len = sizeof(struct in_addr);
+            char *a = inet_ntoa(*(struct in_addr*)(server->buf + offset));
+            memcpy(host, a, strlen(a));
+            offset += in_addr_len;
+
+        } else if (atyp == 3) {
+            // Domain name
+            uint8_t name_len = *(uint8_t *)(server->buf + offset);
+            memcpy(host, server->buf + offset + 1, name_len);
+            offset += name_len + 1;
+
+        } else {
+            LOGE("unsupported addrtype: %d\n", atyp);
+            close_and_free_remote(EV_A_ remote);
+            close_and_free_server(EV_A_ server);
+            return;
+        }
+
+        port += *(uint8_t *)(server->buf + offset++) << 8;
+        port += *(uint8_t *)(server->buf + offset);
+
+        if (verbose) {
+            LOGD("connect to: %s:%s\n", host, itoa(port));
+        }
+
+        struct remote *remote = connect_to_remote(host, itoa(port), server->timeout);
+        if (remote == NULL) {
+            close_and_free_server(EV_A_ server);
+            return;
+        }
+
+        // listen to remote connected event
+        ev_io_stop(EV_A_ &server->recv_ctx->io);
+        ev_io_start(EV_A_ &remote->send_ctx->io);
+        ev_timer_start(EV_A_ &remote->send_ctx->watcher);
+
+        remote->server = server;
+        server->remote = remote;
+
+        server->stage = 4;
+        return;
     }
 }
 
@@ -272,6 +263,7 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
     struct server_ctx *server_send_ctx = (struct server_ctx *)w;
     struct server *server = server_send_ctx->server;
     struct remote *remote = server->remote;
+
     if (server->buf_len == 0) {
         // close and free
         close_and_free_remote(EV_A_ remote);
@@ -279,29 +271,29 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
         return;
     } else {
         // has data to send
-        ssize_t r = send(server->fd, server->buf,
+        ssize_t s = send(server->fd, server->buf,
                 server->buf_len, 0);
-        if (r < 0) {
+        if (s < 0) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
                 perror("server_send_send");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
             }
             return;
-        }
-        if (r < server->buf_len) {
+        } else if (s < server->buf_len) {
             // partly sent, move memory, wait for the next time to send
             char *pt = server->buf;
             char *et = pt + server->buf_len;
-            while (pt + r < et) {
-                *pt = *(pt + r);
+            while (pt + s < et) {
+                *pt = *(pt + s);
                 pt++;
             }
-            server->buf_len -= r;
+            server->buf_len -= s;
             assert(server->buf_len >= 0);
             return;
         } else {
             // all sent out, wait for reading
+            server->buf_len = 0;
             ev_io_stop(EV_A_ &server_send_ctx->io);
             if (remote != NULL) {
                 ev_io_start(EV_A_ &remote->recv_ctx->io);
@@ -313,7 +305,6 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
             }
         }
     }
-
 }
 
 static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents) {
@@ -334,63 +325,66 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
     struct remote_ctx *remote_recv_ctx = (struct remote_ctx *)w;
     struct remote *remote = remote_recv_ctx->remote;
     struct server *server = remote->server;
+
     if (server == NULL) {
         LOGE("invalid server.\n");
         close_and_free_remote(EV_A_ remote);
         return;
     }
 
-    while (1) {
+    ssize_t r = recv(remote->fd, server->buf, BUF_SIZE, 0);
 
-        ssize_t r = recv(remote->fd, server->buf, BUF_SIZE, 0);
+    if (verbose) {
+        LOGD("remote recv: %d byte\n", (int)r);
+    }
 
-        if (r == 0) {
-            // connection closed
-            server->buf_len = 0;
+    if (r == 0) {
+        // connection closed
+        close_and_free_remote(EV_A_ remote);
+        if (server != NULL) {
+            ev_io_start(EV_A_ &server->send_ctx->io);
+        }
+        return;
+    } else if (r < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            // no data
+            // continue to wait for recv
+            return;
+        } else {
+            perror("remote recv");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
-        } else if(r < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                // no data
-                // continue to wait for recv
-                return;
-            } else {
-                perror("remote recv");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
         }
+    }
 
-        encrypt_ctx(server->buf, r, server->e_ctx);
-        int s = send(server->fd, server->buf, r, 0);
+    encrypt_ctx(server->buf, r, server->e_ctx);
+    int s = send(server->fd, server->buf, r, 0);
 
-        if (s == -1) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                // no data, wait for send
-                server->buf_len = r;
-                ev_io_stop(EV_A_ &remote_recv_ctx->io);
-                ev_io_start(EV_A_ &server->send_ctx->io);
-            } else {
-                perror("remote_recv_send");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-            }
-            return;
-        } else if (s < r) {
-            char *pt = server->buf;
-            char *et = pt + r;
-            while (pt + s < et) {
-                *pt = *(pt + s);
-                pt++;
-            }
-            server->buf_len = r - s;
-            assert(server->buf_len >= 0);
+    if (s == -1) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            // no data, wait for send
+            server->buf_len = r;
             ev_io_stop(EV_A_ &remote_recv_ctx->io);
             ev_io_start(EV_A_ &server->send_ctx->io);
-            return;
+        } else {
+            perror("remote_recv_send");
+            close_and_free_remote(EV_A_ remote);
+            close_and_free_server(EV_A_ server);
         }
+        return;
+    } else if (s < r) {
+        char *pt = server->buf;
+        char *et = pt + r;
+        while (pt + s < et) {
+            *pt = *(pt + s);
+            pt++;
+        }
+        server->buf_len = r - s;
+        assert(server->buf_len >= 0);
+        ev_io_stop(EV_A_ &remote_recv_ctx->io);
+        ev_io_start(EV_A_ &server->send_ctx->io);
+        return;
     }
 }
 
@@ -410,11 +404,13 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
             }
             remote_send_ctx->connected = 1;
             ev_io_stop(EV_A_ &remote_send_ctx->io);
+            ev_io_stop(EV_A_ &server->send_ctx->io);
             ev_timer_stop(EV_A_ &remote_send_ctx->watcher);
-            ev_io_start(EV_A_ &server->recv_ctx->io);
 
-            //ev_io_stop(EV_A_ &server->send_ctx->io);
+            ev_io_start(EV_A_ &server->recv_ctx->io);
             ev_io_start(EV_A_ &remote->recv_ctx->io);
+
+            server->stage = 5;
             return;
         } else {
             perror("getpeername");
@@ -431,9 +427,9 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
             return;
         } else {
             // has data to send
-            ssize_t r = send(remote->fd, remote->buf,
+            ssize_t s = send(remote->fd, remote->buf,
                     remote->buf_len, 0);
-            if (r < 0) {
+            if (s < 0) {
                 if (errno != EAGAIN && errno != EWOULDBLOCK) {
                     perror("remote_send_send");
                     // close and free
@@ -441,20 +437,20 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
                     close_and_free_server(EV_A_ server);
                 }
                 return;
-            }
-            if (r < remote->buf_len) {
+            } else if (s < remote->buf_len) {
                 // partly sent, move memory, wait for the next time to send
                 char *pt = remote->buf;
                 char *et = pt + remote->buf_len;
-                while (pt + r < et) {
-                    *pt = *(pt + r);
+                while (pt + s < et) {
+                    *pt = *(pt + s);
                     pt++;
                 }
-                remote->buf_len -= r;
+                remote->buf_len -= s;
                 assert(remote->buf_len >= 0);
                 return;
             } else {
                 // all sent out, wait for reading
+                remote->buf_len = 0;
                 ev_io_stop(EV_A_ &remote_send_ctx->io);
                 if (server != NULL) {
                     ev_io_start(EV_A_ &server->recv_ctx->io);
@@ -466,11 +462,10 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
                 }
             }
         }
-
     }
 }
 
-struct remote* new_remote(int fd, struct timeval timeout) {
+struct remote* new_remote(int fd, int timeout) {
     struct remote *remote;
     remote = malloc(sizeof(struct remote));
     remote->recv_ctx = malloc(sizeof(struct remote_ctx));
@@ -478,7 +473,7 @@ struct remote* new_remote(int fd, struct timeval timeout) {
     remote->fd = fd;
     ev_io_init(&remote->recv_ctx->io, remote_recv_cb, fd, EV_READ);
     ev_io_init(&remote->send_ctx->io, remote_send_cb, fd, EV_WRITE);
-    ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb, timeout.tv_sec, 0);
+    ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb, timeout, 0);
     remote->recv_ctx->remote = remote;
     remote->recv_ctx->connected = 0;
     remote->send_ctx->remote = remote;
@@ -568,7 +563,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents) {
     setnonblocking(serverfd);
 
     if (verbose) {
-        LOGD("Accept a connection.\n");
+        LOGD("accept a connection.\n");
     }
 
     struct server *server = new_server(serverfd);
@@ -683,10 +678,7 @@ int main (int argc, char **argv) {
 
         // Setup proxy context
         struct listen_ctx listen_ctx;
-        struct timeval time;
-        time.tv_sec = timeout;
-        time.tv_usec = 0;
-        listen_ctx.timeout = time;
+        listen_ctx.timeout = timeout;
         listen_ctx.fd = listenfd;
 
         ev_io_init (&listen_ctx.io, accept_cb, listenfd, EV_READ);

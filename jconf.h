@@ -2,7 +2,7 @@
 #define _JCONF_H
 
 #define MAX_REMOTE_NUM 10
-#define MAX_CONF_SIZE 512 * 1024
+#define MAX_CONF_SIZE 16 * 1024
 
 typedef struct {
     int  remote_num;

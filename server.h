@@ -10,7 +10,7 @@
 struct listen_ctx {
 	ev_io io;
 	int fd;
-    struct timeval timeout;
+    int timeout;
 	struct sockaddr sock;
 };
 
@@ -25,7 +25,7 @@ struct server {
 	char buf[BUF_SIZE]; // server send from, remote recv into
     char stage;
 	int buf_len;
-    struct timeval timeout;
+    int timeout;
     struct rc4_state *e_ctx;
     struct rc4_state *d_ctx;
 	struct server_ctx *recv_ctx;
@@ -56,8 +56,8 @@ static void server_send_cb (EV_P_ ev_io *w, int revents);
 static void remote_recv_cb (EV_P_ ev_io *w, int revents);
 static void remote_send_cb (EV_P_ ev_io *w, int revents);
 
-struct remote* new_remote(int fd, struct timeval timeout);
-struct remote *connect_to_remote(char *remote_host, char *remote_port, struct timeval timeout);
+struct remote* new_remote(int fd, int timeout);
+struct remote *connect_to_remote(char *remote_host, char *remote_port, int timeout);
 void free_remote(struct remote *remote);
 void close_and_free_remote(EV_P_ struct remote *remote);
 struct server* new_server(int fd);

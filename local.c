@@ -99,146 +99,147 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         close_and_free_server(EV_A_ server);
         return;
     }
-    while (1) {
-        char *buf = remote->buf;
-        int *buf_len = &remote->buf_len;
-        if (server->stage != 5) {
-            buf = server->buf;
-            buf_len = &server->buf_len;
+
+    char *buf = remote->buf;
+    int *buf_len = &remote->buf_len;
+    if (server->stage != 5) {
+        buf = server->buf;
+        buf_len = &server->buf_len;
+    }
+
+    ssize_t r = recv(server->fd, buf, BUF_SIZE, 0);
+
+    if (r == 0) {
+        // connection closed
+        *buf_len = 0;
+        close_and_free_server(EV_A_ server);
+        if (remote != NULL) {
+            ev_io_start(EV_A_ &remote->send_ctx->io);
         }
-
-        ssize_t r = recv(server->fd, buf, BUF_SIZE, 0);
-
-        if (r == 0) {
-            // connection closed
-            *buf_len = 0;
+        return;
+    } else if(r < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            // no data
+            // continue to wait for recv
+            return;
+        } else {
+            perror("server recv");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
-        } else if(r < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                // no data
-                // continue to wait for recv
-                break;
-            } else {
-                perror("server recv");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
         }
+    }
 
-        // local socks5 server
-        if (server->stage == 5) {
-            encrypt_ctx(remote->buf, r, server->e_ctx);
-            int w = send(remote->fd, remote->buf, r, 0);
-            if(w == -1) {
+    // local socks5 server
+    if (server->stage == 5) {
+        encrypt_ctx(remote->buf, r, server->e_ctx);
+        int s = send(remote->fd, remote->buf, r, 0);
+        if(s == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    // no data, wait for send
-                    remote->buf_len = r;
-                    ev_io_stop(EV_A_ &server_recv_ctx->io);
-                    ev_io_start(EV_A_ &remote->send_ctx->io);
-                    break;
-                } else {
-                    perror("send");
-                    close_and_free_remote(EV_A_ remote);
-                    close_and_free_server(EV_A_ server);
-                    return;
-                }
-            } else if(w < r) {
-                char *pt = remote->buf;
-                char *et = pt + r;
-                while (pt + w < et) {
-                    *pt = *(pt + w);
-                    pt++;
-                }
-                remote->buf_len = r - w;
-                assert(remote->buf_len >= 0);
+                // no data, wait for send
+                remote->buf_len = r;
                 ev_io_stop(EV_A_ &server_recv_ctx->io);
                 ev_io_start(EV_A_ &remote->send_ctx->io);
-                break;
-            }
-        } else if (server->stage == 0) {
-            struct method_select_response response;
-            response.ver = SVERSION;
-            response.method = 0;
-            char *send_buf = (char *)&response;
-            send(server->fd, send_buf, sizeof(response), 0);
-            server->stage = 1;
-            return;
-        } else if (server->stage == 1) {
-            struct socks5_request *request = (struct socks5_request *)server->buf;
-
-            if (request->cmd != 1) {
-                LOGE("unsupported cmd: %d\n", request->cmd);
-                struct socks5_response response;
-                response.ver = SVERSION;
-                response.rep = CMD_NOT_SUPPORTED;
-                response.rsv = 0;
-                response.atyp = 1;
-                char *send_buf = (char *)&response;
-                send(server->fd, send_buf, 4, 0);
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
                 return;
-            }
-
-            char addr_to_send[256];
-            uint8_t addr_len = 0;
-            addr_to_send[addr_len++] = request->atyp;
-
-            // get remote addr and port
-            if (request->atyp == 1) {
-
-                // IP V4
-                size_t in_addr_len = sizeof(struct in_addr);
-                memcpy(addr_to_send + addr_len, server->buf + 4, in_addr_len + 2);
-                addr_len += in_addr_len + 2;
-
-            } else if (request->atyp == 3) {
-                // Domain name
-                uint8_t name_len = *(uint8_t *)(server->buf + 4);
-                addr_to_send[addr_len++] = name_len;
-                memcpy(addr_to_send + addr_len, server->buf + 4 + 1, name_len);
-                addr_len += name_len;
-
-                // get port
-                addr_to_send[addr_len++] = *(uint8_t *)(server->buf + 4 + 1 + name_len); 
-                addr_to_send[addr_len++] = *(uint8_t *)(server->buf + 4 + 1 + name_len + 1); 
             } else {
-                LOGE("unsupported addrtype: %d\n", request->atyp);
+                perror("send");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
                 return;
             }
+        } else if(s < r) {
+            char *pt = remote->buf;
+            char *et = pt + s;
+            while (pt + s < et) {
+                *pt = *(pt + s);
+                pt++;
+            }
+            remote->buf_len = r - s;
+            assert(remote->buf_len >= 0);
+            ev_io_stop(EV_A_ &server_recv_ctx->io);
+            ev_io_start(EV_A_ &remote->send_ctx->io);
+            return;
+        }
+    } else if (server->stage == 0) {
+        struct method_select_response response;
+        response.ver = SVERSION;
+        response.method = 0;
+        char *send_buf = (char *)&response;
+        send(server->fd, send_buf, sizeof(response), 0);
+        server->stage = 1;
+        return;
+    } else if (server->stage == 1) {
+        struct socks5_request *request = (struct socks5_request *)server->buf;
 
-            encrypt_ctx(addr_to_send, addr_len, server->e_ctx);
-            send(remote->fd, addr_to_send, addr_len, 0);
-
-            // Fake reply
+        if (request->cmd != 1) {
+            LOGE("unsupported cmd: %d\n", request->cmd);
             struct socks5_response response;
             response.ver = SVERSION;
-            response.rep = 0;
+            response.rep = CMD_NOT_SUPPORTED;
             response.rsv = 0;
             response.atyp = 1;
-
-            struct in_addr sin_addr;
-            inet_aton("0.0.0.0", &sin_addr);
-
-            memcpy(server->buf, &response, 4);
-            memset(server->buf + 4, 0, sizeof(struct in_addr) + sizeof(uint16_t));
-
-            int reply_size = 4 + sizeof(struct in_addr) + sizeof(uint16_t);
-            int r = send(server->fd, server->buf, reply_size, 0);
-            if (r < reply_size) {
-                LOGE("header not complete sent\n");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
-
-            server->stage = 5;
+            char *send_buf = (char *)&response;
+            send(server->fd, send_buf, 4, 0);
+            close_and_free_remote(EV_A_ remote);
+            close_and_free_server(EV_A_ server);
+            return;
         }
+
+        char addr_to_send[256];
+        uint8_t addr_len = 0;
+        addr_to_send[addr_len++] = request->atyp;
+
+        // get remote addr and port
+        if (request->atyp == 1) {
+
+            // IP V4
+            size_t in_addr_len = sizeof(struct in_addr);
+            memcpy(addr_to_send + addr_len, server->buf + 4, in_addr_len + 2);
+            addr_len += in_addr_len + 2;
+
+        } else if (request->atyp == 3) {
+            // Domain name
+            uint8_t name_len = *(uint8_t *)(server->buf + 4);
+            addr_to_send[addr_len++] = name_len;
+            memcpy(addr_to_send + addr_len, server->buf + 4 + 1, name_len);
+            addr_len += name_len;
+
+            // get port
+            addr_to_send[addr_len++] = *(uint8_t *)(server->buf + 4 + 1 + name_len); 
+            addr_to_send[addr_len++] = *(uint8_t *)(server->buf + 4 + 1 + name_len + 1); 
+        } else {
+            LOGE("unsupported addrtype: %d\n", request->atyp);
+            close_and_free_remote(EV_A_ remote);
+            close_and_free_server(EV_A_ server);
+            return;
+        }
+
+        encrypt_ctx(addr_to_send, addr_len, server->e_ctx);
+        send(remote->fd, addr_to_send, addr_len, 0);
+
+        // Fake reply
+        struct socks5_response response;
+        response.ver = SVERSION;
+        response.rep = 0;
+        response.rsv = 0;
+        response.atyp = 1;
+
+        struct in_addr sin_addr;
+        inet_aton("0.0.0.0", &sin_addr);
+
+        memcpy(server->buf, &response, 4);
+        memset(server->buf + 4, 0, sizeof(struct in_addr) + sizeof(uint16_t));
+
+        int reply_size = 4 + sizeof(struct in_addr) + sizeof(uint16_t);
+        int s = send(server->fd, server->buf, reply_size, 0);
+        if (s < reply_size) {
+            LOGE("header not complete sent\n");
+            close_and_free_remote(EV_A_ remote);
+            close_and_free_server(EV_A_ server);
+            return;
+        }
+
+        server->stage = 5;
     }
 }
 
@@ -253,25 +254,24 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
         return;
     } else {
         // has data to send
-        ssize_t r = send(server->fd, server->buf,
+        ssize_t s = send(server->fd, server->buf,
                 server->buf_len, 0);
-        if (r < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        if (s < 0) {
+            if (errno != EAGAIN && errno != EWOULDBLOCK) {
                 perror("send");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
             }
             return;
-        }
-        if (r < server->buf_len) {
+        } else if (s < server->buf_len) {
             // partly sent, move memory, wait for the next time to send
             char *pt = server->buf;
             char *et = pt + server->buf_len;
-            while (pt + r < et) {
-                *pt = *(pt + r);
+            while (pt + s < et) {
+                *pt = *(pt + s);
                 pt++;
             }
-            server->buf_len -= r;
+            server->buf_len -= s;
             assert(server->buf_len >= 0);
             return;
         } else {
@@ -315,55 +315,58 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         close_and_free_remote(EV_A_ remote);
         return;
     }
-    while (1) {
-        ssize_t r = recv(remote->fd, server->buf, BUF_SIZE, 0);
 
-        if (r == 0) {
-            // connection closed
-            server->buf_len = 0;
+    ssize_t r = recv(remote->fd, server->buf, BUF_SIZE, 0);
+
+    if (r == 0) {
+        // connection closed
+        server->buf_len = 0;
+        close_and_free_remote(EV_A_ remote);
+        if (server != NULL) {
+            ev_io_start(EV_A_ &server->send_ctx->io);
+        }
+        return;
+    } else if(r < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            // no data
+            // continue to wait for recv
+            return;
+        } else {
+            perror("remote recv");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
-        } else if(r < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                // no data
-                // continue to wait for recv
-                break;
-            } else {
-                perror("remote recv");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
         }
-        decrypt_ctx(server->buf, r, server->d_ctx);
-        int w = send(server->fd, server->buf, r, 0);
-        if(w == -1) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                // no data, wait for send
-                server->buf_len = r;
-                ev_io_stop(EV_A_ &remote_recv_ctx->io);
-                ev_io_start(EV_A_ &server->send_ctx->io);
-                break;
-            } else {
-                perror("send");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
-        } else if(w < r) {
-            char *pt = server->buf;
-            char *et = pt + r;
-            while (pt + w < et) {
-                *pt = *(pt + w);
-                pt++;
-            }
-            server->buf_len = r - w;
-            assert(server->buf_len >= 0);
+    }
+
+    decrypt_ctx(server->buf, r, server->d_ctx);
+    int s = send(server->fd, server->buf, r, 0);
+
+    if (s == -1) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            // no data, wait for send
+            server->buf_len = r;
             ev_io_stop(EV_A_ &remote_recv_ctx->io);
             ev_io_start(EV_A_ &server->send_ctx->io);
-            break;
+            return;
+        } else {
+            perror("send");
+            close_and_free_remote(EV_A_ remote);
+            close_and_free_server(EV_A_ server);
+            return;
         }
+    } else if (s < r) {
+        char *pt = server->buf;
+        char *et = pt + r;
+        while (pt + s < et) {
+            *pt = *(pt + s);
+            pt++;
+        }
+        server->buf_len = r - s;
+        assert(server->buf_len >= 0);
+        ev_io_stop(EV_A_ &remote_recv_ctx->io);
+        ev_io_start(EV_A_ &server->send_ctx->io);
+        return;
     }
 }
 
@@ -399,9 +402,9 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
             return;
         } else {
             // has data to send
-            ssize_t r = send(remote->fd, remote->buf,
+            ssize_t s = send(remote->fd, remote->buf,
                     remote->buf_len, 0);
-            if (r < 0) {
+            if (s < 0) {
                 if (errno != EAGAIN && errno != EWOULDBLOCK) {
                     perror("send");
                     // close and free
@@ -409,16 +412,15 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
                     close_and_free_server(EV_A_ server);
                 }
                 return;
-            }
-            if (r < remote->buf_len) {
+            } else if (s < remote->buf_len) {
                 // partly sent, move memory, wait for the next time to send
                 char *pt = remote->buf;
                 char *et = pt + remote->buf_len;
-                while (pt + r < et) {
-                    *pt = *(pt + r);
+                while (pt + s < et) {
+                    *pt = *(pt + s);
                     pt++;
                 }
-                remote->buf_len -= r;
+                remote->buf_len -= s;
                 assert(remote->buf_len >= 0);
                 return;
             } else {
