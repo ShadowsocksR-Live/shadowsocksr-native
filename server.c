@@ -97,6 +97,7 @@ struct remote *connect_to_remote(char *remote_host, char *remote_port, struct ti
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
+
     int err = getaddrinfo(remote_host, remote_port, &hints, &res);
     if (err) {
         perror("getaddrinfo");
@@ -146,119 +147,125 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         buf_len = &remote->buf_len;
     }
 
-    ssize_t r = recv(server->fd, buf, BUF_SIZE, 0);
+    while (1) {
 
-    if (r == 0) {
-        // connection closed
-        *buf_len = 0;
-        close_and_free_remote(EV_A_ remote);
-        close_and_free_server(EV_A_ server);
-        return;
-    } else if(r < 0) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            // no data
-            // continue to wait for recv
-            return;
-        } else {
-            perror("server recv");
+        ssize_t r = recv(server->fd, buf, BUF_SIZE, 0);
+
+        if (r == 0) {
+            // connection closed
+            *buf_len = 0;
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
-        }
-    }
-
-    decrypt_ctx(buf, r, server->d_ctx);
-
-    // handshake and transmit data
-    if (server->stage == 5) {
-        int w = send(remote->fd, remote->buf, r, 0);
-        if(w == -1) {
+        } else if(r < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                // no data, wait for send
-                remote->buf_len = r;
-                ev_io_stop(EV_A_ &server_recv_ctx->io);
-                ev_io_start(EV_A_ &remote->send_ctx->io);
+                // no data
+                // continue to wait for recv
                 return;
             } else {
-                perror("server_recv_send");
+                perror("server recv");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
                 return;
             }
-        } else if(w < r) {
-            char *pt = remote->buf;
-            char *et = pt + r;
-            while (pt + w < et) {
-                *pt = *(pt + w);
-                pt++;
+        }
+
+        decrypt_ctx(buf, r, server->d_ctx);
+
+        // handshake and transmit data
+        if (server->stage == 5) {
+            int w = send(remote->fd, remote->buf, r, 0);
+            if(w == -1) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    // no data, wait for send
+                    remote->buf_len = r;
+                    ev_io_stop(EV_A_ &server_recv_ctx->io);
+                    ev_io_start(EV_A_ &remote->send_ctx->io);
+                    return;
+                } else {
+                    perror("server_recv_send");
+                    close_and_free_remote(EV_A_ remote);
+                    close_and_free_server(EV_A_ server);
+                    return;
+                }
+            } else if(w < r) {
+                char *pt = remote->buf;
+                char *et = pt + r;
+                while (pt + w < et) {
+                    *pt = *(pt + w);
+                    pt++;
+                }
+                remote->buf_len = r - w;
+                assert(remote->buf_len >= 0);
+                ev_io_stop(EV_A_ &server_recv_ctx->io);
+                ev_io_start(EV_A_ &remote->send_ctx->io);
+                return;
             }
-            remote->buf_len = r - w;
-            assert(remote->buf_len >= 0);
-            ev_io_stop(EV_A_ &server_recv_ctx->io);
+        } else if (server->stage == 0) {
+
+            /*
+             * Shadowsocks Protocol:
+             *
+             *    +------+----------+----------+
+             *    | ATYP | DST.ADDR | DST.PORT |
+             *    +------+----------+----------+
+             *    |  1   | Variable |    2     |
+             *    +------+----------+----------+
+             */
+
+            int offset = 0;
+            char atyp = server->buf[offset++];
+            char host[256];
+            memset(host, 0, 256);
+            int port = 0;
+
+            // get remote addr and port
+            if (atyp == 1) {
+                // IP V4
+                size_t in_addr_len = sizeof(struct in_addr);
+                char *a = inet_ntoa(*(struct in_addr*)(server->buf + offset));
+                memcpy(host, a, strlen(a));
+                offset += in_addr_len;
+
+            } else if (atyp == 3) {
+                // Domain name
+                uint8_t name_len = *(uint8_t *)(server->buf + offset);
+                memcpy(host, server->buf + offset + 1, name_len);
+                offset += name_len + 1;
+
+            } else {
+                LOGE("unsupported addrtype: %d\n", atyp);
+                close_and_free_remote(EV_A_ remote);
+                close_and_free_server(EV_A_ server);
+                return;
+            }
+
+            port += *(uint8_t *)(server->buf + offset++) << 8;
+            port += *(uint8_t *)(server->buf + offset);
+
+            if (verbose) {
+                LOGD("connect to: %s:%s\n", host, itoa(port));
+            }
+
+            struct remote *remote = connect_to_remote(host, itoa(port), server->timeout);
+            if (remote == NULL) {
+                close_and_free_server(EV_A_ server);
+                return;
+            }
+
+            // listen to remote connected event
+            ev_io_stop(EV_A_ &server->recv_ctx->io);
             ev_io_start(EV_A_ &remote->send_ctx->io);
+            ev_timer_start(EV_A_ &remote->send_ctx->watcher);
+
+            remote->server = server;
+            server->remote = remote;
+
+            server->buf_len = 0;
+
+            server->stage = 5;
             return;
         }
-    } else if (server->stage == 0) {
-
-        /*
-         * Shadowsocks Protocol:
-         *
-         *    +------+----------+----------+
-         *    | ATYP | DST.ADDR | DST.PORT |
-         *    +------+----------+----------+
-         *    |  1   | Variable |    2     |
-         *    +------+----------+----------+
-         */
-
-        int offset = 0;
-        char atyp = server->buf[offset++];
-        char host[256];
-        memset(host, 0, 256);
-        int port = 0;
-
-        // get remote addr and port
-        if (atyp == 1) {
-            // IP V4
-            size_t in_addr_len = sizeof(struct in_addr);
-            char *a = inet_ntoa(*(struct in_addr*)(server->buf + offset));
-            memcpy(host, a, strlen(a));
-            offset += in_addr_len;
-
-        } else if (atyp == 3) {
-            // Domain name
-            uint8_t name_len = *(uint8_t *)(server->buf + offset);
-            memcpy(host, server->buf + offset + 1, name_len);
-            offset += name_len + 1;
-
-        } else {
-            LOGE("unsupported addrtype: %d\n", atyp);
-            close_and_free_remote(EV_A_ remote);
-            close_and_free_server(EV_A_ server);
-            return;
-        }
-
-        port += *(uint8_t *)(server->buf + offset++) << 8;
-        port += *(uint8_t *)(server->buf + offset);
-
-        if (verbose) {
-            LOGD("connect to: %s:%s\n", host, itoa(port));
-        }
-
-        struct remote *remote = connect_to_remote(host, itoa(port), server->timeout);
-        if (remote == NULL) {
-            close_and_free_server(EV_A_ server);
-            return;
-        }
-
-        // listen to remote connected event
-        ev_io_stop(EV_A_ &server->recv_ctx->io);
-        ev_io_start(EV_A_ &remote->send_ctx->io);
-        ev_timer_start(EV_A_ &remote->send_ctx->watcher);
-
-        remote->server = server;
-        server->remote = remote;
-
-        server->stage = 5;
     }
 }
 
@@ -300,6 +307,7 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
             if (remote != NULL) {
                 ev_io_start(EV_A_ &remote->recv_ctx->io);
             } else {
+                LOGE("invalid remote.");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
                 return;
@@ -319,10 +327,6 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents) {
 
     ev_timer_stop(EV_A_ watcher);
 
-    if (server == NULL) {
-        close_and_free_remote(EV_A_ remote);
-        return;
-    }
     close_and_free_remote(EV_A_ remote);
     close_and_free_server(EV_A_ server);
 }
@@ -332,10 +336,13 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
     struct remote *remote = remote_recv_ctx->remote;
     struct server *server = remote->server;
     if (server == NULL) {
+        LOGE("invalid server.\n");
         close_and_free_remote(EV_A_ remote);
         return;
     }
+
     while (1) {
+
         ssize_t r = recv(remote->fd, server->buf, BUF_SIZE, 0);
 
         if (r == 0) {
@@ -348,7 +355,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 // no data
                 // continue to wait for recv
-                break;
+                return;
             } else {
                 perror("remote recv");
                 close_and_free_remote(EV_A_ remote);
@@ -356,33 +363,34 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
                 return;
             }
         }
+
         encrypt_ctx(server->buf, r, server->e_ctx);
-        int w = send(server->fd, server->buf, r, 0);
-        if(w == -1) {
+        int s = send(server->fd, server->buf, r, 0);
+
+        if (s == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 // no data, wait for send
                 server->buf_len = r;
                 ev_io_stop(EV_A_ &remote_recv_ctx->io);
                 ev_io_start(EV_A_ &server->send_ctx->io);
-                break;
             } else {
                 perror("remote_recv_send");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
-                return;
             }
-        } else if(w < r) {
+            return;
+        } else if (s < r) {
             char *pt = server->buf;
             char *et = pt + r;
-            while (pt + w < et) {
-                *pt = *(pt + w);
+            while (pt + s < et) {
+                *pt = *(pt + s);
                 pt++;
             }
-            server->buf_len = r - w;
+            server->buf_len = r - s;
             assert(server->buf_len >= 0);
             ev_io_stop(EV_A_ &remote_recv_ctx->io);
             ev_io_start(EV_A_ &server->send_ctx->io);
-            break;
+            return;
         }
     }
 }
@@ -398,10 +406,15 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
         socklen_t len = sizeof addr;
         int r = getpeername(remote->fd, (struct sockaddr*)&addr, &len);
         if (r == 0) {
+            if (verbose) {
+                LOGD("remote connected.\n");
+            }
             remote_send_ctx->connected = 1;
             ev_io_stop(EV_A_ &remote_send_ctx->io);
             ev_timer_stop(EV_A_ &remote_send_ctx->watcher);
             ev_io_start(EV_A_ &server->recv_ctx->io);
+
+            //ev_io_stop(EV_A_ &server->send_ctx->io);
             ev_io_start(EV_A_ &remote->recv_ctx->io);
             return;
         } else {
@@ -447,6 +460,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
                 if (server != NULL) {
                     ev_io_start(EV_A_ &server->recv_ctx->io);
                 } else {
+                    LOGE("invalid server.\n");
                     close_and_free_remote(EV_A_ remote);
                     close_and_free_server(EV_A_ server);
                     return;
