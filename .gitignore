@@ -6,7 +6,7 @@ config.log
 config.status
 libtool
 pid
-ss
+ss*
 stamp-h1
 
 #	Do not edit the following section

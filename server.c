@@ -19,8 +19,7 @@
 #include <assert.h>
 
 #include "utils.h"
-#include "local.h"
-#include "socks5.h"
+#include "server.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -43,7 +42,7 @@ int setnonblocking(int fd) {
     return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
 
-int create_and_bind(const char *port) {
+int create_and_bind(const char *host, const char *port) {
     struct addrinfo hints;
     struct addrinfo *result, *rp;
     int s, listen_sock;
@@ -52,7 +51,7 @@ int create_and_bind(const char *port) {
     hints.ai_family = AF_UNSPEC; /* Return IPv4 and IPv6 choices */
     hints.ai_socktype = SOCK_STREAM; /* We want a TCP socket */
 
-    s = getaddrinfo("0.0.0.0", port, &hints, &result);
+    s = getaddrinfo(host, port, &hints, &result);
     if (s != 0) {
         LOGD("getaddrinfo: %s\n", gai_strerror(s));
         return -1;
@@ -90,155 +89,169 @@ int create_and_bind(const char *port) {
     return listen_sock;
 }
 
+struct remote *connect_to_remote(char *remote_host, char *remote_port, struct timeval timeout) {
+    struct addrinfo hints, *res;
+    int sockfd;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    int err = getaddrinfo(remote_host, remote_port, &hints, &res);
+    if (err) {
+        perror("getaddrinfo");
+        return NULL;
+    }
+
+    // initilize remote socks
+    sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    if (sockfd < 0) {
+        perror("socket");
+        close(sockfd);
+        freeaddrinfo(res);
+        return NULL;
+    }
+
+    // setup remote socks
+    err = setsockopt(sockfd, SOL_SOCKET,
+            SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
+    if (err) perror("setsockopt");
+    err = setsockopt(sockfd, SOL_SOCKET,
+            SO_SNDTIMEO, (char *)&timeout, sizeof(timeout));
+    if (err) perror("setsockopt");
+    setnonblocking(sockfd);
+
+    struct remote *remote = new_remote(sockfd, timeout);
+
+    connect(sockfd, res->ai_addr, res->ai_addrlen);
+
+    // release addrinfo
+    freeaddrinfo(res);
+
+    return remote;
+}
+
+
 static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     struct server_ctx *server_recv_ctx = (struct server_ctx *)w;
     struct server *server = server_recv_ctx->server;
-    struct remote *remote = server->remote;
+    struct remote *remote = NULL;
 
-    if (remote == NULL) {
+    char *buf = server->buf;
+    int *buf_len = &server->buf_len;
+
+    if (server->stage == 5) {
+        remote = server->remote;
+        buf = remote->buf;
+        buf_len = &remote->buf_len;
+    }
+
+    ssize_t r = recv(server->fd, buf, BUF_SIZE, 0);
+
+    if (r == 0) {
+        // connection closed
+        *buf_len = 0;
+        close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
-    }
-    while (1) {
-        char *buf = remote->buf;
-        int *buf_len = &remote->buf_len;
-        if (server->stage != 5) {
-            buf = server->buf;
-            buf_len = &server->buf_len;
-        }
-
-        ssize_t r = recv(server->fd, buf, BUF_SIZE, 0);
-
-        if (r == 0) {
-            // connection closed
-            *buf_len = 0;
+    } else if(r < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            // no data
+            // continue to wait for recv
+            return;
+        } else {
+            perror("server recv");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
-        } else if(r < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                // no data
-                // continue to wait for recv
-                break;
-            } else {
-                perror("server recv");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
         }
+    }
 
-        // local socks5 server
-        if (server->stage == 5) {
-            encrypt_ctx(remote->buf, r, server->e_ctx);
-            int w = send(remote->fd, remote->buf, r, 0);
-            if(w == -1) {
+    decrypt_ctx(buf, r, server->d_ctx);
+
+    // handshake and transmit data
+    if (server->stage == 5) {
+        int w = send(remote->fd, remote->buf, r, 0);
+        if(w == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    // no data, wait for send
-                    remote->buf_len = r;
-                    ev_io_stop(EV_A_ &server_recv_ctx->io);
-                    ev_io_start(EV_A_ &remote->send_ctx->io);
-                    break;
-                } else {
-                    perror("send");
-                    close_and_free_remote(EV_A_ remote);
-                    close_and_free_server(EV_A_ server);
-                    return;
-                }
-            } else if(w < r) {
-                char *pt = remote->buf;
-                char *et = pt + r;
-                while (pt + w < et) {
-                    *pt = *(pt + w);
-                    pt++;
-                }
-                remote->buf_len = r - w;
-                assert(remote->buf_len >= 0);
+                // no data, wait for send
+                remote->buf_len = r;
                 ev_io_stop(EV_A_ &server_recv_ctx->io);
                 ev_io_start(EV_A_ &remote->send_ctx->io);
-                break;
-            }
-        } else if (server->stage == 0) {
-            struct method_select_response response;
-            response.ver = SVERSION;
-            response.method = 0;
-            char *send_buf = (char *)&response;
-            send(server->fd, send_buf, sizeof(response), 0);
-            server->stage = 1;
-            return;
-        } else if (server->stage == 1) {
-            struct socks5_request *request = (struct socks5_request *)server->buf;
-
-            if (request->cmd != 1) {
-                LOGE("unsupported cmd: %d\n", request->cmd);
-                struct socks5_response response;
-                response.ver = SVERSION;
-                response.rep = CMD_NOT_SUPPORTED;
-                response.rsv = 0;
-                response.atyp = 1;
-                char *send_buf = (char *)&response;
-                send(server->fd, send_buf, 4, 0);
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
                 return;
-            }
-
-            char addr_to_send[256];
-            uint8_t addr_len = 0;
-            addr_to_send[addr_len++] = request->atyp;
-
-            // get remote addr and port
-            if (request->atyp == 1) {
-
-                // IP V4
-                size_t in_addr_len = sizeof(struct in_addr);
-                memcpy(addr_to_send + addr_len, server->buf + 4, in_addr_len + 2);
-                addr_len += in_addr_len + 2;
-
-            } else if (request->atyp == 3) {
-                // Domain name
-                uint8_t name_len = *(uint8_t *)(server->buf + 4);
-                addr_to_send[addr_len++] = name_len;
-                memcpy(addr_to_send + addr_len, server->buf + 4 + 1, name_len);
-                addr_len += name_len;
-
-                // get port
-                addr_to_send[addr_len++] = *(uint8_t *)(server->buf + 4 + 1 + name_len); 
-                addr_to_send[addr_len++] = *(uint8_t *)(server->buf + 4 + 1 + name_len + 1); 
             } else {
-                LOGE("unsupported addrtype: %d\n", request->atyp);
+                perror("send");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
                 return;
             }
-
-            encrypt_ctx(addr_to_send, addr_len, server->e_ctx);
-            send(remote->fd, addr_to_send, addr_len, 0);
-
-            // Fake reply
-            struct socks5_response response;
-            response.ver = SVERSION;
-            response.rep = 0;
-            response.rsv = 0;
-            response.atyp = 1;
-
-            struct in_addr sin_addr;
-            inet_aton("0.0.0.0", &sin_addr);
-
-            memcpy(server->buf, &response, 4);
-            memset(server->buf + 4, 0, sizeof(struct in_addr) + sizeof(uint16_t));
-
-            int reply_size = 4 + sizeof(struct in_addr) + sizeof(uint16_t);
-            int r = send(server->fd, server->buf, reply_size, 0);
-            if (r < reply_size) {
-                LOGE("header not complete sent\n");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
+        } else if(w < r) {
+            char *pt = remote->buf;
+            char *et = pt + r;
+            while (pt + w < et) {
+                *pt = *(pt + w);
+                pt++;
             }
-
-            server->stage = 5;
+            remote->buf_len = r - w;
+            assert(remote->buf_len >= 0);
+            ev_io_stop(EV_A_ &server_recv_ctx->io);
+            ev_io_start(EV_A_ &remote->send_ctx->io);
+            return;
         }
+    } else if (server->stage == 0) {
+
+        /*
+         * Shadowsocks Protocol:
+         *
+         *    +------+----------+----------+
+         *    | ATYP | DST.ADDR | DST.PORT |
+         *    +------+----------+----------+
+         *    |  1   | Variable |    2     |
+         *    +------+----------+----------+
+         */
+
+        int offset = 0;
+        char atyp = server->buf[offset++];
+        char host[256];
+        int port;
+
+        // get remote addr and port
+        if (atyp == 1) {
+            // IP V4
+            size_t in_addr_len = sizeof(struct in_addr);
+            char *a = inet_ntoa(*(struct in_addr*)(server->buf + offset));
+            memcpy(host, a, sizeof(a));
+            offset += in_addr_len;
+
+        } else if (atyp == 3) {
+            // Domain name
+            uint8_t name_len = *(uint8_t *)(server->buf + offset);
+            memcpy(host, server->buf + offset + 1, name_len);
+            offset += name_len + 1;
+
+        } else {
+            LOGE("unsupported addrtype: %d\n", atyp);
+            close_and_free_remote(EV_A_ remote);
+            close_and_free_server(EV_A_ server);
+            return;
+        }
+
+        port += *(uint8_t *)(server->buf + offset++) << 8;
+        port += *(uint8_t *)(server->buf + offset);
+
+        struct remote *remote = connect_to_remote(host, port, server->timeout);
+        if (remote == NULL) {
+            close_and_free_remote(EV_A_ remote);
+            close_and_free_server(EV_A_ server);
+            return;
+        }
+
+        // listen to remote connected event
+        ev_io_start(EV_A_ &remote->send_ctx->io);
+        ev_timer_start(EV_A_ &remote->send_ctx->watcher);
+
+        remote->server = server;
+        server->remote = remote;
+
+        server->stage = 5;
     }
 }
 
@@ -437,7 +450,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
     }
 }
 
-struct remote* new_remote(int fd, int timeout) {
+struct remote* new_remote(int fd, struct timeval timeout) {
     struct remote *remote;
     remote = malloc(sizeof(struct remote));
     remote->recv_ctx = malloc(sizeof(struct remote_ctx));
@@ -445,7 +458,7 @@ struct remote* new_remote(int fd, int timeout) {
     remote->fd = fd;
     ev_io_init(&remote->recv_ctx->io, remote_recv_cb, fd, EV_READ);
     ev_io_init(&remote->send_ctx->io, remote_send_cb, fd, EV_WRITE);
-    ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb, timeout, 0);
+    ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb, timeout.tv_sec, 0);
     remote->recv_ctx->remote = remote;
     remote->recv_ctx->connected = 0;
     remote->send_ctx->remote = remote;
@@ -534,46 +547,8 @@ static void accept_cb (EV_P_ ev_io *w, int revents) {
     }
     setnonblocking(serverfd);
 
-    struct addrinfo hints, *res;
-    int sockfd;
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    int index = clock() % listener->remote_num;
-    int err = getaddrinfo(listener->remote_host[index], listener->remote_port, &hints, &res);
-    if (err) {
-        perror("getaddrinfo");
-        return;
-    }
-
-    sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if (sockfd < 0) {
-        perror("socket");
-        close(sockfd);
-        freeaddrinfo(res);
-        return;
-    }
-
-    struct timeval timeout;
-    timeout.tv_sec = listener->timeout;
-    timeout.tv_usec = 0;
-    err = setsockopt(sockfd, SOL_SOCKET,
-            SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
-    if (err) perror("setsockopt");
-    err = setsockopt(sockfd, SOL_SOCKET,
-            SO_SNDTIMEO, (char *)&timeout, sizeof(timeout));
-    if (err) perror("setsockopt");
-    setnonblocking(sockfd);
-
     struct server *server = new_server(serverfd);
-    struct remote *remote = new_remote(sockfd, listener->timeout);
-    server->remote = remote;
-    remote->server = server;
-    connect(sockfd, res->ai_addr, res->ai_addrlen);
-    freeaddrinfo(res);
-    // listen to remote connected event
-    ev_io_start(EV_A_ &remote->send_ctx->io);
-    ev_timer_start(EV_A_ &remote->send_ctx->watcher);
+    server->timeout = listener->timeout;
 }
 
 int main (int argc, char **argv) {
@@ -587,19 +562,19 @@ int main (int argc, char **argv) {
     char *pid_path = NULL;
     char *conf_path = NULL;
 
-    int remote_num = 0;
-    char *remote_host[MAX_REMOTE_NUM];
-    char *remote_port = NULL;
+    int server_num = 0;
+    char *server_host[MAX_REMOTE_NUM];
+    char *server_port = NULL;
 
     opterr = 0;
 
     while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:c:")) != -1) {
         switch (c) {
             case 's':
-                remote_host[remote_num++] = optarg;
+                server_host[server_num++] = optarg;
                 break;
             case 'p':
-                remote_port = optarg;
+                server_port = optarg;
                 break;
             case 'l':
                 local_port = optarg;
@@ -630,26 +605,26 @@ int main (int argc, char **argv) {
 
     if (conf_path != NULL) {
         jconf_t *conf = read_jconf(conf_path);
-        if (remote_num == 0) {
-            remote_num = conf->remote_num;
-            for (i = 0; i < remote_num; i++) {
-                remote_host[i] = conf->remote_host[i];
+        if (server_num == 0) {
+            server_num = conf->remote_num;
+            for (i = 0; i < server_num; i++) {
+                server_host[i] = conf->remote_host[i];
             }
         }
-        if (remote_port == NULL) remote_port = conf->remote_port;
+        if (server_port == NULL) server_port = conf->remote_port;
         if (local_port == NULL) local_port = conf->local_port;
         if (password == NULL) password = conf->password;
         if (method == NULL) method = conf->method;
         if (timeout == NULL) timeout = conf->timeout;
     }
 
-    if (remote_num == 0 || remote_port == NULL ||
+    if (server_num == 0 || server_port == NULL ||
             local_port == NULL || password == NULL) {
         usage();
         exit(EXIT_FAILURE);
     }
 
-    if (timeout == NULL) timeout = "10";
+    if (timeout == NULL) timeout = "60";
 
     if (pid_flags) {
         demonize(pid_path);
@@ -662,36 +637,42 @@ int main (int argc, char **argv) {
     LOGD("calculating ciphers...\n");
     enc_conf_init(password, method);
 
-    // Setup socket
-    int listenfd;
-    listenfd = create_and_bind(local_port);
-    if (listenfd < 0) {
-        FATAL("bind() error..\n");
-    }
-    if (listen(listenfd, SOMAXCONN) == -1) {
-        FATAL("listen() error.\n");
-    }
-    setnonblocking(listenfd);
-    LOGD("server listening at port %s.\n", local_port);
-
-    // Setup proxy context
-    struct listen_ctx listen_ctx;
-    listen_ctx.remote_num = remote_num;
-    listen_ctx.remote_host = malloc(sizeof(char *) * remote_num);
-    while (remote_num > 0) {
-        int index = --remote_num;
-        listen_ctx.remote_host[index] = strdup(remote_host[index]);
-    }
-    listen_ctx.remote_port = strdup(remote_port);
-    listen_ctx.timeout = atoi(timeout);
-    listen_ctx.fd = listenfd;
-
+    // Inilitialize ev loop
     struct ev_loop *loop = ev_default_loop(0);
     if (!loop) {
         FATAL("ev_loop error.\n");
     }
-    ev_io_init (&listen_ctx.io, accept_cb, listenfd, EV_READ);
-    ev_io_start (loop, &listen_ctx.io);
+
+    // bind to each interface
+    while (server_num > 0) {
+        int index = --server_num;
+        const char* host = server_host[index];
+
+        // Bind to port
+        int listenfd;
+        listenfd = create_and_bind(host, local_port);
+        if (listenfd < 0) {
+            FATAL("bind() error..\n");
+        }
+        if (listen(listenfd, SOMAXCONN) == -1) {
+            FATAL("listen() error.\n");
+        }
+        setnonblocking(listenfd);
+        LOGD("server listening at port %s.\n", local_port);
+
+        // Setup proxy context
+        struct listen_ctx listen_ctx;
+        struct timeval time;
+        time.tv_sec = timeout;
+        time.tv_usec = 0;
+        listen_ctx.timeout = time;
+        listen_ctx.fd = listenfd;
+
+        ev_io_init (&listen_ctx.io, accept_cb, listenfd, EV_READ);
+        ev_io_start (loop, &listen_ctx.io);
+    }
+
+    // start ev loop
     ev_run (loop, 0);
     return 0;
 }
