@@ -54,7 +54,7 @@ int create_and_bind(const char *port) {
 
     s = getaddrinfo("0.0.0.0", port, &hints, &result);
     if (s != 0) {
-        LOGD("getaddrinfo: %s\n", gai_strerror(s));
+        LOGD("getaddrinfo: %s", gai_strerror(s));
         return -1;
     }
 
@@ -81,7 +81,7 @@ int create_and_bind(const char *port) {
     }
 
     if (rp == NULL) {
-        LOGE("Could not bind\n");
+        LOGE("Could not bind");
         return -1;
     }
 
@@ -172,7 +172,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         struct socks5_request *request = (struct socks5_request *)server->buf;
 
         if (request->cmd != 1) {
-            LOGE("unsupported cmd: %d\n", request->cmd);
+            LOGE("unsupported cmd: %d", request->cmd);
             struct socks5_response response;
             response.ver = SVERSION;
             response.rep = CMD_NOT_SUPPORTED;
@@ -208,7 +208,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             addr_to_send[addr_len++] = *(uint8_t *)(server->buf + 4 + 1 + name_len); 
             addr_to_send[addr_len++] = *(uint8_t *)(server->buf + 4 + 1 + name_len + 1); 
         } else {
-            LOGE("unsupported addrtype: %d\n", request->atyp);
+            LOGE("unsupported addrtype: %d", request->atyp);
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
@@ -233,7 +233,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         int reply_size = 4 + sizeof(struct in_addr) + sizeof(uint16_t);
         int s = send(server->fd, server->buf, reply_size, 0);
         if (s < reply_size) {
-            LOGE("header not complete sent\n");
+            LOGE("header not complete sent");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
@@ -295,7 +295,7 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents) {
     struct remote *remote = remote_ctx->remote;
     struct server *server = remote->server;
 
-    LOGD("remote timeout\n");
+    LOGD("remote timeout");
 
     ev_timer_stop(EV_A_ watcher);
 
@@ -661,20 +661,20 @@ int main (int argc, char **argv) {
     signal(SIGPIPE, SIG_IGN);
 
     // Setup keys
-    LOGD("calculating ciphers...\n");
+    LOGD("calculating ciphers...");
     enc_conf_init(password, method);
 
     // Setup socket
     int listenfd;
     listenfd = create_and_bind(local_port);
     if (listenfd < 0) {
-        FATAL("bind() error..\n");
+        FATAL("bind() error..");
     }
     if (listen(listenfd, SOMAXCONN) == -1) {
-        FATAL("listen() error.\n");
+        FATAL("listen() error.");
     }
     setnonblocking(listenfd);
-    LOGD("server listening at port %s.\n", local_port);
+    LOGD("server listening at port %s.", local_port);
 
     // Setup proxy context
     struct listen_ctx listen_ctx;
@@ -690,7 +690,7 @@ int main (int argc, char **argv) {
 
     struct ev_loop *loop = ev_default_loop(0);
     if (!loop) {
-        FATAL("ev_loop error.\n");
+        FATAL("ev_loop error.");
     }
     ev_io_init (&listen_ctx.io, accept_cb, listenfd, EV_READ);
     ev_io_start (loop, &listen_ctx.io);

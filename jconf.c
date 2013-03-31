@@ -16,8 +16,8 @@ static char *to_string(const json_value *value) {
     } else if (value->type == json_null) {
         return "null";
     } else {
-        LOGE("%d\n", value->type);
-        FATAL("Invalid config format.\n");
+        LOGE("%d", value->type);
+        FATAL("Invalid config format.");
     }
     return 0;
 }
@@ -28,7 +28,7 @@ static int to_int(const json_value *value) {
     } else if (value->type == json_integer) {
         return value->u.integer;
     } else {
-        FATAL("Invalid config format.\n");
+        FATAL("Invalid config format.");
     }
     return 0;
 }
@@ -41,16 +41,16 @@ jconf_t *read_jconf(const char* file) {
     json_value *obj;
 
     FILE *f = fopen(file, "r");
-    if (f == NULL) FATAL("Invalid config path.\n");
+    if (f == NULL) FATAL("Invalid config path.");
 
     fseek(f, 0, SEEK_END);
     long pos = ftell(f);
     fseek(f, 0, SEEK_SET);
 
-    if (pos >= MAX_CONF_SIZE) FATAL("Too large config file.\n");
+    if (pos >= MAX_CONF_SIZE) FATAL("Too large config file.");
 
     buf = malloc(pos);
-    if (buf == NULL) FATAL("No enough memory.\n");
+    if (buf == NULL) FATAL("No enough memory.");
 
     fread(buf, pos, 1, f);
     fclose(f);
@@ -86,7 +86,7 @@ jconf_t *read_jconf(const char* file) {
             }
         }
     } else {
-        FATAL("Invalid config file\n");
+        FATAL("Invalid config file");
     }
 
     free(buf);
