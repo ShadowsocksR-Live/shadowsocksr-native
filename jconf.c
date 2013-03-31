@@ -8,30 +8,6 @@
 #include "json.h"
 #include "string.h"
 
-#define INT_DIGITS 19		/* enough for 64 bit integer */
-
-static char *itoa(int i)
-{
-    /* Room for INT_DIGITS digits, - and '\0' */
-    static char buf[INT_DIGITS + 2];
-    char *p = buf + INT_DIGITS + 1;	/* points to terminating '\0' */
-    if (i >= 0) {
-        do {
-            *--p = '0' + (i % 10);
-            i /= 10;
-        } while (i != 0);
-        return p;
-    }
-    else {			/* i < 0 */
-        do {
-            *--p = '0' - (i % 10);
-            i /= 10;
-        } while (i != 0);
-        *--p = '-';
-    }
-    return p;
-}
-
 static char *to_string(const json_value *value) {
     if (value->type == json_string) {
         return strndup(value->u.string.ptr, value->u.string.length);

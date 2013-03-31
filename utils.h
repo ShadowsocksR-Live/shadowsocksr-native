@@ -7,5 +7,6 @@
 void FATAL(const char *msg);
 void usage(void);
 void demonize(const char* path);
+char *itoa(int i);
 
 #endif // _UTILS_H
