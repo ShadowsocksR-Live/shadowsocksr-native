@@ -34,11 +34,14 @@ void FATAL(const char *msg) {
 }
 
 void usage() {
-    printf("usage:\n\n");
-    printf("    ss -s server_host -p server_port -l local_port -k password\n");
+    printf("\n");
+    printf(" Shadowsocks-libev %s\n\n", VERSION);
+    printf("  maintained by Max Lv <max.c.lv@gmail.com>\n\n");
+    printf("  usage:\n\n");
+    printf("    ss-[local|server] -s server_host -p server_port -l local_port -k password\n");
     printf("       [-m encrypt_method] [-f pid_file] [-t timeout] [-c config_file]\n");
     printf("\n");
-    printf("options:\n\n");
+    printf("  options:\n\n");
     printf("    encrypt_method:     table, rc4\n");
     printf("          pid_file:     valid path to the pid file\n");
     printf("           timeout:     socket timeout in senconds\n");
