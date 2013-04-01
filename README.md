@@ -6,20 +6,16 @@ shadowsocks-libev
 Intro
 -----
 
-[Shadowsocks-libev](http://shadowsocks.org) is a lightweight secured scoks5 proxy for embedded devices
-like routers and mobile phones.
+[Shadowsocks-libev](http://shadowsocks.org) is a lightweight secured scoks5 
+proxy for embedded devices and low end boxes.
 
-It is a port of [shadowsocks](https://github.com/clowwindy/shadowsocks) with
-only client part ported.
-
-To setup your own server, please refer to
-[shadowsocks ports](https://github.com/clowwindy/shadowsocks/wiki/Ports-and-Clients) 
-for more information.
+It is a port of [shadowsocks](https://github.com/clowwindy/shadowsocks) 
+created by [@clowwindy](https://github.com/clowwindy).
 
 Features
 --------
 
-Shadowsocks-libev is writen in C and only depends on
+Shadowsocks-libev is writen in pure C and only depends on
 [libev](http://software.schmorp.de/pkg/libev.html).
 
 When statically linked and packaged for OpenWRT, the total package size is 23KB. 
@@ -43,7 +39,10 @@ Usage
 ```
 usage:
 
-    ss -s server_host -p server_port -l local_port -k password
+    ss-local -s server_host -p server_port -l local_port -k password
+       [-m encrypt_method] [-f pid_file] [-t timeout] [-c config_file]
+
+    ss-server -s server_host -p server_port -k password
        [-m encrypt_method] [-f pid_file] [-t timeout] [-c config_file]
 
 options:
