@@ -19,8 +19,6 @@ while(0)
     fprintf(stderr, "\e[01;35m %s ERROR: \e[0m" format " on File: %s Line: %s\n", timestr, ##__VA_ARGS__, __FILE__, TOSTR(__LINE__));}\
 while(0)
 
-#define VERSION "0.9"
-
 void FATAL(const char *msg);
 void usage(void);
 void demonize(const char* path);

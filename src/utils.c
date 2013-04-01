@@ -4,6 +4,10 @@
 
 #include "utils.h"
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #define INT_DIGITS 19		/* enough for 64 bit integer */
 
 char *itoa(int i) {
