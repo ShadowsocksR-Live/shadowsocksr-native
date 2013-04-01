@@ -106,7 +106,6 @@ struct remote *connect_to_remote(char *remote_host, char *remote_port, int timeo
         return NULL;
     }
 
-
     // initilize remote socks
     sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (sockfd < 0) {
@@ -274,6 +273,12 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
     struct server *server = server_send_ctx->server;
     struct remote *remote = server->remote;
 
+    if (remote == NULL) {
+        LOGE("invalid server.");
+        close_and_free_server(EV_A_ server);
+        return;
+    }
+
     if (server->buf_len == 0) {
         // close and free
         close_and_free_remote(EV_A_ remote);
@@ -404,6 +409,12 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
     struct remote *remote = remote_send_ctx->remote;
     struct server *server = remote->server;
 
+    if (server == NULL) {
+        LOGE("invalid server.");
+        close_and_free_remote(EV_A_ remote);
+        return;
+    }
+
     if (!remote_send_ctx->connected) {
 
         struct sockaddr_storage addr;
@@ -493,6 +504,7 @@ struct remote* new_remote(int fd, int timeout) {
     remote->send_ctx->remote = remote;
     remote->send_ctx->connected = 0;
     remote->buf_len = 0;
+    remote->server = NULL;
     return remote;
 }
 
@@ -545,6 +557,7 @@ struct server* new_server(int fd) {
         server->d_ctx = NULL;
     }
     server->buf_len = 0;
+    server->remote = NULL;
     return server;
 }
 
