@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.67])
 AC_INIT([shadowsocks], [1.0], [max.c.lv@gmail.com])
-AC_CONFIG_SRCDIR([encrypt.c])
+AC_CONFIG_SRCDIR([src/encrypt.c])
 AC_CONFIG_HEADERS([config.h])
 
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
@@ -13,8 +13,10 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 
+m4_include([libev/libev.m4])
+
 # Checks for libraries.
-AC_SEARCH_LIBS([ev_io_start], [ev], [ ], AC_MSG_ERROR([libev not found.]))
+# AC_SEARCH_LIBS([ev_io_start], [ev], [ ], AC_MSG_ERROR([libev not found.]))
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdint.h inttypes.h arpa/inet.h fcntl.h langinfo.h locale.h netdb.h netinet/in.h stdlib.h string.h strings.h sys/socket.h unistd.h])

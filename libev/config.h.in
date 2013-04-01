@@ -1,11 +1,5 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
-/* Define if building universal (internal helper macro) */
-#undef AC_APPLE_UNIVERSAL_BUILD
-
-/* Define to 1 if you have the <arpa/inet.h> header file. */
-#undef HAVE_ARPA_INET_H
-
 /* Define to 1 if you have the `clock_gettime' function. */
 #undef HAVE_CLOCK_GETTIME
 
@@ -21,9 +15,6 @@
 /* Define to 1 if you have the `eventfd' function. */
 #undef HAVE_EVENTFD
 
-/* Define to 1 if you have the <fcntl.h> header file. */
-#undef HAVE_FCNTL_H
-
 /* Define to 1 if the floor function is available */
 #undef HAVE_FLOOR
 
@@ -36,32 +27,14 @@
 /* Define to 1 if you have the `kqueue' function. */
 #undef HAVE_KQUEUE
 
-/* Define to 1 if you have the <langinfo.h> header file. */
-#undef HAVE_LANGINFO_H
-
 /* Define to 1 if you have the `rt' library (-lrt). */
 #undef HAVE_LIBRT
-
-/* Define to 1 if you have the <locale.h> header file. */
-#undef HAVE_LOCALE_H
-
-/* Define to 1 if you have the `malloc' function. */
-#undef HAVE_MALLOC
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
-/* Define to 1 if you have the `memset' function. */
-#undef HAVE_MEMSET
-
 /* Define to 1 if you have the `nanosleep' function. */
 #undef HAVE_NANOSLEEP
-
-/* Define to 1 if you have the <netdb.h> header file. */
-#undef HAVE_NETDB_H
-
-/* Define to 1 if you have the <netinet/in.h> header file. */
-#undef HAVE_NETINET_IN_H
 
 /* Define to 1 if you have the `poll' function. */
 #undef HAVE_POLL
@@ -80,9 +53,6 @@
 
 /* Define to 1 if you have the `signalfd' function. */
 #undef HAVE_SIGNALFD
-
-/* Define to 1 if you have the `socket' function. */
-#undef HAVE_SOCKET
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
@@ -113,9 +83,6 @@
 
 /* Define to 1 if you have the <sys/signalfd.h> header file. */
 #undef HAVE_SYS_SIGNALFD_H
-
-/* Define to 1 if you have the <sys/socket.h> header file. */
-#undef HAVE_SYS_SOCKET_H
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
@@ -156,24 +123,3 @@
 
 /* Version number of package */
 #undef VERSION
-
-/* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
-   significant byte first (like Motorola and SPARC, unlike Intel). */
-#if defined AC_APPLE_UNIVERSAL_BUILD
-# if defined __BIG_ENDIAN__
-#  define WORDS_BIGENDIAN 1
-# endif
-#else
-# ifndef WORDS_BIGENDIAN
-#  undef WORDS_BIGENDIAN
-# endif
-#endif
-
-/* Define to `__inline__' or `__inline' if that's what the C compiler
-   calls it, or to nothing if 'inline' is not supported under any name.  */
-#ifndef __cplusplus
-#undef inline
-#endif
-
-/* Define to `int' if <sys/types.h> does not define. */
-#undef ssize_t
