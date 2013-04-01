@@ -144,10 +144,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 
     if (r == 0) {
         // connection closed
+        close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
-        if (remote != NULL) {
-            ev_io_start(EV_A_ &remote->send_ctx->io);
-        }
         return;
     } else if (r < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -357,9 +355,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
     if (r == 0) {
         // connection closed
         close_and_free_remote(EV_A_ remote);
-        if (server != NULL) {
-            ev_io_start(EV_A_ &server->send_ctx->io);
-        }
+        close_and_free_server(EV_A_ server);
         return;
     } else if (r < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
