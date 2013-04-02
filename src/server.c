@@ -722,7 +722,7 @@ int main (int argc, char **argv) {
 
         // Setup proxy context
         struct listen_ctx listen_ctx;
-        listen_ctx.timeout = timeout;
+        listen_ctx.timeout = atoi(timeout);
         listen_ctx.fd = listenfd;
 
         ev_io_init (&listen_ctx.io, accept_cb, listenfd, EV_READ);
