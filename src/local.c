@@ -16,7 +16,6 @@
 #include <strings.h>
 #include <time.h>
 #include <unistd.h>
-#include <assert.h>
 
 #include "utils.h"
 #include "local.h"
@@ -148,14 +147,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
                 return;
             }
         } else if(s < r) {
-            char *pt = remote->buf;
-            char *et = pt + s;
-            while (pt + s < et) {
-                *pt = *(pt + s);
-                pt++;
-            }
             remote->buf_len = r - s;
-            assert(remote->buf_len >= 0);
+            memcpy(remote->buf, remote->buf + s, remote->buf_len);
             ev_io_stop(EV_A_ &server_recv_ctx->io);
             ev_io_start(EV_A_ &remote->send_ctx->io);
             return;
@@ -271,14 +264,8 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
             return;
         } else if (s < server->buf_len) {
             // partly sent, move memory, wait for the next time to send
-            char *pt = server->buf;
-            char *et = pt + server->buf_len;
-            while (pt + s < et) {
-                *pt = *(pt + s);
-                pt++;
-            }
             server->buf_len -= s;
-            assert(server->buf_len >= 0);
+            memcpy(server->buf, server->buf + s, server->buf_len);
             return;
         } else {
             // all sent out, wait for reading
@@ -362,14 +349,8 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
             return;
         }
     } else if (s < r) {
-        char *pt = server->buf;
-        char *et = pt + r;
-        while (pt + s < et) {
-            *pt = *(pt + s);
-            pt++;
-        }
         server->buf_len = r - s;
-        assert(server->buf_len >= 0);
+        memcpy(server->buf, server->buf + s, server->buf_len);
         ev_io_stop(EV_A_ &remote_recv_ctx->io);
         ev_io_start(EV_A_ &server->send_ctx->io);
         return;
@@ -420,14 +401,8 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
                 return;
             } else if (s < remote->buf_len) {
                 // partly sent, move memory, wait for the next time to send
-                char *pt = remote->buf;
-                char *et = pt + remote->buf_len;
-                while (pt + s < et) {
-                    *pt = *(pt + s);
-                    pt++;
-                }
                 remote->buf_len -= s;
-                assert(remote->buf_len >= 0);
+                memcpy(remote->buf, remote->buf + s, remote->buf_len);
                 return;
             } else {
                 // all sent out, wait for reading
