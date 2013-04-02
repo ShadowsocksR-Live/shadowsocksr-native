@@ -363,10 +363,6 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
 
     ssize_t r = recv(remote->fd, server->buf, BUF_SIZE, 0);
 
-    if (verbose) {
-        LOGD("remote recv: %d byte", (int)r);
-    }
-
     if (r == 0) {
         // connection closed
         close_and_free_remote(EV_A_ remote);
