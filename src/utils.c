@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
+#include <errno.h>
+#include <time.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -11,6 +15,12 @@
 #endif
 
 #define INT_DIGITS 19		/* enough for 64 bit integer */
+
+void ERROR(const char *s) {
+    char *msg = strerror(errno);
+    LOGE("%s: %s", s, msg);
+
+}
 
 char *itoa(int i) {
     /* Room for INT_DIGITS digits, - and '\0' */
@@ -35,7 +45,7 @@ char *itoa(int i) {
 
 
 void FATAL(const char *msg) {
-    fprintf(stderr, "%s", msg);
+    LOGE("%s", msg);
     exit(-1);
 }
 

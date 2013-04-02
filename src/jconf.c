@@ -57,6 +57,11 @@ jconf_t *read_jconf(const char* file) {
     fclose(f);
 
     obj = json_parse(buf);
+
+    if (obj == NULL) {
+        FATAL("Invalid config file");
+    }
+
     if (obj->type == json_object) {
         int i, j;
         for (i = 0; i < obj->u.object.length; i++) {

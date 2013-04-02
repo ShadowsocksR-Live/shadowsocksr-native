@@ -8,6 +8,8 @@ libtool
 pid
 ss*
 stamp-h1
+.libs
+*.json
 
 #	Do not edit the following section
 # 	Edit Compile Debug Document Distribute

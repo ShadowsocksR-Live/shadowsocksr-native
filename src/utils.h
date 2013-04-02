@@ -20,6 +20,7 @@ while(0)
 while(0)
 
 void FATAL(const char *msg);
+void ERROR(const char *s);
 void usage(void);
 void demonize(const char* path);
 char *itoa(int i);

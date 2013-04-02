@@ -66,7 +66,7 @@ int create_and_bind(const char *port) {
         int opt = 1;
         int err = setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
         if (err) {
-            perror("setsocket");
+            ERROR("setsocket");
         }
 
         s = bind(listen_sock, rp->ai_addr, rp->ai_addrlen);
@@ -74,7 +74,7 @@ int create_and_bind(const char *port) {
             /* We managed to bind successfully! */
             break;
         } else {
-            perror("bind");
+            ERROR("bind");
         }
 
         close(listen_sock);
@@ -123,7 +123,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             // continue to wait for recv
             return;
         } else {
-            perror("server recv");
+            ERROR("server recv");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
@@ -142,7 +142,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
                 ev_io_start(EV_A_ &remote->send_ctx->io);
                 return;
             } else {
-                perror("send");
+                ERROR("send");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
                 return;
@@ -264,7 +264,7 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
                 server->buf_len, 0);
         if (s < 0) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                perror("send");
+                ERROR("send");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
             }
@@ -338,7 +338,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
             // continue to wait for recv
             return;
         } else {
-            perror("remote recv");
+            ERROR("remote recv");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
@@ -356,7 +356,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
             ev_io_start(EV_A_ &server->send_ctx->io);
             return;
         } else {
-            perror("send");
+            ERROR("send");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
@@ -394,7 +394,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
             ev_io_start(EV_A_ &remote->recv_ctx->io);
             return;
         } else {
-            perror("getpeername");
+            ERROR("getpeername");
             // not connected
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
@@ -412,7 +412,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
                     remote->buf_len, 0);
             if (s < 0) {
                 if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                    perror("send");
+                    ERROR("send");
                     // close and free
                     close_and_free_remote(EV_A_ remote);
                     close_and_free_server(EV_A_ server);
@@ -537,7 +537,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents) {
     struct listen_ctx *listener = (struct listen_ctx *)w;
     int serverfd = accept(listener->fd, NULL, NULL);
     if (serverfd == -1) {
-        perror("accept");
+        ERROR("accept");
         return;
     }
     setnonblocking(serverfd);
@@ -550,13 +550,13 @@ static void accept_cb (EV_P_ ev_io *w, int revents) {
     int index = clock() % listener->remote_num;
     int err = getaddrinfo(listener->remote_host[index], listener->remote_port, &hints, &res);
     if (err) {
-        perror("getaddrinfo");
+        ERROR("getaddrinfo");
         return;
     }
 
     sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (sockfd < 0) {
-        perror("socket");
+        ERROR("socket");
         close(sockfd);
         freeaddrinfo(res);
         return;
@@ -567,10 +567,10 @@ static void accept_cb (EV_P_ ev_io *w, int revents) {
     timeout.tv_usec = 0;
     err = setsockopt(sockfd, SOL_SOCKET,
             SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
-    if (err) perror("setsockopt");
+    if (err) ERROR("setsockopt");
     err = setsockopt(sockfd, SOL_SOCKET,
             SO_SNDTIMEO, (char *)&timeout, sizeof(timeout));
-    if (err) perror("setsockopt");
+    if (err) ERROR("setsockopt");
     setnonblocking(sockfd);
 
     struct server *server = new_server(serverfd);
