@@ -212,9 +212,11 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         if (atyp == 1) {
             // IP V4
             size_t in_addr_len = sizeof(struct in_addr);
-            char *a = inet_ntoa(*(struct in_addr*)(server->buf + offset));
-            memcpy(host, a, strlen(a));
-            offset += in_addr_len;
+            if (r > in_addr_len) {
+                char *a = inet_ntoa(*(struct in_addr*)(server->buf + offset));
+                memcpy(host, a, strlen(a));
+                offset += in_addr_len;
+            }
 
         } else if (atyp == 3) {
             // Domain name
@@ -222,7 +224,20 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             memcpy(host, server->buf + offset + 1, name_len);
             offset += name_len + 1;
 
-        } else {
+        } else if (atyp == 4) {
+            // IP V6
+            size_t in6_addr_len = sizeof(struct in6_addr);
+            if (r > in6_addr_len) {
+                char a[INET6_ADDRSTRLEN];
+                inet_ntop(AF_INET6, (const void*)(server->buf + offset), 
+                        a, sizeof(a));
+                memcpy(host, a, strlen(a));
+                offset += in6_addr_len;
+            }
+
+        }
+        
+        if (offset == 0) {
             LOGE("unsupported addrtype: %d", atyp);
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);

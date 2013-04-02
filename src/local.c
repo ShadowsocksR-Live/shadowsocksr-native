@@ -191,7 +191,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 
         // get remote addr and port
         if (request->atyp == 1) {
-
             // IP V4
             size_t in_addr_len = sizeof(struct in_addr);
             memcpy(addr_to_send + addr_len, server->buf + 4, in_addr_len + 2);
@@ -207,6 +206,13 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             // get port
             addr_to_send[addr_len++] = *(uint8_t *)(server->buf + 4 + 1 + name_len); 
             addr_to_send[addr_len++] = *(uint8_t *)(server->buf + 4 + 1 + name_len + 1); 
+
+        } else if (request->atyp == 4) {
+            // IP V6
+            size_t in6_addr_len = sizeof(struct in6_addr);
+            memcpy(addr_to_send + addr_len, server->buf + 4, in6_addr_len + 2);
+            addr_len += in6_addr_len + 2;
+
         } else {
             LOGE("unsupported addrtype: %d", request->atyp);
             close_and_free_remote(EV_A_ remote);
