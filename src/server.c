@@ -16,7 +16,6 @@
 #include <strings.h>
 #include <time.h>
 #include <unistd.h>
-#include <assert.h>
 
 #include "utils.h"
 #include "server.h"
@@ -147,7 +146,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
-    } else if (r < 0) {
+    } else if (r == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             // no data
             // continue to wait for recv
@@ -177,14 +176,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
                 close_and_free_server(EV_A_ server);
             }
         } else if (s < r) {
-            char *pt = remote->buf;
-            char *et = pt + r;
-            while (pt + s < et) {
-                *pt = *(pt + s);
-                pt++;
-            }
             remote->buf_len = r - s;
-            assert(remote->buf_len >= 0);
+            memcpy(remote->buf, remote->buf + s, remote->buf_len);
             ev_io_stop(EV_A_ &server_recv_ctx->io);
             ev_io_start(EV_A_ &remote->send_ctx->io);
         }
@@ -310,14 +303,8 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
             return;
         } else if (s < server->buf_len) {
             // partly sent, move memory, wait for the next time to send
-            char *pt = server->buf;
-            char *et = pt + server->buf_len;
-            while (pt + s < et) {
-                *pt = *(pt + s);
-                pt++;
-            }
             server->buf_len -= s;
-            assert(server->buf_len >= 0);
+            memcpy(server->buf, server->buf + s, server->buf_len);
             return;
         } else {
             // all sent out, wait for reading
@@ -397,14 +384,8 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         }
         return;
     } else if (s < r) {
-        char *pt = server->buf;
-        char *et = pt + r;
-        while (pt + s < et) {
-            *pt = *(pt + s);
-            pt++;
-        }
         server->buf_len = r - s;
-        assert(server->buf_len >= 0);
+        memcpy(server->buf, server->buf + s, server->buf_len);
         ev_io_stop(EV_A_ &remote_recv_ctx->io);
         ev_io_start(EV_A_ &server->send_ctx->io);
         return;
@@ -461,7 +442,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
         // has data to send
         ssize_t s = send(remote->fd, remote->buf,
                 remote->buf_len, 0);
-        if (s < 0) {
+        if (s == -1) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
                 ERROR("remote_send_send");
                 // close and free
@@ -471,14 +452,8 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
             return;
         } else if (s < remote->buf_len) {
             // partly sent, move memory, wait for the next time to send
-            char *pt = remote->buf;
-            char *et = pt + remote->buf_len;
-            while (pt + s < et) {
-                *pt = *(pt + s);
-                pt++;
-            }
             remote->buf_len -= s;
-            assert(remote->buf_len >= 0);
+            memcpy(remote->buf, remote->buf + s, remote->buf_len);
             return;
         } else {
             // all sent out, wait for reading
