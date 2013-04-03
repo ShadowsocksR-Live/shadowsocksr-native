@@ -559,7 +559,7 @@ struct server* new_server(int fd) {
     server->fd = fd;
     ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
     ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
-    ev_timer_init(&server->recv_ctx->watcher, server_resolve_cb, 0.5, 1.0);
+    ev_timer_init(&server->recv_ctx->watcher, server_resolve_cb, 0.2, 0.5);
     server->recv_ctx->server = server;
     server->recv_ctx->connected = 0;
     server->send_ctx->server = server;
