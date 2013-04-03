@@ -58,6 +58,8 @@ AC_CHECK_LIB(socket, connect)
 # Checks for library functions.
 AC_CHECK_FUNCS([malloc memset socket])
 
+ACX_PTHREAD
+
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_CONFIG_FILES([Makefile
