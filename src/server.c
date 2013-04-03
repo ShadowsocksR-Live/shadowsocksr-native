@@ -255,6 +255,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         }
 
         server->stage = 4;
+        server->query = query;
 
         ev_io_stop(EV_A_ &server_recv_ctx->io);
         ev_timer_start(EV_A_ &server->recv_ctx->watcher);
