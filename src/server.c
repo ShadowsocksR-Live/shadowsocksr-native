@@ -335,6 +335,10 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
         return;
     }
 
+    if (verbose) {
+        LOGD("asyncns resolved.");
+    }
+
     ev_timer_stop(EV_A_ watcher);
 
     err = asyncns_getaddrinfo_done(asyncns, query, &result);
@@ -344,6 +348,7 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
     } else {
         struct remote *remote = connect_to_remote(result, server->timeout);
         if (remote == NULL) {
+            LOGE("connect error.");
             close_and_free_server(EV_A_ server);
             return;
         }
