@@ -221,9 +221,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-
-#bin_PROGRAMS = ss-local ss-server
-SUBDIRS = libev src
+SUBDIRS = libasyncns libev src
 ACLOCAL_AMFLAGS = -I m4
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive

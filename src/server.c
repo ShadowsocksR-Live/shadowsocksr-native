@@ -92,25 +92,15 @@ int create_and_bind(const char *host, const char *port) {
     return listen_sock;
 }
 
-struct remote *connect_to_remote(char *remote_host, char *remote_port, int timeout) {
-    struct addrinfo hints, *res;
+struct remote *connect_to_remote(struct addrinfo *res, int timeout) {
     int sockfd;
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-
-    int err = getaddrinfo(remote_host, remote_port, &hints, &res);
-    if (err) {
-        ERROR("getaddrinfo");
-        return NULL;
-    }
 
     // initilize remote socks
     sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (sockfd < 0) {
         ERROR("socket");
         close(sockfd);
-        freeaddrinfo(res);
+        asyncns_freeaddrinfo(res);
         return NULL;
     }
 
@@ -121,11 +111,10 @@ struct remote *connect_to_remote(char *remote_host, char *remote_port, int timeo
     connect(sockfd, res->ai_addr, res->ai_addrlen);
 
     // release addrinfo
-    freeaddrinfo(res);
+    asyncns_freeaddrinfo(res);
 
     return remote;
 }
-
 
 static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     struct server_ctx *server_recv_ctx = (struct server_ctx *)w;
@@ -231,8 +220,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         }
         
         if (offset == 0) {
-            LOGE("unsupported addrtype: %d", atyp);
-            close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
         }
@@ -246,19 +233,20 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             LOGD("connect to: %s:%s", host, port);
         }
 
-        struct remote *remote = connect_to_remote(host, port, server->timeout);
-        if (remote == NULL) {
+        struct addrinfo hints;
+        asyncns_query_t *query;
+        memset(&hints, 0, sizeof hints);
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+
+        query = asyncns_getaddrinfo(server->asyncns, 
+                host, port, &hints);
+
+        if (query == NULL) {
+            ERROR("asyncns_getaddrinfo");
             close_and_free_server(EV_A_ server);
             return;
         }
-
-        server->remote = remote;
-        remote->server = server;
-
-        // listen to remote connected event
-        ev_io_stop(EV_A_ &server_recv_ctx->io);
-        ev_io_start(EV_A_ &remote->send_ctx->io);
-        ev_timer_start(EV_A_ &remote->send_ctx->watcher);
 
         // XXX: should handel buffer carefully
         if (r > offset) {
@@ -267,6 +255,9 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         }
 
         server->stage = 4;
+
+        ev_io_stop(EV_A_ &server_recv_ctx->io);
+        ev_timer_start(EV_A_ &server->recv_ctx->watcher);
 
         return;
     }
@@ -321,6 +312,49 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
             }
         }
     }
+}
+
+static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
+    int err;
+    struct addrinfo *result;
+    struct server_ctx *server_ctx = (struct server_ctx *) (((void*)watcher)
+            - sizeof(ev_io));
+    struct server *server = server_ctx->server;
+    asyncns_t *asyncns = server->asyncns;
+    asyncns_query_t *query = server->query;
+
+    if (asyncns == NULL || query == NULL) {
+        LOGE("invalid dns query.");
+        close_and_free_server(EV_A_ server);
+        return;
+    }
+
+    if (!asyncns_isdone(asyncns, query)) {
+        // wait for reolver
+        return;
+    }
+
+    ev_timer_stop(EV_A_ watcher);
+
+    err = asyncns_getaddrinfo_done(asyncns, query, &result);
+    if (err) {
+        ERROR("getaddrinfo");
+        close_and_free_server(EV_A_ server);
+    } else {
+        struct remote *remote = connect_to_remote(result, server->timeout);
+        if (remote == NULL) {
+            close_and_free_server(EV_A_ server);
+            return;
+        }
+
+        server->remote = remote;
+        remote->server = server;
+
+        // listen to remote connected event
+        ev_io_start(EV_A_ &remote->send_ctx->io);
+        ev_timer_start(EV_A_ &remote->send_ctx->watcher);
+    }
+
 }
 
 static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents) {
@@ -524,11 +558,14 @@ struct server* new_server(int fd) {
     server->fd = fd;
     ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
     ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
+    ev_timer_init(&server->recv_ctx->watcher, server_resolve_cb, 0.5, 1.0);
     server->recv_ctx->server = server;
     server->recv_ctx->connected = 0;
     server->send_ctx->server = server;
     server->send_ctx->connected = 0;
     server->stage = 0;
+    server->asyncns = NULL;
+    server->query = NULL;
     if (enc_conf.method == RC4) {
         server->e_ctx = malloc(sizeof(struct rc4_state));
         server->d_ctx = malloc(sizeof(struct rc4_state));
@@ -563,6 +600,7 @@ void close_and_free_server(EV_P_ struct server *server) {
     if (server != NULL) {
         ev_io_stop(EV_A_ &server->send_ctx->io);
         ev_io_stop(EV_A_ &server->recv_ctx->io);
+        ev_timer_stop(EV_A_ &server->recv_ctx->watcher);
         close(server->fd);
         free_server(server);
     }
@@ -586,6 +624,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents) {
 
     struct server *server = new_server(serverfd);
     server->timeout = listener->timeout;
+    server->asyncns = listener->asyncns;
     ev_io_start(EV_A_ &server->recv_ctx->io);
 }
 
@@ -666,6 +705,13 @@ int main (int argc, char **argv) {
 
     // ignore SIGPIPE
     signal(SIGPIPE, SIG_IGN);
+    signal(SIGCHLD, SIG_IGN);
+
+    // Setup asyncns
+    asyncns_t *asyncns;
+    if (!(asyncns = asyncns_new(DNS_THREAD))) {
+        FATAL("asyncns failed");
+    }
 
     // Setup keys
     LOGD("calculating ciphers...");
@@ -694,6 +740,7 @@ int main (int argc, char **argv) {
         // Setup proxy context
         struct listen_ctx listen_ctx;
         listen_ctx.timeout = atoi(timeout);
+        listen_ctx.asyncns = asyncns;
         listen_ctx.fd = listenfd;
 
         ev_io_init (&listen_ctx.io, accept_cb, listenfd, EV_READ);

@@ -27,6 +27,9 @@
 /* Define to 1 if the floor function is available */
 #undef HAVE_FLOOR
 
+/* Define to 1 if you have the `fork' function. */
+#undef HAVE_FORK
+
 /* Define to 1 if you have the `inotify_init' function. */
 #undef HAVE_INOTIFY_INIT
 
@@ -39,8 +42,14 @@
 /* Define to 1 if you have the <langinfo.h> header file. */
 #undef HAVE_LANGINFO_H
 
+/* Define to 1 if you have the `nsl' library (-lnsl). */
+#undef HAVE_LIBNSL
+
 /* Define to 1 if you have the `rt' library (-lrt). */
 #undef HAVE_LIBRT
+
+/* Define to 1 if you have the `socket' library (-lsocket). */
+#undef HAVE_LIBSOCKET
 
 /* Define to 1 if you have the <locale.h> header file. */
 #undef HAVE_LOCALE_H
@@ -78,6 +87,12 @@
 /* Define to 1 if you have the `select' function. */
 #undef HAVE_SELECT
 
+/* Define to 1 if you have the `setresuid' function. */
+#undef HAVE_SETRESUID
+
+/* Define to 1 if you have the `setreuid' function. */
+#undef HAVE_SETREUID
+
 /* Define to 1 if you have the `signalfd' function. */
 #undef HAVE_SIGNALFD
 
@@ -90,11 +105,17 @@
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
 
+/* Define to 1 if you have the `strerror' function. */
+#undef HAVE_STRERROR
+
 /* Define to 1 if you have the <strings.h> header file. */
 #undef HAVE_STRINGS_H
 
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
+
+/* Define to 1 if you have the `strndup' function. */
+#undef HAVE_STRNDUP
 
 /* Define to 1 if you have the <sys/epoll.h> header file. */
 #undef HAVE_SYS_EPOLL_H
@@ -123,12 +144,30 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
 
+/* Define to 1 if you have <sys/wait.h> that is POSIX.1 compatible. */
+#undef HAVE_SYS_WAIT_H
+
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Define to 1 if you have the `vfork' function. */
+#undef HAVE_VFORK
+
+/* Define to 1 if you have the <vfork.h> header file. */
+#undef HAVE_VFORK_H
+
+/* Define to 1 if `fork' works. */
+#undef HAVE_WORKING_FORK
+
+/* Define to 1 if `vfork' works. */
+#undef HAVE_WORKING_VFORK
 
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */
 #undef LT_OBJDIR
+
+/* Define to 1 if assertions should be disabled. */
+#undef NDEBUG
 
 /* Name of package */
 #undef PACKAGE
@@ -151,8 +190,23 @@
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
+/* Define as the return type of signal handlers (`int' or `void'). */
+#undef RETSIGTYPE
+
+/* Define to the type of arg 1 for `select'. */
+#undef SELECT_TYPE_ARG1
+
+/* Define to the type of args 2, 3 and 4 for `select'. */
+#undef SELECT_TYPE_ARG234
+
+/* Define to the type of arg 5 for `select'. */
+#undef SELECT_TYPE_ARG5
+
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
+
+/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
+#undef TIME_WITH_SYS_TIME
 
 /* Version number of package */
 #undef VERSION
@@ -169,11 +223,45 @@
 # endif
 #endif
 
+/* Number of bits in a file offset, on hosts where this is settable. */
+#undef _FILE_OFFSET_BITS
+
+/* Define for large files, on AIX-style hosts. */
+#undef _LARGE_FILES
+
+/* Define for Solaris 2.5.1 so the uint8_t typedef from <sys/synch.h>,
+   <pthread.h>, or <semaphore.h> is not used. If the typedef were allowed, the
+   #define below would cause a syntax error. */
+#undef _UINT8_T
+
+/* Define to empty if `const' does not conform to ANSI C. */
+#undef const
+
 /* Define to `__inline__' or `__inline' if that's what the C compiler
    calls it, or to nothing if 'inline' is not supported under any name.  */
 #ifndef __cplusplus
 #undef inline
 #endif
 
+/* Define to rpl_malloc if the replacement function should be used. */
+#undef malloc
+
+/* Define to `int' if <sys/types.h> does not define. */
+#undef pid_t
+
+/* Define to `unsigned int' if <sys/types.h> does not define. */
+#undef size_t
+
 /* Define to `int' if <sys/types.h> does not define. */
 #undef ssize_t
+
+/* Define to the type of an unsigned integer type of width exactly 16 bits if
+   such a type exists and the standard includes do not define it. */
+#undef uint16_t
+
+/* Define to the type of an unsigned integer type of width exactly 8 bits if
+   such a type exists and the standard includes do not define it. */
+#undef uint8_t
+
+/* Define as `fork' if `vfork' does not work. */
+#undef vfork
