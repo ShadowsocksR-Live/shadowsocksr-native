@@ -9,6 +9,6 @@ ss_local_LDADD = $(top_builddir)/libev/libev.la
 ss_local_LDADD += $(top_builddir)/libasyncns/libasyncns.la
 ss_server_LDADD = $(top_builddir)/libev/libev.la
 ss_server_LDADD += $(top_builddir)/libasyncns/libasyncns.la
-AM_CFLAGS  = -O2 -Wall -fno-strict-aliasing 
+AM_CFLAGS  = -g -O2 -Wall -fno-strict-aliasing 
 AM_CFLAGS += -I$(top_builddir)/libev
 AM_CFLAGS += -I$(top_builddir)/libasyncns

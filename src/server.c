@@ -250,8 +250,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 
         // XXX: should handel buffer carefully
         if (r > offset) {
-            remote->buf_len = r - offset;
-            memcpy(remote->buf, server->buf + offset, remote->buf_len);
+            server->buf_len = r - offset;
+            memcpy(server->buf, server->buf + offset, server->buf_len);
         }
 
         server->stage = 4;
@@ -369,6 +369,13 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
 
         server->remote = remote;
         remote->server = server;
+
+        // XXX: should handel buffer carefully
+        if (server->buf_len > 0) {
+            memcpy(remote->buf, server->buf, server->buf_len);
+            remote->buf_len = server->buf_len;
+            server->buf_len = 0;
+        }
 
         // listen to remote connected event
         ev_io_start(EV_A_ &remote->send_ctx->io);
