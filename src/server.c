@@ -239,7 +239,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
 
-        query = asyncns_getaddrinfo(server->asyncns, 
+        query = asyncns_getaddrinfo(server->listen_ctx->asyncns,
                 host, port, &hints);
 
         if (query == NULL) {
@@ -321,12 +321,26 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
     struct server_ctx *server_ctx = (struct server_ctx *) (((void*)watcher)
             - sizeof(ev_io));
     struct server *server = server_ctx->server;
-    asyncns_t *asyncns = server->asyncns;
+    asyncns_t *asyncns = server->listen_ctx->asyncns;
     asyncns_query_t *query = server->query;
 
     if (asyncns == NULL || query == NULL) {
         LOGE("invalid dns query.");
         close_and_free_server(EV_A_ server);
+        return;
+    }
+
+    if (asyncns_wait(asyncns, 0) == -1) {
+        // asyncns error
+        LOGE("asnyncns session died.");
+        close_and_free_server(EV_A_ server);
+
+        // reset asyncns sesstion
+        asyncns_free(asyncns);
+        if (!(server->listen_ctx->asyncns = asyncns_new(DNS_THREAD_NUM))) {
+            FATAL("asyncns failed");
+        }
+
         return;
     }
 
@@ -346,7 +360,7 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
         ERROR("getaddrinfo");
         close_and_free_server(EV_A_ server);
     } else {
-        struct remote *remote = connect_to_remote(result, server->timeout);
+        struct remote *remote = connect_to_remote(result, server->listen_ctx->timeout);
         if (remote == NULL) {
             LOGE("connect error.");
             close_and_free_server(EV_A_ server);
@@ -555,7 +569,7 @@ void close_and_free_remote(EV_P_ struct remote *remote) {
     }
 }
 
-struct server* new_server(int fd) {
+struct server* new_server(int fd, struct listen_ctx *listener) {
     server_conn++;
     struct server *server;
     server = malloc(sizeof(struct server));
@@ -570,8 +584,8 @@ struct server* new_server(int fd) {
     server->send_ctx->server = server;
     server->send_ctx->connected = 0;
     server->stage = 0;
-    server->asyncns = NULL;
     server->query = NULL;
+    server->listen_ctx = listener;
     if (enc_conf.method == RC4) {
         server->e_ctx = malloc(sizeof(struct rc4_state));
         server->d_ctx = malloc(sizeof(struct rc4_state));
@@ -628,9 +642,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents) {
         LOGD("accept a connection.");
     }
 
-    struct server *server = new_server(serverfd);
-    server->timeout = listener->timeout;
-    server->asyncns = listener->asyncns;
+    struct server *server = new_server(serverfd, listener);
     ev_io_start(EV_A_ &server->recv_ctx->io);
 }
 
@@ -715,7 +727,7 @@ int main (int argc, char **argv) {
 
     // Setup asyncns
     asyncns_t *asyncns;
-    if (!(asyncns = asyncns_new(DNS_THREAD))) {
+    if (!(asyncns = asyncns_new(DNS_THREAD_NUM))) {
         FATAL("asyncns failed");
     }
 

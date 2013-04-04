@@ -28,12 +28,11 @@ struct server {
 	char buf[BUF_SIZE]; // server send from, remote recv into
     char stage;
 	int buf_len;
-    int timeout;
     struct rc4_state *e_ctx;
     struct rc4_state *d_ctx;
 	struct server_ctx *recv_ctx;
 	struct server_ctx *send_ctx;
-    asyncns_t *asyncns;
+    struct listen_ctx *listen_ctx;
     asyncns_query_t *query;
 	struct remote *remote;
 };
@@ -67,7 +66,7 @@ struct remote* new_remote(int fd, int timeout);
 struct remote *connect_to_remote(struct addrinfo *res, int timeout);
 void free_remote(struct remote *remote);
 void close_and_free_remote(EV_P_ struct remote *remote);
-struct server* new_server(int fd);
+struct server* new_server(int fd, struct listen_ctx *listener);
 void free_server(struct server *server);
 void close_and_free_server(EV_P_ struct server *server);
 
