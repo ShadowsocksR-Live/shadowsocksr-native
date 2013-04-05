@@ -16,6 +16,8 @@
 #include <strings.h>
 #include <time.h>
 #include <unistd.h>
+#include <limits.h>
+#include <linux/netfilter_ipv4.h>
 
 #include "utils.h"
 #include "redir.h"
@@ -40,7 +42,6 @@ int getdestaddr(int fd, struct sockaddr_in *destaddr) {
 
     error = getsockopt(fd, SOL_IP, SO_ORIGINAL_DST, destaddr, &socklen);
     if (error) {
-        log_errno(LOG_WARNING, "getsockopt");
         return -1;
     }
     return 0;
@@ -473,7 +474,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents) {
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     int index = clock() % listener->remote_num;
-    int err = getaddrinfo(listener->remote_host[index], listener->remote_port, &hints, &res);
+    err = getaddrinfo(listener->remote_host[index], listener->remote_port, &hints, &res);
     if (err) {
         ERROR("getaddrinfo");
         return;
