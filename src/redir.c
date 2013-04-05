@@ -111,14 +111,11 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         return;
     }
 
-    char *buf = remote->buf;
-    int *buf_len = &remote->buf_len;
-
-    ssize_t r = recv(server->fd, buf, BUF_SIZE, 0);
+    ssize_t r = recv(server->fd, remote->buf, BUF_SIZE, 0);
 
     if (r == 0) {
         // connection closed
-        *buf_len = 0;
+        remote->buf = 0;
         close_and_free_server(EV_A_ server);
         if (remote != NULL) {
             ev_io_start(EV_A_ &remote->send_ctx->io);
@@ -292,8 +289,6 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
             remote_send_ctx->connected = 1;
             ev_io_stop(EV_A_ &remote_send_ctx->io);
             ev_timer_stop(EV_A_ &remote_send_ctx->watcher);
-            ev_io_start(EV_A_ &server->recv_ctx->io);
-            ev_io_start(EV_A_ &remote->recv_ctx->io);
 
             // send destaddr
             char addr_to_send[256];
@@ -314,6 +309,9 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
             }
+
+            ev_io_start(EV_A_ &server->recv_ctx->io);
+            ev_io_start(EV_A_ &remote->recv_ctx->io);
 
             return;
         } else {
