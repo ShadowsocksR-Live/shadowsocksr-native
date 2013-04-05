@@ -30,7 +30,7 @@ Installation
 Build the binary like this:
 
 ```bash
-    sudo apt-get install build-essential autoconf libtool libev-dev
+    sudo apt-get install build-essential autoconf libtool
     ./configure && make
     sudo make install
 ```
@@ -44,6 +44,9 @@ usage:
     ss-local -s server_host -p server_port -l local_port -k password
        [-m encrypt_method] [-f pid_file] [-t timeout] [-c config_file]
 
+    ss-redir -s server_host -p server_port -l local_port -k password
+       [-m encrypt_method] [-f pid_file] [-t timeout] [-c config_file]
+
     ss-server -s server_host -p server_port -k password
        [-m encrypt_method] [-f pid_file] [-t timeout] [-c config_file]
 
@@ -53,5 +56,10 @@ options:
           pid_file:     valid path to the pid file
            timeout:     socket timeout in senconds
        config_file:     json format config file
+
+notes:
+
+    ss-redir provides a transparent proxy function and only works on the 
+    Linux platform with iptables.
 
 ```

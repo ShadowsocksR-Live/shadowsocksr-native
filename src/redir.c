@@ -115,7 +115,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 
     if (r == 0) {
         // connection closed
-        remote->buf = 0;
+        remote->buf_len = 0;
         close_and_free_server(EV_A_ server);
         if (remote != NULL) {
             ev_io_start(EV_A_ &remote->send_ctx->io);
