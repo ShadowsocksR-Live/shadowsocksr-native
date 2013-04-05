@@ -640,6 +640,8 @@ PTHREAD_LIBS
 PTHREAD_CC
 acx_pthread_config
 LIBOBJS
+BUILD_REDIRECTOR_FALSE
+BUILD_REDIRECTOR_TRUE
 CPP
 OTOOL64
 OTOOL
@@ -12542,8 +12544,30 @@ fi
 
 
 
-# Checks for libraries.
-# AC_SEARCH_LIBS([ev_io_start], [ev], [ ], AC_MSG_ERROR([libev not found.]))
+# Checks for host.
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for what kind of host" >&5
+$as_echo_n "checking for what kind of host... " >&6; }
+case $host in
+  *-linux*)
+    os_support=linux
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: Linux" >&5
+$as_echo "Linux" >&6; }
+    ;;
+  *)
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: transparent proxy does not support for $host" >&5
+$as_echo "transparent proxy does not support for $host" >&6; }
+    ;;
+esac
+
+ if test "$os_support" = "linux"; then
+  BUILD_REDIRECTOR_TRUE=
+  BUILD_REDIRECTOR_FALSE='#'
+else
+  BUILD_REDIRECTOR_TRUE='#'
+  BUILD_REDIRECTOR_FALSE=
+fi
+
 
 # Checks for header files.
 for ac_header in stdint.h inttypes.h arpa/inet.h fcntl.h langinfo.h locale.h netdb.h netinet/in.h stdlib.h string.h strings.h sys/socket.h unistd.h
@@ -14397,6 +14421,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__fastdepCC_TRUE}" && test -z "${am__fastdepCC_FALSE}"; then
   as_fn_error $? "conditional \"am__fastdepCC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_REDIRECTOR_TRUE}" && test -z "${BUILD_REDIRECTOR_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_REDIRECTOR\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 

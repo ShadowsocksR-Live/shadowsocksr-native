@@ -18,8 +18,20 @@ AC_PROG_MAKE_SET
 
 m4_include([libev/libev.m4])
 
-# Checks for libraries.
-# AC_SEARCH_LIBS([ev_io_start], [ev], [ ], AC_MSG_ERROR([libev not found.]))
+# Checks for host.
+
+AC_MSG_CHECKING(for what kind of host)
+case $host in
+  *-linux*)
+    os_support=linux
+    AC_MSG_RESULT(Linux)
+    ;;
+  *)
+    AC_MSG_RESULT(transparent proxy does not support for $host)
+    ;;
+esac
+
+AM_CONDITIONAL(BUILD_REDIRECTOR, test "$os_support" = "linux")
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdint.h inttypes.h arpa/inet.h fcntl.h langinfo.h locale.h netdb.h netinet/in.h stdlib.h string.h strings.h sys/socket.h unistd.h])
