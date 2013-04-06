@@ -65,7 +65,6 @@ AC_CHECK_FUNCS([memset select strndup setresuid setreuid strerror])
 
 AC_SYS_LARGEFILE
 
-AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(socket, connect)
 
 # Checks for library functions.
