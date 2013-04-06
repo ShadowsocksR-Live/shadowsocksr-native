@@ -1,0 +1,15 @@
+Source: shadowsocks
+Section: net
+Priority: extra
+Maintainer: Max Lv <max.c.lv@gmail.com>
+Build-Depends: debhelper (>= 7.0.50~), autotools-dev, mime-support, gawk
+Standards-Version: 3.8.4
+Homepage: http://www.shadowsocks.org
+#Vcs-Git: git://git.debian.org/collab-maint/shadowsocks.git
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/shadowsocks.git;a=summary
+
+Package: shadowsocks
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: A lightweight secured scoks5 proxy. 
+    Shadowsocks-libev is a lightweight secured scoks5 proxy for embedded devices and low end boxes.

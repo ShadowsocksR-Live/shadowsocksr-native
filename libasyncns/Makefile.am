@@ -21,6 +21,7 @@ AM_CFLAGS=-D__EXTENSIONS__ $(PTHREAD_CFLAGS)
 lib_LTLIBRARIES=libasyncns.la
 libasyncns_la_CC=$(PTHREAD_CC)
 libasyncns_la_SOURCES=asyncns.c asyncns.h
+libasyncns_la_LDFLAGS= -static
 libasyncns_la_LIBADD=$(PTHREAD_LIBS)
 
 include_HEADERS=asyncns.h

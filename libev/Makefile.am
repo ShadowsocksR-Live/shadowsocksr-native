@@ -14,7 +14,7 @@ include_HEADERS = ev.h ev++.h event.h
 lib_LTLIBRARIES = libev.la
 
 libev_la_SOURCES = ev.c event.c
-libev_la_LDFLAGS = -version-info $(VERSION_INFO)
+libev_la_LDFLAGS = -static -version-info $(VERSION_INFO)
 
 ev.3: ev.pod
 	pod2man -n LIBEV -r "libev-$(VERSION)" -c "libev - high performance full featured event loop" -s3 <$< >$@

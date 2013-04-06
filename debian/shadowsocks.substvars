@@ -1,0 +1,2 @@
+shlibs:Depends=libc6 (>= 2.3.6-6~), libc6 (>= 2.9)
+misc:Depends=

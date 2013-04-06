@@ -10,6 +10,7 @@ pid
 ss*
 stamp-h1
 .libs
+.pc
 *.json
 
 #	Do not edit the following section
