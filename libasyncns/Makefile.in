@@ -117,6 +117,9 @@ am__DEPENDENCIES_1 =
 libasyncns_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libasyncns_la_OBJECTS = asyncns.lo
 libasyncns_la_OBJECTS = $(am_libasyncns_la_OBJECTS)
+libasyncns_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(libasyncns_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -262,6 +265,7 @@ AM_CFLAGS = -D__EXTENSIONS__ $(PTHREAD_CFLAGS)
 lib_LTLIBRARIES = libasyncns.la
 libasyncns_la_CC = $(PTHREAD_CC)
 libasyncns_la_SOURCES = asyncns.c asyncns.h
+libasyncns_la_LDFLAGS = -static
 libasyncns_la_LIBADD = $(PTHREAD_LIBS)
 include_HEADERS = asyncns.h
 all: all-am
@@ -333,7 +337,7 @@ clean-libLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 libasyncns.la: $(libasyncns_la_OBJECTS) $(libasyncns_la_DEPENDENCIES) $(EXTRA_libasyncns_la_DEPENDENCIES) 
-	$(LINK) -rpath $(libdir) $(libasyncns_la_OBJECTS) $(libasyncns_la_LIBADD) $(LIBS)
+	$(libasyncns_la_LINK) -rpath $(libdir) $(libasyncns_la_OBJECTS) $(libasyncns_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
