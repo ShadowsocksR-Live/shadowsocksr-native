@@ -67,9 +67,6 @@ typedef enum {
     RESPONSE_ADDRINFO,
     REQUEST_NAMEINFO,
     RESPONSE_NAMEINFO,
-    REQUEST_RES_QUERY,
-    REQUEST_RES_SEARCH,
-    RESPONSE_RES,
     REQUEST_TERMINATE,
     RESPONSE_DIED
 } query_type_t;
@@ -497,28 +494,6 @@ static int send_nameinfo_reply(int out_fd, unsigned id, int ret, const char *hos
 
     if (serv)
         memcpy((uint8_t *)data + sizeof(nameinfo_response_t) + hl, serv, sl);
-
-    return send(out_fd, resp, resp->header.length, MSG_NOSIGNAL);
-}
-
-static int send_res_reply(int out_fd, unsigned id, const unsigned char *answer, int ret, int _errno, int _h_errno) {
-    res_response_t data[BUFSIZE/sizeof(res_response_t) + 1];
-    res_response_t *resp = data;
-
-    assert(out_fd >= 0);
-
-    memset(data, 0, sizeof(data));
-    resp->header.type = RESPONSE_RES;
-    resp->header.id = id;
-    resp->header.length = sizeof(res_response_t) + (ret < 0 ? 0 : ret);
-    resp->ret = ret;
-    resp->_errno = _errno;
-    resp->_h_errno = _h_errno;
-
-    assert(sizeof(data) >= resp->header.length);
-
-    if (ret > 0)
-        memcpy((uint8_t *)data + sizeof(res_response_t), answer, ret);
 
     return send(out_fd, resp, resp->header.length, MSG_NOSIGNAL);
 }
@@ -1032,28 +1007,6 @@ static int handle_response(asyncns_t *asyncns, const packet_t *packet, size_t le
             break;
         }
 
-        case RESPONSE_RES: {
-            const res_response_t *res_resp = &packet->res_response;
-
-            assert(length >= sizeof(res_response_t));
-            assert(q->type == REQUEST_RES_QUERY || q->type == REQUEST_RES_SEARCH);
-
-            q->ret = res_resp->ret;
-            q->_errno = res_resp->_errno;
-            q->_h_errno = res_resp->_h_errno;
-
-            if (res_resp->ret >= 0)  {
-                if (!(q->serv = malloc(res_resp->ret))) {
-                    q->ret = -1;
-                    q->_errno = ENOMEM;
-                } else
-                    memcpy(q->serv, (const char *)resp + sizeof(res_response_t), res_resp->ret);
-            }
-
-            complete_query(asyncns, q);
-            break;
-        }
-
         default:
             ;
     }
@@ -1354,47 +1307,6 @@ fail:
         asyncns_cancel(asyncns, q);
 
     return NULL;
-}
-
-asyncns_query_t* asyncns_res_query(asyncns_t *asyncns, const char *dname, int class, int type) {
-    return asyncns_res(asyncns, REQUEST_RES_QUERY, dname, class, type);
-}
-
-asyncns_query_t* asyncns_res_search(asyncns_t *asyncns, const char *dname, int class, int type) {
-    return asyncns_res(asyncns, REQUEST_RES_SEARCH, dname, class, type);
-}
-
-int asyncns_res_done(asyncns_t *asyncns, asyncns_query_t* q, unsigned char **answer) {
-    int ret;
-    assert(asyncns);
-    assert(q);
-    assert(q->asyncns == asyncns);
-    assert(q->type == REQUEST_RES_QUERY || q->type == REQUEST_RES_SEARCH);
-    assert(answer);
-
-    if (asyncns->dead) {
-        errno = ECHILD;
-        return -ECHILD;
-    }
-
-    if (!q->done) {
-        errno = EAGAIN;
-        return -EAGAIN;
-    }
-
-    *answer = (unsigned char *)q->serv;
-    q->serv = NULL;
-
-    ret = q->ret;
-
-    if (ret < 0) {
-        errno = q->_errno;
-        h_errno = q->_h_errno;
-    }
-
-    asyncns_cancel(asyncns, q);
-
-    return ret < 0 ? -errno : ret;
 }
 
 asyncns_query_t* asyncns_getnext(asyncns_t *asyncns) {

@@ -103,27 +103,6 @@ asyncns_query_t* asyncns_getnameinfo(asyncns_t *asyncns, const struct sockaddr *
  * returned. */
 int asyncns_getnameinfo_done(asyncns_t *asyncns, asyncns_query_t* q, char *ret_host, size_t hostlen, char *ret_serv, size_t servlen);
 
-/** Issue a resolver query on the specified session. The arguments are
- * compatible with the ones of libc's res_query(3). The function returns a new
- * query object. When the query is completed you may retrieve the results using
- * asyncns_res_done().  */
-asyncns_query_t* asyncns_res_query(asyncns_t *asyncns, const char *dname, int class, int type);
-
-/** Issue an resolver query on the specified session. The arguments are
- * compatible with the ones of libc's res_search(3). The function returns a new
- * query object. When the query is completed you may retrieve the results using
- * asyncns_res_done().  */
-asyncns_query_t* asyncns_res_search(asyncns_t *asyncns, const char *dname, int class, int type);
-
-/** Retrieve the results of a preceding asyncns_res_query() or
- * asyncns_res_search call.  The query object q is destroyed by this
- * call and may not be used any further. Returns a pointer to the
- * answer of the res_query call. If the query is not completed yet
- * -EAGAIN is returned, on failure -errno is returned, otherwise the
- * length of answer is returned. Make sure to free the answer is a
- * call to asyncns_freeanswer(). */
-int asyncns_res_done(asyncns_t *asyncns, asyncns_query_t* q, unsigned char **answer);
-
 /** Return the next completed query object. If no query has been
  * completed yet, return NULL. Please note that you need to run
  * asyncns_wait() before this function will return sensible data.  */
