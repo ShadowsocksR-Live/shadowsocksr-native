@@ -1,5 +1,8 @@
 .deps/
-Makefile
+/Makefile
+src/Makefile
+libev/Makefile
+libasyncns/Makefile
 autom4te.cache/
 config.h
 config.log
