@@ -14,6 +14,7 @@ stamp-h1
 *.json
 debian/shadowsocks.debhelper.log
 debian/shadowsocks/
+debian/patches/
 
 #	Do not edit the following section
 # 	Edit Compile Debug Document Distribute
