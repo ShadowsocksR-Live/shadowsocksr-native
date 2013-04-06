@@ -12,6 +12,8 @@ stamp-h1
 .libs
 .pc
 *.json
+debian/shadowsocks.debhelper.log
+debian/shadowsocks/
 
 #	Do not edit the following section
 # 	Edit Compile Debug Document Distribute
