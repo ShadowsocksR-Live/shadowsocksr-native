@@ -63,3 +63,35 @@ notes:
     Linux platform with iptables.
 
 ```
+
+## Advanced usage
+
+The latest shadowsocks-libev has provided a transparent mode. You can configure your linux based box or router to proxy all tcp traffic transparently.
+
+    # Create new chain
+    root@Wrt:~# iptables -t nat -N SHADOWSOCKS
+    
+    # Ignore your shadowsocks server's addresses
+    # It's very IMPORTANT, just be careful.
+    root@Wrt:~# iptables -t nat -A SHADOWSOCKS -d 123.123.123.123 -j RETURN
+
+    # Ignore LANs and any other addresses you'd like to bypass the proxy
+    # See Wikipedia and RFC5735 for full list of reserved networks.
+    # See ashi009/bestroutetb for a highly optimized CHN route list.
+    root@Wrt:~# iptables -t nat -A SHADOWSOCKS -d 0.0.0.0/8 -j RETURN
+    root@Wrt:~# iptables -t nat -A SHADOWSOCKS -d 10.0.0.0/8 -j RETURN
+    root@Wrt:~# iptables -t nat -A SHADOWSOCKS -d 127.0.0.0/8 -j RETURN
+    root@Wrt:~# iptables -t nat -A SHADOWSOCKS -d 169.254.0.0/16 -j RETURN
+    root@Wrt:~# iptables -t nat -A SHADOWSOCKS -d 172.16.0.0/12 -j RETURN
+    root@Wrt:~# iptables -t nat -A SHADOWSOCKS -d 192.168.0.0/16 -j RETURN
+    root@Wrt:~# iptables -t nat -A SHADOWSOCKS -d 224.0.0.0/4 -j RETURN
+    root@Wrt:~# iptables -t nat -A SHADOWSOCKS -d 240.0.0.0/4 -j RETURN
+
+    # Anything else should be redirected to shadowsocks's local port
+    root@Wrt:~# iptables -t nat -A SHADOWSOCKS -p tcp -j REDIRECT --to-ports 12345
+    
+    # Apply the rules
+    root@Wrt:~# iptables -t nat -A OUTPUT -p tcp -j SHADOWSOCKS
+    
+    # Start the shadowsocks-redir
+    root@Wrt:~# ss-redir -c /etc/config/shadowsocks.json -f /var/run/shadowsocks.pid
