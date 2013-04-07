@@ -1,0 +1,120 @@
+.ig
+. manual page for NEW and IMPROVED linux top
+.
+. Copyright (c) 2012-2013, by: Max Lv
+. All rights reserved.      
+.
+. Permission is granted to copy, distribute and/or modify this document
+. under the terms of the GNU Free Documentation License, Version 1.1 or
+. any later version published by the Free Software Foundation;
+. with no Front-Cover Texts, no Back-Cover Texts, and with the following
+. Invariant Sections (and any sub-sections therein):
+.   all .ig sections, including this one
+.   STUPID TRICKS Sampler
+.   AUTHOR
+.
+. A copy of the Free Documentation License is included in the section
+. entitled "GNU Free Documentation License".
+.
+..
+
+\#                          - these two are for chuckles, makes great grammar
+.ds Lo  \fBss-local\fR
+.ds Re  \fBss-redir\fR
+.ds Se  \fBss-server\fR
+.ds Me  \fBshadowsocks\fR
+
+.TH SHADOWSOCKS-LIBEV 8 "April 7, 2013"
+.SH NAME
+shadowsocks-libev \- a lightweight secured scoks5 proxy 
+
+.SH SYNOPSIS
+\*(Lo|\*(Re|\*(Se
+    \-s server_host     \-p server_port    
+    \-l local_port      \-k password    
+    \-m encrypt_method  \-f pid_file
+    \-t timeout         \-c config_file
+
+.SH DESCRIPTION
+\*(Me is a lightweight secured socks5 proxy. It is a port of 
+the original shadowsocks created by clowwindy. \*(Me is written in pure
+C and uses \fBlibev\fP to provide a both high performance and low resource 
+consumption socks5 proxy for users that need a secured tunnel to visit the
+internet freely and privately.
+.PP
+\*(Me consists of three components. One is \*(Se that runs on a remote server
+to provide secured tunnel service. \*(Lo and \*(Re are clients that run on your
+local machines for proxying all your TCP traffic.
+.PP
+While \*(Lo can be used as a standard socks5 proxy, \*(Re works as a transparent 
+proxy and should be used with the kernel's NAT function. For more information,
+check the example section.
+
+.SH OPTIONS
+.TP
+.B \-s \fIserver_host\fP
+Set the shadowsocks server host.
+.TP
+.B \-p \fIserver_port\fP
+Set the shadowsocks server port.
+.TP
+.B \-l \fIlocal_port\fP
+Listen on the local port.
+.TP
+.B \-k \fIpassword\fP
+Set the shadowsocks password. The server and the client should use the same
+password.
+.TP
+.B \-m \fIencrypt_method\fP
+Set the shadowsocks encryption method. Currently, shadowsocks accepts two
+encryption methods: table or rc4. And the default method is \fItable\fP. 
+.TP
+.B \-f \fIpid_file\fP
+Start shadowsocks as a daemon with a specific pid file.
+.TP
+.B \-t \fItimeout\fP
+Set the socket timeout in secondes. The default value is 10.
+.TP
+.B \-c \fIconfig_file\fP
+Use a configuration file.
+
+.SH EXAMPLES
+The \*(Re needs to be used with the NAT function. Here are some examples:
+
+# Create new chain
+        root@Wrt:~# iptables -t nat -N SHADOWSOCKS
+
+# Ignore your shadowsocks server's addresses
+# It's very IMPORTANT, just be careful.
+        root@Wrt:~# iptables -t nat -A SHADOWSOCKS -d 123.123.123.123 -j RETURN
+
+# Ignore LANs and any other addresses you'd like to bypass the proxy
+# See Wikipedia and RFC5735 for full list of reserved networks.
+# See ashi009/bestroutetb for a highly optimized CHN route list.
+        root@Wrt:~# iptables -t nat -A SHADOWSOCKS -d 0.0.0.0/8 -j RETURN
+        root@Wrt:~# iptables -t nat -A SHADOWSOCKS -d 10.0.0.0/8 -j RETURN
+        root@Wrt:~# iptables -t nat -A SHADOWSOCKS -d 127.0.0.0/8 -j RETURN
+        root@Wrt:~# iptables -t nat -A SHADOWSOCKS -d 169.254.0.0/16 -j RETURN
+        root@Wrt:~# iptables -t nat -A SHADOWSOCKS -d 172.16.0.0/12 -j RETURN
+        root@Wrt:~# iptables -t nat -A SHADOWSOCKS -d 192.168.0.0/16 -j RETURN
+        root@Wrt:~# iptables -t nat -A SHADOWSOCKS -d 224.0.0.0/4 -j RETURN
+        root@Wrt:~# iptables -t nat -A SHADOWSOCKS -d 240.0.0.0/4 -j RETURN
+
+# Anything else should be redirected to shadowsocks's local port
+root@Wrt:~# iptables -t nat -A SHADOWSOCKS -p tcp -j REDIRECT --to-ports 12345
+
+# Apply the rules
+root@Wrt:~# iptables -t nat -A OUTPUT -p tcp -j SHADOWSOCKS
+
+# Start the shadowsocks-redir
+root@Wrt:~# ss-redir -c /etc/config/shadowsocks.json -f /var/run/shadowsocks.pid
+
+.SH SEE ALSO
+.BR iptables (8),
+/etc/shadowsocks/config.json
+.br
+.SH AUTHOR
+shadowsocks was created by clowwindy <clowwindy42@gmail.com> and
+shadowsocks-libev was maintained by Max Lv <max.c.lv@gmail.com>.
+.PP
+This manual page was written by Max Lv <max.c.lv@gmail.com>.
