@@ -13,7 +13,6 @@ ss*
 stamp-h1
 .libs
 .pc
-*.json
 debian/shadowsocks/
 debian/patches/
 debian/files
