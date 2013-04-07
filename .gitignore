@@ -8,7 +8,6 @@ config.h
 config.log
 config.status
 libtool
-ar-lib
 pid
 ss*
 stamp-h1
