@@ -18,6 +18,8 @@ stamp-h1
 debian/shadowsocks.debhelper.log
 debian/shadowsocks/
 debian/patches/
+debian/files
+debian/shadowsocks.substvars
 
 #	Do not edit the following section
 # 	Edit Compile Debug Document Distribute
