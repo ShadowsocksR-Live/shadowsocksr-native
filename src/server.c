@@ -66,10 +66,12 @@ int create_and_bind(const char *host, const char *port) {
             continue;
 
         int opt = 1;
-        int err = setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-        if (err) {
-            ERROR("setsocket");
-        }
+        setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+        setsockopt(listen_sock, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
+#ifdef SO_NOSIGPIPE
+        setsockopt(listen_sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+#endif
+
 
         s = bind(listen_sock, rp->ai_addr, rp->ai_addrlen);
         if (s == 0) {
@@ -94,6 +96,7 @@ int create_and_bind(const char *host, const char *port) {
 
 struct remote *connect_to_remote(struct addrinfo *res, int timeout) {
     int sockfd;
+    int opt = 1;
 
     // initilize remote socks
     sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
@@ -102,6 +105,11 @@ struct remote *connect_to_remote(struct addrinfo *res, int timeout) {
         close(sockfd);
         return NULL;
     }
+
+    setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
+#ifdef SO_NOSIGPIPE
+    setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+#endif
 
     struct remote *remote = new_remote(sockfd, timeout);
 
@@ -128,6 +136,9 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 
     if (r == 0) {
         // connection closed
+        if (verbose) {
+            LOGD("server_recv close the connection");
+        }
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
@@ -275,6 +286,9 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
 
     if (server->buf_len == 0) {
         // close and free
+        if (verbose) {
+            LOGD("server_send close the connection");
+        }
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
@@ -423,6 +437,9 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
 
     if (r == 0) {
         // connection closed
+        if (verbose) {
+            LOGD("remote_recv close the connection");
+        }
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
@@ -486,12 +503,11 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
             remote_send_ctx->connected = 1;
             ev_timer_stop(EV_A_ &remote_send_ctx->watcher);
 
-            ev_io_start(EV_A_ &remote->recv_ctx->io);
-            server->stage = 5;
-
             if (remote->buf_len == 0) {
+                server->stage = 5;
                 ev_io_stop(EV_A_ &remote_send_ctx->io);
                 ev_io_start(EV_A_ &server->recv_ctx->io);
+                ev_io_start(EV_A_ &remote->recv_ctx->io);
                 return;
             }
 
@@ -506,6 +522,9 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
 
     if (remote->buf_len == 0) {
         // close and free
+        if (verbose) {
+            LOGD("remote_send close the connection");
+        }
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
@@ -532,6 +551,10 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
             ev_io_stop(EV_A_ &remote_send_ctx->io);
             if (server != NULL) {
                 ev_io_start(EV_A_ &server->recv_ctx->io);
+                if (server->stage == 4) {
+                    server->stage = 5;
+                    ev_io_start(EV_A_ &remote->recv_ctx->io);
+                }
             } else {
                 LOGE("invalid server.");
                 close_and_free_remote(EV_A_ remote);
@@ -654,6 +677,12 @@ static void accept_cb (EV_P_ ev_io *w, int revents) {
         return;
     }
     setnonblocking(serverfd);
+
+    int opt = 1;
+    setsockopt(serverfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
+#ifdef SO_NOSIGPIPE
+    setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+#endif
 
     if (verbose) {
         LOGD("accept a connection.");
