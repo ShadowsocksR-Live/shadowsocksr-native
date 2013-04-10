@@ -236,7 +236,11 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         struct addrinfo hints;
         asyncns_query_t *query;
         memset(&hints, 0, sizeof hints);
-        hints.ai_family = AF_UNSPEC;
+        if (atyp == 1 || atyp == 3) {
+            hints.ai_family = AF_INET;
+        } else {
+            hints.ai_family = AF_INET6;
+        }
         hints.ai_socktype = SOCK_STREAM;
 
         query = asyncns_getaddrinfo(server->listen_ctx->asyncns,
