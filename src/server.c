@@ -100,7 +100,6 @@ struct remote *connect_to_remote(struct addrinfo *res, int timeout) {
     if (sockfd < 0) {
         ERROR("socket");
         close(sockfd);
-        asyncns_freeaddrinfo(res);
         return NULL;
     }
 
@@ -109,9 +108,6 @@ struct remote *connect_to_remote(struct addrinfo *res, int timeout) {
     // setup remote socks
     setnonblocking(sockfd);
     connect(sockfd, res->ai_addr, res->ai_addrlen);
-
-    // release addrinfo
-    asyncns_freeaddrinfo(res);
 
     return remote;
 }
@@ -236,11 +232,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         struct addrinfo hints;
         asyncns_query_t *query;
         memset(&hints, 0, sizeof hints);
-        if (atyp == 1 || atyp == 3) {
-            hints.ai_family = AF_INET;
-        } else {
-            hints.ai_family = AF_INET6;
-        }
+        hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
 
         query = asyncns_getaddrinfo(server->listen_ctx->asyncns,
@@ -321,7 +313,7 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
 
 static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
     int err;
-    struct addrinfo *result;
+    struct addrinfo *result, *rp;
     struct server_ctx *server_ctx = (struct server_ctx *) (((void*)watcher)
             - sizeof(ev_io));
     struct server *server = server_ctx->server;
@@ -364,7 +356,21 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
         ERROR("getaddrinfo");
         close_and_free_server(EV_A_ server);
     } else {
-        struct remote *remote = connect_to_remote(result, server->listen_ctx->timeout);
+
+        // Use IPV4 address if possible
+        for (rp = result; rp != NULL; rp = rp->ai_next) {
+            if (rp->ai_family == AF_INET) break;
+        }
+
+        if (rp == NULL) {
+            rp = result;
+        }
+
+        struct remote *remote = connect_to_remote(rp, server->listen_ctx->timeout);
+
+        // release addrinfo
+        asyncns_freeaddrinfo(result);
+
         if (remote == NULL) {
             LOGE("connect error.");
             close_and_free_server(EV_A_ server);
