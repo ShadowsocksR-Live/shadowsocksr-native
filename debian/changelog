@@ -1,3 +1,9 @@
+shadowsocks (1.1-1) unstable; urgency=low
+
+  * Fix a IPV6 resolve issue
+
+ -- Max Lv <max.c.lv@gmail.com>  Wed, 10 Apr 2013 12:11:36 +0800
+
 shadowsocks (1.0-2) unstable; urgency=low
 
   * Initial release
