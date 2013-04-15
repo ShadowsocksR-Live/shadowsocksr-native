@@ -16,7 +16,7 @@ while(0)
     time_t now = time(NULL);\
     char timestr[20];\
     strftime(timestr, 20, TIME_FORMAT, localtime(&now));\
-    fprintf(stderr, "\e[01;35m %s ERROR: \e[0m" format " on File: %s Line: %s\n", timestr, ##__VA_ARGS__, __FILE__, TOSTR(__LINE__));}\
+    fprintf(stderr, "\e[01;35m %s ERROR: \e[0m" format "\n", timestr, ##__VA_ARGS__);}\
 while(0)
 
 void FATAL(const char *msg);
