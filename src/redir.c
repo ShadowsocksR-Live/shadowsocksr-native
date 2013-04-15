@@ -152,7 +152,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     } else if(s < r) {
         remote->buf_len = r - s;
-        memcpy(remote->buf, remote->buf + s, remote->buf_len);
+        bufcpy(remote->buf, remote->buf + s, remote->buf_len);
         ev_io_stop(EV_A_ &server_recv_ctx->io);
         ev_io_start(EV_A_ &remote->send_ctx->io);
         return;
@@ -183,7 +183,7 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
         } else if (s < server->buf_len) {
             // partly sent, move memory, wait for the next time to send
             server->buf_len -= s;
-            memcpy(server->buf, server->buf + s, server->buf_len);
+            bufcpy(server->buf, server->buf + s, server->buf_len);
             return;
         } else {
             // all sent out, wait for reading
@@ -268,7 +268,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     } else if (s < r) {
         server->buf_len = r - s;
-        memcpy(server->buf, server->buf + s, server->buf_len);
+        bufcpy(server->buf, server->buf + s, server->buf_len);
         ev_io_stop(EV_A_ &remote_recv_ctx->io);
         ev_io_start(EV_A_ &server->send_ctx->io);
         return;
@@ -297,9 +297,9 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
 
             // handle IP V4 only
             size_t in_addr_len = sizeof(struct in_addr);
-            memcpy(addr_to_send + addr_len, &server->destaddr.sin_addr, in_addr_len);
+            bufcpy(addr_to_send + addr_len, &server->destaddr.sin_addr, in_addr_len);
             addr_len += in_addr_len;
-            memcpy(addr_to_send + addr_len, &server->destaddr.sin_port, 2);
+            bufcpy(addr_to_send + addr_len, &server->destaddr.sin_port, 2);
             addr_len += 2;
             encrypt_ctx(addr_to_send, addr_len, server->e_ctx);
 
@@ -342,7 +342,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
             } else if (s < remote->buf_len) {
                 // partly sent, move memory, wait for the next time to send
                 remote->buf_len -= s;
-                memcpy(remote->buf, remote->buf + s, remote->buf_len);
+                bufcpy(remote->buf, remote->buf + s, remote->buf_len);
                 return;
             } else {
                 // all sent out, wait for reading
