@@ -24,5 +24,6 @@ void ERROR(const char *s);
 void usage(void);
 void demonize(const char* path);
 char *itoa(int i);
+void bufcpy(char *dest, const char *src, size_t n);
 
 #endif // _UTILS_H

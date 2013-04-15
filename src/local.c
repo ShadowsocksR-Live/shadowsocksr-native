@@ -63,10 +63,11 @@ int create_and_bind(const char *port) {
             continue;
 
         int opt = 1;
-        int err = setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-        if (err) {
-            ERROR("setsocket");
-        }
+        setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+        setsockopt(listen_sock, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
+#ifdef SO_NOSIGPIPE
+        setsockopt(listen_sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+#endif
 
         s = bind(listen_sock, rp->ai_addr, rp->ai_addrlen);
         if (s == 0) {
@@ -141,7 +142,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             }
         } else if(s < r) {
             remote->buf_len = r - s;
-            memcpy(remote->buf, remote->buf + s, remote->buf_len);
+            bufcpy(remote->buf, remote->buf + s, remote->buf_len);
             ev_io_stop(EV_A_ &server_recv_ctx->io);
             ev_io_start(EV_A_ &remote->send_ctx->io);
             return;
@@ -179,14 +180,14 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         if (request->atyp == 1) {
             // IP V4
             size_t in_addr_len = sizeof(struct in_addr);
-            memcpy(addr_to_send + addr_len, remote->buf + 4, in_addr_len + 2);
+            bufcpy(addr_to_send + addr_len, remote->buf + 4, in_addr_len + 2);
             addr_len += in_addr_len + 2;
 
         } else if (request->atyp == 3) {
             // Domain name
             uint8_t name_len = *(uint8_t *)(remote->buf + 4);
             addr_to_send[addr_len++] = name_len;
-            memcpy(addr_to_send + addr_len, remote->buf + 4 + 1, name_len);
+            bufcpy(addr_to_send + addr_len, remote->buf + 4 + 1, name_len);
             addr_len += name_len;
 
             // get port
@@ -196,7 +197,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         } else if (request->atyp == 4) {
             // IP V6
             size_t in6_addr_len = sizeof(struct in6_addr);
-            memcpy(addr_to_send + addr_len, remote->buf + 4, in6_addr_len + 2);
+            bufcpy(addr_to_send + addr_len, remote->buf + 4, in6_addr_len + 2);
             addr_len += in6_addr_len + 2;
 
         } else {
@@ -225,10 +226,10 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         struct in_addr sin_addr;
         inet_aton("0.0.0.0", &sin_addr);
 
-        memcpy(server->buf, &response, 4);
-        memset(server->buf + 4, 0, sizeof(struct in_addr) + sizeof(uint16_t));
+        bufcpy(server->buf, &response, sizeof(struct socks5_response));
+        memset(server->buf + sizeof(struct socks5_response), 0, sizeof(struct in_addr) + sizeof(uint16_t));
 
-        int reply_size = 4 + sizeof(struct in_addr) + sizeof(uint16_t);
+        int reply_size = sizeof(struct socks5_response) + sizeof(struct in_addr) + sizeof(uint16_t);
         s = send(server->fd, server->buf, reply_size, 0);
         if (s < reply_size) {
             LOGE("failed to send fake reply.");
@@ -238,6 +239,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         }
 
         server->stage = 5;
+        ev_io_start(EV_A_ &remote->recv_ctx->io);
     }
 }
 
@@ -264,7 +266,7 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
         } else if (s < server->buf_len) {
             // partly sent, move memory, wait for the next time to send
             server->buf_len -= s;
-            memcpy(server->buf, server->buf + s, server->buf_len);
+            bufcpy(server->buf, server->buf + s, server->buf_len);
             return;
         } else {
             // all sent out, wait for reading
@@ -349,7 +351,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     } else if (s < r) {
         server->buf_len = r - s;
-        memcpy(server->buf, server->buf + s, server->buf_len);
+        bufcpy(server->buf, server->buf + s, server->buf_len);
         ev_io_stop(EV_A_ &remote_recv_ctx->io);
         ev_io_start(EV_A_ &server->send_ctx->io);
         return;
@@ -371,7 +373,6 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
             ev_io_stop(EV_A_ &remote_send_ctx->io);
             ev_timer_stop(EV_A_ &remote_send_ctx->watcher);
             ev_io_start(EV_A_ &server->recv_ctx->io);
-            ev_io_start(EV_A_ &remote->recv_ctx->io);
             return;
         } else {
             ERROR("getpeername");
@@ -401,7 +402,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
             } else if (s < remote->buf_len) {
                 // partly sent, move memory, wait for the next time to send
                 remote->buf_len -= s;
-                memcpy(remote->buf, remote->buf + s, remote->buf_len);
+                bufcpy(remote->buf, remote->buf + s, remote->buf_len);
                 return;
             } else {
                 // all sent out, wait for reading
@@ -515,6 +516,11 @@ static void accept_cb (EV_P_ ev_io *w, int revents) {
         return;
     }
     setnonblocking(serverfd);
+    int opt = 1;
+    setsockopt(serverfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
+#ifdef SO_NOSIGPIPE
+    setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+#endif
 
     struct addrinfo hints, *res;
     int sockfd;
@@ -535,6 +541,11 @@ static void accept_cb (EV_P_ ev_io *w, int revents) {
         freeaddrinfo(res);
         return;
     }
+
+    setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
+#ifdef SO_NOSIGPIPE
+    setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+#endif
 
     struct timeval timeout;
     timeout.tv_sec = listener->timeout;

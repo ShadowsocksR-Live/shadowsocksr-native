@@ -72,7 +72,6 @@ int create_and_bind(const char *host, const char *port) {
         setsockopt(listen_sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
-
         s = bind(listen_sock, rp->ai_addr, rp->ai_addrlen);
         if (s == 0) {
             /* We managed to bind successfully! */
@@ -173,7 +172,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             }
         } else if (s < r) {
             remote->buf_len = r - s;
-            memcpy(remote->buf, remote->buf + s, remote->buf_len);
+            bufcpy(remote->buf, remote->buf + s, remote->buf_len);
             ev_io_stop(EV_A_ &server_recv_ctx->io);
             ev_io_start(EV_A_ &remote->send_ctx->io);
         }
@@ -203,14 +202,14 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             size_t in_addr_len = sizeof(struct in_addr);
             if (r > in_addr_len) {
                 char *a = inet_ntoa(*(struct in_addr*)(server->buf + offset));
-                memcpy(host, a, strlen(a));
+                bufcpy(host, a, strlen(a));
                 offset += in_addr_len;
             }
 
         } else if (atyp == 3) {
             // Domain name
             uint8_t name_len = *(uint8_t *)(server->buf + offset);
-            memcpy(host, server->buf + offset + 1, name_len);
+            bufcpy(host, server->buf + offset + 1, name_len);
             offset += name_len + 1;
 
         } else if (atyp == 4) {
@@ -220,7 +219,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
                 char a[INET6_ADDRSTRLEN];
                 inet_ntop(AF_INET6, (const void*)(server->buf + offset), 
                         a, sizeof(a));
-                memcpy(host, a, strlen(a));
+                bufcpy(host, a, strlen(a));
                 offset += in6_addr_len;
             }
 
@@ -258,7 +257,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         // XXX: should handel buffer carefully
         if (r > offset) {
             server->buf_len = r - offset;
-            memcpy(server->buf, server->buf + offset, server->buf_len);
+            bufcpy(server->buf, server->buf + offset, server->buf_len);
         }
 
         server->stage = 4;
@@ -306,7 +305,7 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
         } else if (s < server->buf_len) {
             // partly sent, move memory, wait for the next time to send
             server->buf_len -= s;
-            memcpy(server->buf, server->buf + s, server->buf_len);
+            bufcpy(server->buf, server->buf + s, server->buf_len);
             return;
         } else {
             // all sent out, wait for reading
@@ -396,7 +395,7 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
 
         // XXX: should handel buffer carefully
         if (server->buf_len > 0) {
-            memcpy(remote->buf, server->buf, server->buf_len);
+            bufcpy(remote->buf, server->buf, server->buf_len);
             remote->buf_len = server->buf_len;
             server->buf_len = 0;
         }
@@ -473,7 +472,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         return;
     } else if (s < r) {
         server->buf_len = r - s;
-        memcpy(server->buf, server->buf + s, server->buf_len);
+        bufcpy(server->buf, server->buf + s, server->buf_len);
         ev_io_stop(EV_A_ &remote_recv_ctx->io);
         ev_io_start(EV_A_ &server->send_ctx->io);
         return;
@@ -543,7 +542,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
         } else if (s < remote->buf_len) {
             // partly sent, move memory, wait for the next time to send
             remote->buf_len -= s;
-            memcpy(remote->buf, remote->buf + s, remote->buf_len);
+            bufcpy(remote->buf, remote->buf + s, remote->buf_len);
             return;
         } else {
             // all sent out, wait for reading

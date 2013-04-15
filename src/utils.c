@@ -22,6 +22,13 @@ void ERROR(const char *s) {
 
 }
 
+void bufcpy(char *dest, const char *src, size_t n) {
+    int i;
+    for (i = 0; i < n; i++) {
+        *dest++ = *src++;
+    }
+}
+
 char *itoa(int i) {
     /* Room for INT_DIGITS digits, - and '\0' */
     static char buf[INT_DIGITS + 2];
