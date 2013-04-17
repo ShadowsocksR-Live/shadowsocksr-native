@@ -403,8 +403,8 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
             memcpy(remote->buf, server->buf, server->buf_len);
             remote->buf_len = server->buf_len;
             remote->buf_idx = 0;
-            server->buf_idx = 0;
             server->buf_len = 0;
+            server->buf_idx = 0;
         }
 
         // listen to remote connected event
