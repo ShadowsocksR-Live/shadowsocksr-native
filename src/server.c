@@ -172,7 +172,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             }
         } else if (s < r) {
             remote->buf_len = r - s;
-            remote->buf_idx = r;
+            remote->buf_idx = s;
             ev_io_stop(EV_A_ &server_recv_ctx->io);
             ev_io_start(EV_A_ &remote->send_ctx->io);
         }
@@ -479,7 +479,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         return;
     } else if (s < r) {
         server->buf_len = r - s;
-        server->buf_idx = r;
+        server->buf_idx = s;
         ev_io_stop(EV_A_ &remote_recv_ctx->io);
         ev_io_start(EV_A_ &server->send_ctx->io);
         return;
