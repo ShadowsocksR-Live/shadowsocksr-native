@@ -163,6 +163,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 // no data, wait for send
                 remote->buf_len = r;
+                remote->buf_idx = 0;
                 ev_io_stop(EV_A_ &server_recv_ctx->io);
                 ev_io_start(EV_A_ &remote->send_ctx->io);
             } else {
@@ -469,6 +470,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             // no data, wait for send
             server->buf_len = r;
+            server->buf_idx = 0;
             ev_io_stop(EV_A_ &remote_recv_ctx->io);
             ev_io_start(EV_A_ &server->send_ctx->io);
         } else {
