@@ -259,7 +259,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             return;
         }
 
-        // XXX: should handel buffer carefully
+        // XXX: should handle buffer carefully
         if (r > offset) {
             server->buf_len = r - offset;
             server->buf_idx = offset;
@@ -401,7 +401,7 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
 
         // XXX: should handel buffer carefully
         if (server->buf_len > 0) {
-            memcpy(remote->buf, server->buf, server->buf_len);
+            memcpy(remote->buf, server->buf + server->buf_idx, server->buf_len);
             remote->buf_len = server->buf_len;
             remote->buf_idx = 0;
             server->buf_len = 0;
