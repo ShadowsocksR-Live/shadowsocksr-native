@@ -172,7 +172,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             }
         } else if (s < r) {
             remote->buf_len = r - s;
-            bufcpy(remote->buf, remote->buf + s, remote->buf_len);
+            remote->buf_idx = r;
             ev_io_stop(EV_A_ &server_recv_ctx->io);
             ev_io_start(EV_A_ &remote->send_ctx->io);
         }
@@ -202,14 +202,18 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             size_t in_addr_len = sizeof(struct in_addr);
             if (r > in_addr_len) {
                 char *a = inet_ntoa(*(struct in_addr*)(server->buf + offset));
-                bufcpy(host, a, strlen(a));
+                memcpy(host, a, strlen(a));
                 offset += in_addr_len;
             }
 
         } else if (atyp == 3) {
             // Domain name
             uint8_t name_len = *(uint8_t *)(server->buf + offset);
-            bufcpy(host, server->buf + offset + 1, name_len);
+            if (name_len >= 255) {
+                close_and_free_server(EV_A_ server);
+                return;
+            }
+            memcpy(host, server->buf + offset + 1, name_len);
             offset += name_len + 1;
 
         } else if (atyp == 4) {
@@ -219,7 +223,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
                 char a[INET6_ADDRSTRLEN];
                 inet_ntop(AF_INET6, (const void*)(server->buf + offset), 
                         a, sizeof(a));
-                bufcpy(host, a, strlen(a));
+                memcpy(host, a, strlen(a));
                 offset += in6_addr_len;
             }
 
@@ -257,7 +261,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         // XXX: should handel buffer carefully
         if (r > offset) {
             server->buf_len = r - offset;
-            bufcpy(server->buf, server->buf + offset, server->buf_len);
+            server->buf_idx = offset;
         }
 
         server->stage = 4;
@@ -293,7 +297,7 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
         return;
     } else {
         // has data to send
-        ssize_t s = send(server->fd, server->buf,
+        ssize_t s = send(server->fd, server->buf + server->buf_idx,
                 server->buf_len, 0);
         if (s < 0) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
@@ -305,11 +309,12 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
         } else if (s < server->buf_len) {
             // partly sent, move memory, wait for the next time to send
             server->buf_len -= s;
-            bufcpy(server->buf, server->buf + s, server->buf_len);
+            server->buf_idx += s;
             return;
         } else {
             // all sent out, wait for reading
             server->buf_len = 0;
+            server->buf_idx = 0;
             ev_io_stop(EV_A_ &server_send_ctx->io);
             if (remote != NULL) {
                 ev_io_start(EV_A_ &remote->recv_ctx->io);
@@ -395,8 +400,10 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
 
         // XXX: should handel buffer carefully
         if (server->buf_len > 0) {
-            bufcpy(remote->buf, server->buf, server->buf_len);
+            memcpy(remote->buf, server->buf, server->buf_len);
             remote->buf_len = server->buf_len;
+            remote->buf_idx = 0;
+            server->buf_idx = 0;
             server->buf_len = 0;
         }
 
@@ -472,7 +479,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         return;
     } else if (s < r) {
         server->buf_len = r - s;
-        bufcpy(server->buf, server->buf + s, server->buf_len);
+        server->buf_idx = r;
         ev_io_stop(EV_A_ &remote_recv_ctx->io);
         ev_io_start(EV_A_ &server->send_ctx->io);
         return;
@@ -529,7 +536,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
         return;
     } else {
         // has data to send
-        ssize_t s = send(remote->fd, remote->buf,
+        ssize_t s = send(remote->fd, remote->buf + remote->buf_idx,
                 remote->buf_len, 0);
         if (s == -1) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
@@ -542,11 +549,12 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
         } else if (s < remote->buf_len) {
             // partly sent, move memory, wait for the next time to send
             remote->buf_len -= s;
-            bufcpy(remote->buf, remote->buf + s, remote->buf_len);
+            remote->buf_idx += s;
             return;
         } else {
             // all sent out, wait for reading
             remote->buf_len = 0;
+            remote->buf_idx = 0;
             ev_io_stop(EV_A_ &remote_send_ctx->io);
             if (server != NULL) {
                 ev_io_start(EV_A_ &server->recv_ctx->io);
@@ -579,6 +587,7 @@ struct remote* new_remote(int fd, int timeout) {
     remote->send_ctx->remote = remote;
     remote->send_ctx->connected = 0;
     remote->buf_len = 0;
+    remote->buf_idx = 0;
     remote->server = NULL;
     return remote;
 }
@@ -635,6 +644,7 @@ struct server* new_server(int fd, struct listen_ctx *listener) {
         server->d_ctx = NULL;
     }
     server->buf_len = 0;
+    server->buf_idx = 0;
     server->remote = NULL;
     return server;
 }

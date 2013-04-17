@@ -9,48 +9,50 @@
 #include "asyncns.h"
 
 struct listen_ctx {
-	ev_io io;
-	int fd;
+    ev_io io;
+    int fd;
     int timeout;
     asyncns_t *asyncns;
-	struct sockaddr sock;
+    struct sockaddr sock;
 };
 
 struct server_ctx {
-	ev_io io;
+    ev_io io;
     ev_timer watcher;
-	int connected;
-	struct server *server;
+    int connected;
+    struct server *server;
 };
 
 struct server {
-	int fd;
-	char buf[BUF_SIZE]; // server send from, remote recv into
+    int fd;
+    char buf[BUF_SIZE]; // server send from, remote recv into
     char stage;
-	int buf_len;
+    int buf_len;
+    int buf_idx;
     struct rc4_state *e_ctx;
     struct rc4_state *d_ctx;
-	struct server_ctx *recv_ctx;
-	struct server_ctx *send_ctx;
+    struct server_ctx *recv_ctx;
+    struct server_ctx *send_ctx;
     struct listen_ctx *listen_ctx;
     asyncns_query_t *query;
-	struct remote *remote;
+    struct remote *remote;
 };
 
 struct remote_ctx {
-	ev_io io;
+    ev_io io;
     ev_timer watcher;
-	int connected;
-	struct remote *remote;
+    int connected;
+    struct remote *remote;
 };
 
 struct remote {
-	int fd;
-	char buf[BUF_SIZE]; // remote send from, server recv into
-	int buf_len;
-	struct remote_ctx *recv_ctx;
-	struct remote_ctx *send_ctx;
-	struct server *server;
+    int fd;
+    char buf[BUF_SIZE]; // remote send from, server recv into
+    int buf_len;
+    int buf_idx;
+    struct remote_ctx *recv_ctx;
+    struct remote_ctx *send_ctx;
+    struct server *server;
 };
 
 

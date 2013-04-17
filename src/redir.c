@@ -116,6 +116,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     if (r == 0) {
         // connection closed
         remote->buf_len = 0;
+        remote->buf_idx = 0;
         close_and_free_server(EV_A_ server);
         if (remote != NULL) {
             ev_io_start(EV_A_ &remote->send_ctx->io);
@@ -152,7 +153,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     } else if(s < r) {
         remote->buf_len = r - s;
-        bufcpy(remote->buf, remote->buf + s, remote->buf_len);
+        remote->buf_idx = s;
         ev_io_stop(EV_A_ &server_recv_ctx->io);
         ev_io_start(EV_A_ &remote->send_ctx->io);
         return;
@@ -171,7 +172,7 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
         return;
     } else {
         // has data to send
-        ssize_t s = send(server->fd, server->buf,
+        ssize_t s = send(server->fd, server->buf + server->buf_idx,
                 server->buf_len, 0);
         if (s < 0) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
@@ -183,10 +184,12 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
         } else if (s < server->buf_len) {
             // partly sent, move memory, wait for the next time to send
             server->buf_len -= s;
-            bufcpy(server->buf, server->buf + s, server->buf_len);
+            server->buf_idx += s;
             return;
         } else {
             // all sent out, wait for reading
+            server->buf_len = 0;
+            server->buf_idx = 0;
             ev_io_stop(EV_A_ &server_send_ctx->io);
             if (remote != NULL) {
                 ev_io_start(EV_A_ &remote->recv_ctx->io);
@@ -232,6 +235,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
     if (r == 0) {
         // connection closed
         server->buf_len = 0;
+        server->buf_idx = 0;
         close_and_free_remote(EV_A_ remote);
         if (server != NULL) {
             ev_io_start(EV_A_ &server->send_ctx->io);
@@ -268,7 +272,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     } else if (s < r) {
         server->buf_len = r - s;
-        bufcpy(server->buf, server->buf + s, server->buf_len);
+        server->buf_idx = s;
         ev_io_stop(EV_A_ &remote_recv_ctx->io);
         ev_io_start(EV_A_ &server->send_ctx->io);
         return;
@@ -297,9 +301,9 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
 
             // handle IP V4 only
             size_t in_addr_len = sizeof(struct in_addr);
-            bufcpy(addr_to_send + addr_len, &server->destaddr.sin_addr, in_addr_len);
+            memcpy(addr_to_send + addr_len, &server->destaddr.sin_addr, in_addr_len);
             addr_len += in_addr_len;
-            bufcpy(addr_to_send + addr_len, &server->destaddr.sin_port, 2);
+            memcpy(addr_to_send + addr_len, &server->destaddr.sin_port, 2);
             addr_len += 2;
             encrypt_ctx(addr_to_send, addr_len, server->e_ctx);
 
@@ -329,7 +333,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
             return;
         } else {
             // has data to send
-            ssize_t s = send(remote->fd, remote->buf,
+            ssize_t s = send(remote->fd, remote->buf + remote->buf_idx,
                     remote->buf_len, 0);
             if (s < 0) {
                 if (errno != EAGAIN && errno != EWOULDBLOCK) {
@@ -342,10 +346,12 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
             } else if (s < remote->buf_len) {
                 // partly sent, move memory, wait for the next time to send
                 remote->buf_len -= s;
-                bufcpy(remote->buf, remote->buf + s, remote->buf_len);
+                remote->buf_idx += s;
                 return;
             } else {
                 // all sent out, wait for reading
+                remote->buf_len = 0;
+                remote->buf_idx = 0;
                 ev_io_stop(EV_A_ &remote_send_ctx->io);
                 if (server != NULL) {
                     ev_io_start(EV_A_ &server->recv_ctx->io);
@@ -374,6 +380,7 @@ struct remote* new_remote(int fd, int timeout) {
     remote->send_ctx->remote = remote;
     remote->send_ctx->connected = 0;
     remote->buf_len = 0;
+    remote->buf_idx = 0;
     return remote;
 }
 
@@ -420,6 +427,7 @@ struct server* new_server(int fd) {
         server->d_ctx = NULL;
     }
     server->buf_len = 0;
+    server->buf_idx = 0;
     return server;
 }
 

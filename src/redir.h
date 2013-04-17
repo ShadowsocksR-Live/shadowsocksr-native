@@ -6,47 +6,49 @@
 #include "jconf.h"
 
 struct listen_ctx {
-	ev_io io;
+    ev_io io;
     char **remote_host;
     int remote_num;
     char *remote_port;
     int timeout;
-	int fd;
-	struct sockaddr sock;
+    int fd;
+    struct sockaddr sock;
 };
 
 struct server_ctx {
-	ev_io io;
-	int connected;
-	struct server *server;
+    ev_io io;
+    int connected;
+    struct server *server;
 };
 
 struct server {
-	int fd;
-	char buf[BUF_SIZE]; // server send from, remote recv into
-	int buf_len;
+    int fd;
+    char buf[BUF_SIZE]; // server send from, remote recv into
+    int buf_len;
+    int buf_idx;
     struct sockaddr_in destaddr;
     struct rc4_state *e_ctx;
     struct rc4_state *d_ctx;
-	struct server_ctx *recv_ctx;
-	struct server_ctx *send_ctx;
-	struct remote *remote;
+    struct server_ctx *recv_ctx;
+    struct server_ctx *send_ctx;
+    struct remote *remote;
 };
 
 struct remote_ctx {
-	ev_io io;
+    ev_io io;
     ev_timer watcher;
-	int connected;
-	struct remote *remote;
+    int connected;
+    struct remote *remote;
 };
 
 struct remote {
-	int fd;
-	char buf[BUF_SIZE]; // remote send from, server recv into
-	int buf_len;
-	struct remote_ctx *recv_ctx;
-	struct remote_ctx *send_ctx;
-	struct server *server;
+    int fd;
+    char buf[BUF_SIZE]; // remote send from, server recv into
+    int buf_len;
+    int buf_idx;
+    struct remote_ctx *recv_ctx;
+    struct remote_ctx *send_ctx;
+    struct server *server;
 };
 
 
