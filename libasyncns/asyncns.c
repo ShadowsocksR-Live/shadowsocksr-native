@@ -645,7 +645,7 @@ static int process_worker(int in_fd, int out_fd) {
 
         if (!have_death_sig) {
             fd_set fds;
-            struct timeval tv = { 0, 500000 };
+            struct timeval tv = { 0, 5000000 };
 
             FD_ZERO(&fds);
             FD_SET(in_fd, &fds);
@@ -683,20 +683,35 @@ fail:
 static void* thread_worker(void *p) {
     asyncns_t *asyncns = p;
     sigset_t fullset;
+    int in_fd = asyncns->fds[REQUEST_RECV_FD];
 
     /* No signals in this thread please */
     sigfillset(&fullset);
     pthread_sigmask(SIG_BLOCK, &fullset, NULL);
 
+    fd_nonblock(in_fd);
+
     while (!asyncns->dead) {
         packet_t buf[BUFSIZE/sizeof(packet_t) + 1];
         ssize_t length;
 
-        if ((length = recv(asyncns->fds[REQUEST_RECV_FD], buf, sizeof(buf), 0)) <= 0) {
+        if ((length = recv(in_fd, buf, sizeof(buf), 0)) <= 0) {
+
+            if (!asyncns->dead) {
+                fd_set fds;
+                struct timeval tv = { 0, 5000000 };
+
+                FD_ZERO(&fds);
+                FD_SET(in_fd, &fds);
+
+                if (select(in_fd+1, &fds, NULL, NULL, &tv) < 0)
+                    break;
+            }
 
             if (length < 0 &&
-                (errno == EAGAIN || errno == EINTR))
+                (errno == EAGAIN || errno == EINTR)) {
                 continue;
+            }
 
             break;
         }
