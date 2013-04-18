@@ -1,3 +1,9 @@
+shadowsocks (1.2-1) unstable; urgency=low
+
+  * Fix a high load issue
+
+ -- Max Lv <max@ubuntu>  Thu, 18 Apr 2013 10:52:34 +0800
+
 shadowsocks (1.1-1) unstable; urgency=low
 
   * Fix a IPV6 resolve issue
