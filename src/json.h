@@ -35,6 +35,17 @@
    #define json_char char
 #endif
 
+#ifndef json_int_t
+   #ifndef _MSC_VER
+      #include <inttypes.h>
+      #define json_int_t int64_t
+   #else
+      #define json_int_t __int64
+   #endif
+#endif
+
+#include <stdlib.h>
+
 #ifdef __cplusplus
 
    #include <string.h>
@@ -48,6 +59,14 @@ typedef struct
 {
    unsigned long max_memory;
    int settings;
+
+   /* Custom allocator support (leave null to use malloc/free)
+    */
+
+   void * (* mem_alloc) (size_t, int zero, void * user_data);
+   void (* mem_free) (void *, void * user_data);
+
+   void * user_data;  /* will be passed to mem_alloc and mem_free */
 
 } json_settings;
 
@@ -77,7 +96,7 @@ typedef struct _json_value
    union
    {
       int boolean;
-      long integer;
+      json_int_t integer;
       double dbl;
 
       struct
@@ -162,7 +181,7 @@ typedef struct _json_value
             };
          }
 
-         inline operator long () const
+         inline operator json_int_t () const
          {  
             switch (type)
             {
@@ -170,7 +189,7 @@ typedef struct _json_value
                   return u.integer;
 
                case json_double:
-                  return (long) u.dbl;
+                  return (json_int_t) u.dbl;
 
                default:
                   return 0;
@@ -190,7 +209,7 @@ typedef struct _json_value
             switch (type)
             {
                case json_integer:
-                  return u.integer;
+                  return (double) u.integer;
 
                case json_double:
                   return u.dbl;
@@ -204,13 +223,22 @@ typedef struct _json_value
 
 } json_value;
 
-json_value * json_parse
-   (const json_char * json);
+json_value * json_parse (const json_char * json,
+                         size_t length);
 
-json_value * json_parse_ex
-   (json_settings * settings, const json_char * json, char * error);
+json_value * json_parse_ex (json_settings * settings,
+                            const json_char * json,
+                            size_t length,
+                            char * error);
 
 void json_value_free (json_value *);
+
+
+/* Not usually necessary, unless you used a custom mem_alloc and now want to
+ * use a custom mem_free.
+ */
+void json_value_free_ex (json_settings * settings,
+                         json_value *);
 
 
 #ifdef __cplusplus

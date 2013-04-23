@@ -50,16 +50,20 @@ jconf_t *read_jconf(const char* file) {
 
     if (pos >= MAX_CONF_SIZE) FATAL("Too large config file.");
 
-    buf = malloc(pos);
+    buf = malloc(pos + 1);
     if (buf == NULL) FATAL("No enough memory.");
 
     fread(buf, pos, 1, f);
     fclose(f);
 
-    obj = json_parse(buf);
+    buf[pos] = '\0'; // end of string
+
+    json_settings settings = { 0 };
+    char error_buf[512];
+    obj = json_parse_ex(&settings, buf, pos, error_buf);
 
     if (obj == NULL) {
-        FATAL("Invalid config file");
+        FATAL(error_buf);
     }
 
     if (obj->type == json_object) {
