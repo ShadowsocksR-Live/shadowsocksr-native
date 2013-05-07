@@ -93,7 +93,7 @@ int create_and_bind(const char *host, const char *port) {
     return listen_sock;
 }
 
-struct remote *connect_to_remote(struct addrinfo *res, int timeout) {
+struct remote *connect_to_remote(struct addrinfo *res) {
     int sockfd;
     int opt = 1;
 
@@ -110,7 +110,7 @@ struct remote *connect_to_remote(struct addrinfo *res, int timeout) {
     setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
-    struct remote *remote = new_remote(sockfd, timeout);
+    struct remote *remote = new_remote(sockfd);
 
     // setup remote socks
     setnonblocking(sockfd);
@@ -125,6 +125,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     struct remote *remote = NULL;
 
     char *buf = server->buf;
+
+    ev_timer_again(EV_A_ &server->recv_ctx->watcher);
 
     if (server->stage != 0) {
         remote = server->remote;
@@ -269,7 +271,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         server->query = query;
 
         ev_io_stop(EV_A_ &server_recv_ctx->io);
-        ev_timer_start(EV_A_ &server->recv_ctx->watcher);
+        ev_timer_start(EV_A_ &server->send_ctx->watcher);
 
         return;
     }
@@ -330,6 +332,20 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
     }
 }
 
+static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents) {
+    struct server_ctx *server_ctx = (struct server_ctx *) (((void*)watcher)
+            - sizeof(ev_io));
+    struct server *server = server_ctx->server;
+    struct remote *remote = server->remote;
+
+    LOGE("TCP connection timeout");
+
+    ev_timer_stop(EV_A_ watcher);
+
+    close_and_free_remote(EV_A_ remote);
+    close_and_free_server(EV_A_ server);
+}
+
 static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
     int err;
     struct addrinfo *result, *rp;
@@ -385,7 +401,7 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
             rp = result;
         }
 
-        struct remote *remote = connect_to_remote(rp, server->listen_ctx->timeout);
+        struct remote *remote = connect_to_remote(rp);
 
         // release addrinfo
         asyncns_freeaddrinfo(result);
@@ -410,23 +426,8 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
 
         // listen to remote connected event
         ev_io_start(EV_A_ &remote->send_ctx->io);
-        ev_timer_start(EV_A_ &remote->send_ctx->watcher);
     }
 
-}
-
-static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents) {
-    struct remote_ctx *remote_ctx = (struct remote_ctx *) (((void*)watcher)
-            - sizeof(ev_io));
-    struct remote *remote = remote_ctx->remote;
-    struct server *server = remote->server;
-
-    LOGE("remote timeout");
-
-    ev_timer_stop(EV_A_ watcher);
-
-    close_and_free_remote(EV_A_ remote);
-    close_and_free_server(EV_A_ server);
 }
 
 static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
@@ -439,6 +440,8 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         close_and_free_remote(EV_A_ remote);
         return;
     }
+
+    ev_timer_again(EV_A_ &server->recv_ctx->watcher);
 
     ssize_t r = recv(remote->fd, server->buf, BUF_SIZE, 0);
 
@@ -509,7 +512,6 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
                 LOGD("remote connected.");
             }
             remote_send_ctx->connected = 1;
-            ev_timer_stop(EV_A_ &remote_send_ctx->watcher);
 
             if (remote->buf_len == 0) {
                 server->stage = 5;
@@ -574,7 +576,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
     }
 }
 
-struct remote* new_remote(int fd, int timeout) {
+struct remote* new_remote(int fd) {
     remote_conn++;
     struct remote *remote;
     remote = malloc(sizeof(struct remote));
@@ -583,7 +585,6 @@ struct remote* new_remote(int fd, int timeout) {
     remote->fd = fd;
     ev_io_init(&remote->recv_ctx->io, remote_recv_cb, fd, EV_READ);
     ev_io_init(&remote->send_ctx->io, remote_send_cb, fd, EV_WRITE);
-    ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb, timeout, 0);
     remote->recv_ctx->remote = remote;
     remote->recv_ctx->connected = 0;
     remote->send_ctx->remote = remote;
@@ -608,7 +609,6 @@ void free_remote(struct remote *remote) {
 
 void close_and_free_remote(EV_P_ struct remote *remote) {
     if (remote != NULL) {
-        ev_timer_stop(EV_A_ &remote->send_ctx->watcher);
         ev_io_stop(EV_A_ &remote->send_ctx->io);
         ev_io_stop(EV_A_ &remote->recv_ctx->io);
         close(remote->fd);
@@ -628,7 +628,8 @@ struct server* new_server(int fd, struct listen_ctx *listener) {
     server->fd = fd;
     ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
     ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
-    ev_timer_init(&server->recv_ctx->watcher, server_resolve_cb, 0.2, 0.5);
+    ev_timer_init(&server->send_ctx->watcher, server_resolve_cb, 0.2, 0.5);
+    ev_timer_init(&server->recv_ctx->watcher, server_timeout_cb, listener->timeout, listener->timeout * 5);
     server->recv_ctx->server = server;
     server->recv_ctx->connected = 0;
     server->send_ctx->server = server;
@@ -671,6 +672,7 @@ void close_and_free_server(EV_P_ struct server *server) {
     if (server != NULL) {
         ev_io_stop(EV_A_ &server->send_ctx->io);
         ev_io_stop(EV_A_ &server->recv_ctx->io);
+        ev_timer_stop(EV_A_ &server->send_ctx->watcher);
         ev_timer_stop(EV_A_ &server->recv_ctx->watcher);
         close(server->fd);
         free_server(server);
@@ -701,6 +703,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents) {
 
     struct server *server = new_server(serverfd, listener);
     ev_io_start(EV_A_ &server->recv_ctx->io);
+    ev_timer_start(EV_A_ &server->recv_ctx->watcher);
 }
 
 int main (int argc, char **argv) {
