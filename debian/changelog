@@ -1,3 +1,9 @@
+shadowsocks (1.2-2) unstable; urgency=low
+
+  * Close timeout TCP connections 
+
+ -- Max Lv <max@ubuntu>  Tue, 07 May 2013 14:10:33 +0800
+
 shadowsocks (1.2-1) unstable; urgency=low
 
   * Fix a high load issue
