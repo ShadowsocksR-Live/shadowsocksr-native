@@ -95,3 +95,28 @@ The latest shadowsocks-libev has provided a transparent mode. You can configure 
     
     # Start the shadowsocks-redir
     root@Wrt:~# ss-redir -c /etc/config/shadowsocks.json -f /var/run/shadowsocks.pid
+
+## Security Tips
+
+Although shadowsocks-libev can handle thousands of concurrent connections nicely, we still recommend to
+set up your server's firewall rules to limit connections from each user.
+
+    # Up to 32 connections are enough for normal usages
+    iptables -A INPUT -p tcp --syn --dport ${SHADOWSOCKS_PORT} -m connlimit --connlimit-above 32 -j DROP
+
+## License
+
+Copyright (C) 2013 Max Lv <max.c.lv@gmail.com>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
