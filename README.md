@@ -102,7 +102,7 @@ Although shadowsocks-libev can handle thousands of concurrent connections nicely
 set up your server's firewall rules to limit connections from each user.
 
     # Up to 32 connections are enough for normal usages
-    iptables -A INPUT -p tcp --syn --dport ${SHADOWSOCKS_PORT} -m connlimit --connlimit-above 32 -j DROP
+    iptables -A INPUT -p tcp --syn --dport ${SHADOWSOCKS_PORT} -m connlimit --connlimit-above 32 -j REJECT --reject-with tcp-reset
 
 ## License
 
