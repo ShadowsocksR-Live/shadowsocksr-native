@@ -10,6 +10,7 @@ struct listen_ctx {
     char **remote_host;
     int remote_num;
     char *remote_port;
+    char *iface;
     int timeout;
     int fd;
     struct sockaddr sock;

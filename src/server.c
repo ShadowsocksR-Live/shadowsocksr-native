@@ -17,12 +17,18 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "utils.h"
-#include "server.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#if defined(HAVE_SYS_IOCTL_H) && defined(HAVE_NET_IF_H)
+#include <net/if.h>
+#include <sys/ioctl.h>
+#define SET_INTERFACE
+#endif
+
+#include "utils.h"
+#include "server.h"
 
 #ifndef EAGAIN
 #define EAGAIN EWOULDBLOCK
@@ -44,6 +50,17 @@ int setnonblocking(int fd) {
         flags = 0;
     return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
+
+#ifdef SET_INTERFACE
+int setinterface(int socket_fd, const char* interface_name)
+{
+    struct ifreq interface;
+    memset(&interface, 0, sizeof(interface));
+    strncpy(interface.ifr_name, interface_name, IFNAMSIZ);
+    int res = setsockopt(socket_fd, SOL_SOCKET, SO_BINDTODEVICE, &interface, sizeof(struct ifreq));
+    return res;
+}
+#endif
 
 int create_and_bind(const char *host, const char *port) {
     struct addrinfo hints;
@@ -93,7 +110,7 @@ int create_and_bind(const char *host, const char *port) {
     return listen_sock;
 }
 
-struct remote *connect_to_remote(struct addrinfo *res) {
+struct remote *connect_to_remote(struct addrinfo *res, const char *iface) {
     int sockfd;
     int opt = 1;
 
@@ -114,6 +131,10 @@ struct remote *connect_to_remote(struct addrinfo *res) {
 
     // setup remote socks
     setnonblocking(sockfd);
+#ifdef SET_INTERFACE
+    if (iface) setinterface(sockfd, iface);
+#endif
+
     connect(sockfd, res->ai_addr, res->ai_addrlen);
 
     return remote;
@@ -401,7 +422,7 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
             rp = result;
         }
 
-        struct remote *remote = connect_to_remote(rp);
+        struct remote *remote = connect_to_remote(rp, server->listen_ctx->iface);
 
         // release addrinfo
         asyncns_freeaddrinfo(result);
@@ -715,6 +736,7 @@ int main (int argc, char **argv) {
     char *method = NULL;
     char *pid_path = NULL;
     char *conf_path = NULL;
+    char *iface = NULL;
 
     int server_num = 0;
     char *server_host[MAX_REMOTE_NUM];
@@ -722,7 +744,7 @@ int main (int argc, char **argv) {
 
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:c:v")) != -1) {
+    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:c:i:v")) != -1) {
         switch (c) {
             case 's':
                 server_host[server_num++] = optarg;
@@ -745,6 +767,9 @@ int main (int argc, char **argv) {
                 break;
             case 'c':
                 conf_path = optarg;
+                break;
+            case 'i':
+                iface = optarg;
                 break;
             case 'v':
                 verbose = 1;
@@ -820,6 +845,7 @@ int main (int argc, char **argv) {
         listen_ctx.timeout = atoi(timeout);
         listen_ctx.asyncns = asyncns;
         listen_ctx.fd = listenfd;
+        listen_ctx.iface = iface;
 
         ev_io_init (&listen_ctx.io, accept_cb, listenfd, EV_READ);
         ev_io_start (loop, &listen_ctx.io);

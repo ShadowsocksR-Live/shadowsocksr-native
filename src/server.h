@@ -12,6 +12,7 @@ struct listen_ctx {
     ev_io io;
     int fd;
     int timeout;
+    char *iface;
     asyncns_t *asyncns;
     struct sockaddr sock;
 };
@@ -64,7 +65,7 @@ static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents);
 static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents);
 
 struct remote* new_remote(int fd);
-struct remote *connect_to_remote(struct addrinfo *res);
+struct remote *connect_to_remote(struct addrinfo *res, const char *iface);
 void free_remote(struct remote *remote);
 void close_and_free_remote(EV_P_ struct remote *remote);
 struct server* new_server(int fd, struct listen_ctx *listener);

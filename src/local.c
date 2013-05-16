@@ -17,13 +17,19 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "utils.h"
-#include "local.h"
-#include "socks5.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#if defined(HAVE_SYS_IOCTL_H) && defined(HAVE_NET_IF_H)
+#include <net/if.h>
+#include <sys/ioctl.h>
+#define SET_INTERFACE
+#endif
+
+#include "utils.h"
+#include "local.h"
+#include "socks5.h"
 
 #ifndef EAGAIN
 #define EAGAIN EWOULDBLOCK
@@ -41,6 +47,17 @@ int setnonblocking(int fd) {
         flags = 0;
     return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
+
+#ifdef SET_INTERFACE
+int setinterface(int socket_fd, const char* interface_name)
+{
+    struct ifreq interface;
+    memset(&interface, 0, sizeof(interface));
+    strncpy(interface.ifr_name, interface_name, IFNAMSIZ);
+    int res = setsockopt(socket_fd, SOL_SOCKET, SO_BINDTODEVICE, &interface, sizeof(struct ifreq));
+    return res;
+}
+#endif
 
 int create_and_bind(const char *port) {
     struct addrinfo hints;
@@ -557,16 +574,11 @@ static void accept_cb (EV_P_ ev_io *w, int revents) {
     setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
-    struct timeval timeout;
-    timeout.tv_sec = listener->timeout;
-    timeout.tv_usec = 0;
-    err = setsockopt(sockfd, SOL_SOCKET,
-            SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
-    if (err) ERROR("setsockopt");
-    err = setsockopt(sockfd, SOL_SOCKET,
-            SO_SNDTIMEO, (char *)&timeout, sizeof(timeout));
-    if (err) ERROR("setsockopt");
+    // Setup
     setnonblocking(sockfd);
+#ifdef SET_INTERFACE
+    if (listener->iface) setinterface(sockfd, listener->iface);
+#endif
 
     struct server *server = new_server(serverfd);
     struct remote *remote = new_remote(sockfd, listener->timeout);
@@ -589,6 +601,7 @@ int main (int argc, char **argv) {
     char *method = NULL;
     char *pid_path = NULL;
     char *conf_path = NULL;
+    char *iface = NULL;
 
     int remote_num = 0;
     char *remote_host[MAX_REMOTE_NUM];
@@ -596,7 +609,7 @@ int main (int argc, char **argv) {
 
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:c:")) != -1) {
+    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:i:c:")) != -1) {
         switch (c) {
             case 's':
                 remote_host[remote_num++] = optarg;
@@ -622,6 +635,9 @@ int main (int argc, char **argv) {
                 break;
             case 'c':
                 conf_path = optarg;
+                break;
+            case 'i':
+                iface = optarg;
                 break;
         }
     }
@@ -688,6 +704,7 @@ int main (int argc, char **argv) {
     listen_ctx.remote_port = strdup(remote_port);
     listen_ctx.timeout = atoi(timeout);
     listen_ctx.fd = listenfd;
+    listen_ctx.iface = iface;
 
     struct ev_loop *loop = ev_default_loop(0);
     if (!loop) {

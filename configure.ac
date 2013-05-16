@@ -34,7 +34,7 @@ esac
 AM_CONDITIONAL(BUILD_REDIRECTOR, test "$os_support" = "linux")
 
 # Checks for header files.
-AC_CHECK_HEADERS([stdint.h inttypes.h arpa/inet.h fcntl.h langinfo.h locale.h netdb.h netinet/in.h stdlib.h string.h strings.h sys/socket.h unistd.h])
+AC_CHECK_HEADERS([stdint.h inttypes.h arpa/inet.h fcntl.h langinfo.h locale.h netdb.h netinet/in.h stdlib.h string.h strings.h sys/socket.h unistd.h net/if.h sys/ioctl.h])
 
 AC_C_BIGENDIAN
 
