@@ -1,14 +1,20 @@
+shadowsocks (1.3-1) unstable; urgency=low
+
+  * Able to bind connections to specific interface 
+
+ -- Max Lv <max.c.lv@gmail.com>  Thu, 16 May 2013 10:51:15 +0800
+
 shadowsocks (1.2-2) unstable; urgency=low
 
-  * Close timeout TCP connections 
+  * Close timeouted TCP connections 
 
- -- Max Lv <max@ubuntu>  Tue, 07 May 2013 14:10:33 +0800
+ -- Max Lv <max.c.lv@gmail.com>  Tue, 07 May 2013 14:10:33 +0800
 
 shadowsocks (1.2-1) unstable; urgency=low
 
   * Fix a high load issue
 
- -- Max Lv <max@ubuntu>  Thu, 18 Apr 2013 10:52:34 +0800
+ -- Max Lv <max.c.lv@gmail.com>  Thu, 18 Apr 2013 10:52:34 +0800
 
 shadowsocks (1.1-1) unstable; urgency=low
 
