@@ -6,7 +6,7 @@
 
 #include "encrypt.h"
 
-#define OFFSET_ROL(p, o) ((u_int64_t)(*(p + o)) << (8 * o))
+#define OFFSET_ROL(p, o) ((uint64_t)(*(p + o)) << (8 * o))
 
 static void md5(const uint8_t *text, uint8_t *digest) {
     md5_state_t state;
