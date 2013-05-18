@@ -624,9 +624,9 @@ int main (int argc, char **argv) {
     listen_ctx.remote_host = malloc(sizeof(char *) * remote_num);
     while (remote_num > 0) {
         int index = --remote_num;
-        listen_ctx.remote_host[index] = strdup(remote_host[index]);
+        listen_ctx.remote_host[index] = remote_host[index];
     }
-    listen_ctx.remote_port = strdup(remote_port);
+    listen_ctx.remote_port = remote_port;
     listen_ctx.timeout = atoi(timeout);
     listen_ctx.fd = listenfd;
 

@@ -645,7 +645,9 @@ static int process_worker(int in_fd, int out_fd) {
 
         if (!have_death_sig) {
             fd_set fds;
-            struct timeval tv = { 0, 5000000 };
+            struct timeval tv;
+            tv.tv_usec = 500000;
+            tv.tv_sec = 0;
 
             FD_ZERO(&fds);
             FD_SET(in_fd, &fds);
@@ -699,13 +701,17 @@ static void* thread_worker(void *p) {
 
             if (!asyncns->dead) {
                 fd_set fds;
-                struct timeval tv = { 0, 5000000 };
+                struct timeval tv;
+                tv.tv_usec = 500000;
+                tv.tv_sec = 0;
 
                 FD_ZERO(&fds);
                 FD_SET(in_fd, &fds);
 
-                if (select(in_fd+1, &fds, NULL, NULL, &tv) < 0)
+                if (select(in_fd+1, &fds, NULL, NULL, &tv) < 0) {
+                    perror("test");
                     break;
+                }
             }
 
             if (length < 0 &&

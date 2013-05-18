@@ -35,5 +35,6 @@ void ERROR(const char *s);
 void usage(void);
 void demonize(const char* path);
 char *itoa(int i);
+char *ss_strndup(const char *s, size_t n);
 
 #endif // _UTILS_H

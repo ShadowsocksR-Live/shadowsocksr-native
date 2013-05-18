@@ -43,6 +43,17 @@ char *itoa(int i) {
     return p;
 }
 
+char *ss_strndup(const char *s, size_t n) {
+    size_t len = strlen(s);
+    char *ret;
+
+    if (len <= n) return strdup(s);
+
+    ret = malloc(n + 1);
+    strncpy(ret, s, n);
+    ret[n] = '\0';
+    return ret;
+}
 
 void FATAL(const char *msg) {
     LOGE("%s", msg);
@@ -109,6 +120,5 @@ void demonize(const char* path) {
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
-
 }
 

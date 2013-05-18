@@ -11,7 +11,7 @@
 
 static char *to_string(const json_value *value) {
     if (value->type == json_string) {
-        return strndup(value->u.string.ptr, value->u.string.length);
+        return ss_strndup(value->u.string.ptr, value->u.string.length);
     } else if (value->type == json_integer) {
         return strdup(itoa(value->u.integer));
     } else if (value->type == json_null) {
