@@ -1,5 +1,5 @@
-#                                               -*- Autoconf -*-
-# Process this file with autoconf to produce a configure script.
+dnl                                               -*- Autoconf -*-
+dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.67])
 AC_INIT([shadowsocks], [1.3], [max.c.lv@gmail.com])
@@ -9,7 +9,7 @@ AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
 AM_PROG_AR
 
-# Checks for programs.
+dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
@@ -18,8 +18,7 @@ AC_PROG_MAKE_SET
 
 m4_include([libev/libev.m4])
 
-# Checks for host.
-
+dnl Checks for host.
 AC_MSG_CHECKING(for what kind of host)
 case $host in
   *-linux*)
@@ -33,12 +32,31 @@ esac
 
 AM_CONDITIONAL(BUILD_REDIRECTOR, test "$os_support" = "linux")
 
-# Checks for header files.
-AC_CHECK_HEADERS([stdint.h inttypes.h arpa/inet.h fcntl.h langinfo.h locale.h netdb.h netinet/in.h stdlib.h string.h strings.h sys/socket.h unistd.h net/if.h sys/ioctl.h])
+dnl Checks for header files.
+AC_CHECK_HEADERS([stdint.h inttypes.h arpa/inet.h fcntl.h langinfo.h locale.h netdb.h netinet/in.h stdlib.h string.h strings.h unistd.h sys/ioctl.h])
+
+dnl A special check required for <net/if.h> on Darwin. See
+dnl http://www.gnu.org/software/autoconf/manual/html_node/Header-Portability.html.
+AC_CHECK_HEADERS([sys/socket.h])
+AC_CHECK_HEADERS([net/if.h], [], [],
+[
+#include <stdio.h>
+#ifdef STDC_HEADERS
+# include <stdlib.h>
+# include <stddef.h>
+#else
+# ifdef HAVE_STDLIB_H
+#  include <stdlib.h>
+# endif
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+# include <sys/socket.h>
+#endif
+])
 
 AC_C_BIGENDIAN
 
-# Checks for typedefs, structures, and compiler characteristics.
+dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
 AC_TYPE_SSIZE_T
 
@@ -61,13 +79,13 @@ AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_FUNC_SELECT_ARGTYPES
 AC_TYPE_SIGNAL
-AC_CHECK_FUNCS([memset select strndup setresuid setreuid strerror])
+AC_CHECK_FUNCS([memset select setresuid setreuid strerror])
 
 AC_SYS_LARGEFILE
 
 AC_CHECK_LIB(socket, connect)
 
-# Checks for library functions.
+dnl Checks for library functions.
 AC_CHECK_FUNCS([malloc memset socket])
 
 ACX_PTHREAD

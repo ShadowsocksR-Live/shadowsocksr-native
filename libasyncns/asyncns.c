@@ -185,9 +185,7 @@ typedef union packet {
     res_response_t res_response;
 } packet_t;
 
-#ifndef HAVE_STRNDUP
-
-static char *strndup(const char *s, size_t l) {
+static char *asyncns_strndup(const char *s, size_t l) {
     size_t a;
     char *n;
 
@@ -203,8 +201,6 @@ static char *strndup(const char *s, size_t l) {
 
     return n;
 }
-
-#endif
 
 #ifndef HAVE_PTHREAD
 
@@ -1017,11 +1013,11 @@ static int handle_response(asyncns_t *asyncns, const packet_t *packet, size_t le
             q->_h_errno = ni_resp->_h_errno;
 
             if (ni_resp->hostlen)
-                if (!(q->host = strndup((const char*) ni_resp + sizeof(nameinfo_response_t), ni_resp->hostlen-1)))
+                if (!(q->host = asyncns_strndup((const char*) ni_resp + sizeof(nameinfo_response_t), ni_resp->hostlen-1)))
                     q->ret = EAI_MEMORY;
 
             if (ni_resp->servlen)
-                if (!(q->serv = strndup((const char*) ni_resp + sizeof(nameinfo_response_t) + ni_resp->hostlen, ni_resp->servlen-1)))
+                if (!(q->serv = asyncns_strndup((const char*) ni_resp + sizeof(nameinfo_response_t) + ni_resp->hostlen, ni_resp->servlen-1)))
                     q->ret = EAI_MEMORY;
 
             complete_query(asyncns, q);

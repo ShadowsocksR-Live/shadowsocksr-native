@@ -1,4 +1,3 @@
-#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
@@ -10,8 +9,6 @@
 #include <netinet/tcp.h>
 #include <pthread.h>
 #include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <time.h>
@@ -19,12 +16,12 @@
 #include <limits.h>
 #include <linux/netfilter_ipv4.h>
 
-#include "utils.h"
-#include "redir.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include "utils.h"
+#include "redir.h"
 
 #ifndef EAGAIN
 #define EAGAIN EWOULDBLOCK
