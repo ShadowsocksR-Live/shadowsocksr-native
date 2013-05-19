@@ -405,11 +405,11 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
     ev_timer_stop(EV_A_ watcher);
 
     err = asyncns_getaddrinfo_done(asyncns, query, &result);
+
     if (err) {
         ERROR("getaddrinfo");
         close_and_free_server(EV_A_ server);
     } else {
-
         // Use IPV4 address if possible
         for (rp = result; rp != NULL; rp = rp->ai_next) {
             if (rp->ai_family == AF_INET) break;
@@ -421,31 +421,29 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
 
         struct remote *remote = connect_to_remote(rp, server->listen_ctx->iface);
 
-        // release addrinfo
-        asyncns_freeaddrinfo(result);
-
         if (remote == NULL) {
             LOGE("connect error.");
             close_and_free_server(EV_A_ server);
-            return;
+        } else {
+            server->remote = remote;
+            remote->server = server;
+
+            // XXX: should handel buffer carefully
+            if (server->buf_len > 0) {
+                memcpy(remote->buf, server->buf + server->buf_idx, server->buf_len);
+                remote->buf_len = server->buf_len;
+                remote->buf_idx = 0;
+                server->buf_len = 0;
+                server->buf_idx = 0;
+            }
+
+            // listen to remote connected event
+            ev_io_start(EV_A_ &remote->send_ctx->io);
         }
-
-        server->remote = remote;
-        remote->server = server;
-
-        // XXX: should handel buffer carefully
-        if (server->buf_len > 0) {
-            memcpy(remote->buf, server->buf + server->buf_idx, server->buf_len);
-            remote->buf_len = server->buf_len;
-            remote->buf_idx = 0;
-            server->buf_len = 0;
-            server->buf_idx = 0;
-        }
-
-        // listen to remote connected event
-        ev_io_start(EV_A_ &remote->send_ctx->io);
     }
 
+    // release addrinfo
+    asyncns_freeaddrinfo(result);
 }
 
 static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
