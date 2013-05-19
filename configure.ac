@@ -7,7 +7,7 @@ AC_CONFIG_SRCDIR([src/encrypt.c])
 AC_CONFIG_HEADERS([config.h])
 
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
-AM_PROG_AR
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
 dnl Checks for programs.
 AC_PROG_CC
