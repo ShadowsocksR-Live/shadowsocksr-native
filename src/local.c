@@ -140,7 +140,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 
     // local socks5 server
     if (server->stage == 5) {
-        encrypt_ctx(remote->buf, r, server->e_ctx);
+        remote->buf = encrypt(remote->buf, r, server->e_ctx);
         int s = send(remote->fd, remote->buf, r, 0);
         if(s == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -188,7 +188,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             return;
         }
 
-        char addr_to_send[256];
+        char *addr_to_send = malloc(256);
         uint8_t addr_len = 0;
         addr_to_send[addr_len++] = request->atyp;
 
@@ -223,8 +223,10 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             return;
         }
 
-        encrypt_ctx(addr_to_send, addr_len, server->e_ctx);
+        addr_to_send = encrypt(addr_to_send, addr_len, server->e_ctx);
         int s = send(remote->fd, addr_to_send, addr_len, 0);
+        free(addr_to_send);
+
         if (s < addr_len) {
             LOGE("failed to send remote addr.");
             close_and_free_remote(EV_A_ remote);
@@ -352,7 +354,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     }
 
-    decrypt_ctx(server->buf, r, server->d_ctx);
+    server->buf = decrypt(server->buf, r, server->d_ctx);
     int s = send(server->fd, server->buf, r, 0);
 
     if (s == -1) {
@@ -445,6 +447,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
 struct remote* new_remote(int fd, int timeout) {
     struct remote *remote;
     remote = malloc(sizeof(struct remote));
+    remote->buf = malloc(256);
     remote->recv_ctx = malloc(sizeof(struct remote_ctx));
     remote->send_ctx = malloc(sizeof(struct remote_ctx));
     remote->fd = fd;
@@ -465,6 +468,7 @@ void free_remote(struct remote *remote) {
         if (remote->server != NULL) {
             remote->server->remote = NULL;
         }
+        free(remote->buf);
         free(remote->recv_ctx);
         free(remote->send_ctx);
         free(remote);
@@ -481,9 +485,10 @@ void close_and_free_remote(EV_P_ struct remote *remote) {
     }
 }
 
-struct server* new_server(int fd) {
+struct server* new_server(int fd, int method) {
     struct server *server;
     server = malloc(sizeof(struct server));
+    server->buf = malloc(256);
     server->recv_ctx = malloc(sizeof(struct server_ctx));
     server->send_ctx = malloc(sizeof(struct server_ctx));
     server->fd = fd;
@@ -494,11 +499,11 @@ struct server* new_server(int fd) {
     server->send_ctx->server = server;
     server->send_ctx->connected = 0;
     server->stage = 0;
-    if (enc_conf.method == RC4) {
-        server->e_ctx = malloc(sizeof(struct rc4_state));
-        server->d_ctx = malloc(sizeof(struct rc4_state));
-        enc_ctx_init(server->e_ctx, 1);
-        enc_ctx_init(server->d_ctx, 0);
+    if (method) {
+        server->e_ctx = malloc(sizeof(struct enc_ctx));
+        server->d_ctx = malloc(sizeof(struct enc_ctx));
+        enc_ctx_init(method, server->e_ctx, 1);
+        enc_ctx_init(method, server->d_ctx, 0);
     } else {
         server->e_ctx = NULL;
         server->d_ctx = NULL;
@@ -513,10 +518,15 @@ void free_server(struct server *server) {
         if (server->remote != NULL) {
             server->remote->server = NULL;
         }
-        if (enc_conf.method == RC4) {
+        if (server->e_ctx != NULL) {
+            EVP_CIPHER_CTX_cleanup(server->e_ctx);
             free(server->e_ctx);
+        }
+        if (server->d_ctx != NULL) {
+            EVP_CIPHER_CTX_cleanup(server->d_ctx);
             free(server->d_ctx);
         }
+        free(server->buf);
         free(server->recv_ctx);
         free(server->send_ctx);
         free(server);
@@ -577,7 +587,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents) {
     if (listener->iface) setinterface(sockfd, listener->iface);
 #endif
 
-    struct server *server = new_server(serverfd);
+    struct server *server = new_server(serverfd, listener->method);
     struct remote *remote = new_remote(sockfd, listener->timeout);
     server->remote = remote;
     remote->server = server;
@@ -676,7 +686,7 @@ int main (int argc, char **argv) {
 
     // Setup keys
     LOGD("calculating ciphers...");
-    enc_conf_init(password, method);
+    int m = enc_init(password, method);
 
     // Setup socket
     int listenfd;
@@ -702,6 +712,7 @@ int main (int argc, char **argv) {
     listen_ctx.timeout = atoi(timeout);
     listen_ctx.fd = listenfd;
     listen_ctx.iface = iface;
+    listen_ctx.method = m;
 
     struct ev_loop *loop = ev_default_loop(0);
     if (!loop) {
