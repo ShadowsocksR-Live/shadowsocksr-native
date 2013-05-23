@@ -225,7 +225,6 @@ void enc_ctx_init(int method, struct enc_ctx *ctx, int enc) {
     memset(ctx, 0, sizeof(struct enc_ctx));
 
     EVP_CIPHER_CTX *evp = &ctx->evp;
-    OpenSSL_add_all_algorithms();
     const EVP_CIPHER *cipher = EVP_get_cipherbyname(supported_ciphers[method]);
     ctx->iv_len = EVP_CIPHER_iv_length(cipher);
 
@@ -247,22 +246,26 @@ int enc_init(const char *pass, const char *method) {
     if (method == NULL || strcmp(method, "table") == 0) {
         enc_table_init(enc_pass);
         return TABLE;
-    } else if (strcmp(method, "aes-128-cfb") == 0) {
-        return AES_128_CFB;
-    } else if (strcmp(method, "aes-192-cfb") == 0) {
-        return AES_192_CFB;
-    } else if (strcmp(method, "aes-256-cfb") == 0) {
-        return AES_256_CFB;
-    } else if (strcmp(method, "bf-cfb") == 0) {
-        return BF_CFB;
-    } else if (strcmp(method, "cast5-cfb") == 0) {
-        return CAST5_CFB;
-    } else if (strcmp(method, "des-cfb") == 0) {
-        return DES_CFB;
-    } else if (strcmp(method, "rc4") == 0) {
-        return RC4;
+    } else {
+        OpenSSL_add_all_algorithms();
+        if (strcmp(method, "aes-128-cfb") == 0) {
+            return AES_128_CFB;
+        } else if (strcmp(method, "aes-192-cfb") == 0) {
+            return AES_192_CFB;
+        } else if (strcmp(method, "aes-256-cfb") == 0) {
+            return AES_256_CFB;
+        } else if (strcmp(method, "bf-cfb") == 0) {
+            return BF_CFB;
+        } else if (strcmp(method, "cast5-cfb") == 0) {
+            return CAST5_CFB;
+        } else if (strcmp(method, "des-cfb") == 0) {
+            return DES_CFB;
+        } else if (strcmp(method, "rc4") == 0) {
+            return RC4;
+        } else {  
+            enc_table_init(enc_pass);
+            return TABLE;
+        }
     }
-    enc_table_init(enc_pass);
-    return TABLE;
 }
 
