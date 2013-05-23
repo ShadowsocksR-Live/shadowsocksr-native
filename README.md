@@ -51,7 +51,7 @@ Installation
 Build the binary like this:
 
 ```bash
-    sudo apt-get install build-essential autoconf libtool
+    sudo apt-get install build-essential autoconf libtool libssl-dev
     ./configure && make
     sudo make install
 ```
