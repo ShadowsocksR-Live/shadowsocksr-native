@@ -39,8 +39,8 @@ struct enc_ctx {
     EVP_CIPHER_CTX evp;
 };
 
-char* encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx);
-char* decrypt(char *ciphertext, ssize_t *len, struct enc_ctx *ctx);
+char* ss_encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx);
+char* ss_decrypt(char *ciphertext, ssize_t *len, struct enc_ctx *ctx);
 void enc_ctx_init(int method, struct enc_ctx *ctx, int enc);
 int enc_init(const char *pass, const char *method);
 

@@ -137,7 +137,7 @@ void enc_table_init(const char *pass) {
     }
 }
 
-char* encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx) {
+char* ss_encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx) {
     if (ctx != NULL) {
         int c_len = *len + BLOCK_SIZE;
         int iv_len = ctx->iv_len;
@@ -179,7 +179,7 @@ char* encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx) {
     }
 }
 
-char* decrypt(char *ciphertext, ssize_t *len, struct enc_ctx *ctx) {
+char* ss_decrypt(char *ciphertext, ssize_t *len, struct enc_ctx *ctx) {
     if (ctx != NULL) {
         int p_len = *len + BLOCK_SIZE;
         int iv_len = ctx->iv_len;

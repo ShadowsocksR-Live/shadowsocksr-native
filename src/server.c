@@ -172,7 +172,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     }
 
-    *buf = decrypt(*buf, &r, server->d_ctx);
+    *buf = ss_decrypt(*buf, &r, server->d_ctx);
 
     // handshake and transmit data
     if (server->stage == 5) {
@@ -480,7 +480,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     }
 
-    server->buf = encrypt(server->buf, &r, server->e_ctx);
+    server->buf = ss_encrypt(server->buf, &r, server->e_ctx);
     int s = send(server->fd, server->buf, r, 0);
 
     if (s == -1) {

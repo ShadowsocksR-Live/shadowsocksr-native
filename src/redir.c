@@ -131,7 +131,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     }
 
-    remote->buf = encrypt(remote->buf, &r, server->e_ctx);
+    remote->buf = ss_encrypt(remote->buf, &r, server->e_ctx);
 
     int s = send(remote->fd, remote->buf, r, 0);
     if(s == -1) {
@@ -251,7 +251,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     }
 
-    server->buf = decrypt(server->buf, &r, server->d_ctx);
+    server->buf = ss_decrypt(server->buf, &r, server->d_ctx);
     int s = send(server->fd, server->buf, r, 0);
 
     if (s == -1) {
@@ -303,7 +303,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
             addr_len += in_addr_len;
             memcpy(addr_to_send + addr_len, &server->destaddr.sin_port, 2);
             addr_len += 2;
-            addr_to_send = encrypt(addr_to_send, &addr_len, server->e_ctx);
+            addr_to_send = ss_encrypt(addr_to_send, &addr_len, server->e_ctx);
 
             int s = send(remote->fd, addr_to_send, addr_len, 0);
             free(addr_to_send);
