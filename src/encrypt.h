@@ -33,9 +33,9 @@
 #define max(a,b) (((a)>(b))?(a):(b))
 
 struct enc_ctx {
-    int method;
+    uint8_t init;
+    uint8_t iv_len;
     uint8_t key[EVP_MAX_KEY_LENGTH];
-    uint8_t iv[EVP_MAX_IV_LENGTH];
     EVP_CIPHER_CTX evp;
 };
 

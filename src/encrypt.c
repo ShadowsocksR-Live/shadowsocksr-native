@@ -140,19 +140,22 @@ void enc_table_init(const char *pass) {
 char* encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx) {
     if (ctx != NULL) {
         int c_len = *len + BLOCK_SIZE;
-        char *ciphertext;
-        int iv_len = 0;
+        int iv_len = ctx->iv_len;
+        char *ciphertext = malloc(max(iv_len + c_len, BUF_SIZE));
 
-        if (ctx->method > RC4) {
-            iv_len += strlen((const char *)ctx->iv);
-            ciphertext = malloc(max(iv_len + c_len, BUF_SIZE));
-            memcpy(ciphertext, ctx->iv, iv_len);
-            ctx->method = NONE;
+        if (!ctx->init) {
+            uint8_t iv[EVP_MAX_IV_LENGTH];
+            int i;
+            for (i = 0; i < iv_len; i++) {
+                iv[i] = rand() % 256;
+            }
+            EVP_CipherInit_ex(&ctx->evp, NULL, NULL, ctx->key, iv, 1);
+            memcpy(ciphertext, iv, iv_len);
+            ctx->iv_len = 0;
+            ctx->init = 1;
 #ifdef DEBUG
             dump("IV", ctx->iv);
 #endif
-        } else {
-            ciphertext = malloc(max(c_len, BUF_SIZE));
         }
 
         EVP_EncryptUpdate(&ctx->evp, (uint8_t*)(ciphertext+iv_len), 
@@ -179,14 +182,15 @@ char* encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx) {
 char* decrypt(char *ciphertext, ssize_t *len, struct enc_ctx *ctx) {
     if (ctx != NULL) {
         int p_len = *len + BLOCK_SIZE;
+        int iv_len = ctx->iv_len;
         char *plaintext = malloc(max(p_len, BUF_SIZE));
-        int iv_len = 0;
 
-        if (ctx->method > RC4) {
-            iv_len = strlen((const char *)ctx->iv);
-            memcpy(ctx->iv, ciphertext, iv_len);
-            EVP_CipherInit_ex(&ctx->evp, NULL, NULL, ctx->key, ctx->iv, 0);
-            ctx->method = NONE;
+        if (!ctx->init) {
+            uint8_t iv[EVP_MAX_IV_LENGTH];
+            memcpy(iv, ciphertext, iv_len);
+            EVP_CipherInit_ex(&ctx->evp, NULL, NULL, ctx->key, iv, 0);
+            ctx->iv_len = 0;
+            ctx->init = 1;
 #ifdef DEBUG
             dump("IV", ctx->iv);
 #endif
@@ -215,14 +219,15 @@ char* decrypt(char *ciphertext, ssize_t *len, struct enc_ctx *ctx) {
 
 void enc_ctx_init(int method, struct enc_ctx *ctx, int enc) {
     uint8_t *key = ctx->key;
-    uint8_t *iv = ctx->iv;
-    int key_len, iv_len,  i;
+    uint8_t iv[EVP_MAX_IV_LENGTH];
+    int key_len;
 
     memset(ctx, 0, sizeof(struct enc_ctx));
 
     EVP_CIPHER_CTX *evp = &ctx->evp;
     OpenSSL_add_all_algorithms();
     const EVP_CIPHER *cipher = EVP_get_cipherbyname(supported_ciphers[method]);
+    ctx->iv_len = EVP_CIPHER_iv_length(cipher);
 
     key_len = EVP_BytesToKey(cipher, EVP_md5(), NULL, (uint8_t *)enc_pass, 
             strlen(enc_pass), 1, key, iv);
@@ -235,15 +240,6 @@ void enc_ctx_init(int method, struct enc_ctx *ctx, int enc) {
         exit(EXIT_FAILURE);
     }
     EVP_CIPHER_CTX_set_padding(evp, 1);
-
-    if (enc) {
-        for (i = 0; i < strlen((const char*)iv); i++) {
-            iv[i] = rand() % 256;
-        }
-        EVP_CipherInit_ex(evp, NULL, NULL, key, iv, enc);
-    }
-
-    ctx->method = method;
 }
 
 int enc_init(const char *pass, const char *method) {
