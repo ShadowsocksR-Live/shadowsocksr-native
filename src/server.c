@@ -35,8 +35,6 @@
 #define EWOULDBLOCK EAGAIN
 #endif
 
-#define min(a,b) (((a)<(b))?(a):(b))
-
 static int verbose = 0;
 static int remote_conn = 0;
 static int server_conn = 0;
@@ -142,16 +140,16 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     struct server *server = server_recv_ctx->server;
     struct remote *remote = NULL;
 
-    char *buf = server->buf;
+    char **buf = &server->buf;
 
     ev_timer_again(EV_A_ &server->recv_ctx->watcher);
 
     if (server->stage != 0) {
         remote = server->remote;
-        buf = remote->buf;
+        buf = &remote->buf;
     }
 
-    ssize_t r = recv(server->fd, buf, BUF_SIZE, 0);
+    ssize_t r = recv(server->fd, *buf, BUF_SIZE, 0);
 
     if (r == 0) {
         // connection closed
@@ -174,7 +172,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     }
 
-    buf = decrypt(buf, &r, server->d_ctx);
+    *buf = decrypt(*buf, &r, server->d_ctx);
 
     // handshake and transmit data
     if (server->stage == 5) {
@@ -678,11 +676,11 @@ void free_server(struct server *server) {
             server->remote->server = NULL;
         }
         if (server->e_ctx != NULL) {
-            EVP_CIPHER_CTX_cleanup(server->e_ctx->evp);
+            EVP_CIPHER_CTX_cleanup(&server->e_ctx->evp);
             free(server->e_ctx);
         }
         if (server->d_ctx != NULL) {
-            EVP_CIPHER_CTX_cleanup(server->d_ctx->evp);
+            EVP_CIPHER_CTX_cleanup(&server->d_ctx->evp);
             free(server->d_ctx);
         }
         free(server->buf);

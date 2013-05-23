@@ -31,8 +31,6 @@
 #define EWOULDBLOCK EAGAIN
 #endif
 
-#define min(a,b) (((a)<(b))?(a):(b))
-
 int getdestaddr(int fd, struct sockaddr_in *destaddr) {
     socklen_t socklen = sizeof(*destaddr);
     int error;
@@ -296,7 +294,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
 
             // send destaddr
             char *addr_to_send = malloc(BUF_SIZE);
-            uint8_t addr_len = 0;
+            ssize_t addr_len = 0;
             addr_to_send[addr_len++] = 1;
 
             // handle IP V4 only
@@ -442,11 +440,11 @@ void free_server(struct server *server) {
             server->remote->server = NULL;
         }
         if (server->e_ctx != NULL) {
-            EVP_CIPHER_CTX_cleanup(server->e_ctx->evp);
+            EVP_CIPHER_CTX_cleanup(&server->e_ctx->evp);
             free(server->e_ctx);
         }
         if (server->d_ctx != NULL) {
-            EVP_CIPHER_CTX_cleanup(server->d_ctx->evp);
+            EVP_CIPHER_CTX_cleanup(&server->d_ctx->evp);
             free(server->d_ctx);
         }
         free(server->buf);

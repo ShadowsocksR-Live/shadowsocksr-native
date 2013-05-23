@@ -10,11 +10,23 @@
 
 #define OFFSET_ROL(p, o) ((uint64_t)(*(p + o)) << (8 * o))
 
-static char *enc_table;
-static char *dec_table;
-static char *pass;
+static uint8_t *enc_table;
+static uint8_t *dec_table;
+static char *enc_pass;
 
-static char* supported_ciphers[8] = {
+#ifdef DEBUG
+static dump(char *tag, char *text) {
+    int i, len;
+    len = strlen(text);
+    printf("%s: ", tag);
+    for (i = 0; i < len; i++) {
+        printf("0x%02x ", (uint8_t)text[i]);
+    }
+    printf("\n");
+}
+#endif
+
+static const char* supported_ciphers[8] = {
     "table",
     "rc4",
     "aes-128-cfb",
@@ -106,7 +118,7 @@ void enc_table_init(const char *pass) {
     enc_table = malloc(256);
     dec_table = malloc(256);
 
-    digest = MD5((const uint8_t *)key, strlen((const uint8_t *)key), NULL);
+    digest = MD5((const uint8_t *)pass, strlen(pass), NULL);
 
     for (i = 0; i < 8; i++) {
         key += OFFSET_ROL(digest, i);
@@ -125,22 +137,32 @@ void enc_table_init(const char *pass) {
     }
 }
 
-char* encrypt(char *plaintext, int *len, struct enc_ctx *ctx) {
+char* encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx) {
     if (ctx != NULL) {
         int c_len = *len + BLOCK_SIZE;
-        uint8_t *ciphertext;
+        char *ciphertext;
         int iv_len = 0;
 
         if (ctx->method > RC4) {
-            iv_len += strlen(ctx->iv);
-            ciphertext = malloc(iv_len + c_len);
-            strcpy(ciphertext, ctx->iv);
+            iv_len += strlen((const char *)ctx->iv);
+            ciphertext = malloc(max(iv_len + c_len, BUF_SIZE));
+            memcpy(ciphertext, ctx->iv, iv_len);
             ctx->method = NONE;
+#ifdef DEBUG
+            dump("IV", ctx->iv);
+#endif
         } else {
-            ciphertext = malloc(c_len);
+            ciphertext = malloc(max(c_len, BUF_SIZE));
         }
 
-        EVP_EncryptUpdate(ctx->evp, ciphertext + iv_len, &c_len, plaintext, *len);
+        EVP_EncryptUpdate(&ctx->evp, (uint8_t*)(ciphertext+iv_len), 
+                &c_len, (const uint8_t *)plaintext, *len);
+
+#ifdef DEBUG
+        dump("PLAIN", plaintext);
+        dump("CIPHER", ciphertext);
+#endif
+
         *len = iv_len + c_len;
         free(plaintext);
         return ciphertext;
@@ -154,20 +176,30 @@ char* encrypt(char *plaintext, int *len, struct enc_ctx *ctx) {
     }
 }
 
-char* decrypt(char *ciphertext, int *len, struct enc_ctx *ctx) {
+char* decrypt(char *ciphertext, ssize_t *len, struct enc_ctx *ctx) {
     if (ctx != NULL) {
         int p_len = *len + BLOCK_SIZE;
-        uint8_t *plaintext = malloc(p_len);
+        char *plaintext = malloc(max(p_len, BUF_SIZE));
         int iv_len = 0;
 
         if (ctx->method > RC4) {
-            iv_len = strlen(ctx->iv);
+            iv_len = strlen((const char *)ctx->iv);
             memcpy(ctx->iv, ciphertext, iv_len);
+            EVP_CipherInit_ex(&ctx->evp, NULL, NULL, ctx->key, ctx->iv, 0);
             ctx->method = NONE;
+#ifdef DEBUG
+            dump("IV", ctx->iv);
+#endif
         }
 
-        EVP_DecryptUpdate(ctx->evp, plaintext, &p_len,
-                (uint8_t*)(ciphertext + iv_len), *len - iv_len);
+        EVP_DecryptUpdate(&ctx->evp, (uint8_t*)plaintext, &p_len,
+                (const uint8_t*)(ciphertext + iv_len), *len - iv_len);
+
+#ifdef DEBUG
+        dump("PLAIN", plaintext);
+        dump("CIPHER", ciphertext);
+#endif
+
         *len = p_len;
         free(ciphertext);
         return plaintext;
@@ -182,38 +214,42 @@ char* decrypt(char *ciphertext, int *len, struct enc_ctx *ctx) {
 }
 
 void enc_ctx_init(int method, struct enc_ctx *ctx, int enc) {
-    uint8_t key[EVP_MAX_KEY_LENGTH] = {0};
-    uint8_t iv[EVP_MAX_IV_LENGTH] = {0};
-    int key_len, i;
+    uint8_t *key = ctx->key;
+    uint8_t *iv = ctx->iv;
+    int key_len, iv_len,  i;
 
-    EVP_CIPHER *cipher = EVP_get_cipherbyname(supported_ciphers[method]);
-    key_len = EVP_BytesToKey(cipher, EVP_md5(), NULL, (uint8_t *)pass, 
-            strlen(pass), 1, key, iv);
+    memset(ctx, 0, sizeof(struct enc_ctx));
 
-    EVP_CIPHER_CTX_init(ctx->evp);
-    EVP_CipherInit_ex(ctx->evp, cipher, NULL, NULL, NULL, enc);
-    if (!EVP_CIPHER_CTX_set_key_length(ctx->evp, key_len)) {
-        EVP_CIPHER_CTX_cleanup(ctx->evp);
+    EVP_CIPHER_CTX *evp = &ctx->evp;
+    OpenSSL_add_all_algorithms();
+    const EVP_CIPHER *cipher = EVP_get_cipherbyname(supported_ciphers[method]);
+
+    key_len = EVP_BytesToKey(cipher, EVP_md5(), NULL, (uint8_t *)enc_pass, 
+            strlen(enc_pass), 1, key, iv);
+
+    EVP_CIPHER_CTX_init(evp);
+    EVP_CipherInit_ex(evp, cipher, NULL, NULL, NULL, enc);
+    if (!EVP_CIPHER_CTX_set_key_length(evp, key_len)) {
+        EVP_CIPHER_CTX_cleanup(evp);
         LOGE("Invalid key length: %d", key_len);
         exit(EXIT_FAILURE);
     }
-    EVP_CIPHER_CTX_set_padding(ctx->evp, 1);
+    EVP_CIPHER_CTX_set_padding(evp, 1);
 
     if (enc) {
-        EVP_CipherInit_ex(ctx->evp, NULL, NULL, key, iv, enc);
+        for (i = 0; i < strlen((const char*)iv); i++) {
+            iv[i] = rand() % 256;
+        }
+        EVP_CipherInit_ex(evp, NULL, NULL, key, iv, enc);
     }
 
-    memset(ctx->iv, 0, strlen(iv));
-    for (i = 0; i < strlen(iv); i++) {
-        ctx->iv[i] = rand() % 256;
-    }
     ctx->method = method;
 }
 
 int enc_init(const char *pass, const char *method) {
-    pass = pass;
+    enc_pass = strdup(pass);
     if (method == NULL || strcmp(method, "table") == 0) {
-        enc_table_init(pass);
+        enc_table_init(enc_pass);
         return TABLE;
     } else if (strcmp(method, "aes-128-cfb") == 0) {
         return AES_128_CFB;
