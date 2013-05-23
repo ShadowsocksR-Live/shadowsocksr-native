@@ -3,30 +3,27 @@
 #endif
 
 #include <stdint.h>
+#include <openssl/md5.h>
 
 #include "encrypt.h"
+#include "utils.h"
 
 #define OFFSET_ROL(p, o) ((uint64_t)(*(p + o)) << (8 * o))
 
 static char *enc_table;
 static char *dec_table;
-static void* supported_ciphers = {
-    NULL,
-    EVP_rc4,
-    EVP_aes_128_cfb,
-    EVP_aes_192_cfb,
-    EVP_aes_256_cfb,
-    EVP_bf_cfb,
-    EVP_cast5_cvb,
-    EVP_des_cfb
-};
+static char *pass;
 
-static void md5(const uint8_t *text, uint8_t *digest) {
-    md5_state_t state;
-    md5_init(&state);
-    md5_append(&state, text, strlen((char*)text));
-    md5_finish(&state, digest);
-}
+static char* supported_ciphers[8] = {
+    "table",
+    "rc4",
+    "aes-128-cfb",
+    "aes-192-cfb",
+    "aes-256-cfb",
+    "bf-cfb",
+    "cast5-cfb",
+    "des-cfb"
+};
 
 static int random_compare(const void *_x, const void *_y, uint32_t i, uint64_t a) {
     uint8_t x = *((uint8_t *) _x);
@@ -104,12 +101,12 @@ void enc_table_init(const char *pass) {
     uint32_t i;
     uint32_t salt;
     uint64_t key = 0;
-    uint8_t digest[16];
+    uint8_t *digest;
 
     enc_table = malloc(256);
     dec_table = malloc(256);
 
-    md5((const uint8_t*)pass, digest);
+    digest = MD5((const uint8_t *)key, strlen((const uint8_t *)key), NULL);
 
     for (i = 0; i < 8; i++) {
         key += OFFSET_ROL(digest, i);
@@ -130,9 +127,7 @@ void enc_table_init(const char *pass) {
 
 char* encrypt(char *plaintext, int *len, struct enc_ctx *ctx) {
     if (ctx != NULL) {
-        /*  max ciphertext len for a n bytes of plaintext is n + AES_BLOCK_SIZE
-         *  -1 bytes */
-        int c_len = *len + AES_BLOCK_SIZE;
+        int c_len = *len + BLOCK_SIZE;
         uint8_t *ciphertext;
         int iv_len = 0;
 
@@ -161,9 +156,7 @@ char* encrypt(char *plaintext, int *len, struct enc_ctx *ctx) {
 
 char* decrypt(char *ciphertext, int *len, struct enc_ctx *ctx) {
     if (ctx != NULL) {
-        /*  max ciphertext len for a n bytes of plaintext is n + AES_BLOCK_SIZE
-         *  -1 bytes */
-        int p_len = *len + AES_BLOCK_SIZE;
+        int p_len = *len + BLOCK_SIZE;
         uint8_t *plaintext = malloc(p_len);
         int iv_len = 0;
 
@@ -191,9 +184,9 @@ char* decrypt(char *ciphertext, int *len, struct enc_ctx *ctx) {
 void enc_ctx_init(int method, struct enc_ctx *ctx, int enc) {
     uint8_t key[EVP_MAX_KEY_LENGTH] = {0};
     uint8_t iv[EVP_MAX_IV_LENGTH] = {0};
-    int key_len;
+    int key_len, i;
 
-    EVP_CIPHER *cipher = (*supported_ciphers[method])();
+    EVP_CIPHER *cipher = EVP_get_cipherbyname(supported_ciphers[method]);
     key_len = EVP_BytesToKey(cipher, EVP_md5(), NULL, (uint8_t *)pass, 
             strlen(pass), 1, key, iv);
 
@@ -207,7 +200,6 @@ void enc_ctx_init(int method, struct enc_ctx *ctx, int enc) {
     EVP_CIPHER_CTX_set_padding(ctx->evp, 1);
 
     if (enc) {
-        int i;
         EVP_CipherInit_ex(ctx->evp, NULL, NULL, key, iv, enc);
     }
 
@@ -219,6 +211,7 @@ void enc_ctx_init(int method, struct enc_ctx *ctx, int enc) {
 }
 
 int enc_init(const char *pass, const char *method) {
+    pass = pass;
     if (method == NULL || strcmp(method, "table") == 0) {
         enc_table_init(pass);
         return TABLE;

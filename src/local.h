@@ -8,9 +8,9 @@
 struct listen_ctx {
     ev_io io;
     char **remote_host;
-    int remote_num;
     char *remote_port;
     char *iface;
+    int remote_num;
     int method;
     int timeout;
     int fd;
@@ -25,10 +25,10 @@ struct server_ctx {
 
 struct server {
     int fd;
-    char *buf; // server send from, remote recv into
-    char stage;
     int buf_len;
     int buf_idx;
+    char *buf; // server send from, remote recv into
+    char stage;
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;
     struct server_ctx *recv_ctx;
@@ -45,9 +45,9 @@ struct remote_ctx {
 
 struct remote {
     int fd;
-    char buf[BUF_SIZE]; // remote send from, server recv into
     int buf_len;
     int buf_idx;
+    char *buf; // remote send from, server recv into
     struct remote_ctx *recv_ctx;
     struct remote_ctx *send_ctx;
     struct server *server;

@@ -140,7 +140,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 
     // local socks5 server
     if (server->stage == 5) {
-        remote->buf = encrypt(remote->buf, r, server->e_ctx);
+        remote->buf = encrypt(remote->buf, &r, server->e_ctx);
         int s = send(remote->fd, remote->buf, r, 0);
         if(s == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -188,7 +188,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             return;
         }
 
-        char *addr_to_send = malloc(256);
+        char *addr_to_send = malloc(BUF_SIZE);
         uint8_t addr_len = 0;
         addr_to_send[addr_len++] = request->atyp;
 
@@ -223,7 +223,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             return;
         }
 
-        addr_to_send = encrypt(addr_to_send, addr_len, server->e_ctx);
+        addr_to_send = encrypt(addr_to_send, &addr_len, server->e_ctx);
         int s = send(remote->fd, addr_to_send, addr_len, 0);
         free(addr_to_send);
 
@@ -354,7 +354,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     }
 
-    server->buf = decrypt(server->buf, r, server->d_ctx);
+    server->buf = decrypt(server->buf, &r, server->d_ctx);
     int s = send(server->fd, server->buf, r, 0);
 
     if (s == -1) {
@@ -447,7 +447,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
 struct remote* new_remote(int fd, int timeout) {
     struct remote *remote;
     remote = malloc(sizeof(struct remote));
-    remote->buf = malloc(256);
+    remote->buf = malloc(BUF_SIZE);
     remote->recv_ctx = malloc(sizeof(struct remote_ctx));
     remote->send_ctx = malloc(sizeof(struct remote_ctx));
     remote->fd = fd;
@@ -488,7 +488,7 @@ void close_and_free_remote(EV_P_ struct remote *remote) {
 struct server* new_server(int fd, int method) {
     struct server *server;
     server = malloc(sizeof(struct server));
-    server->buf = malloc(256);
+    server->buf = malloc(BUF_SIZE);
     server->recv_ctx = malloc(sizeof(struct server_ctx));
     server->send_ctx = malloc(sizeof(struct server_ctx));
     server->fd = fd;
@@ -519,11 +519,11 @@ void free_server(struct server *server) {
             server->remote->server = NULL;
         }
         if (server->e_ctx != NULL) {
-            EVP_CIPHER_CTX_cleanup(server->e_ctx);
+            EVP_CIPHER_CTX_cleanup(server->e_ctx->evp);
             free(server->e_ctx);
         }
         if (server->d_ctx != NULL) {
-            EVP_CIPHER_CTX_cleanup(server->d_ctx);
+            EVP_CIPHER_CTX_cleanup(server->d_ctx->evp);
             free(server->d_ctx);
         }
         free(server->buf);

@@ -174,7 +174,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     }
 
-    decrypt_ctx(buf, r, server->d_ctx);
+    buf = decrypt(buf, &r, server->d_ctx);
 
     // handshake and transmit data
     if (server->stage == 5) {
@@ -482,7 +482,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     }
 
-    encrypt_ctx(server->buf, r, server->e_ctx);
+    server->buf = encrypt(server->buf, &r, server->e_ctx);
     int s = send(server->fd, server->buf, r, 0);
 
     if (s == -1) {
@@ -596,6 +596,7 @@ struct remote* new_remote(int fd) {
     remote_conn++;
     struct remote *remote;
     remote = malloc(sizeof(struct remote));
+    remote->buf = malloc(BUF_SIZE);
     remote->recv_ctx = malloc(sizeof(struct remote_ctx));
     remote->send_ctx = malloc(sizeof(struct remote_ctx));
     remote->fd = fd;
@@ -617,6 +618,7 @@ void free_remote(struct remote *remote) {
         if (remote->server != NULL) {
             remote->server->remote = NULL;
         }
+        free(remote->buf);
         free(remote->recv_ctx);
         free(remote->send_ctx);
         free(remote);
@@ -639,6 +641,7 @@ struct server* new_server(int fd, struct listen_ctx *listener) {
     server_conn++;
     struct server *server;
     server = malloc(sizeof(struct server));
+    server->buf = malloc(BUF_SIZE);
     server->recv_ctx = malloc(sizeof(struct server_ctx));
     server->send_ctx = malloc(sizeof(struct server_ctx));
     server->fd = fd;
@@ -653,11 +656,11 @@ struct server* new_server(int fd, struct listen_ctx *listener) {
     server->stage = 0;
     server->query = NULL;
     server->listen_ctx = listener;
-    if (enc_conf.method == RC4) {
-        server->e_ctx = malloc(sizeof(struct rc4_state));
-        server->d_ctx = malloc(sizeof(struct rc4_state));
-        enc_ctx_init(server->e_ctx, 1);
-        enc_ctx_init(server->d_ctx, 0);
+    if (listener->method) {
+        server->e_ctx = malloc(sizeof(struct enc_ctx));
+        server->d_ctx = malloc(sizeof(struct enc_ctx));
+        enc_ctx_init(listener->method, server->e_ctx, 1);
+        enc_ctx_init(listener->method, server->d_ctx, 0);
     } else {
         server->e_ctx = NULL;
         server->d_ctx = NULL;
@@ -674,10 +677,15 @@ void free_server(struct server *server) {
         if (server->remote != NULL) {
             server->remote->server = NULL;
         }
-        if (enc_conf.method == RC4) {
+        if (server->e_ctx != NULL) {
+            EVP_CIPHER_CTX_cleanup(server->e_ctx->evp);
             free(server->e_ctx);
+        }
+        if (server->d_ctx != NULL) {
+            EVP_CIPHER_CTX_cleanup(server->d_ctx->evp);
             free(server->d_ctx);
         }
+        free(server->buf);
         free(server->recv_ctx);
         free(server->send_ctx);
         free(server);
@@ -813,7 +821,7 @@ int main (int argc, char **argv) {
 
     // Setup keys
     LOGD("calculating ciphers...");
-    enc_conf_init(password, method);
+    int m = enc_init(password, method);
 
     // Inilitialize ev loop
     struct ev_loop *loop = EV_DEFAULT;
@@ -840,6 +848,7 @@ int main (int argc, char **argv) {
         listen_ctx.timeout = atoi(timeout);
         listen_ctx.asyncns = asyncns;
         listen_ctx.fd = listenfd;
+        listen_ctx.method = m;
         listen_ctx.iface = iface;
 
         ev_io_init (&listen_ctx.io, accept_cb, listenfd, EV_READ);

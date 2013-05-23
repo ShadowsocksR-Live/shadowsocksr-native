@@ -16,9 +16,8 @@
 #include <inttypes.h>
 #endif
 
-#include "md5.h"
-
 #define BUF_SIZE 4096
+#define BLOCK_SIZE 32
 
 #define NONE            -1 
 #define TABLE           0
@@ -36,8 +35,8 @@ struct enc_ctx {
     EVP_CIPHER_CTX *evp;
 };
 
-char* encrypt(char *buf, int len, EVP_CIPHER_CTX *ctx);
-char* decrypt(char *buf, int len, EVP_CIPHER_CTX *ctx);
+char* encrypt(char *plaintext, int *len, struct enc_ctx *ctx);
+char* decrypt(char *ciphertext, int *len, struct enc_ctx *ctx);
 void enc_ctx_init(int method, struct enc_ctx *ctx, int enc);
 int enc_init(const char *pass, const char *method);
 
