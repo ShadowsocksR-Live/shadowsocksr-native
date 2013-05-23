@@ -262,6 +262,7 @@ int enc_init(const char *pass, const char *method) {
     } else if (strcmp(method, "rc4") == 0) {
         return RC4;
     }
+    enc_table_init(enc_pass);
     return TABLE;
 }
 
