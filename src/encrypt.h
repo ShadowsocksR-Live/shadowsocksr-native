@@ -34,8 +34,6 @@
 
 struct enc_ctx {
     uint8_t init;
-    uint8_t iv_len;
-    uint8_t key[EVP_MAX_KEY_LENGTH];
     EVP_CIPHER_CTX evp;
 };
 

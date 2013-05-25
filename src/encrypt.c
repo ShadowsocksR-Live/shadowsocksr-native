@@ -12,7 +12,9 @@
 
 static uint8_t *enc_table;
 static uint8_t *dec_table;
-static char *enc_pass;
+static uint8_t enc_key[EVP_MAX_KEY_LENGTH];
+static int enc_key_len;
+static int enc_iv_len;
 
 #ifdef DEBUG
 static dump(char *tag, char *text) {
@@ -140,21 +142,21 @@ void enc_table_init(const char *pass) {
 char* ss_encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx) {
     if (ctx != NULL) {
         int c_len = *len + BLOCK_SIZE;
-        int iv_len = ctx->iv_len;
+        int iv_len = 0;
         char *ciphertext = malloc(max(iv_len + c_len, BUF_SIZE));
 
         if (!ctx->init) {
-            uint8_t iv[EVP_MAX_IV_LENGTH];
             int i;
+            uint8_t iv[EVP_MAX_IV_LENGTH];
+            iv_len = enc_iv_len;
             for (i = 0; i < iv_len; i++) {
                 iv[i] = rand() % 256;
             }
-            EVP_CipherInit_ex(&ctx->evp, NULL, NULL, ctx->key, iv, 1);
+            EVP_CipherInit_ex(&ctx->evp, NULL, NULL, enc_key, iv, 1);
             memcpy(ciphertext, iv, iv_len);
-            ctx->iv_len = 0;
             ctx->init = 1;
 #ifdef DEBUG
-            dump("IV", ctx->iv);
+            dump("IV", iv);
 #endif
         }
 
@@ -182,17 +184,17 @@ char* ss_encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx) {
 char* ss_decrypt(char *ciphertext, ssize_t *len, struct enc_ctx *ctx) {
     if (ctx != NULL) {
         int p_len = *len + BLOCK_SIZE;
-        int iv_len = ctx->iv_len;
+        int iv_len = 0;
         char *plaintext = malloc(max(p_len, BUF_SIZE));
 
         if (!ctx->init) {
             uint8_t iv[EVP_MAX_IV_LENGTH];
+            iv_len = enc_iv_len;
             memcpy(iv, ciphertext, iv_len);
-            EVP_CipherInit_ex(&ctx->evp, NULL, NULL, ctx->key, iv, 0);
-            ctx->iv_len = 0;
+            EVP_CipherInit_ex(&ctx->evp, NULL, NULL, enc_key, iv, 0);
             ctx->init = 1;
 #ifdef DEBUG
-            dump("IV", ctx->iv);
+            dump("IV", iv);
 #endif
         }
 
@@ -218,54 +220,56 @@ char* ss_decrypt(char *ciphertext, ssize_t *len, struct enc_ctx *ctx) {
 }
 
 void enc_ctx_init(int method, struct enc_ctx *ctx, int enc) {
-    uint8_t *key = ctx->key;
-    uint8_t iv[EVP_MAX_IV_LENGTH];
-    int key_len;
-
+    const EVP_CIPHER *cipher = EVP_get_cipherbyname(supported_ciphers[method]);
     memset(ctx, 0, sizeof(struct enc_ctx));
 
     EVP_CIPHER_CTX *evp = &ctx->evp;
-    const EVP_CIPHER *cipher = EVP_get_cipherbyname(supported_ciphers[method]);
-    ctx->iv_len = EVP_CIPHER_iv_length(cipher);
-
-    key_len = EVP_BytesToKey(cipher, EVP_md5(), NULL, (uint8_t *)enc_pass, 
-            strlen(enc_pass), 1, key, iv);
 
     EVP_CIPHER_CTX_init(evp);
     EVP_CipherInit_ex(evp, cipher, NULL, NULL, NULL, enc);
-    if (!EVP_CIPHER_CTX_set_key_length(evp, key_len)) {
+    if (!EVP_CIPHER_CTX_set_key_length(evp, enc_key_len)) {
         EVP_CIPHER_CTX_cleanup(evp);
-        LOGE("Invalid key length: %d", key_len);
+        LOGE("Invalid key length: %d", enc_key_len);
         exit(EXIT_FAILURE);
     }
     EVP_CIPHER_CTX_set_padding(evp, 1);
 }
 
+void enc_key_init(int method, const char *pass) {
+    OpenSSL_add_all_algorithms();
+
+    uint8_t iv[EVP_MAX_IV_LENGTH];
+    const EVP_CIPHER *cipher = EVP_get_cipherbyname(supported_ciphers[method]);
+
+    enc_key_len = EVP_BytesToKey(cipher, EVP_md5(), NULL, (uint8_t *)pass,
+            strlen(pass), 1, enc_key, iv);
+    enc_iv_len = EVP_CIPHER_iv_length(cipher);
+}
+
 int enc_init(const char *pass, const char *method) {
-    enc_pass = strdup(pass);
-    if (method == NULL || strcmp(method, "table") == 0) {
-        enc_table_init(enc_pass);
-        return TABLE;
-    } else {
-        OpenSSL_add_all_algorithms();
+    int m = TABLE;
+    if (method != NULL && strcmp(method, "table") != 0) {
         if (strcmp(method, "aes-128-cfb") == 0) {
-            return AES_128_CFB;
+            m = AES_128_CFB;
         } else if (strcmp(method, "aes-192-cfb") == 0) {
-            return AES_192_CFB;
+            m = AES_192_CFB;
         } else if (strcmp(method, "aes-256-cfb") == 0) {
-            return AES_256_CFB;
+            m = AES_256_CFB;
         } else if (strcmp(method, "bf-cfb") == 0) {
-            return BF_CFB;
+            m = BF_CFB;
         } else if (strcmp(method, "cast5-cfb") == 0) {
-            return CAST5_CFB;
+            m = CAST5_CFB;
         } else if (strcmp(method, "des-cfb") == 0) {
-            return DES_CFB;
+            m = DES_CFB;
         } else if (strcmp(method, "rc4") == 0) {
-            return RC4;
-        } else {  
-            enc_table_init(enc_pass);
-            return TABLE;
+            m = RC4;
         }
     }
+    if (m == TABLE) {
+        enc_table_init(pass);
+    } else {
+        enc_key_init(m, pass);
+    }
+    return m;
 }
 
