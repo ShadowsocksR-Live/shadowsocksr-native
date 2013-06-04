@@ -54,7 +54,7 @@ int setinterface(int socket_fd, const char* interface_name)
 }
 #endif
 
-int create_and_bind(const char *port) {
+int create_and_bind(const char *addr, const char *port) {
     struct addrinfo hints;
     struct addrinfo *result, *rp;
     int s, listen_sock;
@@ -63,7 +63,7 @@ int create_and_bind(const char *port) {
     hints.ai_family = AF_UNSPEC; /* Return IPv4 and IPv6 choices */
     hints.ai_socktype = SOCK_STREAM; /* We want a TCP socket */
 
-    s = getaddrinfo("0.0.0.0", port, &hints, &result);
+    s = getaddrinfo(addr, port, &hints, &result);
     if (s != 0) {
         LOGD("getaddrinfo: %s", gai_strerror(s));
         return -1;
@@ -601,6 +601,7 @@ int main (int argc, char **argv) {
     int i, c;
     int pid_flags = 0;
     char *local_port = NULL;
+    char *local_addr = NULL;
     char *password = NULL;
     char *timeout = NULL;
     char *method = NULL;
@@ -614,7 +615,7 @@ int main (int argc, char **argv) {
 
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:i:c:")) != -1) {
+    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:i:c:b:")) != -1) {
         switch (c) {
             case 's':
                 remote_host[remote_num++] = optarg;
@@ -643,6 +644,9 @@ int main (int argc, char **argv) {
                 break;
             case 'i':
                 iface = optarg;
+                break;
+            case 'b':
+                local_addr = optarg;
                 break;
         }
     }
@@ -675,6 +679,8 @@ int main (int argc, char **argv) {
 
     if (timeout == NULL) timeout = "10";
 
+    if (local_addr == NULL) local_addr = "0.0.0.0";
+
     if (pid_flags) {
         demonize(pid_path);
     }
@@ -688,7 +694,7 @@ int main (int argc, char **argv) {
 
     // Setup socket
     int listenfd;
-    listenfd = create_and_bind(local_port);
+    listenfd = create_and_bind(local_addr, local_port);
     if (listenfd < 0) {
         FATAL("bind() error..");
     }
