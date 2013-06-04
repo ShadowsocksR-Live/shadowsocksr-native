@@ -35,8 +35,14 @@ static const char* supported_ciphers[8] = {
     "aes-192-cfb",
     "aes-256-cfb",
     "bf-cfb",
+    "camellia-128-cfb",
+    "camellia-192-cfb",
+    "camellia-256-cfb",
     "cast5-cfb",
-    "des-cfb"
+    "des-cfb",
+    "idea-cfb",
+    "rc2-cfb",
+    "seed-cfb"
 };
 
 static int random_compare(const void *_x, const void *_y, uint32_t i, uint64_t a) {
