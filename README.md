@@ -11,10 +11,14 @@ It is a port of [shadowsocks](https://github.com/clowwindy/shadowsocks)
 created by [@clowwindy](https://github.com/clowwindy) maintained by 
 [@madeye](https://github.com/madeye).
 
-Current version: 1.3 [![Build Status](https://travis-ci.org/madeye/shadowsocks-libev.png?branch=master)](https://travis-ci.org/madeye/shadowsocks-libev)
+Current version: 1.3.1 [![Build Status](https://travis-ci.org/madeye/shadowsocks-libev.png?branch=master)](https://travis-ci.org/madeye/shadowsocks-libev)
 
 Changelog
 ---------
+
+shadowsocks 1.3.1 -- Tue, 04 Jun 2013 00:56:17 +0000
+
+  * Support more cihpers: camellia, idea, rc2 and seed.
 
 shadowsocks 1.3 -- Thu, 16 May 2013 10:51:15 +0800
 
