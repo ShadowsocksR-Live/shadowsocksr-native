@@ -66,22 +66,25 @@ Usage
 ```
 usage:
 
-    ss-local -s server_host -p server_port -l local_port -k password
-       [-m encrypt_method] [-f pid_file] [-t timeout] [-c config_file]
-
-    ss-redir -s server_host -p server_port -l local_port -k password
-       [-m encrypt_method] [-f pid_file] [-t timeout] [-c config_file]
-
-    ss-server -s server_host -p server_port -k password
-       [-m encrypt_method] [-f pid_file] [-t timeout] [-c config_file]
+ss-[local|redir|server]
+      -s <server_host>        -p <server_port>
+      -l <local_port>         -k <password>
+      [-m <encrypt_method>]   [-f <pid_file>]
+      [-t <timeout>]          [-c <config_file>]
+      [-i <interface>]        [-b <local_address>]
 
 options:
 
-    encrypt_method:     table, rc4, aes-128-cfb, aes-192-cfb, aes-256-cfb,
-                        bf-cfb, cast5-cfb, des-cfb
-          pid_file:     valid path to the pid file
-           timeout:     socket timeout in senconds
-       config_file:     json format config file
+encrypt_method:   table, rc4,
+                  aes-128-cfb, aes-192-cfb, aes-256-cfb,
+                  bf-cfb, camellia-128-cfb, camellia-192-cfb,
+                  camellia-256-cfb, cast5-cfb, des-cfb,
+                  idea-cfb, rc2-cfb and seed-cfb
+      pid_file:   valid path to the pid file
+       timeout:   socket timeout in senconds
+   config_file:   json format config file
+     interface:   specific network interface to bind
+ local_address:   specific address clients listen on
 
 notes:
 

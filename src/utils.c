@@ -66,15 +66,23 @@ void usage() {
     printf("  maintained by Max Lv <max.c.lv@gmail.com>\n\n");
     printf("  usage:\n\n");
     printf("    ss-[local|redir|server]\n");
-    printf("          -s server_host -p server_port -l local_port -k password\n");
-    printf("          [-m encrypt_method] [-f pid_file] [-t timeout] [-c config_file]\n");
+    printf("          -s <server_host>        -p <server_port>\n");
+    printf("          -l <local_port>         -k <password>\n");
+    printf("          [-m <encrypt_method>]   [-f <pid_file>]\n");
+    printf("          [-t <timeout>]          [-c <config_file>]\n");
+    printf("          [-i <interface>]        [-b <local_address>]\n");
     printf("\n");
     printf("  options:\n\n");
-    printf("    encrypt_method:     table, rc4, aes-128-cfb, aes-192-cfb, aes-256-cfb,\n");
-    printf("                        bf-cfb, cast5-cfb, des-cfb\n");
-    printf("          pid_file:     valid path to the pid file\n");
-    printf("           timeout:     socket timeout in senconds\n");
-    printf("       config_file:     json format config file\n");
+    printf("    encrypt_method:   table, rc4,\n"); 
+    printf("                      aes-128-cfb, aes-192-cfb, aes-256-cfb,\n");
+    printf("                      bf-cfb, camellia-128-cfb, camellia-192-cfb,\n");
+    printf("                      camellia-256-cfb, cast5-cfb, des-cfb,\n");
+    printf("                      idea-cfb, rc2-cfb and seed-cfb\n");
+    printf("          pid_file:   valid path to the pid file\n");
+    printf("           timeout:   socket timeout in senconds\n");
+    printf("       config_file:   json format config file\n");
+    printf("         interface:   specific network interface to bind\n");
+    printf("     local_address:   specific address clients listen on\n");
     printf("\n");
 }
 
