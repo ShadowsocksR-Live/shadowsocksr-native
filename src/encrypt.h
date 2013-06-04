@@ -25,10 +25,10 @@
 #define AES_128_CFB         2
 #define AES_192_CFB         3
 #define AES_256_CFB         4
-#define CAMELLIA_128_CFB    5
-#define CAMELLIA_192_CFB    6
-#define CAMELLIA_256_CFB    7
-#define BF_CFB              8
+#define BF_CFB              5
+#define CAMELLIA_128_CFB    6
+#define CAMELLIA_192_CFB    7
+#define CAMELLIA_256_CFB    8
 #define CAST5_CFB           9
 #define DES_CFB             10
 #define IDEA_CFB            11
