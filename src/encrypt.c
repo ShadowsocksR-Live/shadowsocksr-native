@@ -28,7 +28,7 @@ static dump(char *tag, char *text) {
 }
 #endif
 
-static const char* supported_ciphers[8] = {
+static const char* supported_ciphers[14] = {
     "table",
     "rc4",
     "aes-128-cfb",
