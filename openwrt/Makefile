@@ -33,9 +33,6 @@ define Package/shadowsocks-libev/conffiles
 /etc/config/shadowsocks.json
 endef
 
-TARGET_CFLAGS += -I$(STAGING_DIR)/usr/include
-TARGET_LDFLAGS += -L$(STAGING_DIR)/usr/lib -lm -static -L$(STAGING_DIR)/usr/lib -lcrypto
-
 define Package/shadowsocks-libev/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/etc/init.d $(1)/etc/config
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/ss-local $(1)/usr/bin/ss-local
