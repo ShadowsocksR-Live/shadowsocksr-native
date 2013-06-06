@@ -22,19 +22,19 @@ define Package/shadowsocks-libev
   SECTION:=net
   CATEGORY:=Network
   DEPENDS:=+libopenssl
-  TITLE:=shadowsocks-libev
+  TITLE:=Lightweight Secured Socks5 Proxy
 endef
 
 define Package/shadowsocks-libev/description
-Shadowsocks-libev is a lightweight secured scoks5 proxy for embedded devices and low end boxes..
+Shadowsocks-libev is a lightweight secured scoks5 proxy for embedded devices and low end boxes.
 endef
 
 define Package/shadowsocks-libev/conffiles
 /etc/config/shadowsocks.json
 endef
 
-TARGET_CFLAGS += -I$(STAGING_DIR)/usr/include -I$(STAGING_DIR)/usr/include/libev
-TARGET_LDFLAGS += -L$(STAGING_DIR)/usr/lib/libev -L$(STAGING_DIR)/usr/lib -lm
+TARGET_CFLAGS += -I$(STAGING_DIR)/usr/include
+TARGET_LDFLAGS += -L$(STAGING_DIR)/usr/lib -lm -static -L$(STAGING_DIR)/usr/lib -lcrypto
 
 define Package/shadowsocks-libev/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/etc/init.d $(1)/etc/config
