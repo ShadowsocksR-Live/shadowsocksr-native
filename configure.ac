@@ -20,7 +20,7 @@ dnl Checks for libev
 m4_include([libev/libev.m4])
 
 dnl Checks for openssl
-AC_SEARCH_LIBS([MD5], [crypto], [ ], AC_MSG_ERROR([libcrypto not found.]))
+ss_OPENSSL
 
 dnl Checks for host.
 AC_MSG_CHECKING(for what kind of host)
