@@ -21,6 +21,9 @@
 /* Define to 1 if you have the `eventfd' function. */
 #undef HAVE_EVENTFD
 
+/* Define to 1 if you have the `EVP_EncryptInit_ex' function. */
+#undef HAVE_EVP_ENCRYPTINIT_EX
+
 /* Define to 1 if you have the <fcntl.h> header file. */
 #undef HAVE_FCNTL_H
 
@@ -72,6 +75,27 @@
 /* Define to 1 if you have the <net/if.h> header file. */
 #undef HAVE_NET_IF_H
 
+/* Define to 1 if you have the <openssl/engine.h> header file. */
+#undef HAVE_OPENSSL_ENGINE_H
+
+/* Define to 1 if you have the <openssl/err.h> header file. */
+#undef HAVE_OPENSSL_ERR_H
+
+/* Define to 1 if you have the <openssl/evp.h> header file. */
+#undef HAVE_OPENSSL_EVP_H
+
+/* Define to 1 if you have the <openssl/pem.h> header file. */
+#undef HAVE_OPENSSL_PEM_H
+
+/* Define to 1 if you have the <openssl/rand.h> header file. */
+#undef HAVE_OPENSSL_RAND_H
+
+/* Define to 1 if you have the <openssl/rsa.h> header file. */
+#undef HAVE_OPENSSL_RSA_H
+
+/* Define to 1 if you have the <openssl/sha.h> header file. */
+#undef HAVE_OPENSSL_SHA_H
+
 /* Define to 1 if you have the `poll' function. */
 #undef HAVE_POLL
 
@@ -86,6 +110,9 @@
 
 /* Define if you have POSIX threads libraries and header files. */
 #undef HAVE_PTHREAD
+
+/* Define to 1 if you have the `RAND_pseudo_bytes' function. */
+#undef HAVE_RAND_PSEUDO_BYTES
 
 /* Define to 1 if you have the `select' function. */
 #undef HAVE_SELECT

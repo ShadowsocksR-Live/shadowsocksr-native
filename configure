@@ -868,6 +868,9 @@ with_pic
 enable_fast_install
 with_gnu_ld
 enable_libtool_lock
+with_openssl
+with_openssl_include
+with_openssl_lib
 enable_assert
 enable_largefile
 '
@@ -1516,6 +1519,11 @@ Optional Packages:
   --with-pic              try to use only PIC/non-PIC objects [default=use
                           both]
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
+  --with-openssl=DIR      OpenSSL base directory, or:
+  --with-openssl-include=DIR
+                          OpenSSL headers directory (without trailing
+                          /openssl)
+  --with-openssl-lib=DIR  OpenSSL library directory
 
 Some influential environment variables:
   CC          C compiler command
@@ -1958,6 +1966,52 @@ fi
   eval $as_lineno_stack; test "x$as_lineno_stack" = x && { as_lineno=; unset as_lineno;}
 
 } # ac_fn_c_check_header_mongrel
+
+# ac_fn_c_check_decl LINENO SYMBOL VAR INCLUDES
+# ---------------------------------------------
+# Tests whether SYMBOL is declared in INCLUDES, setting cache variable VAR
+# accordingly.
+ac_fn_c_check_decl ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  as_decl_name=`echo $2|sed 's/ *(.*//'`
+  as_decl_use=`echo $2|sed -e 's/(/((/' -e 's/)/) 0&/' -e 's/,/) 0& (/g'`
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $as_decl_name is declared" >&5
+$as_echo_n "checking whether $as_decl_name is declared... " >&6; }
+if eval "test \"\${$3+set}\"" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$4
+int
+main ()
+{
+#ifndef $as_decl_name
+#ifdef __cplusplus
+  (void) $as_decl_use;
+#else
+  (void) $as_decl_name;
+#endif
+#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  eval "$3=yes"
+else
+  eval "$3=no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+eval ac_res=\$$3
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+  eval $as_lineno_stack; test "x$as_lineno_stack" = x && { as_lineno=; unset as_lineno;}
+
+} # ac_fn_c_check_decl
 
 # ac_fn_c_check_type LINENO TYPE VAR INCLUDES
 # -------------------------------------------
@@ -4590,13 +4644,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:4593: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:4647: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4596: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:4650: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4599: output\"" >&5)
+  (eval echo "\"\$as_me:4653: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -5802,7 +5856,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5805 "configure"' > conftest.$ac_ext
+  echo '#line 5859 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7331,11 +7385,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7334: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7388: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7338: \$? = $ac_status" >&5
+   echo "$as_me:7392: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7670,11 +7724,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7673: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7727: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7677: \$? = $ac_status" >&5
+   echo "$as_me:7731: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7775,11 +7829,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7778: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7832: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7782: \$? = $ac_status" >&5
+   echo "$as_me:7836: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -7830,11 +7884,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7833: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7887: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7837: \$? = $ac_status" >&5
+   echo "$as_me:7891: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10214,7 +10268,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10217 "configure"
+#line 10271 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10310,7 +10364,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10313 "configure"
+#line 10367 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10850,12 +10904,22 @@ fi
 
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing MD5" >&5
-$as_echo_n "checking for library containing MD5... " >&6; }
-if test "${ac_cv_search_MD5+set}" = set; then :
+
+  case $host_os in
+    *mingw*)
+    ;;
+    *)
+      ac_fn_c_check_func "$LINENO" "dlopen" "ac_cv_func_dlopen"
+if test "x$ac_cv_func_dlopen" = x""yes; then :
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dlopen in -ldl" >&5
+$as_echo_n "checking for dlopen in -ldl... " >&6; }
+if test "${ac_cv_lib_dl_dlopen+set}" = set; then :
   $as_echo_n "(cached) " >&6
 else
-  ac_func_search_save_LIBS=$LIBS
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ldl  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -10865,48 +10929,152 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char MD5 ();
+char dlopen ();
 int
 main ()
 {
-return MD5 ();
+return dlopen ();
   ;
   return 0;
 }
 _ACEOF
-for ac_lib in '' crypto; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_MD5=$ac_res
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_dl_dlopen=yes
+else
+  ac_cv_lib_dl_dlopen=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if test "${ac_cv_search_MD5+set}" = set; then :
-  break
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_dl_dlopen" >&5
+$as_echo "$ac_cv_lib_dl_dlopen" >&6; }
+if test "x$ac_cv_lib_dl_dlopen" = x""yes; then :
+  LIBS="$LIBS -ldl"
+else
+  as_fn_error $? "OpenSSL depends on libdl." "$LINENO" 5 ; break
+
+fi
+
+
+fi
+
+    ;;
+  esac
+
+
+# Check whether --with-openssl was given.
+if test "${with_openssl+set}" = set; then :
+  withval=$with_openssl; openssl="$withval"
+     CFLAGS="$CFLAGS -I$withval/include"
+     LDFLAGS="$LDFLAGS -L$withval/lib"
+
+fi
+
+
+
+# Check whether --with-openssl-include was given.
+if test "${with_openssl_include+set}" = set; then :
+  withval=$with_openssl_include; openssl_include="$withval"
+     CFLAGS="$CFLAGS -I$withval"
+
+fi
+
+
+
+# Check whether --with-openssl-lib was given.
+if test "${with_openssl_lib+set}" = set; then :
+  withval=$with_openssl_lib; openssl_lib="$withval"
+     LDFLAGS="$LDFLAGS -L$withval"
+
+fi
+
+
+  for ac_header in openssl/evp.h openssl/rsa.h openssl/rand.h openssl/err.h openssl/sha.h openssl/pem.h openssl/engine.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+else
+  as_fn_error $? "OpenSSL header files not found." "$LINENO" 5 ; break
+
+fi
+
+done
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for EVP_EncryptInit_ex in -lcrypto" >&5
+$as_echo_n "checking for EVP_EncryptInit_ex in -lcrypto... " >&6; }
+if test "${ac_cv_lib_crypto_EVP_EncryptInit_ex+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcrypto  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char EVP_EncryptInit_ex ();
+int
+main ()
+{
+return EVP_EncryptInit_ex ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_crypto_EVP_EncryptInit_ex=yes
+else
+  ac_cv_lib_crypto_EVP_EncryptInit_ex=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_crypto_EVP_EncryptInit_ex" >&5
+$as_echo "$ac_cv_lib_crypto_EVP_EncryptInit_ex" >&6; }
+if test "x$ac_cv_lib_crypto_EVP_EncryptInit_ex" = x""yes; then :
+  LIBS="-lcrypto $LIBS"
+else
+  as_fn_error $? "OpenSSL libraries not found." "$LINENO" 5
+
+fi
+
+
+  for ac_func in RAND_pseudo_bytes EVP_EncryptInit_ex
+do :
+  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+if eval test \"x\$"$as_ac_var"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
+
+else
+  as_fn_error $? "Missing OpenSSL functionality, make sure you have installed the latest version." "$LINENO" 5 ; break
 fi
 done
-if test "${ac_cv_search_MD5+set}" = set; then :
+
+
+  ac_fn_c_check_decl "$LINENO" "OpenSSL_add_all_algorithms" "ac_cv_have_decl_OpenSSL_add_all_algorithms" "#include <openssl/evp.h>
+
+"
+if test "x$ac_cv_have_decl_OpenSSL_add_all_algorithms" = x""yes; then :
 
 else
-  ac_cv_search_MD5=no
+  as_fn_error $? "Missing OpenSSL functionality, make sure you have installed the latest version." "$LINENO" 5 ; break
 fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_MD5" >&5
-$as_echo "$ac_cv_search_MD5" >&6; }
-ac_res=$ac_cv_search_MD5
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
 
-else
-  as_fn_error $? "libcrypto not found." "$LINENO" 5
-fi
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for what kind of host" >&5
