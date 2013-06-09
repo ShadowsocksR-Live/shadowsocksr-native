@@ -81,8 +81,10 @@ void usage() {
     printf("          pid_file:   valid path to the pid file\n");
     printf("           timeout:   socket timeout in senconds\n");
     printf("       config_file:   json format config file\n");
-    printf("         interface:   specific network interface to bind\n");
-    printf("     local_address:   specific address clients listen on\n");
+    printf("         interface:   specific network interface to bind,\n");
+    printf("                      only avaliable in local and server modes\n");
+    printf("     local_address:   specific local address to bind,\n");
+    printf("                      only avaliable in local and redir modes\n");
     printf("\n");
 }
 

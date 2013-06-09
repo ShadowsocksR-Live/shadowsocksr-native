@@ -87,8 +87,10 @@ encrypt_method:   table, rc4,
       pid_file:   valid path to the pid file
        timeout:   socket timeout in senconds
    config_file:   json format config file
-     interface:   specific network interface to bind
- local_address:   specific address clients listen on
+     interface:   specific network interface to bind,
+                  only avaliable in local and server modes
+ local_address:   specific local address to bind,
+                  only avaliable in local and redir modes
 
 notes:
 
