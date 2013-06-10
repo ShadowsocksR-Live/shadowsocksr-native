@@ -57,19 +57,22 @@ PROGRAMS = $(bin_PROGRAMS)
 am_ss_local_OBJECTS = utils.$(OBJEXT) jconf.$(OBJEXT) json.$(OBJEXT) \
 	encrypt.$(OBJEXT) local.$(OBJEXT)
 ss_local_OBJECTS = $(am_ss_local_OBJECTS)
-ss_local_DEPENDENCIES = $(top_builddir)/libev/libev.la
+ss_local_LDADD = $(LDADD)
+am__DEPENDENCIES_1 =
+ss_local_DEPENDENCIES = $(top_builddir)/libev/libev.la \
+	$(am__DEPENDENCIES_1)
 am__ss_redir_SOURCES_DIST = utils.c jconf.c json.c encrypt.c redir.c
 @BUILD_REDIRECTOR_TRUE@am_ss_redir_OBJECTS = utils.$(OBJEXT) \
 @BUILD_REDIRECTOR_TRUE@	jconf.$(OBJEXT) json.$(OBJEXT) \
 @BUILD_REDIRECTOR_TRUE@	encrypt.$(OBJEXT) redir.$(OBJEXT)
 ss_redir_OBJECTS = $(am_ss_redir_OBJECTS)
-@BUILD_REDIRECTOR_TRUE@ss_redir_DEPENDENCIES =  \
-@BUILD_REDIRECTOR_TRUE@	$(top_builddir)/libev/libev.la
+ss_redir_LDADD = $(LDADD)
+ss_redir_DEPENDENCIES = $(top_builddir)/libev/libev.la \
+	$(am__DEPENDENCIES_1)
 am_ss_server_OBJECTS = utils.$(OBJEXT) jconf.$(OBJEXT) json.$(OBJEXT) \
 	encrypt.$(OBJEXT) server.$(OBJEXT)
 ss_server_OBJECTS = $(am_ss_server_OBJECTS)
-ss_server_DEPENDENCIES = $(top_builddir)/libev/libev.la \
-	$(top_builddir)/libasyncns/libasyncns.la
+ss_server_DEPENDENCIES = $(top_builddir)/libasyncns/libasyncns.la
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -205,25 +208,29 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-ss_local_SOURCES = utils.c jconf.c json.c \
-				   encrypt.c \
-				   local.c
-
-ss_server_SOURCES = utils.c jconf.c json.c \
-					encrypt.c \
-					server.c
-
-ss_local_LDADD = $(top_builddir)/libev/libev.la
-ss_server_LDADD = $(top_builddir)/libev/libev.la \
-	$(top_builddir)/libasyncns/libasyncns.la
-@BUILD_REDIRECTOR_TRUE@ss_redir_SOURCES = utils.c jconf.c json.c \
-@BUILD_REDIRECTOR_TRUE@				   encrypt.c \
-@BUILD_REDIRECTOR_TRUE@				   redir.c
-
-@BUILD_REDIRECTOR_TRUE@ss_redir_LDADD = $(top_builddir)/libev/libev.la
 AM_CFLAGS = -g -O2 -Wall -fno-strict-aliasing -I$(top_builddir)/libev \
 	-I$(top_builddir)/libasyncns
 AM_LDFLAGS = -static
+LDADD = $(top_builddir)/libev/libev.la $(INET_ATON_LIB)
+ss_local_SOURCES = utils.c \
+                   jconf.c \
+                   json.c \
+		   encrypt.c \
+		   local.c
+
+ss_server_SOURCES = utils.c \
+                    jconf.c \
+                    json.c \
+                    encrypt.c \
+                    server.c
+
+ss_server_LDADD = $(top_builddir)/libasyncns/libasyncns.la
+@BUILD_REDIRECTOR_TRUE@ss_redir_SOURCES = utils.c \
+@BUILD_REDIRECTOR_TRUE@                   jconf.c \
+@BUILD_REDIRECTOR_TRUE@                   json.c \
+@BUILD_REDIRECTOR_TRUE@                   encrypt.c \
+@BUILD_REDIRECTOR_TRUE@                   redir.c
+
 all: all-am
 
 .SUFFIXES:

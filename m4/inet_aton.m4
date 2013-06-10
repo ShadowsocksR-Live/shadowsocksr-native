@@ -6,7 +6,6 @@ dnl with or without modifications, as long as this notice is preserved.
 
 AC_DEFUN([ss_FUNC_INET_ATON],
 [
-
   AC_REQUIRE([AC_C_RESTRICT])
 
   dnl Most platforms that provide inet_aton define it in libc.
