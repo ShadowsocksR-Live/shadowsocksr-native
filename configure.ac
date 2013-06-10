@@ -22,6 +22,9 @@ m4_include([libev/libev.m4])
 dnl Checks for openssl
 ss_OPENSSL
 
+dnl Checks for inet_ntop
+gl_FUNC_INET_NTOP
+
 dnl Checks for host.
 AC_MSG_CHECKING(for what kind of host)
 case $host in
