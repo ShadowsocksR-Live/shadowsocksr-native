@@ -46,7 +46,8 @@ Features
 --------
 
 Shadowsocks-libev is writen in pure C and only depends on
-[libev](http://software.schmorp.de/pkg/libev.html).
+[libev](http://software.schmorp.de/pkg/libev.html) and 
+[openssl](http://www.openssl.org/).
 
 In normal usage, the memory consumption is about 600KB and the CPU utilization is 
 no more than 5% on a low-end router (Buffalo WHR-G300N V2 with a 400MHz MIPS CPU, 
@@ -100,7 +101,7 @@ notes:
 
 ## Advanced usage
 
-The latest shadowsocks-libev has provided a transparent mode. You can configure your linux based box or router to proxy all tcp traffic transparently.
+The latest shadowsocks-libev has provided a *redir* mode. You can configure your linux based box or router to proxy all tcp traffic transparently.
 
     # Create new chain
     root@Wrt:~# iptables -t nat -N SHADOWSOCKS
