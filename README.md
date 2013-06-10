@@ -48,7 +48,6 @@ Features
 Shadowsocks-libev is writen in pure C and only depends on
 [libev](http://software.schmorp.de/pkg/libev.html).
 
-When statically linked and packaged for OpenWRT, the total package size is 23KB. 
 In normal usage, the memory consumption is about 600KB and the CPU utilization is 
 no more than 5% on a low-end router (Buffalo WHR-G300N V2 with a 400MHz MIPS CPU, 
 32MB memory and 4MB flash).
