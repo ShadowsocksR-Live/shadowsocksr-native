@@ -743,9 +743,11 @@ int main (int argc, char **argv) {
     char *server_host[MAX_REMOTE_NUM];
     char *server_port = NULL;
 
+    int dns_thread_num = DNS_THREAD_NUM;
+
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:c:i:v")) != -1) {
+    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:c:i:d:v")) != -1) {
         switch (c) {
             case 's':
                 server_host[server_num++] = optarg;
@@ -772,6 +774,9 @@ int main (int argc, char **argv) {
             case 'i':
                 iface = optarg;
                 break;
+            case 'd':
+                dns_thread_num = atoi(optarg);
+                if (!dns_thread_num) FATAL("Invalid DNS thread number");
             case 'v':
                 verbose = 1;
         }
@@ -813,7 +818,7 @@ int main (int argc, char **argv) {
 
     // Setup asyncns
     asyncns_t *asyncns;
-    if (!(asyncns = asyncns_new(DNS_THREAD_NUM))) {
+    if (!(asyncns = asyncns_new(dns_thread_num))) {
         FATAL("asyncns failed");
     }
 
