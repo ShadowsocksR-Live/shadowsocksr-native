@@ -754,6 +754,7 @@ acx_pthread_config
 LIBOBJS
 BUILD_REDIRECTOR_FALSE
 BUILD_REDIRECTOR_TRUE
+INET_NTOA_LIB
 INET_ATON_LIB
 CPP
 OTOOL64
@@ -4647,13 +4648,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:4650: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:4651: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4653: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:4654: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4656: output\"" >&5)
+  (eval echo "\"\$as_me:4657: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -5859,7 +5860,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5862 "configure"' > conftest.$ac_ext
+  echo '#line 5863 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7388,11 +7389,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7391: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7392: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7395: \$? = $ac_status" >&5
+   echo "$as_me:7396: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7727,11 +7728,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7730: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7731: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7734: \$? = $ac_status" >&5
+   echo "$as_me:7735: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7832,11 +7833,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7835: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7836: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7839: \$? = $ac_status" >&5
+   echo "$as_me:7840: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -7887,11 +7888,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7890: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7891: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7894: \$? = $ac_status" >&5
+   echo "$as_me:7895: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10271,7 +10272,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10274 "configure"
+#line 10275 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10367,7 +10368,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10370 "configure"
+#line 10371 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11249,6 +11250,113 @@ _ACEOF
 
   if test $ac_cv_have_decl_inet_aton = no; then
     HAVE_DECL_INET_ATON=0
+  fi
+
+
+
+
+
+        HAVE_INET_NTOA=1
+  INET_NTOA_LIB=
+  ss_save_LIBS=$LIBS
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing inet_ntoa" >&5
+$as_echo_n "checking for library containing inet_ntoa... " >&6; }
+if test "${ac_cv_search_inet_ntoa+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char inet_ntoa ();
+int
+main ()
+{
+return inet_ntoa ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' nsl resolv; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_inet_ntoa=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if test "${ac_cv_search_inet_ntoa+set}" = set; then :
+  break
+fi
+done
+if test "${ac_cv_search_inet_ntoa+set}" = set; then :
+
+else
+  ac_cv_search_inet_ntoa=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_inet_ntoa" >&5
+$as_echo "$ac_cv_search_inet_ntoa" >&6; }
+ac_res=$ac_cv_search_inet_ntoa
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+else
+  for ac_func in inet_ntoa
+do :
+  ac_fn_c_check_func "$LINENO" "inet_ntoa" "ac_cv_func_inet_ntoa"
+if test "x$ac_cv_func_inet_ntoa" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_INET_NTOA 1
+_ACEOF
+
+fi
+done
+
+     if test $ac_cv_func_inet_ntoa = no; then
+       HAVE_INET_NTOA=0
+     fi
+
+fi
+
+  LIBS=$ss_save_LIBS
+
+  if test "$ac_cv_search_inet_ntoa" != "no" \
+     && test "$ac_cv_search_inet_ntoa" != "none required"; then
+    INET_NTOA_LIB="$ac_cv_search_inet_ntoa"
+  fi
+
+
+  ac_fn_c_check_decl "$LINENO" "inet_ntoa" "ac_cv_have_decl_inet_ntoa" "#include <arpa/inet.h>
+      #if HAVE_NETDB_H
+      # include <netdb.h>
+      #endif
+
+"
+if test "x$ac_cv_have_decl_inet_ntoa" = x""yes; then :
+  ac_have_decl=1
+else
+  ac_have_decl=0
+fi
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_DECL_INET_NTOA $ac_have_decl
+_ACEOF
+
+  if test $ac_cv_have_decl_inet_ntoa = no; then
+    HAVE_DECL_INET_NTOA=0
   fi
 
 

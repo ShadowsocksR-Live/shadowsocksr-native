@@ -16,6 +16,10 @@
    don't. */
 #undef HAVE_DECL_INET_ATON
 
+/* Define to 1 if you have the declaration of `inet_ntoa', and to 0 if you
+   don't. */
+#undef HAVE_DECL_INET_NTOA
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
@@ -39,6 +43,9 @@
 
 /* Define to 1 if you have the `inet_aton' function. */
 #undef HAVE_INET_ATON
+
+/* Define to 1 if you have the `inet_ntoa' function. */
+#undef HAVE_INET_NTOA
 
 /* Define to 1 if you have the `inotify_init' function. */
 #undef HAVE_INOTIFY_INIT

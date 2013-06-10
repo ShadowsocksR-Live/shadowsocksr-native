@@ -4,7 +4,7 @@ AM_CFLAGS += -I$(top_builddir)/libasyncns
 
 AM_LDFLAGS = -static
 
-SS_COMMON_LIBS = $(top_builddir)/libev/libev.la $(INET_ATON_LIB)
+SS_COMMON_LIBS = $(top_builddir)/libev/libev.la $(INET_ATON_LIB) $(INET_NTOA_LIB)
  
 bin_PROGRAMS = ss-local ss-server
 ss_local_SOURCES = utils.c \

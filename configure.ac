@@ -22,8 +22,9 @@ m4_include([libev/libev.m4])
 dnl Checks for openssl
 ss_OPENSSL
 
-dnl Checks for inet_aton
+dnl Checks for inet_aton and inet_ntoa
 ss_FUNC_INET_ATON
+ss_FUNC_INET_NTOA
 
 dnl Checks for host.
 AC_MSG_CHECKING(for what kind of host)
