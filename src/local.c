@@ -240,7 +240,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         response.atyp = 1;
 
         struct in_addr sin_addr;
-        inet_aton("0.0.0.0", &sin_addr);
+        memset(&sin_addr, 0, sizeof(struct in_addr));
 
         memcpy(server->buf, &response, sizeof(struct socks5_response));
         memset(server->buf + sizeof(struct socks5_response), 0, sizeof(struct in_addr) + sizeof(uint16_t));

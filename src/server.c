@@ -220,8 +220,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             // IP V4
             size_t in_addr_len = sizeof(struct in_addr);
             if (r > in_addr_len) {
-                char *a = inet_ntoa(*(struct in_addr*)(server->buf + offset));
-                memcpy(host, a, strlen(a));
+                inet_ntop(AF_INET, (void *)server->buf[offset],
+                        host, in_addr_len);
                 offset += in_addr_len;
             }
 
