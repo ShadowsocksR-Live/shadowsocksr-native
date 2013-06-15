@@ -221,7 +221,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             size_t in_addr_len = sizeof(struct in_addr);
             if (r > in_addr_len) {
                 inet_ntop(AF_INET, (void *)(server->buf + offset),
-                        host, in_addr_len);
+                        host, INET_ADDRSTRLEN);
                 offset += in_addr_len;
             }
 
@@ -240,7 +240,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             size_t in6_addr_len = sizeof(struct in6_addr);
             if (r > in6_addr_len) {
                 inet_ntop(AF_INET6, (const void*)(server->buf + offset), 
-                        host, in6_addr_len);
+                        host, INET6_ADDRSTRLEN);
                 offset += in6_addr_len;
             }
 
