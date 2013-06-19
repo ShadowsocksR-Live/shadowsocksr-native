@@ -36,6 +36,8 @@
 #define EWOULDBLOCK EAGAIN
 #endif
 
+static int verbose = 0;
+
 int setnonblocking(int fd) {
     int flags;
     if (-1 ==(flags = fcntl(fd, F_GETFL, 0)))
@@ -44,8 +46,7 @@ int setnonblocking(int fd) {
 }
 
 #ifdef SET_INTERFACE
-int setinterface(int socket_fd, const char* interface_name)
-{
+int setinterface(int socket_fd, const char* interface_name) {
     struct ifreq interface;
     memset(&interface, 0, sizeof(interface));
     strncpy(interface.ifr_name, interface_name, IFNAMSIZ);
@@ -197,16 +198,28 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             memcpy(addr_to_send + addr_len, remote->buf + 4, in_addr_len + 2);
             addr_len += in_addr_len + 2;
 
+            if (verbose) {
+                char host[INET_ADDRSTRLEN];
+                uint16_t port = ntohs(*(uint16_t *)(remote->buf + 4 + in_addr_len));
+                inet_ntop(AF_INET, (const void *)(remote->buf + 4),
+                        host, INET_ADDRSTRLEN);
+                LOGD("connect to %s:%d", host, port);
+            }
+
         } else if (request->atyp == 3) {
             // Domain name
             uint8_t name_len = *(uint8_t *)(remote->buf + 4);
             addr_to_send[addr_len++] = name_len;
-            memcpy(addr_to_send + addr_len, remote->buf + 4 + 1, name_len);
-            addr_len += name_len;
+            memcpy(addr_to_send + addr_len, remote->buf + 4 + 1, name_len + 2);
+            addr_len += name_len + 2;
 
-            // get port
-            addr_to_send[addr_len++] = *(uint8_t *)(remote->buf + 4 + 1 + name_len); 
-            addr_to_send[addr_len++] = *(uint8_t *)(remote->buf + 4 + 1 + name_len + 1); 
+            if (verbose) {
+                char host[256];
+                uint16_t port = ntohs(*(uint16_t *)(remote->buf + 4 + 1 + name_len));
+                memcpy(host, remote->buf + 4 + 1, name_len);
+                host[name_len] = '\0';
+                LOGD("connect to %s:%d", host, port);
+            }
 
         } else if (request->atyp == 4) {
             // IP V6
@@ -214,12 +227,21 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             memcpy(addr_to_send + addr_len, remote->buf + 4, in6_addr_len + 2);
             addr_len += in6_addr_len + 2;
 
+            if (verbose) {
+                char host[INET6_ADDRSTRLEN];
+                uint16_t port = ntohs(*(uint16_t *)(remote->buf + 4 + in6_addr_len));
+                inet_ntop(AF_INET6, (const void *)(remote->buf + 4),
+                        host, INET6_ADDRSTRLEN);
+                LOGD("connect to %s:%d", host, port);
+            }
+
         } else {
             LOGE("unsupported addrtype: %d", request->atyp);
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
         }
+
 
         addr_to_send = ss_encrypt(addr_to_send, &addr_len, server->e_ctx);
         int s = send(remote->fd, addr_to_send, addr_len, 0);
@@ -615,7 +637,7 @@ int main (int argc, char **argv) {
 
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:i:c:b:")) != -1) {
+    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:i:c:b:v")) != -1) {
         switch (c) {
             case 's':
                 remote_host[remote_num++] = optarg;
@@ -647,6 +669,9 @@ int main (int argc, char **argv) {
                 break;
             case 'b':
                 local_addr = optarg;
+                break;
+            case 'v':
+                verbose = 1;
                 break;
         }
     }
@@ -689,7 +714,7 @@ int main (int argc, char **argv) {
     signal(SIGPIPE, SIG_IGN);
 
     // Setup keys
-    LOGD("calculating ciphers...");
+    LOGD("initialize cihpers... %s", method);
     int m = enc_init(password, method);
 
     // Setup socket

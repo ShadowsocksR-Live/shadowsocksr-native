@@ -251,8 +251,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             return;
         }
 
-        p += *(uint8_t *)(server->buf + offset++) << 8;
-        p += *(uint8_t *)(server->buf + offset++);
+        p = ntohs(*(uint16_t *)(server->buf + offset));
+        offset += 2;
 
         sprintf(port, "%d", p);
 
@@ -775,8 +775,10 @@ int main (int argc, char **argv) {
             case 'd':
                 dns_thread_num = atoi(optarg);
                 if (!dns_thread_num) FATAL("Invalid DNS thread number");
+                break;
             case 'v':
                 verbose = 1;
+                break;
         }
     }
 
