@@ -823,7 +823,7 @@ int main (int argc, char **argv) {
     }
 
     // Setup keys
-    LOGD("calculating ciphers...");
+    LOGD("initialize cihpers... %s", method);
     int m = enc_init(password, method);
 
     // Inilitialize ev loop
