@@ -11,7 +11,6 @@
 #include <signal.h>
 #include <string.h>
 #include <strings.h>
-#include <time.h>
 #include <unistd.h>
 
 #ifdef HAVE_CONFIG_H
@@ -581,7 +580,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents) {
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
-    int index = clock() % listener->remote_num;
+    int index = rand() % listener->remote_num;
     if (verbose) {
         LOGD("connect to remote: %s", listener->remote_host[index]);
     }
