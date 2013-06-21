@@ -1,4 +1,4 @@
-AM_CFLAGS  = -g -O2 -Wall 
+AM_CFLAGS  = -g -O2 -Wall -fno-strict-aliasing
 AM_CFLAGS += -I$(top_builddir)/libev
 AM_CFLAGS += -I$(top_builddir)/libasyncns
 

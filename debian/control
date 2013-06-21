@@ -2,11 +2,11 @@ Source: shadowsocks
 Section: net
 Priority: extra
 Maintainer: Max Lv <max.c.lv@gmail.com>
-Build-Depends: debhelper (>= 7.0.50~), autotools-dev, mime-support, gawk
+Build-Depends: debhelper (>= 7.0.50~), libssl-dev (>= 0.9.8), autotools-dev, mime-support, gawk
 Standards-Version: 3.8.4
 Homepage: http://www.shadowsocks.org
-#Vcs-Git: git://git.debian.org/collab-maint/shadowsocks.git
-#Vcs-Browser: http://git.debian.org/?p=collab-maint/shadowsocks.git;a=summary
+Vcs-Git: https://github.com/madeye/shadowsocks-libev.git
+Vcs-Browser: https://github.com/madeye/shadowsocks-libev
 
 Package: shadowsocks
 Architecture: any

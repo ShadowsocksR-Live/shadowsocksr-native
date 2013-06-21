@@ -207,7 +207,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CFLAGS = -g -O2 -Wall -I$(top_builddir)/libev \
+AM_CFLAGS = -g -O2 -Wall -fno-strict-aliasing -I$(top_builddir)/libev \
 	-I$(top_builddir)/libasyncns
 AM_LDFLAGS = -static
 SS_COMMON_LIBS = $(top_builddir)/libev/libev.la $(INET_NTOP_LIB)
