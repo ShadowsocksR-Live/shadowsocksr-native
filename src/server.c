@@ -252,12 +252,10 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         } else if (atyp == 3) {
             // Domain name
             uint8_t name_len = *(uint8_t *)(server->buf + offset);
-            if (name_len >= 255) {
-                close_and_free_server(EV_A_ server);
-                return;
+            if (name_len < r && name_len < 255 && name_len > 0) {
+                memcpy(host, server->buf + offset + 1, name_len);
+                offset += name_len + 1;
             }
-            memcpy(host, server->buf + offset + 1, name_len);
-            offset += name_len + 1;
         } else if (atyp == 4) {
             // IP V6
             size_t in6_addr_len = sizeof(struct in6_addr);
@@ -268,8 +266,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             }
         }
         
-        if (offset == 0) {
-            LOGE("invalid header with length %zu", r);
+        if (offset == 1) {
+            LOGE("invalid header with addr type %d", atyp);
             close_and_free_server(EV_A_ server);
             return;
         }
@@ -280,7 +278,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         sprintf(port, "%d", p);
 
         if (verbose) {
-            LOGD("connect to: %s:%s", host, port);
+            LOGD("connect to: %s:%s in atyp %d", host, port, atyp);
         }
 
         struct addrinfo hints;
