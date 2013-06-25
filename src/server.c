@@ -140,6 +140,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     struct server *server = server_recv_ctx->server;
     struct remote *remote = NULL;
 
+    int len = server->buf_len;
     char **buf = &server->buf;
 
     ev_timer_again(EV_A_ &server->recv_ctx->watcher);
@@ -147,9 +148,10 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     if (server->stage != 0) {
         remote = server->remote;
         buf = &remote->buf;
+        len = 0;
     }
 
-    ssize_t r = recv(server->fd, *buf, BUF_SIZE, 0);
+    ssize_t r = recv(server->fd, *buf + len, BUF_SIZE - len, 0);
 
     if (r == 0) {
         // connection closed
@@ -169,6 +171,21 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
+        }
+    }
+
+    // handle incomplete header
+    if (server->stage == 0) {
+        r += server->buf_len;
+        if (r <= enc_get_iv_len()) {
+            // wait for more
+            if (verbose) {
+                LOGD("imcomplete header: %zu", r);
+            }
+            server->buf_len = r;
+            return;
+        } else {
+            server->buf_len = 0;
         }
     }
 
@@ -196,6 +213,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             ev_io_start(EV_A_ &remote->send_ctx->io);
         }
         return;
+
     } else if (server->stage == 0) {
 
         /*
@@ -224,7 +242,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
                         host, INET_ADDRSTRLEN);
                 offset += in_addr_len;
             }
-
         } else if (atyp == 3) {
             // Domain name
             uint8_t name_len = *(uint8_t *)(server->buf + offset);
@@ -234,7 +251,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             }
             memcpy(host, server->buf + offset + 1, name_len);
             offset += name_len + 1;
-
         } else if (atyp == 4) {
             // IP V6
             size_t in6_addr_len = sizeof(struct in6_addr);
@@ -243,10 +259,10 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
                         host, INET6_ADDRSTRLEN);
                 offset += in6_addr_len;
             }
-
         }
         
         if (offset == 0) {
+            LOGE("incorrect header with length %zu", r);
             close_and_free_server(EV_A_ server);
             return;
         }
@@ -816,17 +832,17 @@ int main (int argc, char **argv) {
     signal(SIGPIPE, SIG_IGN);
     signal(SIGCHLD, SIG_IGN);
 
-    // Setup asyncns
+    // setup asyncns
     asyncns_t *asyncns;
     if (!(asyncns = asyncns_new(dns_thread_num))) {
         FATAL("asyncns failed");
     }
 
-    // Setup keys
+    // setup keys
     LOGD("initialize cihpers... %s", method);
     int m = enc_init(password, method);
 
-    // Inilitialize ev loop
+    // inilitialize ev loop
     struct ev_loop *loop = EV_DEFAULT;
 
     // bind to each interface

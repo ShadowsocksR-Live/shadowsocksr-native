@@ -117,6 +117,10 @@ static void merge_sort(uint8_t array[], int length,
 	merge(left, llength, right, middle, salt, key);
 }
 
+int enc_get_iv_len() {
+    return enc_iv_len;
+}
+
 void enc_table_init(const char *pass) {
     uint32_t i;
     uint32_t salt;
