@@ -153,6 +153,7 @@ char* ss_encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx) {
     if (ctx != NULL) {
         int c_len = *len + BLOCK_SIZE;
         int iv_len = 0;
+        int err = 0;
         char *ciphertext = malloc(max(iv_len + c_len, BUF_SIZE));
 
         if (!ctx->init) {
@@ -170,8 +171,14 @@ char* ss_encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx) {
 #endif
         }
 
-        EVP_EncryptUpdate(&ctx->evp, (uint8_t*)(ciphertext+iv_len), 
+        err = EVP_EncryptUpdate(&ctx->evp, (uint8_t*)(ciphertext+iv_len),
                 &c_len, (const uint8_t *)plaintext, *len);
+
+        if (!err) {
+            free(ciphertext);
+            free(plaintext);
+            return NULL;
+        }
 
 #ifdef DEBUG
         dump("PLAIN", plaintext);
@@ -195,6 +202,7 @@ char* ss_decrypt(char *ciphertext, ssize_t *len, struct enc_ctx *ctx) {
     if (ctx != NULL) {
         int p_len = *len + BLOCK_SIZE;
         int iv_len = 0;
+        int err = 0;
         char *plaintext = malloc(max(p_len, BUF_SIZE));
 
         if (!ctx->init) {
@@ -208,8 +216,14 @@ char* ss_decrypt(char *ciphertext, ssize_t *len, struct enc_ctx *ctx) {
 #endif
         }
 
-        EVP_DecryptUpdate(&ctx->evp, (uint8_t*)plaintext, &p_len,
+        err = EVP_DecryptUpdate(&ctx->evp, (uint8_t*)plaintext, &p_len,
                 (const uint8_t*)(ciphertext + iv_len), *len - iv_len);
+
+        if (!err) {
+            free(ciphertext);
+            free(plaintext);
+            return NULL;
+        }
 
 #ifdef DEBUG
         dump("PLAIN", plaintext);
@@ -234,20 +248,24 @@ void enc_ctx_init(int method, struct enc_ctx *ctx, int enc) {
     if (cipher == NULL) {
         LOGE("Cipher %s not found in OpenSSL library", supported_ciphers[method]);
         FATAL("Cannot initialize cipher");
-        return;
     }
     memset(ctx, 0, sizeof(struct enc_ctx));
 
     EVP_CIPHER_CTX *evp = &ctx->evp;
 
     EVP_CIPHER_CTX_init(evp);
-    EVP_CipherInit_ex(evp, cipher, NULL, NULL, NULL, enc);
+    if (!EVP_CipherInit_ex(evp, cipher, NULL, NULL, NULL, enc)) {
+        LOGE("Cannot initialize cipher %s", supported_ciphers[method]);
+        exit(EXIT_FAILURE);
+    }
     if (!EVP_CIPHER_CTX_set_key_length(evp, enc_key_len)) {
         EVP_CIPHER_CTX_cleanup(evp);
         LOGE("Invalid key length: %d", enc_key_len);
         exit(EXIT_FAILURE);
     }
-    EVP_CIPHER_CTX_set_padding(evp, 1);
+    if (method > RC4) {
+        EVP_CIPHER_CTX_set_padding(evp, 1);
+    }
 }
 
 void enc_key_init(int method, const char *pass) {

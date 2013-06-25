@@ -191,6 +191,13 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 
     *buf = ss_decrypt(*buf, &r, server->d_ctx);
 
+    if (*buf == NULL) {
+        LOGE("invalid password or cipher");
+        close_and_free_remote(EV_A_ remote);
+        close_and_free_server(EV_A_ server);
+        return;
+    }
+
     // handshake and transmit data
     if (server->stage == 5) {
         int s = send(remote->fd, remote->buf, r, 0);
@@ -262,7 +269,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         }
         
         if (offset == 0) {
-            LOGE("incorrect header with length %zu", r);
+            LOGE("invalid header with length %zu", r);
             close_and_free_server(EV_A_ server);
             return;
         }
@@ -495,6 +502,14 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
     }
 
     server->buf = ss_encrypt(server->buf, &r, server->e_ctx);
+
+    if (server->buf == NULL) {
+        LOGE("invalid password or cipher");
+        close_and_free_remote(EV_A_ remote);
+        close_and_free_server(EV_A_ server);
+        return;
+    }
+
     int s = send(server->fd, server->buf, r, 0);
 
     if (s == -1) {
@@ -630,7 +645,9 @@ void free_remote(struct remote *remote) {
         if (remote->server != NULL) {
             remote->server->remote = NULL;
         }
-        free(remote->buf);
+        if (remote->buf != NULL) {
+            free(remote->buf);
+        }
         free(remote->recv_ctx);
         free(remote->send_ctx);
         free(remote);
@@ -697,7 +714,9 @@ void free_server(struct server *server) {
             EVP_CIPHER_CTX_cleanup(&server->d_ctx->evp);
             free(server->d_ctx);
         }
-        free(server->buf);
+        if (server->buf != NULL) {
+            free(server->buf);
+        }
         free(server->recv_ctx);
         free(server->send_ctx);
         free(server);
@@ -831,6 +850,7 @@ int main (int argc, char **argv) {
     // ignore SIGPIPE
     signal(SIGPIPE, SIG_IGN);
     signal(SIGCHLD, SIG_IGN);
+    signal(SIGABRT, SIG_IGN);
 
     // setup asyncns
     asyncns_t *asyncns;

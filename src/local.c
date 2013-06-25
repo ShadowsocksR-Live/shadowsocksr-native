@@ -139,6 +139,12 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     // local socks5 server
     if (server->stage == 5) {
         remote->buf = ss_encrypt(remote->buf, &r, server->e_ctx);
+        if (remote->buf == NULL) {
+            LOGE("invalid password or cipher");
+            close_and_free_remote(EV_A_ remote);
+            close_and_free_server(EV_A_ server);
+            return;
+        }
         int s = send(remote->fd, remote->buf, r, 0);
         if(s == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -243,6 +249,12 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 
 
         addr_to_send = ss_encrypt(addr_to_send, &addr_len, server->e_ctx);
+        if (addr_to_send == NULL) {
+            LOGE("invalid password or cipher");
+            close_and_free_remote(EV_A_ remote);
+            close_and_free_server(EV_A_ server);
+            return;
+        }
         int s = send(remote->fd, addr_to_send, addr_len, 0);
         free(addr_to_send);
 
@@ -374,6 +386,12 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
     }
 
     server->buf = ss_decrypt(server->buf, &r, server->d_ctx);
+    if (server->buf == NULL) {
+        LOGE("invalid password or cipher");
+        close_and_free_remote(EV_A_ remote);
+        close_and_free_server(EV_A_ server);
+        return;
+    }
     int s = send(server->fd, server->buf, r, 0);
 
     if (s == -1) {
@@ -487,7 +505,9 @@ void free_remote(struct remote *remote) {
         if (remote->server != NULL) {
             remote->server->remote = NULL;
         }
-        free(remote->buf);
+        if (remote->buf) {
+            free(remote->buf);
+        }
         free(remote->recv_ctx);
         free(remote->send_ctx);
         free(remote);
@@ -545,7 +565,9 @@ void free_server(struct server *server) {
             EVP_CIPHER_CTX_cleanup(&server->d_ctx->evp);
             free(server->d_ctx);
         }
-        free(server->buf);
+        if (server->buf) {
+            free(server->buf);
+        }
         free(server->recv_ctx);
         free(server->send_ctx);
         free(server);
@@ -714,6 +736,7 @@ int main (int argc, char **argv) {
 
     // ignore SIGPIPE
     signal(SIGPIPE, SIG_IGN);
+    signal(SIGABRT, SIG_IGN);
 
     // Setup keys
     LOGD("initialize cihpers... %s", method);
