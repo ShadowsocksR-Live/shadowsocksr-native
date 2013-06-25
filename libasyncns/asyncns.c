@@ -388,6 +388,18 @@ static int fd_cloexec(int fd) {
     return fcntl(fd, F_SETFD, v | FD_CLOEXEC);
 }
 
+static ssize_t block_and_send(int socket, const void *buffer,
+        size_t length, int flags) {
+    for(;;) {
+        int len = send(socket, buffer, length, flags);
+        if (len < 0 &&
+                (errno == EAGAIN || errno == EINTR)) {
+            continue;
+        }
+        return length;
+    }
+}
+
 static int send_died(int out_fd) {
     rheader_t rh;
     assert(out_fd > 0);
@@ -397,7 +409,7 @@ static int send_died(int out_fd) {
     rh.id = 0;
     rh.length = sizeof(rh);
 
-    return send(out_fd, &rh, rh.length, MSG_NOSIGNAL);
+    return block_and_send(out_fd, &rh, rh.length, MSG_NOSIGNAL);
 }
 
 static void *serialize_addrinfo(void *p, const struct addrinfo *ai, size_t *length, size_t maxlength) {
@@ -460,7 +472,7 @@ static int send_addrinfo_reply(int out_fd, unsigned id, int ret, struct addrinfo
     if (ai)
         freeaddrinfo(ai);
 
-    return send(out_fd, resp, resp->header.length, MSG_NOSIGNAL);
+    return block_and_send(out_fd, resp, resp->header.length, MSG_NOSIGNAL);
 }
 
 static int send_nameinfo_reply(int out_fd, unsigned id, int ret, const char *host, const char *serv, int _errno, int _h_errno) {
@@ -491,7 +503,7 @@ static int send_nameinfo_reply(int out_fd, unsigned id, int ret, const char *hos
     if (serv)
         memcpy((uint8_t *)data + sizeof(nameinfo_response_t) + hl, serv, sl);
 
-    return send(out_fd, resp, resp->header.length, MSG_NOSIGNAL);
+    return block_and_send(out_fd, resp, resp->header.length, MSG_NOSIGNAL);
 }
 
 static int handle_request(int out_fd, const packet_t *packet, size_t length) {

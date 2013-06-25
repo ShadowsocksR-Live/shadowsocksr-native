@@ -278,7 +278,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         sprintf(port, "%d", p);
 
         if (verbose) {
-            LOGD("connect to: %s:%s in atyp %d", host, port, atyp);
+            LOGD("connect to: %s:%s", host, port);
         }
 
         struct addrinfo hints;
@@ -398,16 +398,7 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
 
     if (asyncns_wait(asyncns, 0) == -1) {
         // asyncns error
-        LOGE("asnyncns session died.");
-        close_and_free_server(EV_A_ server);
-
-        // reset asyncns sesstion
-        asyncns_free(asyncns);
-        if (!(server->listen_ctx->asyncns = asyncns_new(DNS_THREAD_NUM))) {
-            FATAL("asyncns failed");
-        }
-
-        return;
+        FATAL("asyncns exit unexpectedly.");
     }
 
     if (!asyncns_isdone(asyncns, query)) {
