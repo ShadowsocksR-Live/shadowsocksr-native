@@ -158,7 +158,6 @@ char* ss_encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx) {
         char *ciphertext = malloc(max(iv_len + c_len, BUF_SIZE));
 
         if (!ctx->init) {
-            int i;
             uint8_t iv[EVP_MAX_IV_LENGTH];
             iv_len = enc_iv_len;
             RAND_bytes(iv, iv_len);
