@@ -11,10 +11,14 @@ It is a port of [shadowsocks](https://github.com/clowwindy/shadowsocks)
 created by [@clowwindy](https://github.com/clowwindy) maintained by 
 [@madeye](https://github.com/madeye).
 
-Current version: 1.3.2 [![Build Status](https://travis-ci.org/madeye/shadowsocks-libev.png?branch=master)](https://travis-ci.org/madeye/shadowsocks-libev)
+Current version: 1.3.3 [![Build Status](https://travis-ci.org/madeye/shadowsocks-libev.png?branch=master)](https://travis-ci.org/madeye/shadowsocks-libev)
 
 Changelog
 ---------
+
+1.3.3 -- Fri, 21 Jun 2013 09:59:20 +0800
+
+  * Provide more info in verbose mode.
 
 1.3.2 -- Sun, 09 Jun 2013 09:52:31 +0000
 
