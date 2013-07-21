@@ -872,15 +872,15 @@ int main (int argc, char **argv) {
         LOGD("server listening at port %s.", server_port);
 
         // Setup proxy context
-        struct listen_ctx listen_ctx;
-        listen_ctx.timeout = atoi(timeout);
-        listen_ctx.asyncns = asyncns;
-        listen_ctx.fd = listenfd;
-        listen_ctx.method = m;
-        listen_ctx.iface = iface;
+        struct listen_ctx *listen_ctx = malloc(sizeof(struct listen_ctx));
+        listen_ctx->timeout = atoi(timeout);
+        listen_ctx->asyncns = asyncns;
+        listen_ctx->fd = listenfd;
+        listen_ctx->method = m;
+        listen_ctx->iface = iface;
 
-        ev_io_init (&listen_ctx.io, accept_cb, listenfd, EV_READ);
-        ev_io_start (loop, &listen_ctx.io);
+        ev_io_init (&listen_ctx->io, accept_cb, listenfd, EV_READ);
+        ev_io_start (loop, &listen_ctx->io);
     }
 
     // start ev loop
