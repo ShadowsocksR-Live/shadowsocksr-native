@@ -61,11 +61,11 @@ int setinterface(int socket_fd, const char* interface_name)
 int create_and_bind(const char *host, const char *port) {
     struct addrinfo hints;
     struct addrinfo *result, *rp;
-    int s, listen_sock;
+    int s, server_sock;
 
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_UNSPEC; /* Return IPv4 and IPv6 choices */
-    hints.ai_socktype = SOCK_STREAM; /* We want a TCP socket */
+    hints.ai_socktype = SOCK_DGRAM; /* We want a UDP socket */
 
     s = getaddrinfo(host, port, &hints, &result);
     if (s != 0) {
@@ -74,18 +74,17 @@ int create_and_bind(const char *host, const char *port) {
     }
 
     for (rp = result; rp != NULL; rp = rp->ai_next) {
-        listen_sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-        if (listen_sock == -1)
+        server_sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+        if (server_sock == -1)
             continue;
 
         int opt = 1;
-        setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-        setsockopt(listen_sock, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
+        setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
-        setsockopt(listen_sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+        setsockopt(server_sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
-        s = bind(listen_sock, rp->ai_addr, rp->ai_addrlen);
+        s = bind(server_sock, rp->ai_addr, rp->ai_addrlen);
         if (s == 0) {
             /* We managed to bind successfully! */
             break;
@@ -93,7 +92,7 @@ int create_and_bind(const char *host, const char *port) {
             ERROR("bind");
         }
 
-        close(listen_sock);
+        close(server_sock);
     }
 
     if (rp == NULL) {
@@ -103,7 +102,7 @@ int create_and_bind(const char *host, const char *port) {
 
     freeaddrinfo(result);
 
-    return listen_sock;
+    return server_sock;
 }
 
 struct client *connect_to_client(struct addrinfo *res, const char *iface) {
@@ -288,7 +287,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
 
-        query = asyncns_getaddrinfo(server->shadowsocks_ctx->asyncns,
+        query = asyncns_getaddrinfo(server->server_ctx->asyncns,
                 host, port, &hints);
 
         if (query == NULL) {
@@ -385,10 +384,8 @@ static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents) {
 static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
     int err;
     struct addrinfo *result, *rp;
-    struct server_ctx *server_ctx = (struct server_ctx *) (((void*)watcher)
-            - sizeof(ev_io));
-    struct server *server = server_ctx->server;
-    asyncns_t *asyncns = server->shadowsocks_ctx->asyncns;
+    struct server *server = (struct server *) ((void*)watcher);
+    asyncns_t *asyncns = server->asyncns;
     asyncns_query_t *query = server->query;
 
     if (asyncns == NULL || query == NULL) {
@@ -428,7 +425,7 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
             rp = result;
         }
 
-        struct client *client = connect_to_client(rp, server->shadowsocks_ctx->iface);
+        struct client *client = connect_to_client(rp, server->server_ctx->iface);
 
         if (client == NULL) {
             LOGE("connect error.");
@@ -656,26 +653,16 @@ void close_and_free_client(EV_P_ struct client *client) {
     }
 }
 
-struct server* new_server(int fd, struct shadowsocks_ctx *listener) {
+struct server* new_server(int fd, struct server_ctx *ctx) {
     server_conn++;
     struct server *server;
     server = malloc(sizeof(struct server));
     server->buf = malloc(BUF_SIZE);
-    server->recv_ctx = malloc(sizeof(struct server_ctx));
-    server->send_ctx = malloc(sizeof(struct server_ctx));
-    server->fd = fd;
-    ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
-    ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
     ev_timer_init(&server->send_ctx->watcher, server_resolve_cb, 0.2, 0.5);
-    ev_timer_init(&server->recv_ctx->watcher, server_timeout_cb, listener->timeout, listener->timeout * 5);
-    server->recv_ctx->server = server;
-    server->recv_ctx->connected = 0;
-    server->send_ctx->server = server;
-    server->send_ctx->connected = 0;
-    server->stage = 0;
+    ev_timer_init(&server->recv_ctx->watcher, server_timeout_cb, ctx->timeout, ctx->timeout * 5);
     server->query = NULL;
-    server->shadowsocks_ctx = listener;
-    if (listener->method) {
+    server->server_ctx = ctx;
+    if (ctx->method) {
         server->e_ctx = malloc(sizeof(struct enc_ctx));
         server->d_ctx = malloc(sizeof(struct enc_ctx));
         enc_ctx_init(listener->method, server->e_ctx, 1);
@@ -727,8 +714,8 @@ void close_and_free_server(EV_P_ struct server *server) {
     }
 }
 
-static void accept_cb (EV_P_ ev_io *w, int revents) {
-    struct shadowsocks_ctx *listener = (struct shadowsocks_ctx *)w;
+static void server_cb (EV_P_ ev_io *w, int revents) {
+    struct server_ctx *listener = (struct server_ctx *)w;
     int serverfd = accept(listener->fd, NULL, NULL);
     if (serverfd == -1) {
         ERROR("accept");
@@ -737,7 +724,6 @@ static void accept_cb (EV_P_ ev_io *w, int revents) {
     setnonblocking(serverfd);
 
     int opt = 1;
-    setsockopt(serverfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
     setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
@@ -751,10 +737,8 @@ static void accept_cb (EV_P_ ev_io *w, int revents) {
     ev_timer_start(EV_A_ &server->recv_ctx->watcher);
 }
 
-int udprelay(char *server_host, int server_num, char *server_port, 
-        int method, int timeout, char *iface) {
-
-    int i, c;
+int udprelay(const char *server_host, int server_num, const char *server_port, 
+        int method, int timeout, const char *iface) {
 
     // inilitialize ev loop
     struct ev_loop *loop = EV_DEFAULT;
@@ -766,24 +750,21 @@ int udprelay(char *server_host, int server_num, char *server_port,
 
         // Bind to port
         int serverfd = create_and_bind(host, server_port);
-        if (listenfd < 0) {
-            FATAL("bind() error..");
+        if (serverfd < 0) {
+            FATAL("udprelay bind() error..");
         }
         setnonblocking(serverfd);
-        LOGD("server listening at port %s.", server_port);
 
         // Setup proxy context
-        struct shadowsocks_ctx shadowsocks_ctx;
-        shadowsocks_ctx.timeout = timeout;
-        shadowsocks_ctx.method = method;
-        shadowsocks_ctx.iface = iface;
+        struct server_ctx *server_ctx = malloc(sizeof(struct server_ctx));
+        server_ctx->fd = serverfd;
+        server_ctx->timeout = timeout;
+        server_ctx->method = method;
+        server_ctx->iface = iface;
+        server_ctx->asyncns = asyncns;
 
-        struct server_ctx server_ctx;
-        server_ctx.asyncns = asyncns;
-        server_ctx.shadowsocks_ctx = 
-
-        ev_io_init (&shadowsocks_ctx.io, accept_cb, listenfd, EV_READ);
-        ev_io_start (loop, &shadowsocks_ctx.io);
+        ev_io_init (&server_ctx.io, server_recv_cb, serverfd, EV_READ);
+        ev_io_start (loop, &server_ctx.io);
     }
 
     // start ev loop

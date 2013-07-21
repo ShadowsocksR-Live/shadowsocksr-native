@@ -8,24 +8,26 @@
 #include "jconf.h"
 #include "asyncns.h"
 
+#define MAX_UDP_PACKET_SIZE (64 * 1024)
+
 struct server_ctx {
     ev_io io;
-    ev_timer watcher;
-    int connected;
-    struct server *server;
+    asyncns_t *asyncns;
+    int fd;
+    int method;
+    int timeout;
+    char *iface;
 };
 
 struct server {
-    int fd;
+    ev_timer watcher;
+    asyncns_query_t *query;
     int buf_len;
     int buf_idx;
-    int timeout;
-    int method;
-    char *iface;
     char *buf; // server send from, client recv into
-    struct server_ctx *recv_ctx;
-    struct server_ctx *send_ctx;
-    asyncns_query_t *query;
+    struct enc_ctx *e_ctx;
+    struct enc_ctx *d_ctx;
+    struct server_ctx *server_ctx;
     struct client *client;
 };
 
@@ -39,8 +41,6 @@ struct client {
     int buf_len;
     int buf_idx;
     char *buf; // client send from, server recv into
-    struct enc_ctx *e_ctx;
-    struct enc_ctx *d_ctx;
     struct client_ctx *recv_ctx;
     struct client_ctx *send_ctx;
     struct server *server;
