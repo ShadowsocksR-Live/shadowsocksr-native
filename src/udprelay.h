@@ -12,22 +12,23 @@
 
 struct server_ctx {
     ev_io io;
-    asyncns_t *asyncns;
     int fd;
     int method;
     char *iface;
     struct sockaddr_in src_addr;
     struct remote *remote;
+#ifdef UDPRELAY_REMOTE
+    asyncns_t *asyncns;
+#endif
 };
 
-#ifdef UDPRELAY_CTX
+#ifdef UDPRELAY_LOCAL
 struct query_ctx {
     ev_timer resolve_watcher;
     asyncns_query_t *query;
     int buf_len;
     char *buf; // server send from, remote recv into
     struct server_ctx *server_ctx;
-    struct remote_ctx *remote_ctx;
 }
 #endif
 
@@ -38,6 +39,9 @@ struct remote_ctx {
     char *buf; // remote send from, server recv into
     struct sockaddr addr;
     struct server *server;
+#ifdef UDPRELAY_REMOTE
+    ev_timer watcher;
+#endif
 };
 
 static void server_recv_cb (EV_P_ ev_io *w, int revents);
