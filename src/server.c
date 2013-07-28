@@ -35,6 +35,10 @@
 #define EWOULDBLOCK EAGAIN
 #endif
 
+#ifndef BLOCK_SIZE
+#define BLOCK_SIZE 512
+#endif
+
 static int verbose = 0;
 static int remote_conn = 0;
 static int server_conn = 0;
@@ -189,7 +193,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     }
 
-    *buf = ss_decrypt(*buf, &r, server->d_ctx);
+    *buf = ss_decrypt(BUF_SIZE, *buf, &r, server->d_ctx);
 
     if (*buf == NULL) {
         LOGE("invalid password or cipher");
@@ -235,10 +239,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 
         int offset = 0;
         char atyp = server->buf[offset++];
-        char host[256];
-        char port[64];
-        memset(host, 0, 256);
-        int p = 0;
+        char host[256] = {0};
+        char port[64] = {0};
 
         // get remote addr and port
         if (atyp == 1) {
@@ -272,10 +274,10 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             return;
         }
 
-        p = ntohs(*(uint16_t *)(server->buf + offset));
-        offset += 2;
+        sprintf(port, "%d", 
+                ntohs(*(uint16_t *)(server->buf + offset)));
 
-        sprintf(port, "%d", p);
+        offset += 2;
 
         if (verbose) {
             LOGD("connect to: %s:%s", host, port);
@@ -490,7 +492,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     }
 
-    server->buf = ss_encrypt(server->buf, &r, server->e_ctx);
+    server->buf = ss_encrypt(BLOCK_SIZE, server->buf, &r, server->e_ctx);
 
     if (server->buf == NULL) {
         LOGE("invalid password or cipher");

@@ -16,7 +16,6 @@
 #include <inttypes.h>
 #endif
 
-#define BUF_SIZE 512
 #define BLOCK_SIZE 32
 
 #define CIPHER_NUM          14
@@ -44,6 +43,8 @@ struct enc_ctx {
     EVP_CIPHER_CTX evp;
 };
 
+char* ss_encrypt_all(char *plaintext, ssize_t *len, struct enc_ctx *ctx);
+char* ss_decrypt_all(char *ciphertext, ssize_t *len, struct enc_ctx *ctx);
 char* ss_encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx);
 char* ss_decrypt(char *ciphertext, ssize_t *len, struct enc_ctx *ctx);
 void enc_ctx_init(int method, struct enc_ctx *ctx, int enc);

@@ -150,12 +150,58 @@ void enc_table_init(const char *pass) {
     }
 }
 
-char* ss_encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx) {
+char* ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, struct enc_ctx *ctx) {
     if (ctx != NULL) {
         int c_len = *len + BLOCK_SIZE;
         int iv_len = 0;
         int err = 0;
-        char *ciphertext = malloc(max(iv_len + c_len, BUF_SIZE));
+        char *ciphertext = malloc(max(iv_len + c_len, buf_size));
+
+        uint8_t iv[EVP_MAX_IV_LENGTH];
+        iv_len = enc_iv_len;
+        RAND_bytes(iv, iv_len);
+        EVP_CipherInit_ex(&ctx->evp, NULL, NULL, enc_key, iv, 1);
+        memcpy(ciphertext, iv, iv_len);
+        ctx->init = 1;
+
+#ifdef DEBUG
+        dump("IV", iv);
+#endif
+
+        err = EVP_EncryptUpdate(&ctx->evp, (uint8_t*)(ciphertext+iv_len),
+                &c_len, (const uint8_t *)plaintext, *len);
+
+        if (!err) {
+            free(ciphertext);
+            free(plaintext);
+            return NULL;
+        }
+
+#ifdef DEBUG
+        dump("PLAIN", plaintext);
+        dump("CIPHER", ciphertext);
+#endif
+
+        *len = iv_len + c_len;
+        free(plaintext);
+        return ciphertext;
+
+    } else {
+        char *begin = plaintext;
+        while (plaintext < begin + *len) {
+            *plaintext = (char)enc_table[(uint8_t)*plaintext];
+            plaintext++;
+        }
+        return begin;
+    }
+}
+
+char* ss_encrypt(int buf_size, char *plaintext, ssize_t *len, struct enc_ctx *ctx) {
+    if (ctx != NULL) {
+        int c_len = *len + BLOCK_SIZE;
+        int iv_len = 0;
+        int err = 0;
+        char *ciphertext = malloc(max(iv_len + c_len, buf_size));
 
         if (!ctx->init) {
             uint8_t iv[EVP_MAX_IV_LENGTH];
@@ -163,7 +209,6 @@ char* ss_encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx) {
             RAND_bytes(iv, iv_len);
             EVP_CipherInit_ex(&ctx->evp, NULL, NULL, enc_key, iv, 1);
             memcpy(ciphertext, iv, iv_len);
-            ctx->init = 1;
 #ifdef DEBUG
             dump("IV", iv);
 #endif
@@ -171,7 +216,6 @@ char* ss_encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx) {
 
         err = EVP_EncryptUpdate(&ctx->evp, (uint8_t*)(ciphertext+iv_len),
                 &c_len, (const uint8_t *)plaintext, *len);
-
         if (!err) {
             free(ciphertext);
             free(plaintext);
@@ -196,12 +240,54 @@ char* ss_encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx) {
     }
 }
 
-char* ss_decrypt(char *ciphertext, ssize_t *len, struct enc_ctx *ctx) {
+char* ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, struct enc_ctx *ctx) {
     if (ctx != NULL) {
         int p_len = *len + BLOCK_SIZE;
         int iv_len = 0;
         int err = 0;
-        char *plaintext = malloc(max(p_len, BUF_SIZE));
+        char *plaintext = malloc(max(p_len, buf_size));
+
+        uint8_t iv[EVP_MAX_IV_LENGTH];
+        iv_len = enc_iv_len;
+        memcpy(iv, ciphertext, iv_len);
+        EVP_CipherInit_ex(&ctx->evp, NULL, NULL, enc_key, iv, 0);
+
+#ifdef DEBUG
+        dump("IV", iv);
+#endif
+
+        err = EVP_DecryptUpdate(&ctx->evp, (uint8_t*)plaintext, &p_len,
+                (const uint8_t*)(ciphertext + iv_len), *len - iv_len);
+        if (!err) {
+            free(ciphertext);
+            free(plaintext);
+            return NULL;
+        }
+
+#ifdef DEBUG
+        dump("PLAIN", plaintext);
+        dump("CIPHER", ciphertext);
+#endif
+
+        *len = p_len;
+        free(ciphertext);
+        return plaintext;
+    } else {
+        char *begin = ciphertext;
+        while (ciphertext < begin + *len) {
+            *ciphertext = (char)dec_table[(uint8_t)*ciphertext];
+            ciphertext++;
+        }
+        return begin;
+    }
+}
+
+char* ss_decrypt(int buf_size, char *ciphertext, ssize_t *len, struct enc_ctx *ctx) {
+    if (ctx != NULL) {
+        int p_len = *len + BLOCK_SIZE;
+        int iv_len = 0;
+        int err = 0;
+        char *plaintext = malloc(max(p_len, buf_size));
 
         if (!ctx->init) {
             uint8_t iv[EVP_MAX_IV_LENGTH];

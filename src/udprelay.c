@@ -28,6 +28,27 @@
 #include "udprelay.h"
 #include "cache.h"
 
+#ifdef UDPRELAY_REMOTE
+struct udprelay_header {
+    uint8_t atyp;
+}
+#else
+#ifdef UDPRELAY_LOCAL
+struct udprelay_header {
+    uint16_t rsv;
+    uint8_t frag;
+}
+#else
+#error "No UDPRELAY defined"
+#endif
+#endif
+
+#ifdef UDPRELAY_REMOTE
+#ifdef UDPRELAY_LOCAL
+#error "Both UDPRELAY_REMOTE and UDPRELAY_LOCAL defined"
+#endif
+#endif
+
 #ifndef EAGAIN
 #define EAGAIN EWOULDBLOCK
 #endif
@@ -35,6 +56,8 @@
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK EAGAIN
 #endif
+
+#define BLOCK_SIZE MAX_UDP_PACKET_SIZE
 
 static int verbose = 0;
 static int client_conn = 0;
@@ -105,213 +128,10 @@ int create_and_bind(const char *host, const char *port) {
     return server_sock;
 }
 
-struct client *connect_to_client(struct addrinfo *res, const char *iface) {
-    int sockfd;
-    int opt = 1;
-
-    // initilize client socks
-    sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if (sockfd < 0) {
-        ERROR("socket");
-        close(sockfd);
-        return NULL;
-    }
-
-    setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
-#ifdef SO_NOSIGPIPE
-    setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
-#endif
-
-    struct client *client = new_client(sockfd);
-
-    // setup client socks
-    setnonblocking(sockfd);
-#ifdef SET_INTERFACE
-    if (iface) setinterface(sockfd, iface);
-#endif
-
+struct client *send_to_client(struct addrinfo *res, const char *iface) {
     connect(sockfd, res->ai_addr, res->ai_addrlen);
 
     return client;
-}
-
-static void server_recv_cb (EV_P_ ev_io *w, int revents) {
-    struct server_ctx *server_recv_ctx = (struct server_ctx *)w;
-    struct server *server = server_recv_ctx->server;
-    struct client *client = NULL;
-
-    int len = server->buf_len;
-    char **buf = &server->buf;
-
-    ev_timer_again(EV_A_ &server->recv_ctx->watcher);
-
-    if (server->stage != 0) {
-        client = server->client;
-        buf = &client->buf;
-        len = 0;
-    }
-
-    ssize_t r = recv(server->fd, *buf + len, BUF_SIZE - len, 0);
-
-    if (r == 0) {
-        // connection closed
-        if (verbose) {
-            LOGD("server_recv close the connection");
-        }
-        close_and_free_client(EV_A_ client);
-        close_and_free_server(EV_A_ server);
-        return;
-    } else if (r == -1) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            // no data
-            // continue to wait for recv
-            return;
-        } else {
-            ERROR("server recv");
-            close_and_free_client(EV_A_ client);
-            close_and_free_server(EV_A_ server);
-            return;
-        }
-    }
-
-    // handle incomplete header
-    if (server->stage == 0) {
-        r += server->buf_len;
-        if (r <= enc_get_iv_len()) {
-            // wait for more
-            if (verbose) {
-                LOGD("imcomplete header: %zu", r);
-            }
-            server->buf_len = r;
-            return;
-        } else {
-            server->buf_len = 0;
-        }
-    }
-
-    *buf = ss_decrypt(*buf, &r, server->d_ctx);
-
-    if (*buf == NULL) {
-        LOGE("invalid password or cipher");
-        close_and_free_client(EV_A_ client);
-        close_and_free_server(EV_A_ server);
-        return;
-    }
-
-    // handshake and transmit data
-    if (server->stage == 5) {
-        int s = send(client->fd, client->buf, r, 0);
-        if (s == -1) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                // no data, wait for send
-                client->buf_len = r;
-                client->buf_idx = 0;
-                ev_io_stop(EV_A_ &server_recv_ctx->io);
-                ev_io_start(EV_A_ &client->send_ctx->io);
-            } else {
-                ERROR("server_recv_send");
-                close_and_free_client(EV_A_ client);
-                close_and_free_server(EV_A_ server);
-            }
-        } else if (s < r) {
-            client->buf_len = r - s;
-            client->buf_idx = s;
-            ev_io_stop(EV_A_ &server_recv_ctx->io);
-            ev_io_start(EV_A_ &client->send_ctx->io);
-        }
-        return;
-
-    } else if (server->stage == 0) {
-
-        /*
-         * Shadowsocks Protocol:
-         *
-         *    +------+----------+----------+
-         *    | ATYP | DST.ADDR | DST.PORT |
-         *    +------+----------+----------+
-         *    |  1   | Variable |    2     |
-         *    +------+----------+----------+
-         */
-
-        int offset = 0;
-        char atyp = server->buf[offset++];
-        char host[256];
-        char port[64];
-        memset(host, 0, 256);
-        int p = 0;
-
-        // get client addr and port
-        if (atyp == 1) {
-            // IP V4
-            size_t in_addr_len = sizeof(struct in_addr);
-            if (r > in_addr_len) {
-                inet_ntop(AF_INET, (const void *)(server->buf + offset),
-                        host, INET_ADDRSTRLEN);
-                offset += in_addr_len;
-            }
-        } else if (atyp == 3) {
-            // Domain name
-            uint8_t name_len = *(uint8_t *)(server->buf + offset);
-            if (name_len < r && name_len < 255 && name_len > 0) {
-                memcpy(host, server->buf + offset + 1, name_len);
-                offset += name_len + 1;
-            }
-        } else if (atyp == 4) {
-            // IP V6
-            size_t in6_addr_len = sizeof(struct in6_addr);
-            if (r > in6_addr_len) {
-                inet_ntop(AF_INET6, (const void*)(server->buf + offset), 
-                        host, INET6_ADDRSTRLEN);
-                offset += in6_addr_len;
-            }
-        }
-        
-        if (offset == 1) {
-            LOGE("invalid header with addr type %d", atyp);
-            close_and_free_server(EV_A_ server);
-            return;
-        }
-
-        p = ntohs(*(uint16_t *)(server->buf + offset));
-        offset += 2;
-
-        sprintf(port, "%d", p);
-
-        if (verbose) {
-            LOGD("connect to: %s:%s", host, port);
-        }
-
-        struct addrinfo hints;
-        asyncns_query_t *query;
-        memset(&hints, 0, sizeof hints);
-        hints.ai_family = AF_UNSPEC;
-        hints.ai_socktype = SOCK_STREAM;
-
-        query = asyncns_getaddrinfo(server->server_ctx->asyncns,
-                host, port, &hints);
-
-        if (query == NULL) {
-            ERROR("asyncns_getaddrinfo");
-            close_and_free_server(EV_A_ server);
-            return;
-        }
-
-        // XXX: should handle buffer carefully
-        if (r > offset) {
-            server->buf_len = r - offset;
-            server->buf_idx = offset;
-        }
-
-        server->stage = 4;
-        server->query = query;
-
-        ev_io_stop(EV_A_ &server_recv_ctx->io);
-        ev_timer_start(EV_A_ &server->send_ctx->watcher);
-
-        return;
-    }
-    // should not reach here
-    FATAL("server context error.");
 }
 
 static void server_send_cb (EV_P_ ev_io *w, int revents) {
@@ -368,12 +188,11 @@ static void server_send_cb (EV_P_ ev_io *w, int revents) {
 }
 
 static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents) {
-    struct server_ctx *server_ctx = (struct server_ctx *) (((void*)watcher)
-            - sizeof(ev_io));
-    struct server *server = server_ctx->server;
+    struct server *server = (struct server *) (((void*)watcher)
+            - sizeof(ev_timer));
     struct client *client = server->client;
 
-    LOGE("TCP connection timeout");
+    LOGE("UDP connection timeout");
 
     ev_timer_stop(EV_A_ watcher);
 
@@ -425,27 +244,38 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
             rp = result;
         }
 
-        struct client *client = connect_to_client(rp, server->server_ctx->iface);
+        int sockfd;
+        int opt = 1;
 
-        if (client == NULL) {
-            LOGE("connect error.");
-            close_and_free_server(EV_A_ server);
-        } else {
-            server->client = client;
-            client->server = server;
-
-            // XXX: should handel buffer carefully
-            if (server->buf_len > 0) {
-                memcpy(client->buf, server->buf + server->buf_idx, server->buf_len);
-                client->buf_len = server->buf_len;
-                client->buf_idx = 0;
-                server->buf_len = 0;
-                server->buf_idx = 0;
-            }
-
-            // listen to client connected event
-            ev_io_start(EV_A_ &client->send_ctx->io);
+        // initilize client socks
+        sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+        if (sockfd < 0) {
+            ERROR("socket");
+            close(sockfd);
+            return NULL;
         }
+
+#ifdef SO_NOSIGPIPE
+        setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+#endif
+
+        struct client *client = new_client(sockfd);
+
+        // setup client socks
+        setnonblocking(sockfd);
+#ifdef SET_INTERFACE
+        if (iface) setinterface(sockfd, iface);
+#endif
+
+#ifdef UDPRELAY_LOCAL
+        ss_encrypt_all(BLOCK_SIZE, server->buf, &r, server->e_ctx);
+#endif
+
+        server->client = client;
+        client->server = server;
+
+        // listen to client connected event
+        ev_io_start(EV_A_ &client->send_ctx->io);
     }
 
     // release addrinfo
@@ -658,15 +488,15 @@ struct server* new_server(int fd, struct server_ctx *ctx) {
     struct server *server;
     server = malloc(sizeof(struct server));
     server->buf = malloc(BUF_SIZE);
-    ev_timer_init(&server->send_ctx->watcher, server_resolve_cb, 0.2, 0.5);
-    ev_timer_init(&server->recv_ctx->watcher, server_timeout_cb, ctx->timeout, ctx->timeout * 5);
+    ev_timer_init(&server->resolve_watcher, server_resolve_cb, 0.2, 0.5);
+    ev_timer_init(&server->timeout_watcher, server_timeout_cb, ctx->timeout, ctx->timeout * 5);
     server->query = NULL;
-    server->server_ctx = ctx;
+    server->recv_ctx = ctx;
     if (ctx->method) {
         server->e_ctx = malloc(sizeof(struct enc_ctx));
         server->d_ctx = malloc(sizeof(struct enc_ctx));
-        enc_ctx_init(listener->method, server->e_ctx, 1);
-        enc_ctx_init(listener->method, server->d_ctx, 0);
+        enc_ctx_init(ctx->method, server->e_ctx, 1);
+        enc_ctx_init(ctx->method, server->d_ctx, 0);
     } else {
         server->e_ctx = NULL;
         server->d_ctx = NULL;
@@ -704,8 +534,8 @@ void close_and_free_server(EV_P_ struct server *server) {
     if (server != NULL) {
         ev_io_stop(EV_A_ &server->send_ctx->io);
         ev_io_stop(EV_A_ &server->recv_ctx->io);
-        ev_timer_stop(EV_A_ &server->send_ctx->watcher);
-        ev_timer_stop(EV_A_ &server->recv_ctx->watcher);
+        ev_timer_stop(EV_A_ &server->resolve_watcher);
+        ev_timer_stop(EV_A_ &server->timeout_watcher);
         close(server->fd);
         free_server(server);
     }
@@ -714,27 +544,154 @@ void close_and_free_server(EV_P_ struct server *server) {
     }
 }
 
-static void server_cb (EV_P_ ev_io *w, int revents) {
-    struct server_ctx *listener = (struct server_ctx *)w;
-    int serverfd = accept(listener->fd, NULL, NULL);
-    if (serverfd == -1) {
-        ERROR("accept");
+static void server_recv_cb (EV_P_ ev_io *w, int revents) {
+    struct server_ctx *server_recv_ctx = (struct server_ctx *)w;
+    struct server *server = new_server(serverfd, server_recv_ctx);
+    struct udprelay_header *header;
+
+    int addr_len = sizeof(server->src_addr);
+    int offset = 0;
+    char host[256] = {0};
+    char port[64] = {0};
+
+    ssize_t r = recvfrom(server_recv_ctx->fd, server->buf, BUF_SIZE, 
+            0, &server->src_addr, &addr_len);
+
+    if (r == -1) {
+        // error on recv
+        // simply drop that packet
+        if (verbose) {
+            ERROR("udprelay_server_recvfrom");
+        }
         return;
     }
-    setnonblocking(serverfd);
-
-    int opt = 1;
-#ifdef SO_NOSIGPIPE
-    setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
-#endif
 
     if (verbose) {
-        LOGD("accept a connection.");
+        LOGD("receive a packet.");
     }
 
-    struct server *server = new_server(serverfd, listener);
-    ev_io_start(EV_A_ &server->recv_ctx->io);
-    ev_timer_start(EV_A_ &server->recv_ctx->watcher);
+#ifdef UDPRELAY_REMOTE
+    server->buf = ss_decrypt_all(BUF_SIZE, server->buf, &r, server->d_ctx)
+#endif;
+
+    header = (struct udprelay_header *)server->buf;
+    offset += sizeof(struct udprelay_header);
+
+    /*
+     *
+     * SOCKS5 UDP Request
+     * +----+------+------+----------+----------+----------+
+     * |RSV | FRAG | ATYP | DST.ADDR | DST.PORT |   DATA   |
+     * +----+------+------+----------+----------+----------+
+     * | 2  |  1   |  1   | Variable |    2     | Variable |
+     * +----+------+------+----------+----------+----------+
+     *
+     * SOCKS5 UDP Response
+     * +----+------+------+----------+----------+----------+
+     * |RSV | FRAG | ATYP | DST.ADDR | DST.PORT |   DATA   |
+     * +----+------+------+----------+----------+----------+
+     * | 2  |  1   |  1   | Variable |    2     | Variable |
+     * +----+------+------+----------+----------+----------+
+     *
+     * shadowsocks UDP Request (before encrypted)
+     * +------+----------+----------+----------+
+     * | ATYP | DST.ADDR | DST.PORT |   DATA   |
+     * +------+----------+----------+----------+
+     * |  1   | Variable |    2     | Variable |
+     * +------+----------+----------+----------+
+     *
+     * shadowsocks UDP Response (before encrypted)
+     * +------+----------+----------+----------+
+     * | ATYP | DST.ADDR | DST.PORT |   DATA   |
+     * +------+----------+----------+----------+
+     * |  1   | Variable |    2     | Variable |
+     * +------+----------+----------+----------+
+     *
+     * shadowsocks UDP Request and Response (after encrypted)
+     * +-------+--------------+
+     * |   IV  |    PAYLOAD   |
+     * +-------+--------------+
+     * | Fixed |   Variable   |
+     * +-------+--------------+
+     * 
+     */
+
+#ifdef UDPRELAY_LOCAL 
+
+    if (header->frag) {
+        LOGE("drop a message since frag is not 0");
+        return;
+    }
+
+    int index = rand() % server_recv_ctx->remote_num;
+    if (verbose) {
+        LOGD("send to remote: %s", server_recv_ctx->remote_host[index]);
+    }
+    strcpy(host, server_recv_ctx->remote_host[index]);
+    strcpy(port, server_recv_ctx->remote_port);
+
+#else
+
+    // get client addr and port
+    if (header->atyp == 1) {
+        // IP V4
+        size_t in_addr_len = sizeof(struct in_addr);
+        if (r > in_addr_len) {
+            inet_ntop(AF_INET, (const void *)(server->buf + offset),
+                    host, INET_ADDRSTRLEN);
+            offset += in_addr_len;
+        }
+    } else if (header->atyp == 3) {
+        // Domain name
+        uint8_t name_len = *(uint8_t *)(server->buf + offset);
+        if (name_len < r && name_len < 255 && name_len > 0) {
+            memcpy(host, server->buf + offset + 1, name_len);
+            offset += name_len + 1;
+        }
+    } else if (header->atyp == 4) {
+        // IP V6
+        size_t in6_addr_len = sizeof(struct in6_addr);
+        if (r > in6_addr_len) {
+            inet_ntop(AF_INET6, (const void*)(server->buf + offset), 
+                    host, INET6_ADDRSTRLEN);
+            offset += in6_addr_len;
+        }
+    }
+
+    if (offset == sizeof(struct udprelay_header)) {
+        LOGE("invalid header with addr type %d", atyp);
+        close_and_free_server(EV_A_ server);
+        return;
+    }
+
+    sprintf(port, "%d", 
+            ntohs(*(uint16_t *)(server->buf + offset)));
+    offset += 2;
+
+#endif
+
+    r -= offset;
+    memmove(server->buf, server->buf + offset, r);
+
+    if (verbose) {
+        LOGD("send to: %s:%s", host, port);
+    }
+
+    struct addrinfo hints;
+    asyncns_query_t *query;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    query = asyncns_getaddrinfo(server_recv_ctx->asyncns,
+            host, port, &hints);
+
+    if (query == NULL) {
+        ERROR("udp_asyncns_getaddrinfo");
+        close_and_free_server(EV_A_ server);
+    }
+
+    ev_timer_start(EV_A_ &server->resolve_watcher);
 }
 
 int udprelay(const char *server_host, int server_num, const char *server_port, 
@@ -767,8 +724,6 @@ int udprelay(const char *server_host, int server_num, const char *server_port,
         ev_io_start (loop, &server_ctx.io);
     }
 
-    // start ev loop
-    ev_run (loop, 0);
     return 0;
 }
 

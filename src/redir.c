@@ -31,6 +31,10 @@
 #define EWOULDBLOCK EAGAIN
 #endif
 
+#ifndef BLOCK_SIZE
+#define BLOCK_SIZE 512
+#endif
+
 int getdestaddr(int fd, struct sockaddr_in *destaddr) {
     socklen_t socklen = sizeof(*destaddr);
     int error;
@@ -257,7 +261,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     }
 
-    server->buf = ss_decrypt(server->buf, &r, server->d_ctx);
+    server->buf = ss_decrypt(BLOCK_SIZE, server->buf, &r, server->d_ctx);
     if (server->buf == NULL) {
         LOGE("invalid password or cipher");
         close_and_free_remote(EV_A_ remote);
@@ -315,7 +319,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents) {
             addr_len += in_addr_len;
             memcpy(addr_to_send + addr_len, &server->destaddr.sin_port, 2);
             addr_len += 2;
-            addr_to_send = ss_encrypt(addr_to_send, &addr_len, server->e_ctx);
+            addr_to_send = ss_encrypt(BLOCK_SIZE, addr_to_send, &addr_len, server->e_ctx);
             if (addr_to_send == NULL) {
                 LOGE("invalid password or cipher");
                 close_and_free_remote(EV_A_ remote);

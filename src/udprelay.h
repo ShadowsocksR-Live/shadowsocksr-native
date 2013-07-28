@@ -20,14 +20,16 @@ struct server_ctx {
 };
 
 struct server {
-    ev_timer watcher;
+    ev_timer resolve_watcher;
+    ev_timer timeout_watcher;
     asyncns_query_t *query;
     int buf_len;
     int buf_idx;
     char *buf; // server send from, client recv into
+    struct sockaddr_in src_addr;
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;
-    struct server_ctx *server_ctx;
+    struct server_ctx *recv_ctx;
     struct client *client;
 };
 
@@ -41,8 +43,8 @@ struct client {
     int buf_len;
     int buf_idx;
     char *buf; // client send from, server recv into
+    struct sockaddr_in dest_addr;
     struct client_ctx *recv_ctx;
-    struct client_ctx *send_ctx;
     struct server *server;
 };
 
