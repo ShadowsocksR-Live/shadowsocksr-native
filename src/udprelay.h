@@ -6,7 +6,10 @@
 
 #include "encrypt.h"
 #include "jconf.h"
+
+#ifdef UDPRELAY_REMOTE
 #include "asyncns.h"
+#endif
 
 #define MAX_UDP_PACKET_SIZE (64 * 1024)
 
@@ -15,8 +18,10 @@ struct server_ctx {
     int fd;
     int method;
     char *iface;
-    struct sockaddr_in src_addr;
-    struct remote *remote;
+    struct sockaddr addr;
+#ifdef UDPRELAY_LOCAL
+    struct remote_ctx *remote_ctx;
+#endif
 #ifdef UDPRELAY_REMOTE
     asyncns_t *asyncns;
 #endif
@@ -38,7 +43,7 @@ struct remote_ctx {
     int buf_len;
     char *buf; // remote send from, server recv into
     struct sockaddr addr;
-    struct server *server;
+    struct server_ctx *server_ctx;
 #ifdef UDPRELAY_REMOTE
     ev_timer watcher;
 #endif

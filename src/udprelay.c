@@ -173,59 +173,6 @@ struct remote *send_to_remote(struct addrinfo *res, const char *iface) {
     return remote;
 }
 
-static void server_send_cb (EV_P_ ev_io *w, int revents) {
-    struct server_ctx *server_send_ctx = (struct server_ctx *)w;
-    struct server *server = server_send_ctx->server;
-    struct remote *remote = server->remote;
-
-    if (remote == NULL) {
-        LOGE("invalid server.");
-        close_and_free_server(EV_A_ server);
-        return;
-    }
-
-    if (server->buf_len == 0) {
-        // close and free
-        if (verbose) {
-            LOGD("server_send close the connection");
-        }
-        close_and_free_remote(EV_A_ remote);
-        close_and_free_server(EV_A_ server);
-        return;
-    } else {
-        // has data to send
-        ssize_t s = send(server->fd, server->buf + server->buf_idx,
-                server->buf_len, 0);
-        if (s < 0) {
-            if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                ERROR("server_send_send");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-            }
-            return;
-        } else if (s < server->buf_len) {
-            // partly sent, move memory, wait for the next time to send
-            server->buf_len -= s;
-            server->buf_idx += s;
-            return;
-        } else {
-            // all sent out, wait for reading
-            server->buf_len = 0;
-            server->buf_idx = 0;
-            ev_io_stop(EV_A_ &server_send_ctx->io);
-            if (remote != NULL) {
-                ev_io_start(EV_A_ &remote->recv_ctx->io);
-                return;
-            } else {
-                LOGE("invalid remote.");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
-        }
-    }
-}
-
 static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents) {
     struct server *server = (struct server *) (((void*)watcher)
             - sizeof(ev_timer));
@@ -248,7 +195,7 @@ static void query_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
 
     if (asyncns == NULL || query == NULL) {
         LOGE("invalid dns query.");
-        close_and_free_server(EV_A_ server);
+        close_and_free_query(EV_A_ quert_ctx);
         return;
     }
 
@@ -285,41 +232,36 @@ static void query_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
         int opt = 1;
 
         int remotefd = create_remote_socket(rp->ai_family == AF_INET6);
-        if (remotefd < 0) {
-            ERROR("socket");
-            close(remotefd);
-            // release addrinfo
-            asyncns_freeaddrinfo(result);
-            return;
-        }
-        setnonblocking(remotefd);
-
+        if (remotefd != -1) {
+            setnonblocking(remotefd);
 #ifdef SO_NOSIGPIPE
-        setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+            setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 #ifdef SET_INTERFACE
-        if (iface) setinterface(remotefd, iface);
+            if (iface) setinterface(remotefd, iface);
 #endif
 
-        struct remote_ctx *remote_ctx = new_remote_ctx(remotefd);
+            struct remote_ctx *remote_ctx = new_remote_ctx(remotefd);
+            remote_ctx->addr = *rp->ai_addr;
+            remote_ctx->server_ctx = query_ctx->server_ctx;
 
-        server->remote = remote;
-        remote->server = server;
-
-        // listen to remote connected event
-        ev_io_start(EV_A_ &remote->send_ctx->io);
+            ev_io_start(EV_A_ &remote_ctx->io);
+        } else {
+            ERROR("socket");
+            close(remotefd);
+        }
     }
 
     // release addrinfo
     asyncns_freeaddrinfo(result);
+    close_and_free_query(EV_A_ quert_ctx);
 }
 
 static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
-    struct remote_ctx *remote_recv_ctx = (struct remote_ctx *)w;
-    struct remote *remote = remote_recv_ctx->remote;
-    struct server *server = remote->server;
+    struct remote_ctx *remote_ctx = (struct remote_ctx *)w;
+    struct server_ctx *server_ctx = remote_ctx->server_ctx;
 
-    if (server == NULL) {
+    if (server_ctx == NULL) {
         LOGE("invalid server.");
         close_and_free_remote(EV_A_ remote);
         return;
@@ -383,97 +325,13 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
     }
 }
 
-static void remote_send_cb (EV_P_ ev_io *w, int revents) {
-    struct remote_ctx *remote_send_ctx = (struct remote_ctx *)w;
-    struct remote *remote = remote_send_ctx->remote;
-    struct server *server = remote->server;
-
-    if (server == NULL) {
-        LOGE("invalid server.");
-        close_and_free_remote(EV_A_ remote);
-        return;
-    }
-
-    if (!remote_send_ctx->connected) {
-
-        struct sockaddr_storage addr;
-        socklen_t len = sizeof addr;
-        int r = getpeername(remote->fd, (struct sockaddr*)&addr, &len);
-        if (r == 0) {
-            if (verbose) {
-                LOGD("remote connected.");
-            }
-            remote_send_ctx->connected = 1;
-
-            if (remote->buf_len == 0) {
-                server->stage = 5;
-                ev_io_stop(EV_A_ &remote_send_ctx->io);
-                ev_io_start(EV_A_ &server->recv_ctx->io);
-                ev_io_start(EV_A_ &remote->recv_ctx->io);
-                return;
-            }
-
-        } else {
-            ERROR("getpeername");
-            // not connected
-            close_and_free_remote(EV_A_ remote);
-            close_and_free_server(EV_A_ server);
-            return;
-        }
-    }
-
-    if (remote->buf_len == 0) {
-        // close and free
-        if (verbose) {
-            LOGD("remote_send close the connection");
-        }
-        close_and_free_remote(EV_A_ remote);
-        close_and_free_server(EV_A_ server);
-        return;
-    } else {
-        // has data to send
-        ssize_t s = send(remote->fd, remote->buf + remote->buf_idx,
-                remote->buf_len, 0);
-        if (s == -1) {
-            if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                ERROR("remote_send_send");
-                // close and free
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-            }
-            return;
-        } else if (s < remote->buf_len) {
-            // partly sent, move memory, wait for the next time to send
-            remote->buf_len -= s;
-            remote->buf_idx += s;
-            return;
-        } else {
-            // all sent out, wait for reading
-            remote->buf_len = 0;
-            remote->buf_idx = 0;
-            ev_io_stop(EV_A_ &remote_send_ctx->io);
-            if (server != NULL) {
-                ev_io_start(EV_A_ &server->recv_ctx->io);
-                if (server->stage == 4) {
-                    server->stage = 5;
-                    ev_io_start(EV_A_ &remote->recv_ctx->io);
-                }
-            } else {
-                LOGE("invalid server.");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-            }
-            return;
-        }
-    }
-}
-
 struct remote_ctx *new_remote_ctx(int fd) {
     struct remote_ctx *ctx = malloc(sizeof(struct remote_ctx));
     ctx->buf = malloc(BUF_SIZE);
     ctx->buf_len = 0;
     ctx->server_ctx = NULL;
     ctx->fd = fd;
+    ev_io_init(&ctx->io, remote_recv_cb, fd, EV_READ);
     return ctx;
 }
 
@@ -481,6 +339,7 @@ struct server_ctx * new_server_ctx(int fd) {
     struct server_ctx *ctx = malloc(sizeof(struct server_ctx));
     ctx->remote_ctx = NULL;
     ctx->fd = fd;
+    ev_io_init(&ctx.io, server_recv_cb, fd, EV_READ);
     return ctx;
 }
 
@@ -497,6 +356,16 @@ struct query_ctx *new_query_ctx(asyncns_query_t *query,
 }
 
 void close_and_free_query(EN_P_ struct query_ctx *ctx) {
+    if (ctx != NULL) {
+        ev_io_stop(EV_A_ &ctx->io);
+        if (ctx->buf != NULL) {
+            free(ctx->buf);
+        }
+        free(ctx);
+    }
+}
+
+void close_and_free_remote(EN_P_ struct remote_ctx *ctx) {
     if (ctx != NULL) {
         ev_timer_stop(EV_A_ &ctx->watcher);
         if (ctx->buf != NULL) {
@@ -687,12 +556,12 @@ int udprelay(const char *server_host, const char *server_port,
         FATAL("udprelay bind() error..");
     }
     setnonblocking(serverfd);
+
     struct server_ctx *server_ctx = new_server_ctx(serverfd); 
     server_ctx->method = method;
     server_ctx->iface = iface;
     server_ctx->asyncns = asyncns;
 
-    ev_io_init(&server_ctx.io, server_recv_cb, serverfd, EV_READ);
     ev_io_start(loop, &server_ctx.io);
 
 #ifdef UDPRELAY_LOCAL
@@ -706,8 +575,6 @@ int udprelay(const char *server_host, const char *server_port,
     }
     setnonblocking(remotefd);
 
-    struct remote_ctx *remote_ctx = new_remote_ctx(remotefd);
-
     struct addrinfo hints;
     struct addrinfo *result;
 
@@ -720,14 +587,14 @@ int udprelay(const char *server_host, const char *server_port,
         LOGE("getaddrinfo: %s", gai_strerror(s));
         return -1;
     }
-    remote_ctx->addr = *result->ai_addr;
-    freeaddrinfo(result);
 
+    struct remote_ctx *remote_ctx = new_remote_ctx(remotefd);
+    remote_ctx->addr = *result->ai_addr;
     server_ctx->remote_ctx = remote_ctx;
     remote_ctx->server_ctx = server_ctx;
-
-    ev_io_init(&remote_ctx->io, remote_recv_cb, remotefd, EV_READ);
     ev_io_start(loop, &remote_ctx->io);
+
+    freeaddrinfo(result);
 #endif
 
     return 0;

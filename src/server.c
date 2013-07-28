@@ -694,9 +694,6 @@ struct server* new_server(int fd, struct listen_ctx *listener) {
 void free_server(struct server *server) {
     server_conn--;
     if (server != NULL) {
-        if (server->query != NULL) {
-            free(query);
-        }
         if (server->remote != NULL) {
             server->remote->server = NULL;
         }
