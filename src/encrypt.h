@@ -43,8 +43,8 @@ struct enc_ctx {
     EVP_CIPHER_CTX evp;
 };
 
-char* ss_encrypt_all(char *plaintext, ssize_t *len, struct enc_ctx *ctx);
-char* ss_decrypt_all(char *ciphertext, ssize_t *len, struct enc_ctx *ctx);
+char* ss_encrypt_all(char *plaintext, ssize_t *len, int method);
+char* ss_decrypt_all(char *ciphertext, ssize_t *len, int method);
 char* ss_encrypt(char *plaintext, ssize_t *len, struct enc_ctx *ctx);
 char* ss_decrypt(char *ciphertext, ssize_t *len, struct enc_ctx *ctx);
 void enc_ctx_init(int method, struct enc_ctx *ctx, int enc);

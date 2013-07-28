@@ -150,8 +150,29 @@ void enc_table_init(const char *pass) {
     }
 }
 
-char* ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, struct enc_ctx *ctx) {
-    if (ctx != NULL) {
+char* ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method) {
+    if (method > TABLE) {
+
+        const EVP_CIPHER *cipher = EVP_get_cipherbyname(supported_ciphers[method]);
+        if (cipher == NULL) {
+            LOGE("Cipher %s not found in OpenSSL library", supported_ciphers[method]);
+            FATAL("Cannot initialize cipher");
+        }
+        EVP_CIPHER_CTX evp;
+        EVP_CIPHER_CTX_init(&evp);
+        if (!EVP_CipherInit_ex&(evp, cipher, NULL, NULL, NULL, enc)) {
+            LOGE("Cannot initialize cipher %s", supported_ciphers[method]);
+            exit(EXIT_FAILURE);
+        }
+        if (!EVP_CIPHER_CTX_set_key_length(&evp, enc_key_len)) {
+            EVP_CIPHER_CTX_cleanup(&evp);
+            LOGE("Invalid key length: %d", enc_key_len);
+            exit(EXIT_FAILURE);
+        }
+        if (method > RC4) {
+            EVP_CIPHER_CTX_set_padding(&evp, 1);
+        }
+
         int c_len = *len + BLOCK_SIZE;
         int iv_len = 0;
         int err = 0;
@@ -160,9 +181,8 @@ char* ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, struct enc_ctx
         uint8_t iv[EVP_MAX_IV_LENGTH];
         iv_len = enc_iv_len;
         RAND_bytes(iv, iv_len);
-        EVP_CipherInit_ex(&ctx->evp, NULL, NULL, enc_key, iv, 1);
+        EVP_CipherInit_ex(&evp, NULL, NULL, enc_key, iv, 1);
         memcpy(ciphertext, iv, iv_len);
-        ctx->init = 1;
 
 #ifdef DEBUG
         dump("IV", iv);
@@ -174,6 +194,7 @@ char* ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, struct enc_ctx
         if (!err) {
             free(ciphertext);
             free(plaintext);
+            EVP_CIPHER_CTX_cleanup(&evp);
             return NULL;
         }
 
@@ -184,6 +205,8 @@ char* ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, struct enc_ctx
 
         *len = iv_len + c_len;
         free(plaintext);
+        EVP_CIPHER_CTX_cleanup(&evp);
+
         return ciphertext;
 
     } else {
@@ -240,8 +263,29 @@ char* ss_encrypt(int buf_size, char *plaintext, ssize_t *len, struct enc_ctx *ct
     }
 }
 
-char* ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, struct enc_ctx *ctx) {
-    if (ctx != NULL) {
+char* ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method) {
+    if (method > TABLE) {
+
+        const EVP_CIPHER *cipher = EVP_get_cipherbyname(supported_ciphers[method]);
+        if (cipher == NULL) {
+            LOGE("Cipher %s not found in OpenSSL library", supported_ciphers[method]);
+            FATAL("Cannot initialize cipher");
+        }
+        EVP_CIPHER_CTX evp;
+        EVP_CIPHER_CTX_init(&evp);
+        if (!EVP_CipherInit_ex&(evp, cipher, NULL, NULL, NULL, enc)) {
+            LOGE("Cannot initialize cipher %s", supported_ciphers[method]);
+            exit(EXIT_FAILURE);
+        }
+        if (!EVP_CIPHER_CTX_set_key_length(&evp, enc_key_len)) {
+            EVP_CIPHER_CTX_cleanup(&evp);
+            LOGE("Invalid key length: %d", enc_key_len);
+            exit(EXIT_FAILURE);
+        }
+        if (method > RC4) {
+            EVP_CIPHER_CTX_set_padding(&evp, 1);
+        }
+
         int p_len = *len + BLOCK_SIZE;
         int iv_len = 0;
         int err = 0;
@@ -250,7 +294,7 @@ char* ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, struct enc_ct
         uint8_t iv[EVP_MAX_IV_LENGTH];
         iv_len = enc_iv_len;
         memcpy(iv, ciphertext, iv_len);
-        EVP_CipherInit_ex(&ctx->evp, NULL, NULL, enc_key, iv, 0);
+        EVP_CipherInit_ex(&evp, NULL, NULL, enc_key, iv, 0);
 
 #ifdef DEBUG
         dump("IV", iv);
@@ -261,6 +305,7 @@ char* ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, struct enc_ct
         if (!err) {
             free(ciphertext);
             free(plaintext);
+            EVP_CIPHER_CTX_cleanup(&evp);
             return NULL;
         }
 
@@ -271,6 +316,7 @@ char* ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, struct enc_ct
 
         *len = p_len;
         free(ciphertext);
+        EVP_CIPHER_CTX_cleanup(&evp);
         return plaintext;
     } else {
         char *begin = ciphertext;

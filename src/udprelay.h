@@ -15,50 +15,41 @@ struct server_ctx {
     asyncns_t *asyncns;
     int fd;
     int method;
-    int timeout;
     char *iface;
+    struct sockaddr_in src_addr;
+    struct remote *remote;
 };
 
-struct server {
+#ifdef UDPRELAY_CTX
+struct query_ctx {
     ev_timer resolve_watcher;
-    ev_timer timeout_watcher;
     asyncns_query_t *query;
     int buf_len;
-    int buf_idx;
-    char *buf; // server send from, client recv into
-    struct sockaddr_in src_addr;
-    struct enc_ctx *e_ctx;
-    struct enc_ctx *d_ctx;
-    struct server_ctx *recv_ctx;
-    struct client *client;
-};
+    char *buf; // server send from, remote recv into
+    struct server_ctx *server_ctx;
+    struct remote_ctx *remote_ctx;
+}
+#endif
 
-struct client_ctx {
+struct remote_ctx {
     ev_io io;
-    struct client *client;
-};
-
-struct client {
     int fd;
     int buf_len;
-    int buf_idx;
-    char *buf; // client send from, server recv into
-    struct sockaddr_in dest_addr;
-    struct client_ctx *recv_ctx;
+    char *buf; // remote send from, server recv into
+    struct sockaddr addr;
     struct server *server;
 };
 
 static void server_recv_cb (EV_P_ ev_io *w, int revents);
 static void server_send_cb (EV_P_ ev_io *w, int revents);
-static void client_recv_cb (EV_P_ ev_io *w, int revents);
-static void client_send_cb (EV_P_ ev_io *w, int revents);
-static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents);
+static void remote_recv_cb (EV_P_ ev_io *w, int revents);
+static void remote_send_cb (EV_P_ ev_io *w, int revents);
 static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents);
 
-struct client* new_client(int fd);
-struct client *connect_to_client(struct addrinfo *res, const char *iface);
-void free_client(struct client *client);
-void close_and_free_client(EV_P_ struct client *client);
+struct remote* new_remote(int fd);
+struct remote *connect_to_remote(struct addrinfo *res, const char *iface);
+void free_remote(struct remote *remote);
+void close_and_free_remote(EV_P_ struct remote *remote);
 struct server* new_server(int fd, struct listen_ctx *listener);
 void free_server(struct server *server);
 void close_and_free_server(EV_P_ struct server *server);
