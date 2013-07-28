@@ -18,10 +18,6 @@ struct server_ctx {
     int fd;
     int method;
     char *iface;
-    struct sockaddr addr;
-#ifdef UDPRELAY_LOCAL
-    struct remote_ctx *remote_ctx;
-#endif
 #ifdef UDPRELAY_REMOTE
     asyncns_t *asyncns;
 #endif
@@ -31,6 +27,7 @@ struct server_ctx {
 struct query_ctx {
     ev_timer resolve_watcher;
     asyncns_query_t *query;
+    struct sockaddr src_addr;
     int buf_len;
     char *buf; // server send from, remote recv into
     struct server_ctx *server_ctx;
@@ -42,7 +39,7 @@ struct remote_ctx {
     int fd;
     int buf_len;
     char *buf; // remote send from, server recv into
-    struct sockaddr addr;
+    struct sockaddr dst_addr;
     struct server_ctx *server_ctx;
 #ifdef UDPRELAY_REMOTE
     ev_timer watcher;

@@ -12,7 +12,7 @@
 /**
  * A cache entry
  */
-struct client_cache_entry {
+struct cache_entry {
 	char *key; /**<The key */
 	void *data; /**<Payload */
 	UT_hash_handle hh; /**<Hash Handle for uthash */
@@ -22,10 +22,10 @@ struct client_cache_entry {
 /**
  * A cache object
  */
-struct client_cache {
+struct cache {
 	size_t max_entries; /**<Amount of entries this cache object can hold */
 	pthread_rwlock_t cache_lock; /**<A lock for concurrent access */
-	struct client_cache_entry *entries; /**<Head pointer for uthash */
+	struct cache_entry *entries; /**<Head pointer for uthash */
 	void (*free_cb) (void *element);/**<Callback function to free cache entries */
 };
 
@@ -39,10 +39,10 @@ struct client_cache {
 
     @return EINVAL if dst is NULL, ENOMEM if malloc fails, 0 otherwise
 */
-int client_cache_create(struct client_cache **dst, const size_t capacity,
+int cache_create(struct cache **dst, const size_t capacity,
 		     void (*free_cb) (void *element))
 {
-	struct client_cache *new = NULL;
+	struct cache *new = NULL;
 	int rv;
 
 	if (!dst)
@@ -76,9 +76,9 @@ err_out:
 
     @return EINVAL if cache is NULL, 0 otherwise
 */
-int client_cache_delete(struct client_cache *cache, int keep_data)
+int cache_delete(struct cache *cache, int keep_data)
 {
-	struct client_cache_entry *entry, *tmp;
+	struct cache_entry *entry, *tmp;
 	int rv;
 
 	if (!cache)
@@ -122,10 +122,10 @@ int client_cache_delete(struct client_cache *cache, int keep_data)
 
     @return EINVAL if cache is NULL, 0 otherwise
 */
-int client_cache_lookup(struct client_cache *cache, char *key, void *result)
+int cache_lookup(struct cache *cache, char *key, void *result)
 {
 	int rv;
-	struct client_cache_entry *tmp = NULL;
+	struct cache_entry *tmp = NULL;
 	char **dirty_hack = result;
 
 	if (!cache || !key || !result)
@@ -161,10 +161,10 @@ int client_cache_lookup(struct client_cache *cache, char *key, void *result)
 
     @return EINVAL if cache is NULL, ENOMEM if malloc fails, 0 otherwise
 */
-int client_cache_insert(struct client_cache *cache, char *key, void *data)
+int cache_insert(struct cache *cache, char *key, void *data)
 {
-	struct client_cache_entry *entry = NULL;
-	struct client_cache_entry *tmp_entry = NULL;
+	struct cache_entry *entry = NULL;
+	struct cache_entry *tmp_entry = NULL;
 	size_t key_len = 0;
 	int rv;
 

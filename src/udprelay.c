@@ -242,7 +242,7 @@ static void query_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
 #endif
 
             struct remote_ctx *remote_ctx = new_remote_ctx(remotefd);
-            remote_ctx->addr = *rp->ai_addr;
+            remote_ctx->dst_addr = *rp->ai_addr;
             remote_ctx->server_ctx = query_ctx->server_ctx;
 
             ev_io_start(EV_A_ &remote_ctx->io);
@@ -379,13 +379,14 @@ void close_and_free_remote(EN_P_ struct remote_ctx *ctx) {
 static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     struct server_ctx *server_ctx = (struct server_ctx *)w;
     struct udprelay_header *header;
+    struct sockaddr src_addr;
     uint8_t *buf = malloc(BUF_SIZE);
 
-    int addr_len = sizeof(server->src_addr);
+    int addr_len = sizeof(src_addr);
     int offset = 0;
 
     ssize_t r = recvfrom(server_ctx->fd, buf, BUF_SIZE, 
-            0, &server->src_addr, &addr_len);
+            0, &src_addr, &addr_len);
 
     if (r == -1) {
         // error on recv
@@ -447,8 +448,36 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
      */
 
 #ifdef UDPRELAY_LOCAL 
+    
+    struct addrinfo hints;
+    struct addrinfo *result;
 
-    struct remote_ctx *remote_ctx = server_ctx->remote_ctx;
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_UNSPEC; /* Return IPv4 and IPv6 choices */
+    hints.ai_socktype = SOCK_DGRAM; /* We want a UDP socket */
+
+    int s = getaddrinfo(server_ctx->remote_host, server_ctx->remote_port,
+            &hints, &result);
+    if (s != 0 || result == NULL) {
+        LOGE("getaddrinfo: %s", gai_strerror(s));
+        return;
+    }
+
+    // Bind to any port
+    int remotefd = create_remote_socket(result->ai_family == AF_INET6);
+    if (remotefd < 0) {
+        ERROR("udprelay bind() error..");
+        return
+    }
+    setnonblocking(remotefd);
+
+    struct remote_ctx *remote_ctx = new_remote_ctx(remotefd);
+    remote_ctx->src_addr = src_addr; 
+    remote_ctx->dst_addr = *result->ai_addr;
+    remote_ctx->server_ctx = server_ctx;
+    ev_io_start(EV_A_ &remote_ctx->io);
+
+    freeaddrinfo(result);
 
     if (header->frag) {
         LOGE("drop a message since frag is not 0");
@@ -460,7 +489,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 
     ss_encrypt_all(BLOCK_SIZE, buf, &r, server_ctx->method);
 
-    int w = sendto(server_ctx->fd, buf, r, 0, &remote_ctx->addr, sizeof(remote_ctx->addr));
+    int w = sendto(server_ctx->fd, buf, r, 0, &remote_ctx->dst_addr, sizeof(remote_ctx->dst_addr));
 
     if (w == -1) {
         ERROR("udprelay_server_sendto");
@@ -563,39 +592,6 @@ int udprelay(const char *server_host, const char *server_port,
     server_ctx->asyncns = asyncns;
 
     ev_io_start(loop, &server_ctx.io);
-
-#ifdef UDPRELAY_LOCAL
-    //////////////////////////////////////////////////
-    // Setup remote context
-    
-    // Bind to any port
-    int remotefd = create_remote_socket(1);
-    if (remotefd < 0) {
-        FATAL("udprelay bind() error..");
-    }
-    setnonblocking(remotefd);
-
-    struct addrinfo hints;
-    struct addrinfo *result;
-
-    memset(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family = AF_UNSPEC; /* Return IPv4 and IPv6 choices */
-    hints.ai_socktype = SOCK_DGRAM; /* We want a UDP socket */
-
-    int s = getaddrinfo(remote_host, remote_port, &hints, &result);
-    if (s != 0) {
-        LOGE("getaddrinfo: %s", gai_strerror(s));
-        return -1;
-    }
-
-    struct remote_ctx *remote_ctx = new_remote_ctx(remotefd);
-    remote_ctx->addr = *result->ai_addr;
-    server_ctx->remote_ctx = remote_ctx;
-    remote_ctx->server_ctx = server_ctx;
-    ev_io_start(loop, &remote_ctx->io);
-
-    freeaddrinfo(result);
-#endif
 
     return 0;
 }
