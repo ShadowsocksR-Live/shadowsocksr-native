@@ -37,6 +37,7 @@ struct udprelay_header {
 struct udprelay_header {
     uint16_t rsv;
     uint8_t frag;
+    uint8_t atyp;
 }
 struct remote *remote = NULL;
 #else
@@ -81,6 +82,60 @@ int setinterface(int socket_fd, const char* interface_name)
     return res;
 }
 #endif
+
+static char *hash_key(const char *host, const char *port, const sockaddr *addr) {
+    static char key[128];
+
+    // calculate hash key
+    memcpy(key, host, 64);
+    memcpy(key + 64, port, 32);
+    memcpy(key + 96, addr.sa_data, 14);
+
+    return key;
+}
+
+static int parse_udprealy_header(const char* buf, const int buf_len,
+        const udprelay_header *header, char *host, char *port) {
+
+    int offset = 0;
+    // get remote addr and port
+    if (header->atyp == 1) {
+        // IP V4
+        size_t in_addr_len = sizeof(struct in_addr);
+        if (buf_len > in_addbuf_len_len) {
+            inet_ntop(AF_INET, (const void *)(buf + offset),
+                    host, INET_ADDRSTRLEN);
+            offset += in_addbuf_len_len;
+        }
+    } else if (headebuf_len->atyp == 3) {
+        // Domain name
+        uint8_t name_len = *(uint8_t *)(buf + offset);
+        if (name_len < buf_len && name_len < 255 && name_len > 0) {
+            memcpy(host, buf + offset + 1, name_len);
+            offset += name_len + 1;
+        }
+    } else if (headebuf_len->atyp == 4) {
+        // IP V6
+        size_t in6_addbuf_len_len = sizeof(stbuf_lenuct in6_addbuf_len);
+        if (buf_len > in6_addbuf_len_len) {
+            inet_ntop(AF_INET6, (const void*)(buf + offset),
+                    host, INET6_ADDRSTRLEN);
+            offset += in6_addr_len;
+        }
+    }
+
+    if (offset == 0){
+        LOGE("invalid header with addr type %d", atyp);
+        return 0;
+    }
+
+    sprintf(port, "%d",
+            ntohs(*(uint16_t *)(buf + offset)));
+    offset += 2;
+
+    return offset;
+
+}
 
 int create_remote_socket(int ipv6) {
     int s, remote_sock;
@@ -385,8 +440,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     int addr_len = sizeof(src_addr);
     int offset = 0;
 
-    ssize_t r = recvfrom(server_ctx->fd, buf, BUF_SIZE, 
-            0, &src_addr, &addr_len);
+    ssize_t r = recvfrom(server_ctx->fd, buf, BUF_SIZE, 0, &src_addr, &addr_len);
 
     if (r == -1) {
         // error on recv
@@ -444,11 +498,23 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
      * +-------+--------------+
      * | Fixed |   Variable   |
      * +-------+--------------+
-     * 
+     *
      */
 
-#ifdef UDPRELAY_LOCAL 
-    
+    char host[256] = {0};
+    char port[64] = {0};
+
+    offset += parse_udprealy_header(buf + offset, r - offset, header, host, port);
+
+    char *key = hash_key(host, port, &src_addr);
+
+#ifdef UDPRELAY_LOCAL
+
+    if (header->frag) {
+        LOGE("drop a message since frag is not 0");
+        return;
+    }
+
     struct addrinfo hints;
     struct addrinfo *result;
 
@@ -472,69 +538,25 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     setnonblocking(remotefd);
 
     struct remote_ctx *remote_ctx = new_remote_ctx(remotefd);
-    remote_ctx->src_addr = src_addr; 
+    remote_ctx->src_addr = src_addr;
     remote_ctx->dst_addr = *result->ai_addr;
     remote_ctx->server_ctx = server_ctx;
     ev_io_start(EV_A_ &remote_ctx->io);
 
     freeaddrinfo(result);
 
-    if (header->frag) {
-        LOGE("drop a message since frag is not 0");
-        return;
-    }
-
-    r -= offset;
-    memmove(buf, buf + offset, r);
+    r -= 3;
+    memmove(buf, buf + 3, r);
 
     ss_encrypt_all(BLOCK_SIZE, buf, &r, server_ctx->method);
 
-    int w = sendto(server_ctx->fd, buf, r, 0, &remote_ctx->dst_addr, sizeof(remote_ctx->dst_addr));
+    int w = sendto(remote_ctx->fd, buf, r, 0, &remote_ctx->dst_addr, sizeof(remote_ctx->dst_addr));
 
     if (w == -1) {
         ERROR("udprelay_server_sendto");
     }
 
 #else
-
-    char host[256] = {0};
-    char port[64] = {0};
-
-    // get remote addr and port
-    if (header->atyp == 1) {
-        // IP V4
-        size_t in_addr_len = sizeof(struct in_addr);
-        if (r > in_addr_len) {
-            inet_ntop(AF_INET, (const void *)(server->buf + offset),
-                    host, INET_ADDRSTRLEN);
-            offset += in_addr_len;
-        }
-    } else if (header->atyp == 3) {
-        // Domain name
-        uint8_t name_len = *(uint8_t *)(server->buf + offset);
-        if (name_len < r && name_len < 255 && name_len > 0) {
-            memcpy(host, server->buf + offset + 1, name_len);
-            offset += name_len + 1;
-        }
-    } else if (header->atyp == 4) {
-        // IP V6
-        size_t in6_addr_len = sizeof(struct in6_addr);
-        if (r > in6_addr_len) {
-            inet_ntop(AF_INET6, (const void*)(server->buf + offset), 
-                    host, INET6_ADDRSTRLEN);
-            offset += in6_addr_len;
-        }
-    }
-
-    if (offset == sizeof(struct udprelay_header)) {
-        LOGE("invalid header with addr type %d", atyp);
-        close_and_free_server(EV_A_ server);
-        return;
-    }
-
-    sprintf(port, "%d", 
-            ntohs(*(uint16_t *)(server->buf + offset)));
-    offset += 2;
 
     r -= offset;
     memmove(server->buf, server->buf + offset, r);
@@ -569,7 +591,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 
 int udprelay(const char *server_host, const char *server_port,
 #ifdef UDPRELAY_LOCAL
-        const char *remote_host, const char *remote_port, 
+        const char *remote_host, const char *remote_port,
 #endif
         int method, const char *iface) {
 
@@ -586,7 +608,7 @@ int udprelay(const char *server_host, const char *server_port,
     }
     setnonblocking(serverfd);
 
-    struct server_ctx *server_ctx = new_server_ctx(serverfd); 
+    struct server_ctx *server_ctx = new_server_ctx(serverfd);
     server_ctx->method = method;
     server_ctx->iface = iface;
     server_ctx->asyncns = asyncns;
