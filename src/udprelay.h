@@ -30,6 +30,7 @@ struct query_ctx {
     struct sockaddr src_addr;
     int buf_len;
     char *buf; // server send from, remote recv into
+    char addr_header[384];
     struct server_ctx *server_ctx;
 }
 #endif
@@ -39,6 +40,7 @@ struct remote_ctx {
     int fd;
     int buf_len;
     char *buf; // remote send from, server recv into
+    char addr_header[384];
     struct sockaddr dst_addr;
     struct server_ctx *server_ctx;
 #ifdef UDPRELAY_REMOTE
