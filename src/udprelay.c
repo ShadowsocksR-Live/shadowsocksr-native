@@ -244,13 +244,13 @@ static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents) {
 static void query_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
     int err;
     struct addrinfo *result, *rp;
-    struct quert_ctx *query_ctx = (struct quert_ctx *)((void*)watcher);
+    struct query_ctx *query_ctx = (struct query_ctx *)((void*)watcher);
     asyncns_t *asyncns = query_ctx->asyncns;
     asyncns_query_t *query = query_ctx->query;
 
     if (asyncns == NULL || query == NULL) {
         LOGE("invalid dns query.");
-        close_and_free_query(EV_A_ quert_ctx);
+        close_and_free_query(EV_A_ query_ctx);
         return;
     }
 
@@ -260,7 +260,7 @@ static void query_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
     }
 
     if (!asyncns_isdone(asyncns, query)) {
-        // wait for reolver
+        // wait reolver
         return;
     }
 
@@ -299,22 +299,30 @@ static void query_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
             struct remote_ctx *remote_ctx = new_remote_ctx(remotefd);
             remote_ctx->dst_addr = *rp->ai_addr;
             remote_ctx->server_ctx = query_ctx->server_ctx;
+            remote_ctx->addr_header_len = query_ctx->addr_header_len;
+            memcpy(remote_ctx->addr_header, query_ctx->addr_header, query_ctx->addr_header_len);
 
             ev_io_start(EV_A_ &remote_ctx->io);
+
+            int w = sendto(remote_ctx->fd, buf, buf_len, 0, &remote_ctx->dst_addr, sizeof(remote_ctx->dst_addr));
+
+            if (w == -1) {
+                ERROR("udprelay_sendto_remote");
+                close_and_free_remote(EV_A_ remote_ctx);
+            }
+
         } else {
-            ERROR("socket");
-            close(remotefd);
+            ERROR("udprelay bind() error..");
         }
     }
 
     // release addrinfo
     asyncns_freeaddrinfo(result);
-    close_and_free_query(EV_A_ quert_ctx);
+    close_and_free_query(EV_A_ query_ctx);
 }
 
 static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
     struct remote_ctx *remote_ctx = (struct remote_ctx *)w;
-    struct server_ctx *server_ctx = remote_ctx->server_ctx;
 
     if (server_ctx == NULL) {
         LOGE("invalid server.");
@@ -545,6 +553,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     remote_ctx->src_addr = src_addr;
     remote_ctx->dst_addr = *result->ai_addr;
     remote_ctx->server_ctx = server_ctx;
+    remote_ctx->addr_header_len = addr_header_len;
     memcpy(remote_ctx->addr_header, addr_header, addr_header_len);
 
     ev_io_start(EV_A_ &remote_ctx->io);
@@ -557,7 +566,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     int w = sendto(remote_ctx->fd, buf, buf_len, 0, &remote_ctx->dst_addr, sizeof(remote_ctx->dst_addr));
 
     if (w == -1) {
-        ERROR("udprelay_server_sendto");
+        ERROR("udprelay_sendto_remote");
+        close_and_free_remote(EV_A_ remote_ctx);
     }
 
     freeaddrinfo(result);
@@ -573,7 +583,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 
     struct addrinfo hints;
     asyncns_query_t *query;
-    memset(&hints, 0, sizeof hints);
+    memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
@@ -587,6 +597,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 
     struct query_ctx *query_ctx = new_query_ctx(query, buf, buf_len);
     query_ctx->server_ctx = server_ctx;
+    query_ctx->addr_header_len = addr_header_len;
     memcpy(query_ctx->addr_header, addr_header, addr_header_len);
 
     ev_timer_start(EV_A_ &query_ctx->watcher);
