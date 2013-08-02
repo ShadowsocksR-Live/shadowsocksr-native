@@ -24,6 +24,8 @@
 #define SET_INTERFACE
 #endif
 
+#include <openssl/md5.h>
+
 #include "utils.h"
 #include "udprelay.h"
 #include "cache.h"
@@ -84,14 +86,14 @@ int setinterface(int socket_fd, const char* interface_name)
 #endif
 
 static char *hash_key(const char *header, const int header_len, const sockaddr *addr) {
-    static char key[384];
+    char key[384];
 
     // calculate hash key
     memset(key, 0, 384);
     memcpy(key, addr.sa_data, 14);
     memcpy(key + 14, header, header_len);
 
-    return key;
+    return (char*) MD5((const uint8_t *)key, 14 + header_len, NULL);
 }
 
 static int parse_udprealy_header(const char* buf, const int buf_len,
@@ -519,6 +521,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             buf_len - offset, udprelay_header->atyp, host, port);
     char *addr_header = buf + offset - sizeof(udprelay_header->atyp);
     char *key = hash_key(addr_header, addr_header_len, &src_addr);
+    struct *conn_cache = server_ctx->conn_cache;
+
 
 #ifdef UDPRELAY_LOCAL
 
@@ -613,8 +617,12 @@ int udprelay(const char *server_host, const char *server_port,
 #endif
         int method, const char *iface) {
 
-    // inilitialize ev loop
+    // Inilitialize ev loop
     struct ev_loop *loop = EV_DEFAULT;
+
+    // Inilitialize cache
+    struct cache *conn_cache;
+    cache_create(&conn_cache, MAX_UDP_CONN_NUM, free_cb);
 
     //////////////////////////////////////////////////
     // Setup server context
@@ -630,6 +638,7 @@ int udprelay(const char *server_host, const char *server_port,
     server_ctx->method = method;
     server_ctx->iface = iface;
     server_ctx->asyncns = asyncns;
+    server_ctx->conn_cache = conn_cache;
 
     ev_io_start(loop, &server_ctx.io);
 

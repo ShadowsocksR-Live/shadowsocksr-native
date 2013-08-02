@@ -1,4 +1,4 @@
-/* 
+/*
  * Original Author:  Oliver Lorenz (ol), olli@olorenz.org, https://olorenz.org
  * License:  This is licensed under the same terms as uthash itself
  */
@@ -8,26 +8,6 @@
 #include <stdlib.h>
 #include "cache.h"
 #include "uthash.h"
-
-/**
- * A cache entry
- */
-struct cache_entry {
-	char *key; /**<The key */
-	void *data; /**<Payload */
-	UT_hash_handle hh; /**<Hash Handle for uthash */
-};
-#define KEY_MAX_LENGTH		32
-
-/**
- * A cache object
- */
-struct cache {
-	size_t max_entries; /**<Amount of entries this cache object can hold */
-	pthread_rwlock_t cache_lock; /**<A lock for concurrent access */
-	struct cache_entry *entries; /**<Head pointer for uthash */
-	void (*free_cb) (void *element);/**<Callback function to free cache entries */
-};
 
 /** Creates a new cache object
 

@@ -6,12 +6,32 @@
 #ifndef _CACHE_
 #define _CACHE_
 
-struct client_cache;
+#define KEY_MAX_LENGTH		32
 
-extern int client_cache_create(struct foo_cache **dst, const size_t capacity,
+/**
+ * A cache entry
+ */
+struct cache_entry {
+	char *key; /**<The key */
+	void *data; /**<Payload */
+	UT_hash_handle hh; /**<Hash Handle for uthash */
+};
+
+/**
+ * A cache object
+ */
+struct cache {
+	size_t max_entries; /**<Amount of entries this cache object can hold */
+	pthread_rwlock_t cache_lock; /**<A lock for concurrent access */
+	struct cache_entry *entries; /**<Head pointer for uthash */
+	void (*free_cb) (void *element);/**<Callback function to free cache entries */
+};
+
+
+extern int cache_create(struct cache **dst, const size_t capacity,
 			    void (*free_cb) (void *element));
-extern int client_cache_delete(struct foo_cache *cache, int keep_data);
-extern int client_cache_lookup(struct foo_cache *cache, char *key, void *result);
-extern int client_cache_insert(struct foo_cache *cache, char *key, void *data);
+extern int cache_delete(struct cache *cache, int keep_data);
+extern int cache_lookup(struct cache *cache, char *key, void *result);
+extern int cache_insert(struct cache *cache, char *key, void *data);
 
 #endif

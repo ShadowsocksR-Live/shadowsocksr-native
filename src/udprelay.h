@@ -11,6 +11,8 @@
 #include "asyncns.h"
 #endif
 
+#include "cache.h"
+
 #define MAX_UDP_PACKET_SIZE (64 * 1024)
 
 struct server_ctx {
@@ -18,6 +20,7 @@ struct server_ctx {
     int fd;
     int method;
     char *iface;
+    struct cache *conn_cache;
 #ifdef UDPRELAY_REMOTE
     asyncns_t *asyncns;
 #endif
