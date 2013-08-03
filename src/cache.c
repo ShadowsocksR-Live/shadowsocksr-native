@@ -4,7 +4,6 @@
  */
 
 #include <errno.h>
-#include <pthread.h>
 #include <stdlib.h>
 #include "cache.h"
 #include "uthash.h"
@@ -23,7 +22,6 @@ int cache_create(struct cache **dst, const size_t capacity,
 		     void (*free_cb) (void *element))
 {
 	struct cache *new = NULL;
-	int rv;
 
 	if (!dst)
 		return EINVAL;
@@ -31,19 +29,12 @@ int cache_create(struct cache **dst, const size_t capacity,
 	if ((new = malloc(sizeof(*new))) == NULL)
 		return ENOMEM;
 
-	if ((rv = pthread_rwlock_init(&(new->cache_lock), NULL)) != 0)
-		goto err_out;
-
 	new->max_entries = capacity;
 	new->entries = NULL;
 	new->free_cb = free_cb;
 	*dst = new;
 	return 0;
 
-err_out:
-	if (new)
-		free(new);
-	return rv;
 }
 
 /** Frees an allocated cache object
@@ -59,14 +50,9 @@ err_out:
 int cache_delete(struct cache *cache, int keep_data)
 {
 	struct cache_entry *entry, *tmp;
-	int rv;
 
 	if (!cache)
 		return EINVAL;
-
-	rv = pthread_rwlock_wrlock(&(cache->cache_lock));
-	if (rv)
-		return rv;
 
 	if (keep_data) {
 		HASH_CLEAR(hh, cache->entries);
@@ -78,8 +64,7 @@ int cache_delete(struct cache *cache, int keep_data)
 			free(entry);
 		}
 	}
-	(void)pthread_rwlock_unlock(&(cache->cache_lock));
-	(void)pthread_rwlock_destroy(&(cache->cache_lock));
+
 	free(cache);
 	cache = NULL;
 	return 0;
@@ -111,10 +96,6 @@ int cache_lookup(struct cache *cache, char *key, void *result)
 	if (!cache || !key || !result)
 		return EINVAL;
 
-	rv = pthread_rwlock_wrlock(&(cache->cache_lock));
-	if (rv)
-		return rv;
-
 	HASH_FIND_STR(cache->entries, key, tmp);
 	if (tmp) {
 		size_t key_len = strnlen(tmp->key, KEY_MAX_LENGTH);
@@ -124,8 +105,8 @@ int cache_lookup(struct cache *cache, char *key, void *result)
 	} else {
 		*dirty_hack = result = NULL;
 	}
-	rv = pthread_rwlock_unlock(&(cache->cache_lock));
-	return rv;
+
+	return 0;
 }
 
 /** Inserts a given <key, value> pair into the cache
@@ -154,9 +135,6 @@ int cache_insert(struct cache *cache, char *key, void *data)
 	if ((entry = malloc(sizeof(*entry))) == NULL)
 		return ENOMEM;
 
-	if ((rv = pthread_rwlock_wrlock(&(cache->cache_lock))) != 0)
-		goto err_out;
-
 	entry->key = key;
 	entry->data = data;
 	key_len = strnlen(entry->key, KEY_MAX_LENGTH);
@@ -175,13 +153,5 @@ int cache_insert(struct cache *cache, char *key, void *data)
 		}
 	}
 
-	rv = pthread_rwlock_unlock(&(cache->cache_lock));
-	return rv;
-
-err_out:
-	if (entry)
-		free(entry);
-	(void)pthread_rwlock_unlock(&(cache->cache_lock));
-	return rv;
-
+	return 0;
 }
