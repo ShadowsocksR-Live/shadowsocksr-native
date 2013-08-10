@@ -70,6 +70,32 @@ int cache_delete(struct cache *cache, int keep_data)
 	return 0;
 }
 
+/** Removes a cache entry
+
+    @param cache
+    The cache object
+
+    @param key
+    The key of the entry to remove
+
+    @return EINVAL if cache is NULL, 0 otherwise
+*/
+int cache_remove(struct cache *cache, char *key)
+{
+	struct cache_entry *tmp;
+
+	if (!cache || !key)
+		return EINVAL;
+
+	HASH_FIND_STR(cache->entries, key, tmp);
+
+    if (tmp) {
+        HASH_DEL(cache->entries, tmp);
+    }
+
+	return 0;
+}
+
 /** Checks if a given key is in the cache
 
     @param cache

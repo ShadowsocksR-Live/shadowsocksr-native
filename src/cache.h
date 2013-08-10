@@ -33,5 +33,6 @@ extern int cache_create(struct cache **dst, const size_t capacity,
 extern int cache_delete(struct cache *cache, int keep_data);
 extern int cache_lookup(struct cache *cache, char *key, void *result);
 extern int cache_insert(struct cache *cache, char *key, void *data);
+extern int cache_remove(struct cache *cache, char *key);
 
 #endif

@@ -182,7 +182,12 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     } else if (server->stage == 1) {
         struct socks5_request *request = (struct socks5_request *)remote->buf;
 
-        if (request->cmd != 1) {
+        if (request->cmd == 3) {
+            if (verbose) {
+                LOGD("udp assc request accepted.");
+            }
+            goto fake_reply;
+        } else if (request->cmd != 1) {
             LOGE("unsupported cmd: %d", request->cmd);
             struct socks5_response response;
             response.ver = SVERSION;
@@ -251,7 +256,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             return;
         }
 
-
         addr_to_send = ss_encrypt(addr_to_send, &addr_len, server->e_ctx);
         if (addr_to_send == NULL) {
             LOGE("invalid password or cipher");
@@ -268,6 +272,11 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             close_and_free_server(EV_A_ server);
             return;
         }
+
+        server->stage = 5;
+        ev_io_start(EV_A_ &remote->recv_ctx->io);
+
+fake_reply:
 
         // Fake reply
         struct socks5_response response;
@@ -290,9 +299,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             close_and_free_server(EV_A_ server);
             return;
         }
-
-        server->stage = 5;
-        ev_io_start(EV_A_ &remote->recv_ctx->io);
     }
 }
 
@@ -778,6 +784,10 @@ int main (int argc, char **argv) {
     }
     ev_io_init (&listen_ctx.io, accept_cb, listenfd, EV_READ);
     ev_io_start (loop, &listen_ctx.io);
+
+    // Setup UDP
+    udprelay(local_addr, local_port, remote_host[0], remote_port, m, iface);
+
     ev_run (loop, 0);
     return 0;
 }

@@ -885,6 +885,9 @@ int main (int argc, char **argv) {
         ev_io_start (loop, &listen_ctx.io);
     }
 
+    // Setup UDP
+    udprelay(server_host[0], server_port, m, iface);
+
     // start ev loop
     ev_run (loop, 0);
     return 0;
