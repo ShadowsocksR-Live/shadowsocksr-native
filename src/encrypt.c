@@ -152,7 +152,6 @@ void enc_table_init(const char *pass) {
 
 char* ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method) {
     if (method > TABLE) {
-
         const EVP_CIPHER *cipher = EVP_get_cipherbyname(supported_ciphers[method]);
         if (cipher == NULL) {
             LOGE("Cipher %s not found in OpenSSL library", supported_ciphers[method]);
@@ -160,7 +159,7 @@ char* ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method) {
         }
         EVP_CIPHER_CTX evp;
         EVP_CIPHER_CTX_init(&evp);
-        if (!EVP_CipherInit_ex&(evp, cipher, NULL, NULL, NULL, enc)) {
+        if (!EVP_CipherInit_ex&(evp, cipher, NULL, NULL, NULL, 1)) {
             LOGE("Cannot initialize cipher %s", supported_ciphers[method]);
             exit(EXIT_FAILURE);
         }
@@ -188,7 +187,7 @@ char* ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method) {
         dump("IV", iv);
 #endif
 
-        err = EVP_EncryptUpdate(&ctx->evp, (uint8_t*)(ciphertext+iv_len),
+        err = EVP_EncryptUpdate(&evp, (uint8_t*)(ciphertext+iv_len),
                 &c_len, (const uint8_t *)plaintext, *len);
 
         if (!err) {
@@ -273,7 +272,7 @@ char* ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method) {
         }
         EVP_CIPHER_CTX evp;
         EVP_CIPHER_CTX_init(&evp);
-        if (!EVP_CipherInit_ex&(evp, cipher, NULL, NULL, NULL, enc)) {
+        if (!EVP_CipherInit_ex&(evp, cipher, NULL, NULL, NULL, 0)) {
             LOGE("Cannot initialize cipher %s", supported_ciphers[method]);
             exit(EXIT_FAILURE);
         }
@@ -300,7 +299,7 @@ char* ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method) {
         dump("IV", iv);
 #endif
 
-        err = EVP_DecryptUpdate(&ctx->evp, (uint8_t*)plaintext, &p_len,
+        err = EVP_DecryptUpdate(&evp, (uint8_t*)plaintext, &p_len,
                 (const uint8_t*)(ciphertext + iv_len), *len - iv_len);
         if (!err) {
             free(ciphertext);

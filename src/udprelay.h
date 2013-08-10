@@ -1,5 +1,5 @@
-#ifndef _SERVER_H
-#define _SERVER_H
+#ifndef _UDPRELAY_H
+#define _UDPRELAY_H
 
 #include <ev.h>
 #include <time.h>
@@ -25,11 +25,15 @@ struct server_ctx {
 #ifdef UDPRELAY_REMOTE
     asyncns_t *asyncns;
 #endif
+#ifdef UDPRELAY_LOCAL
+    char *remote_host;
+    char *remote_port;
+#endif
 };
 
-#ifdef UDPRELAY_LOCAL
+#ifdef UDPRELAY_REMOTE
 struct query_ctx {
-    ev_timer resolve_watcher;
+    ev_timer watcher;
     asyncns_query_t *query;
     struct sockaddr src_addr;
     int buf_len;
@@ -37,14 +41,12 @@ struct query_ctx {
     int addr_header_len;
     char addr_header[384];
     struct server_ctx *server_ctx;
-}
+};
 #endif
 
 struct remote_ctx {
     ev_io io;
-#ifdef UDPRELAY_REMOTE
     ev_timer watcher;
-#endif
     int fd;
     char *buf; // server send from, remote recv into
     int addr_header_len;
@@ -55,17 +57,17 @@ struct remote_ctx {
 };
 
 static void server_recv_cb (EV_P_ ev_io *w, int revents);
-static void server_send_cb (EV_P_ ev_io *w, int revents);
 static void remote_recv_cb (EV_P_ ev_io *w, int revents);
-static void remote_send_cb (EV_P_ ev_io *w, int revents);
 static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents);
+static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents);
+static char *hash_key(const char *header, const int header_len, const struct sockaddr *addr);
+#ifdef UDPRELAY_REMOTE
+static void query_resolve_cb(EV_P_ ev_timer *watcher, int revents);
+#endif
+static void close_and_free_remote(EV_P_ struct remote_ctx *ctx);
+static void close_and_free_server(EV_P_ struct server_ctx *server_ctx);
 
-struct remote* new_remote(int fd);
-struct remote *connect_to_remote(struct addrinfo *res, const char *iface);
-void free_remote(struct remote *remote);
-void close_and_free_remote(EV_P_ struct remote *remote);
-struct server* new_server(int fd, struct listen_ctx *listener);
-void free_server(struct server *server);
-void close_and_free_server(EV_P_ struct server *server);
+struct remote_ctx* new_remote_ctx(int fd);
+struct server_ctx* new_server(int fd);
 
-#endif // _SERVER_H
+#endif // _UDPRELAY_H

@@ -35,8 +35,8 @@
 #define EWOULDBLOCK EAGAIN
 #endif
 
-#ifndef BLOCK_SIZE
-#define BLOCK_SIZE 512
+#ifndef BUF_SIZE
+#define BUF_SIZE 512
 #endif
 
 static int verbose = 0;
@@ -492,7 +492,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     }
 
-    server->buf = ss_encrypt(BLOCK_SIZE, server->buf, &r, server->e_ctx);
+    server->buf = ss_encrypt(BUF_SIZE, server->buf, &r, server->e_ctx);
 
     if (server->buf == NULL) {
         LOGE("invalid password or cipher");

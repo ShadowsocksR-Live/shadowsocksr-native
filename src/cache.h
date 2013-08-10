@@ -6,6 +6,8 @@
 #ifndef _CACHE_
 #define _CACHE_
 
+#include "uthash.h"
+
 #define KEY_MAX_LENGTH		32
 
 /**
@@ -22,7 +24,6 @@ struct cache_entry {
  */
 struct cache {
 	size_t max_entries; /**<Amount of entries this cache object can hold */
-	pthread_rwlock_t cache_lock; /**<A lock for concurrent access */
 	struct cache_entry *entries; /**<Head pointer for uthash */
 	void (*free_cb) (void *element);/**<Callback function to free cache entries */
 };

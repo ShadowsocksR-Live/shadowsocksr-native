@@ -6,7 +6,6 @@
 #include <errno.h>
 #include <stdlib.h>
 #include "cache.h"
-#include "uthash.h"
 
 /** Creates a new cache object
 

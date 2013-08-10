@@ -35,13 +35,13 @@
 #define EWOULDBLOCK EAGAIN
 #endif
 
-#ifndef BLOCK_SIZE
-#define BLOCK_SIZE 512
+#ifndef BUF_SIZE
+#define BUF_SIZE 512
 #endif
 
 static int verbose = 0;
 
-int setnonblocking(int fd) {
+static int setnonblocking(int fd) {
     int flags;
     if (-1 ==(flags = fcntl(fd, F_GETFL, 0)))
         flags = 0;
@@ -186,7 +186,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             if (verbose) {
                 LOGD("udp assc request accepted.");
             }
-            goto fake_reply;
         } else if (request->cmd != 1) {
             LOGE("unsupported cmd: %d", request->cmd);
             struct socks5_response response;
@@ -199,84 +198,82 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
-        }
-
-        char *addr_to_send = malloc(BUF_SIZE);
-        ssize_t addr_len = 0;
-        addr_to_send[addr_len++] = request->atyp;
-
-        // get remote addr and port
-        if (request->atyp == 1) {
-            // IP V4
-            size_t in_addr_len = sizeof(struct in_addr);
-            memcpy(addr_to_send + addr_len, remote->buf + 4, in_addr_len + 2);
-            addr_len += in_addr_len + 2;
-
-            if (verbose) {
-                char host[INET_ADDRSTRLEN];
-                uint16_t port = ntohs(*(uint16_t *)(remote->buf + 4 + in_addr_len));
-                inet_ntop(AF_INET, (const void *)(remote->buf + 4),
-                        host, INET_ADDRSTRLEN);
-                LOGD("connect to %s:%d", host, port);
-            }
-
-        } else if (request->atyp == 3) {
-            // Domain name
-            uint8_t name_len = *(uint8_t *)(remote->buf + 4);
-            addr_to_send[addr_len++] = name_len;
-            memcpy(addr_to_send + addr_len, remote->buf + 4 + 1, name_len + 2);
-            addr_len += name_len + 2;
-
-            if (verbose) {
-                char host[256];
-                uint16_t port = ntohs(*(uint16_t *)(remote->buf + 4 + 1 + name_len));
-                memcpy(host, remote->buf + 4 + 1, name_len);
-                host[name_len] = '\0';
-                LOGD("connect to %s:%d", host, port);
-            }
-
-        } else if (request->atyp == 4) {
-            // IP V6
-            size_t in6_addr_len = sizeof(struct in6_addr);
-            memcpy(addr_to_send + addr_len, remote->buf + 4, in6_addr_len + 2);
-            addr_len += in6_addr_len + 2;
-
-            if (verbose) {
-                char host[INET6_ADDRSTRLEN];
-                uint16_t port = ntohs(*(uint16_t *)(remote->buf + 4 + in6_addr_len));
-                inet_ntop(AF_INET6, (const void *)(remote->buf + 4),
-                        host, INET6_ADDRSTRLEN);
-                LOGD("connect to %s:%d", host, port);
-            }
-
         } else {
-            LOGE("unsupported addrtype: %d", request->atyp);
-            close_and_free_remote(EV_A_ remote);
-            close_and_free_server(EV_A_ server);
-            return;
+            char *addr_to_send = malloc(BUF_SIZE);
+            ssize_t addr_len = 0;
+            addr_to_send[addr_len++] = request->atyp;
+
+            // get remote addr and port
+            if (request->atyp == 1) {
+                // IP V4
+                size_t in_addr_len = sizeof(struct in_addr);
+                memcpy(addr_to_send + addr_len, remote->buf + 4, in_addr_len + 2);
+                addr_len += in_addr_len + 2;
+
+                if (verbose) {
+                    char host[INET_ADDRSTRLEN];
+                    uint16_t port = ntohs(*(uint16_t *)(remote->buf + 4 + in_addr_len));
+                    inet_ntop(AF_INET, (const void *)(remote->buf + 4),
+                            host, INET_ADDRSTRLEN);
+                    LOGD("connect to %s:%d", host, port);
+                }
+
+            } else if (request->atyp == 3) {
+                // Domain name
+                uint8_t name_len = *(uint8_t *)(remote->buf + 4);
+                addr_to_send[addr_len++] = name_len;
+                memcpy(addr_to_send + addr_len, remote->buf + 4 + 1, name_len + 2);
+                addr_len += name_len + 2;
+
+                if (verbose) {
+                    char host[256];
+                    uint16_t port = ntohs(*(uint16_t *)(remote->buf + 4 + 1 + name_len));
+                    memcpy(host, remote->buf + 4 + 1, name_len);
+                    host[name_len] = '\0';
+                    LOGD("connect to %s:%d", host, port);
+                }
+
+            } else if (request->atyp == 4) {
+                // IP V6
+                size_t in6_addr_len = sizeof(struct in6_addr);
+                memcpy(addr_to_send + addr_len, remote->buf + 4, in6_addr_len + 2);
+                addr_len += in6_addr_len + 2;
+
+                if (verbose) {
+                    char host[INET6_ADDRSTRLEN];
+                    uint16_t port = ntohs(*(uint16_t *)(remote->buf + 4 + in6_addr_len));
+                    inet_ntop(AF_INET6, (const void *)(remote->buf + 4),
+                            host, INET6_ADDRSTRLEN);
+                    LOGD("connect to %s:%d", host, port);
+                }
+
+            } else {
+                LOGE("unsupported addrtype: %d", request->atyp);
+                close_and_free_remote(EV_A_ remote);
+                close_and_free_server(EV_A_ server);
+                return;
+            }
+
+            addr_to_send = ss_encrypt(BUF_SIZE, addr_to_send, &addr_len, server->e_ctx);
+            if (addr_to_send == NULL) {
+                LOGE("invalid password or cipher");
+                close_and_free_remote(EV_A_ remote);
+                close_and_free_server(EV_A_ server);
+                return;
+            }
+            int s = send(remote->fd, addr_to_send, addr_len, 0);
+            free(addr_to_send);
+
+            if (s < addr_len) {
+                LOGE("failed to send remote addr.");
+                close_and_free_remote(EV_A_ remote);
+                close_and_free_server(EV_A_ server);
+                return;
+            }
+
+            server->stage = 5;
+            ev_io_start(EV_A_ &remote->recv_ctx->io);
         }
-
-        addr_to_send = ss_encrypt(addr_to_send, &addr_len, server->e_ctx);
-        if (addr_to_send == NULL) {
-            LOGE("invalid password or cipher");
-            close_and_free_remote(EV_A_ remote);
-            close_and_free_server(EV_A_ server);
-            return;
-        }
-        int s = send(remote->fd, addr_to_send, addr_len, 0);
-        free(addr_to_send);
-
-        if (s < addr_len) {
-            LOGE("failed to send remote addr.");
-            close_and_free_remote(EV_A_ remote);
-            close_and_free_server(EV_A_ server);
-            return;
-        }
-
-        server->stage = 5;
-        ev_io_start(EV_A_ &remote->recv_ctx->io);
-
-fake_reply:
 
         // Fake reply
         struct socks5_response response;
@@ -292,7 +289,7 @@ fake_reply:
         memset(server->buf + sizeof(struct socks5_response), 0, sizeof(struct in_addr) + sizeof(uint16_t));
 
         int reply_size = sizeof(struct socks5_response) + sizeof(struct in_addr) + sizeof(uint16_t);
-        s = send(server->fd, server->buf, reply_size, 0);
+        int s = send(server->fd, server->buf, reply_size, 0);
         if (s < reply_size) {
             LOGE("failed to send fake reply.");
             close_and_free_remote(EV_A_ remote);
@@ -395,7 +392,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         }
     }
 
-    server->buf = ss_decrypt(BLOCK_SIZE, server->buf, &r, server->d_ctx);
+    server->buf = ss_decrypt(BUF_SIZE, server->buf, &r, server->d_ctx);
     if (server->buf == NULL) {
         LOGE("invalid password or cipher");
         close_and_free_remote(EV_A_ remote);
@@ -510,7 +507,7 @@ struct remote* new_remote(int fd, int timeout) {
     return remote;
 }
 
-void free_remote(struct remote *remote) {
+static void free_remote(struct remote *remote) {
     if (remote != NULL) {
         if (remote->server != NULL) {
             remote->server->remote = NULL;
@@ -524,7 +521,7 @@ void free_remote(struct remote *remote) {
     }
 }
 
-void close_and_free_remote(EV_P_ struct remote *remote) {
+static void close_and_free_remote(EV_P_ struct remote *remote) {
     if (remote != NULL) {
         ev_timer_stop(EV_A_ &remote->send_ctx->watcher);
         ev_io_stop(EV_A_ &remote->send_ctx->io);
@@ -562,7 +559,7 @@ struct server* new_server(int fd, int method) {
     return server;
 }
 
-void free_server(struct server *server) {
+static void free_server(struct server *server) {
     if (server != NULL) {
         if (server->remote != NULL) {
             server->remote->server = NULL;
@@ -584,7 +581,7 @@ void free_server(struct server *server) {
     }
 }
 
-void close_and_free_server(EV_P_ struct server *server) {
+static void close_and_free_server(EV_P_ struct server *server) {
     if (server != NULL) {
         ev_io_stop(EV_A_ &server->send_ctx->io);
         ev_io_stop(EV_A_ &server->recv_ctx->io);
