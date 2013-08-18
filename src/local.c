@@ -39,7 +39,7 @@
 #define BUF_SIZE 512
 #endif
 
-static int verbose = 0;
+int verbose = 0;
 
 static int setnonblocking(int fd) {
     int flags;
@@ -182,7 +182,13 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     } else if (server->stage == 1) {
         struct socks5_request *request = (struct socks5_request *)remote->buf;
 
+        struct sockaddr_in s_addr;
+        memset(&s_addr, 0, sizeof(s_addr));
+
         if (request->cmd == 3) {
+            socklen_t addr_len = sizeof(s_addr);
+            getsockname(server->fd, (struct sockaddr *)&s_addr,
+                    &addr_len);
             if (verbose) {
                 LOGD("udp assc request accepted.");
             }
@@ -282,13 +288,12 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
         response.rsv = 0;
         response.atyp = 1;
 
-        struct in_addr sin_addr;
-        memset(&sin_addr, 0, sizeof(struct in_addr));
-
         memcpy(server->buf, &response, sizeof(struct socks5_response));
-        memset(server->buf + sizeof(struct socks5_response), 0, sizeof(struct in_addr) + sizeof(uint16_t));
+        memcpy(server->buf + sizeof(struct socks5_response), &s_addr.sin_addr, sizeof(s_addr.sin_addr));
+        memcpy(server->buf + sizeof(struct socks5_response) + sizeof(s_addr.sin_addr), 
+            &s_addr.sin_port, sizeof(s_addr.sin_port));
 
-        int reply_size = sizeof(struct socks5_response) + sizeof(struct in_addr) + sizeof(uint16_t);
+        int reply_size = sizeof(struct socks5_response) + sizeof(s_addr.sin_addr) + sizeof(s_addr.sin_port);
         int s = send(server->fd, server->buf, reply_size, 0);
         if (s < reply_size) {
             LOGE("failed to send fake reply.");

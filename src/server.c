@@ -39,7 +39,7 @@
 #define BUF_SIZE 512
 #endif
 
-static int verbose = 0;
+int verbose = 0;
 static int remote_conn = 0;
 static int server_conn = 0;
 
@@ -886,7 +886,7 @@ int main (int argc, char **argv) {
     }
 
     // Setup UDP
-    udprelay(server_host[0], server_port, m, iface);
+    udprelay(server_host[0], server_port, asyncns, m, iface);
 
     // start ev loop
     ev_run (loop, 0);

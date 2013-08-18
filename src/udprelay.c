@@ -31,22 +31,6 @@
 #include "cache.h"
 
 #ifdef UDPRELAY_REMOTE
-struct udprelay_header {
-    uint8_t atyp;
-};
-#else
-#ifdef UDPRELAY_LOCAL
-struct udprelay_header {
-    uint16_t rsv;
-    uint8_t frag;
-    uint8_t atyp;
-};
-#else
-#error "No UDPRELAY defined"
-#endif
-#endif
-
-#ifdef UDPRELAY_REMOTE
 #ifdef UDPRELAY_LOCAL
 #error "UDPRELAY_REMOTE and UDPRELAY_LOCAL should not be both defined"
 #endif
@@ -62,7 +46,7 @@ struct udprelay_header {
 
 #define BUF_SIZE MAX_UDP_PACKET_SIZE
 
-static int verbose = 0;
+extern int verbose;
 static int remote_conn = 0;
 static int server_conn = 0;
 
@@ -96,10 +80,10 @@ static char *hash_key(const char *header, const int header_len, const struct soc
     return (char*) MD5((const uint8_t *)key, sizeof(struct sockaddr) + header_len, NULL);
 }
 
-static int parse_udprealy_header(const char* buf, const int buf_len,
-        const int atyp, char *host, char *port) {
+static int parse_udprealy_header(const char* buf, const int buf_len, char *host, char *port) {
 
-    int offset = 0;
+    const uint8_t atyp = *(uint8_t*)buf;
+    int offset = 1;
     // get remote addr and port
     if (atyp == 1) {
         // IP V4
@@ -132,7 +116,7 @@ static int parse_udprealy_header(const char* buf, const int buf_len,
         }
     }
 
-    if (offset == 0){
+    if (offset == 1){
         LOGE("invalid header with addr type %d", atyp);
         return 0;
     }
@@ -327,7 +311,7 @@ static void query_resolve_cb(EV_P_ ev_timer *watcher, int revents) {
     }
 
     if (verbose) {
-        LOGD("asyncns resolved.");
+        LOGD("[udp] asyncns resolved.");
     }
 
     ev_timer_stop(EV_A_ watcher);
@@ -422,21 +406,19 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
     }
 
     if (verbose) {
-        LOGD("receive a packet.");
+        LOGD("[udp] remote receive a packet.");
     }
 
 #ifdef UDPRELAY_LOCAL
     buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
-    uint8_t atyp = *(uint8_t*)buf;
-    int offset = 1;
-    int len = parse_udprealy_header(buf + offset,
-            buf_len - offset, atyp, NULL, NULL);
+
+    int len = parse_udprealy_header(buf, buf_len, NULL, NULL);
     if (len == 0 || len != addr_header_len) {
         // error in parse header
         return;
     }
-    buf_len = buf_len - offset - addr_header_len;
-    memmove(buf, buf + offset + addr_header_len, buf_len);
+    buf_len -= addr_header_len;
+    memmove(buf, buf + addr_header_len, buf_len);
 #endif
 
 #ifdef UDPRELAY_REMOTE
@@ -446,19 +428,20 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
     free(buf);
     buf = tmpbuf;
     buf_len += addr_header_len;
+
+    ss_encrypt_all(BLOCK_SIZE, buf, &buf_len, server_ctx->method);
 #endif
 
     int s = sendto(remote_ctx->fd, buf, buf_len, 0, &remote_ctx->src_addr, sizeof(remote_ctx->src_addr));
 
     if (s == -1) {
-        ERROR("udprelay_sendto_remote");
+        ERROR("udprelay_sendto_local");
     }
 
 }
 
 static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     struct server_ctx *server_ctx = (struct server_ctx *)w;
-    struct udprelay_header *udprelay_header;
     struct sockaddr src_addr;
     char *buf = server_ctx->buf;
 
@@ -477,15 +460,17 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     }
 
     if (verbose) {
-        LOGD("receive a packet.");
+        LOGD("[udp] server receive a packet.");
     }
 
 #ifdef UDPRELAY_REMOTE
     buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
 #endif
 
-    udprelay_header = (struct udprelay_header *)buf;
-    offset += sizeof(struct udprelay_header);
+#ifdef UDPRELAY_LOCAL
+    uint8_t frag = *(uint8_t*)(buf + 2);
+    offset += 3;
+#endif
 
     /*
      *
@@ -530,19 +515,19 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     char port[64] = {0};
 
     int addr_header_len = parse_udprealy_header(buf + offset,
-            buf_len - offset, udprelay_header->atyp, host, port);
+            buf_len - offset, host, port);
     if (addr_header_len == 0) {
         // error in parse header
         return;
     }
-    char *addr_header = buf + offset - sizeof(udprelay_header->atyp);
+    char *addr_header = buf + offset;
     char *key = hash_key(addr_header, addr_header_len, &src_addr);
     struct cache *conn_cache = server_ctx->conn_cache;
 
 #ifdef UDPRELAY_LOCAL
 
-    if (udprelay_header->frag) {
-        LOGE("drop a message since frag is not 0");
+    if (frag) {
+        LOGE("drop a message since frag is not 0, but %d", frag);
         return;
     }
 
@@ -610,7 +595,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
     memmove(buf, buf + offset, buf_len);
 
     if (verbose) {
-        LOGD("send to: %s:%s", host, port);
+        LOGD("[udp] send to: %s:%s", host, port);
     }
 
     struct remote_ctx *remote_ctx = NULL;
@@ -654,6 +639,11 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
 
 void free_cb(void *element) {
     struct remote_ctx *remote_ctx = (struct remote_ctx *)element;
+
+    if (verbose) {
+        LOGD("free a remote ctx");
+    }
+
     close_and_free_remote(EV_DEFAULT, remote_ctx);
 }
 
