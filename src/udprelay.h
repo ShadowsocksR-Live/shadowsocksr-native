@@ -48,7 +48,6 @@ struct remote_ctx {
     ev_io io;
     ev_timer watcher;
     int fd;
-    char *buf; // server send from, remote recv into
     int addr_header_len;
     char addr_header[384];
     struct sockaddr src_addr;
