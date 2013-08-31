@@ -380,6 +380,10 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
         return;
     }
 
+    if (verbose) {
+        LOGD("[udp] remote receive a packet");
+    }
+
     // triger the timer
     ev_timer_again(EV_A_ &remote_ctx->watcher);
 
@@ -398,10 +402,6 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents) {
             ERROR("udprelay_server_recvfrom");
         }
         goto CLEAN_UP;
-    }
-
-    if (verbose) {
-        LOGD("[udp] remote receive a packet.");
     }
 
 #ifdef UDPRELAY_LOCAL
