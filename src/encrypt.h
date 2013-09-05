@@ -19,7 +19,7 @@
 #define BLOCK_SIZE 32
 
 #define CIPHER_NUM          14
-#define NONE                -1 
+#define NONE                -1
 #define TABLE               0
 #define RC4                 1
 #define AES_128_CFB         2
@@ -38,7 +38,8 @@
 #define min(a,b) (((a)<(b))?(a):(b))
 #define max(a,b) (((a)>(b))?(a):(b))
 
-struct enc_ctx {
+struct enc_ctx
+{
     uint8_t init;
     EVP_CIPHER_CTX evp;
 };

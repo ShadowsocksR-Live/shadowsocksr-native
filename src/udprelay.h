@@ -15,7 +15,8 @@
 
 #define MAX_UDP_PACKET_SIZE (64 * 1024)
 
-struct server_ctx {
+struct server_ctx
+{
     ev_io io;
     int fd;
     int method;
@@ -32,7 +33,8 @@ struct server_ctx {
 };
 
 #ifdef UDPRELAY_REMOTE
-struct query_ctx {
+struct query_ctx
+{
     ev_timer watcher;
     asyncns_query_t *query;
     struct sockaddr src_addr;
@@ -44,7 +46,8 @@ struct query_ctx {
 };
 #endif
 
-struct remote_ctx {
+struct remote_ctx
+{
     ev_io io;
     ev_timer watcher;
     int fd;
