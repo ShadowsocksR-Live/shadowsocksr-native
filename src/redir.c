@@ -154,7 +154,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         }
     }
 
-    remote->buf = ss_encrypt(remote->buf, &r, server->e_ctx);
+    remote->buf = ss_encrypt(BUF_SIZE, remote->buf, &r, server->e_ctx);
     if (remote->buf == NULL)
     {
         LOGE("invalid password or cipher");

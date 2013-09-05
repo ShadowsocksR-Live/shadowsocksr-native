@@ -47,6 +47,7 @@
 #define BUF_SIZE MAX_UDP_PACKET_SIZE
 
 extern int verbose;
+static char *iface;
 static int remote_conn = 0;
 static int server_conn = 0;
 
@@ -59,7 +60,7 @@ static int setnonblocking(int fd)
 }
 
 #ifdef SET_INTERFACE
-int setinterface(int socket_fd, const char* interface_name)
+static int setinterface(int socket_fd, const char* interface_name)
 {
     struct ifreq interface;
     memset(&interface, 0, sizeof(interface));
@@ -155,7 +156,6 @@ int create_remote_socket(int ipv6)
         // Try to bind IPv6 first
         struct sockaddr_in6 addr;
         memset(&addr, 0, sizeof(struct sockaddr_in6));
-        addr.sin6_len = sizeof(addr);
         addr.sin6_family = AF_INET6;
         addr.sin6_addr = in6addr_any;
         addr.sin6_port = htons(0);
@@ -740,8 +740,11 @@ int udprelay(const char *server_host, const char *server_port,
 #ifdef UDPRELAY_REMOTE
              asyncns_t *asyncns,
 #endif
-             int method, const char *iface)
+             int method, const char *interface)
 {
+
+
+    iface = interface;
 
     // Inilitialize ev loop
     struct ev_loop *loop = EV_DEFAULT;

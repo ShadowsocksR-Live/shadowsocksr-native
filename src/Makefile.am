@@ -10,16 +10,16 @@ bin_PROGRAMS = ss-local ss-server
 ss_local_SOURCES = utils.c \
                    jconf.c \
                    json.c \
-				   encrypt.c \
-				   udprelay.c \
-				   cache.c \
-				   local.c
+		   encrypt.c \
+		   udprelay.c \
+		   cache.c \
+		   local.c
 ss_server_SOURCES = utils.c \
                     jconf.c \
                     json.c \
                     encrypt.c \
-					udprelay.c \
-					cache.c \
+		    udprelay.c \
+		    cache.c \
                     server.c
 ss_local_LDADD = $(SS_COMMON_LIBS)
 ss_server_LDADD = $(SS_COMMON_LIBS)
