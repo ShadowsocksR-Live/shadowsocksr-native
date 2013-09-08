@@ -98,7 +98,7 @@ ss-[local|redir|server]
       [-b <local_address>]       specific local address to bind,
                                  only avaliable in local and redir modes
       [-u]                       udprelay mode to supprot udp traffic
-                                 only avaliable in local and redir modes
+                                 only avaliable in local and server modes
       [-v]                       verbose mode, debug output in console
 
 notes:
