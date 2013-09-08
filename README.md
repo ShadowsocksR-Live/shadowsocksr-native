@@ -16,6 +16,10 @@ Current version: 1.4.0 [![Build Status](https://travis-ci.org/madeye/shadowsocks
 Changelog
 ---------
 
+1.4.0 -- Sun, 08 Sep 2013 02:20:40 +0000
+
+  * Add standard socks5 udp support.
+
 1.3.3 -- Fri, 21 Jun 2013 09:59:20 +0800
 
   * Provide more info in verbose mode.
