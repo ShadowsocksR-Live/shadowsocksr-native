@@ -1043,8 +1043,11 @@ int main (int argc, char **argv)
     }
 
     // Setup UDP
-    if (udprelay)
+    if (udprelay) 
+    {
+        LOGD("udprelay enabled.");
         udprelay_init(server_host[0], server_port, asyncns, m, iface);
+    }
 
     // start ev loop
     ev_run (loop, 0);

@@ -930,8 +930,11 @@ int main (int argc, char **argv)
     ev_io_start (loop, &listen_ctx.io);
 
     // Setup UDP
-    if (udprelay) 
+    if (udprelay)
+    {
+        LOGD("udprelay enabled.");
         udprelay_init(local_addr, local_port, remote_host[0], remote_port, m, iface);
+    }
 
     ev_run (loop, 0);
     return 0;
