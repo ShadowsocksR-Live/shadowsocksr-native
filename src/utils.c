@@ -96,7 +96,7 @@ void usage()
     printf("          [-b <local_address>]       specific local address to bind,\n");
     printf("                                     only avaliable in local and redir modes\n");
     printf("          [-u]                       udprelay mode to supprot udp traffic\n");
-    printf("                                     only avaliable in local and redir modes\n");
+    printf("                                     only avaliable in local and server modes\n");
     printf("          [-v]                       verbose mode, debug output in console\n");
     printf("\n");
 }
