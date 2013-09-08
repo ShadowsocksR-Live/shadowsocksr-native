@@ -72,4 +72,13 @@ static void close_and_free_server(EV_P_ struct server_ctx *server_ctx);
 struct remote_ctx* new_remote_ctx(int fd);
 struct server_ctx* new_server(int fd);
 
+int udprelay(const char *server_host, const char *server_port,
+#ifdef UDPRELAY_LOCAL
+             const char *remote_host, const char *remote_port,
+#endif
+#ifdef UDPRELAY_REMOTE
+             asyncns_t *asyncns,
+#endif
+             int method, const char *interface);
+
 #endif // _UDPRELAY_H

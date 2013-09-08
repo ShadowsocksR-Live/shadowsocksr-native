@@ -40,6 +40,7 @@
 #endif
 
 int verbose = 0;
+int udprelay = 0;
 
 static int setnonblocking(int fd)
 {
@@ -215,7 +216,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         struct sockaddr_in s_addr;
         memset(&s_addr, 0, sizeof(s_addr));
 
-        if (request->cmd == 3)
+        if (udprelay && request->cmd == 3)
         {
             socklen_t addr_len = sizeof(s_addr);
             getsockname(server->fd, (struct sockaddr *)&s_addr,
@@ -799,7 +800,7 @@ int main (int argc, char **argv)
 
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:i:c:b:v")) != -1)
+    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:i:c:b:uv")) != -1)
     {
         switch (c)
         {
@@ -833,6 +834,9 @@ int main (int argc, char **argv)
             break;
         case 'b':
             local_addr = optarg;
+            break;
+        case 'u':
+            udprelay = 1;
             break;
         case 'v':
             verbose = 1;
@@ -926,7 +930,8 @@ int main (int argc, char **argv)
     ev_io_start (loop, &listen_ctx.io);
 
     // Setup UDP
-    udprelay(local_addr, local_port, remote_host[0], remote_port, m, iface);
+    if (udprelay) 
+        udprelay_init(local_addr, local_port, remote_host[0], remote_port, m, iface);
 
     ev_run (loop, 0);
     return 0;

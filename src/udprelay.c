@@ -733,7 +733,7 @@ void free_cb(void *element)
     close_and_free_remote(EV_DEFAULT, remote_ctx);
 }
 
-int udprelay(const char *server_host, const char *server_port,
+int udprelay_init(const char *server_host, const char *server_port,
 #ifdef UDPRELAY_LOCAL
              const char *remote_host, const char *remote_port,
 #endif

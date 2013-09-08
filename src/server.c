@@ -40,6 +40,7 @@
 #endif
 
 int verbose = 0;
+int udprelay = 0;
 static int remote_conn = 0;
 static int server_conn = 0;
 
@@ -912,7 +913,7 @@ int main (int argc, char **argv)
 
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:c:i:d:v")) != -1)
+    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:c:i:d:uv")) != -1)
     {
         switch (c)
         {
@@ -944,6 +945,9 @@ int main (int argc, char **argv)
         case 'd':
             dns_thread_num = atoi(optarg);
             if (!dns_thread_num) FATAL("Invalid DNS thread number");
+            break;
+        case 'u':
+            udprelay = 1;
             break;
         case 'v':
             verbose = 1;
@@ -1039,7 +1043,8 @@ int main (int argc, char **argv)
     }
 
     // Setup UDP
-    udprelay(server_host[0], server_port, asyncns, m, iface);
+    if (udprelay)
+        udprelay_init(server_host[0], server_port, asyncns, m, iface);
 
     // start ev loop
     ev_run (loop, 0);
