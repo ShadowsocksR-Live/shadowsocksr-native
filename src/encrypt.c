@@ -262,6 +262,7 @@ char* ss_encrypt(int buf_size, char *plaintext, ssize_t *len, struct enc_ctx *ct
             RAND_bytes(iv, iv_len);
             EVP_CipherInit_ex(&ctx->evp, NULL, NULL, enc_key, iv, 1);
             memcpy(ciphertext, iv, iv_len);
+            ctx->init = 1;
 #ifdef DEBUG
             dump("IV", iv);
 #endif
@@ -301,7 +302,6 @@ char* ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
 {
     if (method > TABLE)
     {
-
         const EVP_CIPHER *cipher = EVP_get_cipherbyname(supported_ciphers[method]);
         if (cipher == NULL)
         {
