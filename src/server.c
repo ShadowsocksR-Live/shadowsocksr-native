@@ -726,7 +726,8 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
 
 struct remote* new_remote(int fd)
 {
-    remote_conn++;
+    if (verbose) remote_conn++;
+
     struct remote *remote;
     remote = malloc(sizeof(struct remote));
     remote->buf = malloc(BUF_SIZE);
@@ -747,7 +748,6 @@ struct remote* new_remote(int fd)
 
 void free_remote(struct remote *remote)
 {
-    remote_conn--;
     if (remote != NULL)
     {
         if (remote->server != NULL)
@@ -772,16 +772,18 @@ void close_and_free_remote(EV_P_ struct remote *remote)
         ev_io_stop(EV_A_ &remote->recv_ctx->io);
         close(remote->fd);
         free_remote(remote);
-    }
-    if (verbose)
-    {
-        LOGD("current remote connection: %d", remote_conn);
+        if (verbose)
+        {
+            remote_conn--;
+            LOGD("current remote connection: %d", remote_conn);
+        }
     }
 }
 
 struct server* new_server(int fd, struct listen_ctx *listener)
 {
-    server_conn++;
+    if (verbose) server_conn++;
+
     struct server *server;
     server = malloc(sizeof(struct server));
     server->buf = malloc(BUF_SIZE);
@@ -819,7 +821,6 @@ struct server* new_server(int fd, struct listen_ctx *listener)
 
 void free_server(struct server *server)
 {
-    server_conn--;
     if (server != NULL)
     {
         if (server->remote != NULL)
@@ -856,10 +857,11 @@ void close_and_free_server(EV_P_ struct server *server)
         ev_timer_stop(EV_A_ &server->recv_ctx->watcher);
         close(server->fd);
         free_server(server);
-    }
-    if (verbose)
-    {
-        LOGD("current server connection: %d", server_conn);
+        if (verbose)
+        {
+            server_conn--;
+            LOGD("current server connection: %d", server_conn);
+        }
     }
 }
 

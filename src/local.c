@@ -350,6 +350,12 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
             close_and_free_server(EV_A_ server);
             return;
         }
+
+        if (request->cmd == 3) {
+            close_and_free_remote(EV_A_ remote);
+            close_and_free_server(EV_A_ server);
+            return;
+        }
     }
 }
 
