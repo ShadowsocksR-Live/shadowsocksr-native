@@ -621,6 +621,8 @@ PTHREAD_LIBS
 PTHREAD_CC
 acx_pthread_config
 LIBOBJS
+BUILD_WINCOMPAT_FALSE
+BUILD_WINCOMPAT_TRUE
 BUILD_REDIRECTOR_FALSE
 BUILD_REDIRECTOR_TRUE
 INET_NTOP_LIB
@@ -12709,6 +12711,14 @@ fi
 
 
 
+case $host in
+  *-mingw*)
+    LIBS="$LIBS -lgdi32 -lws2_32"
+    ;;
+  *)
+    ;;
+esac
+
 
 
 
@@ -13007,6 +13017,24 @@ case $host in
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: Linux" >&5
 $as_echo "Linux" >&6; }
     ;;
+  *-mingw*)
+
+$as_echo "#define FD_SETSIZE 2048" >>confdefs.h
+
+
+$as_echo "#define EV_FD_TO_WIN32_HANDLE(fd) (fd)" >>confdefs.h
+
+
+$as_echo "#define EV_WIN32_HANDLE_TO_FD(handle) (handle)" >>confdefs.h
+
+
+$as_echo "#define EV_WIN32_CLOSE_FD(fd) closesocket(fd)" >>confdefs.h
+
+
+    os_support=mingw
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: MinGW" >&5
+$as_echo "MinGW" >&6; }
+    ;;
   *)
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: transparent proxy does not support for $host" >&5
 $as_echo "transparent proxy does not support for $host" >&6; }
@@ -13019,6 +13047,14 @@ esac
 else
   BUILD_REDIRECTOR_TRUE='#'
   BUILD_REDIRECTOR_FALSE=
+fi
+
+ if test "$os_support" = "mingw"; then
+  BUILD_WINCOMPAT_TRUE=
+  BUILD_WINCOMPAT_FALSE='#'
+else
+  BUILD_WINCOMPAT_TRUE='#'
+  BUILD_WINCOMPAT_FALSE=
 fi
 
 
@@ -13035,6 +13071,29 @@ fi
 
 done
 
+
+case $host in
+  *-mingw*)
+    for ac_header in windows.h winsock2.h ws2tcpip.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+else
+  as_fn_error $? "Missing MinGW headers" "$LINENO" 5
+fi
+
+done
+
+    ;;
+  *)
+    # These are POSIX-like systems using BSD-like sockets API.
+    ;;
+esac
 
 for ac_header in sys/socket.h
 do :
@@ -14106,6 +14165,55 @@ fi
 done
 
 
+if test "$ac_cv_func_select" != "yes"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for select in ws2_32" >&5
+$as_echo_n "checking for select in ws2_32... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#ifdef HAVE_WINSOCK2_H
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <winsock2.h>
+#endif
+
+int
+main ()
+{
+
+      select(0,(fd_set *)NULL,(fd_set *)NULL,(fd_set *)NULL,(struct timeval *)NULL);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+      HAVE_SELECT="1"
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_SELECT 1
+_ACEOF
+
+      HAVE_SYS_SELECT_H="1"
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_SYS_SELECT_H 1
+_ACEOF
+
+
+else
+
+      as_fn_error $? "no" "$LINENO" 5
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+fi
+
 # Check whether --enable-largefile was given.
 if test "${enable_largefile+set}" = set; then :
   enableval=$enable_largefile;
@@ -14858,6 +14966,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_REDIRECTOR_TRUE}" && test -z "${BUILD_REDIRECTOR_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_REDIRECTOR\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_WINCOMPAT_TRUE}" && test -z "${BUILD_WINCOMPAT_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_WINCOMPAT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
