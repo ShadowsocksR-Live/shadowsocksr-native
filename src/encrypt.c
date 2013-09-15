@@ -180,7 +180,7 @@ char* ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method)
         }
         EVP_CIPHER_CTX evp;
         EVP_CIPHER_CTX_init(&evp);
-        if (!EVP_CipherInit_ex&(evp, cipher, NULL, NULL, NULL, 1))
+        if (!EVP_CipherInit_ex(&evp, cipher, NULL, NULL, NULL, 1))
         {
             LOGE("Cannot initialize cipher %s", supported_ciphers[method]);
             exit(EXIT_FAILURE);
@@ -310,7 +310,7 @@ char* ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
         }
         EVP_CIPHER_CTX evp;
         EVP_CIPHER_CTX_init(&evp);
-        if (!EVP_CipherInit_ex&(evp, cipher, NULL, NULL, NULL, 0))
+        if (!EVP_CipherInit_ex(&evp, cipher, NULL, NULL, NULL, 0))
         {
             LOGE("Cannot initialize cipher %s", supported_ciphers[method]);
             exit(EXIT_FAILURE);
