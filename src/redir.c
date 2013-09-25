@@ -514,7 +514,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents) {
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
-    int index = clock() % listener->remote_num;
+    int index = rand() % listener->remote_num;
     err = getaddrinfo(listener->remote_host[index], listener->remote_port, &hints, &res);
     if (err) {
         ERROR("getaddrinfo");
