@@ -64,6 +64,8 @@ no more than 5% on a low-end router (Buffalo WHR-G300N V2 with a 400MHz MIPS CPU
 Installation
 ------------
 
+## Linux
+
 For Unix-like systems, especially Debian-based systems, 
 e.g. Ubuntu, Debian or Linux Mint, you can build the binary like this:
 
@@ -72,6 +74,57 @@ e.g. Ubuntu, Debian or Linux Mint, you can build the binary like this:
     ./configure && make
     sudo make install
 ```
+
+## FreeBSD
+
+```bash
+$ su
+# cd /usr/ports/net/shadowsocks-libev
+# make install
+```
+
+Then add your configuration into /etc/rc.conf file:
+
+```
+# RECOMMENDED
+shadowsocks_libev_enable="YES"
+shadowsocks_libev_flags="-c /PATH/TO/CONFIG.JSON"
+```
+
+or you can omit the config.json file, specify arguments directly:
+
+```
+shadowsocks_libev_enable="YES"
+shadowsocks_libev_password="YOUR PASSWORD"
+shadowsocks_libev_port="1080"
+shadowsocks_libev_localport="7070"
+```
+
+Start the shadowsocks server:
+
+```bash
+# service shadowsocks_libev start
+```
+
+## OpenWRT
+
+```bash
+# At OpenWRT build root
+pushd package
+git clone https://github.com/madeye/shadowsocks-libev.git
+popd
+
+# Enable shadowsocks-libev in network category 
+make menuconfig
+
+# Optional
+make -j
+
+# Build the package
+make V=99 package/shadowsocks-libev/openwrt/compile
+```
+
+## Windows
 
 For Windows, use either MinGW (msys) or Cygwin to build.
 At the moment, only `ss-local` is supported to build against MinGW (msys).
