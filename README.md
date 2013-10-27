@@ -64,7 +64,7 @@ no more than 5% on a low-end router (Buffalo WHR-G300N V2 with a 400MHz MIPS CPU
 Installation
 ------------
 
-## Linux
+### Linux
 
 For Unix-like systems, especially Debian-based systems, 
 e.g. Ubuntu, Debian or Linux Mint, you can build the binary like this:
