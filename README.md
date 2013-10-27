@@ -75,12 +75,12 @@ e.g. Ubuntu, Debian or Linux Mint, you can build the binary like this:
     sudo make install
 ```
 
-## FreeBSD
+### FreeBSD
 
 ```bash
-$ su
-# cd /usr/ports/net/shadowsocks-libev
-# make install
+su
+cd /usr/ports/net/shadowsocks-libev
+make install
 ```
 
 Then add your configuration into /etc/rc.conf file:
@@ -103,10 +103,10 @@ shadowsocks_libev_localport="7070"
 Start the shadowsocks server:
 
 ```bash
-# service shadowsocks_libev start
+service shadowsocks_libev start
 ```
 
-## OpenWRT
+### OpenWRT
 
 ```bash
 # At OpenWRT build root
@@ -124,7 +124,7 @@ make -j
 make V=99 package/shadowsocks-libev/openwrt/compile
 ```
 
-## Windows
+### Windows
 
 For Windows, use either MinGW (msys) or Cygwin to build.
 At the moment, only `ss-local` is supported to build against MinGW (msys).
