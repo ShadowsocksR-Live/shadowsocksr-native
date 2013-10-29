@@ -52,6 +52,27 @@ static int to_int(const json_value *value)
     return 0;
 }
 
+static void parse_addr(const char *str, remote_addr_t *addr) {
+    int ret = -1;
+    char *pch;
+    pch = strchr(str, ':');
+    while (pch != NULL)
+    {
+        ret = pch - str;
+        pch = strchr(pch + 1, ':');
+    }
+    if (ret == -1)
+    {
+        addr->host = str;
+        addr->port = NULL;
+    }
+    else
+    {
+        addr->host = ss_strndup(str, ret);
+        addr->port = str + ret + 1;
+    }
+}
+
 jconf_t *read_jconf(const char* file)
 {
 
@@ -101,13 +122,14 @@ jconf_t *read_jconf(const char* file)
                     {
                         if (j >= MAX_REMOTE_NUM) break;
                         json_value *v = value->u.array.values[j];
-                        conf.remote_host[j] = to_string(v);
+                        parse_addr(to_string(v), conf.remote_addr + j);
                         conf.remote_num = j + 1;
                     }
                 }
                 else if (value->type == json_string)
                 {
-                    conf.remote_host[0] = to_string(value);
+                    conf.remote_addr[0].host = to_string(value);
+                    conf.remote_addr[0].port = NULL;
                     conf.remote_num = 1;
                 }
             }
