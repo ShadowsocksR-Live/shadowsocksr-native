@@ -619,10 +619,6 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     int index = rand() % listener->remote_num;
-    if (verbose)
-    {
-        LOGD("connect to %s:%s", listener->remote_addr[index].host, listener->remote_addr[index].port);
-    }
     err = getaddrinfo(listener->remote_addr[index].host, listener->remote_addr[index].port, &hints, &res);
     if (err)
     {

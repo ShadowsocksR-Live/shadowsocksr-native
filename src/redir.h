@@ -8,7 +8,7 @@
 struct listen_ctx
 {
     ev_io io;
-    remote_addr_t *remote_host;
+    remote_addr_t *remote_addr;
     int remote_num;
     int timeout;
     int fd;
