@@ -738,6 +738,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_dependency_tracking
+with_crypto_library
 enable_shared
 enable_static
 with_pic
@@ -748,6 +749,9 @@ enable_libtool_lock
 with_openssl
 with_openssl_include
 with_openssl_lib
+with_polarssl
+with_polarssl_include
+with_polarssl_lib
 enable_assert
 enable_largefile
 '
@@ -1393,6 +1397,9 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-crypto-library=library
+                          build with the given crypto library,
+                          TYPE=openssl|polarssl [default=openssl]
   --with-pic[=PKGS]       try to use only PIC/non-PIC objects [default=use
                           both]
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
@@ -1403,6 +1410,11 @@ Optional Packages:
                           OpenSSL headers directory (without trailing
                           /openssl)
   --with-openssl-lib=DIR  OpenSSL library directory
+  --with-polarssl=DIR     PolarSSL base directory, or:
+  --with-polarssl-include=DIR
+                          PolarSSL headers directory (without trailing
+                          /polarssl)
+  --with-polarssl-lib=DIR PolarSSL library directory
 
 Some influential environment variables:
   CC          C compiler command
@@ -4003,6 +4015,21 @@ unknown)
   as_fn_error $? "could not determine $AR interface" "$LINENO" 5
   ;;
 esac
+
+
+
+# Check whether --with-crypto-library was given.
+if test "${with_crypto_library+set}" = set; then :
+  withval=$with_crypto_library;
+    case "${withval}" in
+      openssl|polarssl) ;;
+      *) as_fn_error $? "bad value ${withval} for --with-crypto-library" "$LINENO" 5 ;;
+    esac
+
+else
+  with_crypto_library="openssl"
+
+fi
 
 
 ac_ext=c
@@ -12719,6 +12746,8 @@ case $host in
     ;;
 esac
 
+case "${with_crypto_library}" in
+  openssl)
 
 
 
@@ -12835,6 +12864,119 @@ else
 fi
 
 
+
+$as_echo "#define USE_CRYPTO_OPENSSL 1" >>confdefs.h
+
+    ;;
+  polarssl)
+
+
+
+# Check whether --with-polarssl was given.
+if test "${with_polarssl+set}" = set; then :
+  withval=$with_polarssl; polarssl="$withval"
+     CFLAGS="$CFLAGS -I$withval/include"
+     LDFLAGS="$LDFLAGS -L$withval/lib"
+
+fi
+
+
+
+# Check whether --with-polarssl-include was given.
+if test "${with_polarssl_include+set}" = set; then :
+  withval=$with_polarssl_include; polarssl_include="$withval"
+     CFLAGS="$CFLAGS -I$withval"
+
+fi
+
+
+
+# Check whether --with-polarssl-lib was given.
+if test "${with_polarssl_lib+set}" = set; then :
+  withval=$with_polarssl_lib; polarssl_lib="$withval"
+     LDFLAGS="$LDFLAGS -L$withval"
+
+fi
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for cipher_init_ctx in -lpolarssl" >&5
+$as_echo_n "checking for cipher_init_ctx in -lpolarssl... " >&6; }
+if ${ac_cv_lib_polarssl_cipher_init_ctx+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpolarssl  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char cipher_init_ctx ();
+int
+main ()
+{
+return cipher_init_ctx ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_polarssl_cipher_init_ctx=yes
+else
+  ac_cv_lib_polarssl_cipher_init_ctx=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_polarssl_cipher_init_ctx" >&5
+$as_echo "$ac_cv_lib_polarssl_cipher_init_ctx" >&6; }
+if test "x$ac_cv_lib_polarssl_cipher_init_ctx" = xyes; then :
+  LIBS="-lpolarssl $LIBS"
+else
+  as_fn_error $? "PolarSSL libraries not found." "$LINENO" 5
+
+fi
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking polarssl version" >&5
+$as_echo_n "checking polarssl version... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <polarssl/version.h>
+
+int
+main ()
+{
+
+#if POLARSSL_VERSION_NUMBER < 0x01020500
+#error invalid version
+#endif
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok" >&5
+$as_echo "ok" >&6; }
+else
+  as_fn_error $? "PolarSSL 1.2.5 or newer required" "$LINENO" 5
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+$as_echo "#define USE_CRYPTO_POLARSSL 1" >>confdefs.h
+
+    ;;
+esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for C/C++ restrict keyword" >&5
 $as_echo_n "checking for C/C++ restrict keyword... " >&6; }

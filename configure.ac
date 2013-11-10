@@ -9,6 +9,19 @@ AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
+dnl Checks for crypto library
+AC_ARG_WITH(
+  [crypto-library],
+  [AS_HELP_STRING([--with-crypto-library=library], [build with the given crypto library, TYPE=openssl|polarssl @<:@default=openssl@:>@])],
+  [
+    case "${withval}" in
+      openssl|polarssl) ;;
+      *) AC_MSG_ERROR([bad value ${withval} for --with-crypto-library]) ;;
+    esac
+  ],
+  [with_crypto_library="openssl"]
+)
+
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
@@ -30,8 +43,17 @@ case $host in
     ;;
 esac
 
-dnl Checks for openssl
-ss_OPENSSL
+dnl Checks for crypto library
+case "${with_crypto_library}" in
+  openssl)
+    ss_OPENSSL
+    AC_DEFINE([USE_CRYPTO_OPENSSL], [1], [Use OpenSSL library])
+    ;;
+  polarssl)
+    ss_POLARSSL
+    AC_DEFINE([USE_CRYPTO_POLARSSL], [1], [Use PolarSSL library])
+    ;;
+esac
 
 dnl Checks for inet_ntop
 ss_FUNC_INET_NTOP
