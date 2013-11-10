@@ -21,7 +21,24 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#if defined(USE_CRYPTO_OPENSSL)
 #include <openssl/evp.h>
+typedef EVP_CIPHER cipher_kt_t;
+typedef EVP_CIPHER_CTX cipher_ctx_t;
+typedef EVP_MD digest_type_t;
+#define MAX_KEY_LENGTH EVP_MAX_KEY_LENGTH
+#define MAX_IV_LENGTH EVP_MAX_IV_LENGTH
+#define MAX_MD_SIZE EVP_MAX_MD_SIZE
+#elif defined(USE_CRYPTO_POLARSSL)
+#include <polarssl/cipher.h>
+#include <polarssl/md.h>
+typedef cipher_info_t cipher_kt_t;
+typedef cipher_context_t cipher_ctx_t;
+typedef md_info_t digest_type_t;
+#define MAX_KEY_LENGTH 64
+#define MAX_IV_LENGTH POLARSSL_MAX_IV_LENGTH
+#define MAX_MD_SIZE POLARSSL_MD_MAX_SIZE
+#endif
 
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
@@ -54,7 +71,7 @@
 struct enc_ctx
 {
     uint8_t init;
-    EVP_CIPHER_CTX evp;
+    cipher_ctx_t evp;
 };
 
 char* ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method);
@@ -64,5 +81,7 @@ char* ss_decrypt(int buf_size, char *ciphertext, ssize_t *len, struct enc_ctx *c
 void enc_ctx_init(int method, struct enc_ctx *ctx, int enc);
 int enc_init(const char *pass, const char *method);
 int enc_get_iv_len(void);
+void cipher_context_release(cipher_ctx_t *evp);
+unsigned char *enc_md5(const unsigned char *d, size_t n, unsigned char *md);
 
 #endif // _ENCRYPT_H

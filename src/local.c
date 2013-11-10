@@ -700,12 +700,12 @@ static void free_server(struct server *server)
         }
         if (server->e_ctx != NULL)
         {
-            EVP_CIPHER_CTX_cleanup(&server->e_ctx->evp);
+            cipher_context_release(&server->e_ctx->evp);
             free(server->e_ctx);
         }
         if (server->d_ctx != NULL)
         {
-            EVP_CIPHER_CTX_cleanup(&server->d_ctx->evp);
+            cipher_context_release(&server->d_ctx->evp);
             free(server->d_ctx);
         }
         if (server->buf)
