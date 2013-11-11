@@ -3,19 +3,26 @@
 #endif
 
 #include <stdint.h>
+
 #if defined(USE_CRYPTO_OPENSSL)
+
 #include <openssl/md5.h>
 #include <openssl/rand.h>
+
 #elif defined(USE_CRYPTO_POLARSSL)
+
 #include <polarssl/md5.h>
 #include <polarssl/entropy.h>
 #include <polarssl/ctr_drbg.h>
+#include <polarssl/version.h>
 #define CIPHER_UNSUPPORTED "unsupported"
+
 #endif
 
 #include <time.h>
 #ifdef _WIN32
 #include <windows.h>
+#include <wincrypt.h>
 #else
 #include <stdio.h>
 #endif
@@ -371,7 +378,9 @@ int rand_bytes(uint8_t *output, int len)
 #endif
         entropy_init(&ec);
         if (ctr_drbg_init(&cd_ctx, entropy_func, &ec, (const unsigned char *) rand_buffer.buffer, 8) != 0) {
+#if POLARSSL_VERSION_NUMBER >= 0x01030000
             entropy_free(&ec);
+#endif
             FATAL("Failed to initialize random generator");
         }
         rand_initialised = 1;
@@ -460,9 +469,6 @@ void cipher_context_init(cipher_ctx_t *evp, int method, int enc)
     if (cipher_init_ctx(evp, cipher) != 0) {
         FATAL("Cannot initialize PolarSSL cipher context");
     }
-    if (method > RC4) {
-        cipher_set_padding_mode(evp, POLARSSL_PADDING_PKCS7);
-    }
 #endif
 }
 
@@ -485,6 +491,7 @@ void cipher_context_set_iv(cipher_ctx_t *evp, uint8_t *iv, size_t iv_len, int en
         cipher_free_ctx(evp);
         FATAL("Cannot set PolarSSL cipher key");
     }
+#if POLARSSL_VERSION_NUMBER >= 0x01030000
     if (cipher_set_iv(evp, iv, iv_len) != 0) {
         cipher_free_ctx(evp);
         FATAL("Cannot set PolarSSL cipher IV");
@@ -493,6 +500,12 @@ void cipher_context_set_iv(cipher_ctx_t *evp, uint8_t *iv, size_t iv_len, int en
         cipher_free_ctx(evp);
         FATAL("Cannot finalize PolarSSL cipher context");
     }
+#else
+    if(cipher_reset(evp, iv) != 0) {
+        cipher_free_ctx(evp);
+        FATAL("Cannot set PolarSSL cipher IV");
+    }
+#endif
 #endif
 #ifdef DEBUG
     dump("IV", iv);

@@ -22,6 +22,7 @@
 #include <stdio.h>
 
 #if defined(USE_CRYPTO_OPENSSL)
+
 #include <openssl/evp.h>
 typedef EVP_CIPHER cipher_kt_t;
 typedef EVP_CIPHER_CTX cipher_ctx_t;
@@ -29,7 +30,9 @@ typedef EVP_MD digest_type_t;
 #define MAX_KEY_LENGTH EVP_MAX_KEY_LENGTH
 #define MAX_IV_LENGTH EVP_MAX_IV_LENGTH
 #define MAX_MD_SIZE EVP_MAX_MD_SIZE
+
 #elif defined(USE_CRYPTO_POLARSSL)
+
 #include <polarssl/cipher.h>
 #include <polarssl/md.h>
 typedef cipher_info_t cipher_kt_t;
@@ -38,6 +41,7 @@ typedef md_info_t digest_type_t;
 #define MAX_KEY_LENGTH 64
 #define MAX_IV_LENGTH POLARSSL_MAX_IV_LENGTH
 #define MAX_MD_SIZE POLARSSL_MD_MAX_SIZE
+
 #endif
 
 #ifdef HAVE_STDINT_H

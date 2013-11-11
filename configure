@@ -12740,7 +12740,7 @@ fi
 
 case $host in
   *-mingw*)
-    LIBS="$LIBS -lgdi32 -lws2_32"
+    LIBS="$LIBS -lgdi32 -lws2_32 -lcrypt32"
     ;;
   *)
     ;;

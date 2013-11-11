@@ -37,7 +37,7 @@ m4_include([libev/libev.m4])
 dnl Add library for mingw
 case $host in
   *-mingw*)
-    LIBS="$LIBS -lgdi32 -lws2_32"
+    LIBS="$LIBS -lgdi32 -lws2_32 -lcrypt32"
     ;;
   *)
     ;;
