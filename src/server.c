@@ -969,7 +969,7 @@ int main (int argc, char **argv)
             server_num = conf->remote_num;
             for (i = 0; i < server_num; i++)
             {
-                server_host[i] = conf->remote_host[i];
+                server_host[i] = conf->remote_addr[i].host;
             }
         }
         if (server_port == NULL) server_port = conf->remote_port;

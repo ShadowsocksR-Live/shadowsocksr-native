@@ -8,8 +8,14 @@
 
 typedef struct
 {
+    char *host;
+    char *port;
+} remote_addr_t;
+
+typedef struct
+{
     int  remote_num;
-    char *remote_host[MAX_REMOTE_NUM];
+    remote_addr_t remote_addr[MAX_REMOTE_NUM];
     char *remote_port;
     char *local_port;
     char *password;

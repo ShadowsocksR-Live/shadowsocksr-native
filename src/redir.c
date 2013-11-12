@@ -619,7 +619,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     int index = rand() % listener->remote_num;
-    err = getaddrinfo(listener->remote_host[index], listener->remote_port, &hints, &res);
+    err = getaddrinfo(listener->remote_addr[index].host, listener->remote_addr[index].port, &hints, &res);
     if (err)
     {
         ERROR("getaddrinfo");
@@ -670,7 +670,7 @@ int main (int argc, char **argv)
     char *conf_path = NULL;
 
     int remote_num = 0;
-    char *remote_host[MAX_REMOTE_NUM];
+    remote_addr_t remote_addr[MAX_REMOTE_NUM];
     char *remote_port = NULL;
 
     opterr = 0;
@@ -680,7 +680,8 @@ int main (int argc, char **argv)
         switch (c)
         {
         case 's':
-            remote_host[remote_num++] = optarg;
+            remote_addr[remote_num].host = optarg;
+            remote_addr[remote_num++].port = NULL;
             break;
         case 'p':
             remote_port = optarg;
@@ -724,7 +725,7 @@ int main (int argc, char **argv)
             remote_num = conf->remote_num;
             for (i = 0; i < remote_num; i++)
             {
-                remote_host[i] = conf->remote_host[i];
+                remote_addr[i] = conf->remote_addr[i];
             }
         }
         if (remote_port == NULL) remote_port = conf->remote_port;
@@ -755,7 +756,7 @@ int main (int argc, char **argv)
     signal(SIGABRT, SIG_IGN);
 
     // Setup keys
-    LOGD("calculating ciphers...");
+    LOGD("initialize ciphers... %s", method);
     int m = enc_init(password, method);
 
     // Setup socket
@@ -775,13 +776,13 @@ int main (int argc, char **argv)
     // Setup proxy context
     struct listen_ctx listen_ctx;
     listen_ctx.remote_num = remote_num;
-    listen_ctx.remote_host = malloc(sizeof(char *) * remote_num);
+    listen_ctx.remote_addr = malloc(sizeof(remote_addr_t) * remote_num);
     while (remote_num > 0)
     {
         int index = --remote_num;
-        listen_ctx.remote_host[index] = remote_host[index];
+        if (remote_addr[index].port == NULL) remote_addr[index].port = remote_port;
+        listen_ctx.remote_addr[index] = remote_addr[index];
     }
-    listen_ctx.remote_port = remote_port;
     listen_ctx.timeout = atoi(timeout);
     listen_ctx.fd = listenfd;
     listen_ctx.method = m;

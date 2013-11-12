@@ -8,8 +8,7 @@
 struct listen_ctx
 {
     ev_io io;
-    char **remote_host;
-    char *remote_port;
+    remote_addr_t *remote_addr;
     char *iface;
     int remote_num;
     int method;
