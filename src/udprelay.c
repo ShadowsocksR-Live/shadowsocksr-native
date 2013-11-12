@@ -31,8 +31,6 @@
 #include "win32.h"
 #endif
 
-#include <openssl/md5.h>
-
 #include "utils.h"
 #include "udprelay.h"
 #include "cache.h"
@@ -89,7 +87,7 @@ static char *hash_key(const char *header, const int header_len, const struct soc
     memcpy(key, addr, sizeof(struct sockaddr));
     memcpy(key + sizeof(struct sockaddr), header, header_len);
 
-    return (char*) MD5((const uint8_t *)key, sizeof(struct sockaddr) + header_len, NULL);
+    return (char*) enc_md5((const uint8_t *)key, sizeof(struct sockaddr) + header_len, NULL);
 }
 
 static int parse_udprealy_header(const char* buf, const int buf_len, char *host, char *port)

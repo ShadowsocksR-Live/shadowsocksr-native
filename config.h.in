@@ -273,6 +273,12 @@
 /* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
 #undef TIME_WITH_SYS_TIME
 
+/* Use OpenSSL library */
+#undef USE_CRYPTO_OPENSSL
+
+/* Use PolarSSL library */
+#undef USE_CRYPTO_POLARSSL
+
 /* Version number of package */
 #undef VERSION
 

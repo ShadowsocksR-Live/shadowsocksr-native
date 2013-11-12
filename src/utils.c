@@ -83,7 +83,7 @@ void usage()
     printf("    ss-[local|redir|server]\n");
     printf("          -s <server_host>           host name or ip address of your remote server\n");       
     printf("          -p <server_port>           port number of your remote server\n");
-    printf("          -l <local_port>>           port number of your local server\n");
+    printf("          -l <local_port>            port number of your local server\n");
     printf("          -k <password>              password of your remote server\n");
     printf("\n");
     printf("          [-m <encrypt_method>]      encrypt method, supporting table, rc4,\n");
