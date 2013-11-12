@@ -69,9 +69,14 @@ no more than 5% on a low-end router (Buffalo WHR-G300N V2 with a 400MHz MIPS CPU
 Installation
 ------------
 
-__Note__: Default crypto library is OpenSSL. To build against PolarSSL,
+#### Notes about PolarSSL
+
+* Default crypto library is OpenSSL. To build against PolarSSL,
 specify `--with-crypto-library=polarssl` and  `--with-polarssl=/path/to/polarssl`
 when running `./configure`.
+* PolarSSL __1.2.5 or newer__ is required. Currently, PolarSSL does __NOT__ support 
+CAST5-CFB, DES-CFB, IDEA-CFB, RC2-CFB and SEED-CFB.
+* RC4 is only support by PolarSSL __1.3.0 or above__.
 
 ### Linux
 
