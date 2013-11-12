@@ -1,7 +1,7 @@
 shadowsocks (1.4.1-1) unstable; urgency=low
 
   * Add multi-port support.
-  * Add PolarSSL support by @linusyang
+  * Add PolarSSL support by @linusyang.
 
  -- Max Lv <max.c.lv@gmail.com>  Tue, 12 Nov 2013 03:57:21 +0000
 

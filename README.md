@@ -16,6 +16,11 @@ Current version: 1.4.0 | [![Build Status](https://travis-ci.org/madeye/shadowsoc
 Changelog
 ---------
 
+1.4.1 -- Tue, 12 Nov 2013 03:57:21 +0000
+
+  * Add multi-port support.
+  * Add PolarSSL support by @linusyang.
+
 1.4.0 -- Sun, 08 Sep 2013 02:20:40 +0000
 
   * Add standard socks5 udp support.
