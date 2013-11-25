@@ -137,6 +137,10 @@ jconf_t *read_jconf(const char* file)
             {
                 conf.remote_port = to_string(value);
             }
+            else if (strcmp(name, "local") == 0)
+            {
+                conf.local_addr = to_string(value);
+            }
             else if (strcmp(name, "local_port") == 0)
             {
                 conf.local_port = to_string(value);

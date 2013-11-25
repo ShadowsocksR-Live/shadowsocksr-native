@@ -729,6 +729,7 @@ int main (int argc, char **argv)
             }
         }
         if (remote_port == NULL) remote_port = conf->remote_port;
+        if (local_addr == NULL) local_addr = conf->local_addr;
         if (local_port == NULL) local_port = conf->local_port;
         if (password == NULL) password = conf->password;
         if (method == NULL) method = conf->method;

@@ -17,6 +17,7 @@ typedef struct
     int  remote_num;
     remote_addr_t remote_addr[MAX_REMOTE_NUM];
     char *remote_port;
+    char *local_addr;
     char *local_port;
     char *password;
     char *method;
