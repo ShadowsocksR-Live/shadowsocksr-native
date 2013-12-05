@@ -97,21 +97,12 @@ cd /usr/ports/net/shadowsocks-libev
 make install
 ```
 
-Then add your configuration into /etc/rc.conf file:
+Edit your config.json file. By default, it's located in /usr/local/etc/shadowsocks-libev
 
-```
-# RECOMMENDED
-shadowsocks_libev_enable="YES"
-shadowsocks_libev_flags="-c /PATH/TO/CONFIG.JSON"
-```
-
-or you can omit the config.json file, specify arguments directly:
+To enable shadowsocks-libev, add the following rc variable to your /etc/rc.conf file.
 
 ```
 shadowsocks_libev_enable="YES"
-shadowsocks_libev_password="YOUR PASSWORD"
-shadowsocks_libev_port="1080"
-shadowsocks_libev_localport="7070"
 ```
 
 Start the shadowsocks server:
