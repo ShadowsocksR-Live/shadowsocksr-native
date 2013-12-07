@@ -78,6 +78,31 @@ when running `./configure`.
 CAST5-CFB, DES-CFB, IDEA-CFB, RC2-CFB and SEED-CFB.
 * RC4 is only support by PolarSSL __1.3.0 or above__.
 
+### Debian & Ubuntu
+
+Add either of the following lines to your /etc/apt/source.list
+
+```
+# Debian Wheezy, Ubuntu 12.04 or any distribution with libssl > 1.0.1
+deb http://shadowsocks.org/debian wheezy main
+
+# Debian Squeeze, Ubuntu 11.04, or any distribution with libssl > 0.9.8, but < 1.0.0
+deb http://shadowsocks.org/debian squeeze main
+```
+
+Then,
+
+``` bash
+sudo apt-get update
+sudo apt-get install shadowsocks
+
+# Edit the configuration
+sudo vim /etc/shadowsocks/config.json
+
+# Start the service
+sudo /etc/init.d/shadowsocks start
+```
+
 ### Linux
 
 For Unix-like systems, especially Debian-based systems, 
