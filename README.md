@@ -219,11 +219,11 @@ ss-[local|redir|server]
       [-c <config_file>]         json format config file
 
       [-i <interface>]           specific network interface to bind,
-                                 only avaliable in local and server modes
+                                 only available in local and server modes
       [-b <local_address>]       specific local address to bind,
-                                 only avaliable in local and redir modes
+                                 only available in local and redir modes
       [-u]                       udprelay mode to supprot udp traffic
-                                 only avaliable in local and server modes
+                                 only available in local and server modes
       [-v]                       verbose mode, debug output in console
 
 notes:
