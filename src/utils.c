@@ -14,6 +14,10 @@
 
 #define INT_DIGITS 19		/* enough for 64 bit integer */
 
+#ifdef HAS_SYSLOG
+int use_syslog = 0;
+#endif
+
 #ifndef __MINGW32__
 void ERROR(const char *s)
 {
