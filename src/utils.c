@@ -14,6 +14,10 @@
 
 #define INT_DIGITS 19		/* enough for 64 bit integer */
 
+#ifdef HAS_SYSLOG
+int use_syslog = 0;
+#endif
+
 #ifndef __MINGW32__
 void ERROR(const char *s)
 {
@@ -81,7 +85,7 @@ void usage()
     printf("  maintained by Max Lv <max.c.lv@gmail.com>\n\n");
     printf("  usage:\n\n");
     printf("    ss-[local|redir|server]\n");
-    printf("          -s <server_host>           host name or ip address of your remote server\n");       
+    printf("          -s <server_host>           host name or ip address of your remote server\n");
     printf("          -p <server_port>           port number of your remote server\n");
     printf("          -l <local_port>            port number of your local server\n");
     printf("          -k <password>              password of your remote server\n");
@@ -96,11 +100,11 @@ void usage()
     printf("          [-c <config_file>]         json format config file\n");
     printf("\n");
     printf("          [-i <interface>]           specific network interface to bind,\n");
-    printf("                                     only avaliable in local and server modes\n");
+    printf("                                     only available in local and server modes\n");
     printf("          [-b <local_address>]       specific local address to bind,\n");
-    printf("                                     only avaliable in local and redir modes\n");
+    printf("                                     only available in local and redir modes\n");
     printf("          [-u]                       udprelay mode to supprot udp traffic\n");
-    printf("                                     only avaliable in local and server modes\n");
+    printf("                                     only available in local and server modes\n");
     printf("          [-v]                       verbose mode, debug output in console\n");
     printf("\n");
 }
