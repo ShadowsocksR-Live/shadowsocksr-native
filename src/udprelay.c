@@ -701,7 +701,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
             goto CLEAN_UP;
         }
 
-        struct query_ctx *query_ctx = new_query_ctx(query, buf, buf_len);
+        struct query_ctx *query_ctx = new_query_ctx(query, buf + addr_header_len, buf_len - addr_header_len);
         query_ctx->server_ctx = server_ctx;
         query_ctx->addr_header_len = addr_header_len;
         query_ctx->src_addr = src_addr;
@@ -713,7 +713,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     else
     {
 
-        int s = sendto(remote_ctx->fd, buf, buf_len, 0, &remote_ctx->dst_addr, sizeof(remote_ctx->dst_addr));
+        int s = sendto(remote_ctx->fd, buf + addr_header_len, buf_len - addr_header_len, 0, &remote_ctx->dst_addr, sizeof(remote_ctx->dst_addr));
 
         if (s == -1)
         {
