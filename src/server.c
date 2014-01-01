@@ -1005,7 +1005,7 @@ int main (int argc, char **argv)
     }
 
     // setup keys
-    LOGD("initialize cihpers... %s", method);
+    LOGD("initialize ciphers... %s", method);
     int m = enc_init(password, method);
 
     // inilitialize ev loop
