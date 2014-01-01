@@ -478,11 +478,18 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
         // error in parse header
         goto CLEAN_UP;
     }
-    buf_len -= addr_header_len;
-    memmove(buf, buf + addr_header_len, buf_len);
+
+    // Construct packet
+    char *tmpbuf = malloc(buf_len + 3);
+    memset(tmpbuf, 0, 3);
+    memcpy(tmpbuf + 3, buf, buf_len);
+    free(buf);
+    buf = tmpbuf;
+    buf_len += 3;
 #endif
 
 #ifdef UDPRELAY_REMOTE
+    // Construct packet
     char *tmpbuf = malloc(buf_len + addr_header_len);
     memcpy(tmpbuf, remote_ctx->addr_header, addr_header_len);
     memcpy(tmpbuf + addr_header_len, buf, buf_len);
