@@ -39,10 +39,9 @@ static int enc_key_len;
 static int enc_iv_len;
 
 #ifdef DEBUG
-static void dump(char *tag, char *text)
+static void dump(char *tag, char *text, int len)
 {
-    int i, len;
-    len = strlen(text);
+    int i;
     printf("%s: ", tag);
     for (i = 0; i < len; i++)
     {
@@ -508,7 +507,7 @@ void cipher_context_set_iv(cipher_ctx_t *evp, uint8_t *iv, size_t iv_len, int en
 #endif
 #endif
 #ifdef DEBUG
-    dump("IV", iv);
+    dump("IV", iv, iv_len);
 #endif
 }
 
@@ -539,12 +538,11 @@ char* ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method)
         cipher_context_init(&evp, method, 1);
 
         int c_len = *len + BLOCK_SIZE;
-        int iv_len = 0;
+        int iv_len = enc_iv_len;
         int err = 0;
         char *ciphertext = malloc(max(iv_len + c_len, buf_size));
 
         uint8_t iv[MAX_IV_LENGTH];
-        iv_len = enc_iv_len;
         cipher_context_set_iv(&evp, iv, iv_len, 1);
         memcpy(ciphertext, iv, iv_len);
 
@@ -560,8 +558,8 @@ char* ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method)
         }
 
 #ifdef DEBUG
-        dump("PLAIN", plaintext);
-        dump("CIPHER", ciphertext);
+        dump("PLAIN", plaintext, *len);
+        dump("CIPHER", ciphertext + iv_len, c_len);
 #endif
 
         *len = iv_len + c_len;
@@ -611,8 +609,8 @@ char* ss_encrypt(int buf_size, char *plaintext, ssize_t *len, struct enc_ctx *ct
         }
 
 #ifdef DEBUG
-        dump("PLAIN", plaintext);
-        dump("CIPHER", ciphertext);
+        dump("PLAIN", plaintext, *len);
+        dump("CIPHER", ciphertext + iv_len, c_len);
 #endif
 
         *len = iv_len + c_len;
@@ -639,12 +637,11 @@ char* ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
         cipher_context_init(&evp, method, 0);
 
         int p_len = *len + BLOCK_SIZE;
-        int iv_len = 0;
+        int iv_len = enc_iv_len;
         int err = 0;
         char *plaintext = malloc(max(p_len, buf_size));
 
         uint8_t iv[MAX_IV_LENGTH];
-        iv_len = enc_iv_len;
         memcpy(iv, ciphertext, iv_len);
         cipher_context_set_iv(&evp, iv, iv_len, 0);
 
@@ -659,8 +656,8 @@ char* ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
         }
 
 #ifdef DEBUG
-        dump("PLAIN", plaintext);
-        dump("CIPHER", ciphertext);
+        dump("PLAIN", plaintext, p_len);
+        dump("CIPHER", ciphertext + iv_len, *len - iv_len);
 #endif
 
         *len = p_len;
@@ -709,8 +706,8 @@ char* ss_decrypt(int buf_size, char *ciphertext, ssize_t *len, struct enc_ctx *c
         }
 
 #ifdef DEBUG
-        dump("PLAIN", plaintext);
-        dump("CIPHER", ciphertext);
+        dump("PLAIN", plaintext, p_len);
+        dump("CIPHER", ciphertext + iv_len, *len - iv_len);
 #endif
 
         *len = p_len;
