@@ -490,7 +490,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
     buf = tmpbuf;
     buf_len += addr_header_len;
 
-    ss_encrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
+    buf = ss_encrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
 #endif
 
     int s = sendto(remote_ctx->fd, buf, buf_len, 0, &remote_ctx->src_addr, sizeof(remote_ctx->src_addr));
@@ -670,7 +670,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     buf_len -= 3;
     memmove(buf, buf + 3, buf_len);
 
-    ss_encrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
+    buf = ss_encrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
 
     int s = sendto(remote_ctx->fd, buf, buf_len, 0, &remote_ctx->dst_addr, sizeof(remote_ctx->dst_addr));
 
