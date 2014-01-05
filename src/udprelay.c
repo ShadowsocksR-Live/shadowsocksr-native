@@ -52,7 +52,6 @@
 #define BUF_SIZE MAX_UDP_PACKET_SIZE
 
 extern int verbose;
-static const char *iface;
 
 #ifndef __MINGW32__
 static int setnonblocking(int fd)
@@ -379,17 +378,17 @@ static void query_resolve_cb(EV_P_ ev_timer *watcher, int revents)
             rp = result;
         }
 
-        int opt = 1;
-
         int remotefd = create_remote_socket(rp->ai_family == AF_INET6);
         if (remotefd != -1)
         {
             setnonblocking(remotefd);
 #ifdef SO_NOSIGPIPE
+            int opt = 1;
             setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 #ifdef SET_INTERFACE
-            if (iface) setinterface(remotefd, iface);
+            if (query_ctx->server_ctx->iface)
+                setinterface(remotefd, query_ctx->server_ctx->iface);
 #endif
 
             struct remote_ctx *remote_ctx = new_remote(remotefd, query_ctx->server_ctx);
@@ -653,6 +652,15 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         }
         setnonblocking(remotefd);
 
+#ifdef SO_NOSIGPIPE
+        int opt = 1;
+        setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+#endif
+#ifdef SET_INTERFACE
+        if (server_ctx->iface)
+            setinterface(remotefd, server_ctx->iface);
+#endif
+
         // Init remote_ctx
         remote_ctx = new_remote(remotefd, server_ctx);
         remote_ctx->src_addr = src_addr;
@@ -749,11 +757,8 @@ int udprelay_init(const char *server_host, const char *server_port,
 #ifdef UDPRELAY_REMOTE
              asyncns_t *asyncns,
 #endif
-             int method, int timeout, const char *interface_name)
+             int method, int timeout, const char *interface)
 {
-
-
-    iface = interface_name;
 
     // Inilitialize ev loop
     struct ev_loop *loop = EV_DEFAULT;
@@ -776,7 +781,7 @@ int udprelay_init(const char *server_host, const char *server_port,
     struct server_ctx *server_ctx = new_server_ctx(serverfd);
     server_ctx->timeout = timeout;
     server_ctx->method = method;
-    server_ctx->iface = iface;
+    server_ctx->iface = interface;
     server_ctx->conn_cache = conn_cache;
 #ifdef UDPRELAY_LOCAL
     server_ctx->remote_host = remote_host;
