@@ -5,6 +5,8 @@
 #include "encrypt.h"
 #include "jconf.h"
 
+#include "include.h"
+
 struct listen_ctx
 {
     ev_io io;

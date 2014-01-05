@@ -95,6 +95,9 @@ int cache_remove(struct cache *cache, char *key)
     if (tmp)
     {
         HASH_DEL(cache->entries, tmp);
+        if (cache->free_cb)
+            cache->free_cb(tmp->data);
+        free(tmp);
     }
 
     return 0;
@@ -119,7 +122,6 @@ int cache_remove(struct cache *cache, char *key)
 */
 int cache_lookup(struct cache *cache, char *key, void *result)
 {
-    int rv;
     struct cache_entry *tmp = NULL;
     char **dirty_hack = result;
 
@@ -160,7 +162,6 @@ int cache_insert(struct cache *cache, char *key, void *data)
     struct cache_entry *entry = NULL;
     struct cache_entry *tmp_entry = NULL;
     size_t key_len = 0;
-    int rv;
 
     if (!cache || !data)
         return EINVAL;

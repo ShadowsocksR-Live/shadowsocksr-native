@@ -8,8 +8,8 @@
 
 typedef struct
 {
-    char *host;
-    char *port;
+    const char *host;
+    const char *port;
 } remote_addr_t;
 
 typedef struct

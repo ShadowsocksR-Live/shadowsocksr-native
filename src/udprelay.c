@@ -52,9 +52,7 @@
 #define BUF_SIZE MAX_UDP_PACKET_SIZE
 
 extern int verbose;
-static char *iface;
-static int remote_conn = 0;
-static int server_conn = 0;
+static const char *iface;
 
 #ifndef __MINGW32__
 static int setnonblocking(int fd)
@@ -156,7 +154,7 @@ static int parse_udprealy_header(const char* buf, const int buf_len, char *host,
 
 int create_remote_socket(int ipv6)
 {
-    int s, remote_sock;
+    int remote_sock;
 
     if (ipv6)
     {
@@ -252,13 +250,14 @@ int create_server_socket(const char *host, const char *port)
     return server_sock;
 }
 
-struct remote_ctx *new_remote_ctx(int fd)
+struct remote_ctx *new_remote(int fd, struct server_ctx *server_ctx)
 {
     struct remote_ctx *ctx = malloc(sizeof(struct remote_ctx));
     memset(ctx, 0, sizeof(struct remote_ctx));
-    ctx->server_ctx = NULL;
     ctx->fd = fd;
+    ctx->server_ctx = server_ctx;
     ev_io_init(&ctx->io, remote_recv_cb, fd, EV_READ);
+    ev_timer_init(&ctx->watcher, remote_timeout_cb, server_ctx->timeout, server_ctx->timeout * 5);
     return ctx;
 }
 
@@ -273,7 +272,7 @@ struct server_ctx * new_server_ctx(int fd)
 
 #ifdef UDPRELAY_REMOTE
 struct query_ctx *new_query_ctx(asyncns_query_t *query,
-                                const uint8_t *buf, const int buf_len)
+                                const char *buf, const int buf_len)
 {
     struct query_ctx *ctx = malloc(sizeof(struct query_ctx));
     memset(ctx, 0, sizeof(struct query_ctx));
@@ -324,7 +323,6 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
     char *key = hash_key(remote_ctx->addr_header,
                          remote_ctx->addr_header_len, &remote_ctx->src_addr);
     cache_remove(remote_ctx->server_ctx->conn_cache, key);
-    close_and_free_remote(EV_A_ remote_ctx);
 }
 
 #ifdef UDPRELAY_REMOTE
@@ -394,7 +392,7 @@ static void query_resolve_cb(EV_P_ ev_timer *watcher, int revents)
             if (iface) setinterface(remotefd, iface);
 #endif
 
-            struct remote_ctx *remote_ctx = new_remote_ctx(remotefd);
+            struct remote_ctx *remote_ctx = new_remote(remotefd, query_ctx->server_ctx);
             remote_ctx->src_addr = query_ctx->src_addr;
             remote_ctx->dst_addr = *rp->ai_addr;
             remote_ctx->server_ctx = query_ctx->server_ctx;
@@ -451,8 +449,8 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
     ev_timer_again(EV_A_ &remote_ctx->watcher);
 
     struct sockaddr src_addr;
-    int addr_len = sizeof(src_addr);
-    int addr_header_len = remote_ctx->addr_header_len;
+    unsigned int addr_len = sizeof(src_addr);
+    unsigned int addr_header_len = remote_ctx->addr_header_len;
     char *buf = malloc(BUF_SIZE);
 
     // recv
@@ -518,8 +516,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     struct sockaddr src_addr;
     char *buf = malloc(BUF_SIZE);
 
-    int addr_len = sizeof(src_addr);
-    int offset = 0;
+    unsigned int addr_len = sizeof(src_addr);
+    unsigned int offset = 0;
 
     ssize_t buf_len = recvfrom(server_ctx->fd, buf, BUF_SIZE, 0, &src_addr, &addr_len);
 
@@ -656,10 +654,9 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         setnonblocking(remotefd);
 
         // Init remote_ctx
-        remote_ctx = new_remote_ctx(remotefd);
+        remote_ctx = new_remote(remotefd, server_ctx);
         remote_ctx->src_addr = src_addr;
         remote_ctx->dst_addr = *result->ai_addr;
-        remote_ctx->server_ctx = server_ctx;
         remote_ctx->addr_header_len = addr_header_len;
         memcpy(remote_ctx->addr_header, addr_header, addr_header_len);
 
@@ -752,7 +749,7 @@ int udprelay_init(const char *server_host, const char *server_port,
 #ifdef UDPRELAY_REMOTE
              asyncns_t *asyncns,
 #endif
-             int method, const char *interface_name)
+             int method, int timeout, const char *interface_name)
 {
 
 
@@ -777,6 +774,7 @@ int udprelay_init(const char *server_host, const char *server_port,
     setnonblocking(serverfd);
 
     struct server_ctx *server_ctx = new_server_ctx(serverfd);
+    server_ctx->timeout = timeout;
     server_ctx->method = method;
     server_ctx->iface = iface;
     server_ctx->conn_cache = conn_cache;

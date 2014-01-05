@@ -8,6 +8,8 @@
 #include "jconf.h"
 #include "asyncns.h"
 
+#include "include.h"
+
 struct listen_ctx
 {
     ev_io io;

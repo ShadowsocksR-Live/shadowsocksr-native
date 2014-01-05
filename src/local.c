@@ -953,7 +953,7 @@ int main (int argc, char **argv)
     if (udprelay)
     {
         LOGD("udprelay enabled.");
-        udprelay_init(local_addr, local_port, remote_addr[0].host, remote_addr[0].port, m, iface);
+        udprelay_init(local_addr, local_port, remote_addr[0].host, remote_addr[0].port, m, listen_ctx.timeout, iface);
     }
 
     ev_run (loop, 0);

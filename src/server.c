@@ -906,8 +906,8 @@ int main (int argc, char **argv)
     char *iface = NULL;
 
     int server_num = 0;
-    char *server_host[MAX_REMOTE_NUM];
-    char *server_port = NULL;
+    const char *server_host[MAX_REMOTE_NUM];
+    const char *server_port = NULL;
 
     int dns_thread_num = DNS_THREAD_NUM;
 
@@ -1011,6 +1011,9 @@ int main (int argc, char **argv)
     // inilitialize ev loop
     struct ev_loop *loop = EV_DEFAULT;
 
+    // inilitialize listen context
+    struct listen_ctx listen_ctx;
+
     // bind to each interface
     while (server_num > 0)
     {
@@ -1032,22 +1035,21 @@ int main (int argc, char **argv)
         LOGD("server listening at port %s.", server_port);
 
         // Setup proxy context
-        struct listen_ctx *listen_ctx = malloc(sizeof(struct listen_ctx));
-        listen_ctx->timeout = atoi(timeout);
-        listen_ctx->asyncns = asyncns;
-        listen_ctx->fd = listenfd;
-        listen_ctx->method = m;
-        listen_ctx->iface = iface;
+        listen_ctx.timeout = atoi(timeout);
+        listen_ctx.asyncns = asyncns;
+        listen_ctx.fd = listenfd;
+        listen_ctx.method = m;
+        listen_ctx.iface = iface;
 
-        ev_io_init (&listen_ctx->io, accept_cb, listenfd, EV_READ);
-        ev_io_start (loop, &listen_ctx->io);
+        ev_io_init (&listen_ctx.io, accept_cb, listenfd, EV_READ);
+        ev_io_start (loop, &listen_ctx.io);
     }
 
     // Setup UDP
     if (udprelay)
     {
         LOGD("udprelay enabled.");
-        udprelay_init(server_host[0], server_port, asyncns, m, iface);
+        udprelay_init(server_host[0], server_port, asyncns, m, listen_ctx.timeout, iface);
     }
 
     // start ev loop
