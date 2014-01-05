@@ -1,3 +1,10 @@
+shadowsocks (1.4.2-1) unstable; urgency=high
+
+  * Fix the UDP relay issues.
+  * Add syslog support.
+
+ -- Max Lv <max.c.lv@gmail.com>  Sun, 05 Jan 2014 10:05:29 +0900
+
 shadowsocks (1.4.1-1) unstable; urgency=low
 
   * Add multi-port support.
