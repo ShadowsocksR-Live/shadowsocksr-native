@@ -205,8 +205,9 @@ json_value * json_parse_ex (json_settings * settings,
     json_value * top, * root, * alloc = 0;
     json_state state = { 0 };
     long flags;
-    long num_digits, num_e;
-    json_int_t num_fraction;
+    long num_digits = 0;
+    long num_e = 0;
+    json_int_t num_fraction = 0;
 
     error[0] = '\0';
     end = (json + length);
@@ -229,8 +230,8 @@ json_value * json_parse_ex (json_settings * settings,
     {
         json_uchar uchar;
         unsigned char uc_b1, uc_b2, uc_b3, uc_b4;
-        json_char * string;
-        unsigned int string_length;
+        json_char * string = NULL;
+        unsigned int string_length = 0;
 
         top = root = 0;
         flags = flag_seek_value;
