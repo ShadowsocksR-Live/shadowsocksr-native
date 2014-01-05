@@ -302,12 +302,9 @@ void close_and_free_remote(EV_P_ struct remote_ctx *ctx)
 {
     if (ctx != NULL)
     {
-        close(ctx->fd);
         ev_timer_stop(EV_A_ &ctx->watcher);
-        if (ctx->addr_header != NULL)
-        {
-            free(ctx->addr_header);
-        }
+        ev_io_stop(EV_A_ &ctx->io);
+        close(ctx->fd);
         free(ctx);
     }
 }

@@ -35,23 +35,6 @@ static char *to_string(const json_value *value)
     return 0;
 }
 
-static int to_int(const json_value *value)
-{
-    if (value->type == json_string)
-    {
-        return atoi(value->u.string.ptr);
-    }
-    else if (value->type == json_integer)
-    {
-        return value->u.integer;
-    }
-    else
-    {
-        FATAL("Invalid config format.");
-    }
-    return 0;
-}
-
 static void parse_addr(const char *str, remote_addr_t *addr) {
     int ret = -1;
     char *pch;

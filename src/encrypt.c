@@ -519,13 +519,13 @@ void cipher_context_release(cipher_ctx_t *evp) {
 #endif
 }
 
-int cipher_context_update(cipher_ctx_t *evp, uint8_t *output, int *olen, \
+int cipher_context_update(cipher_ctx_t *evp, uint8_t *output, int *olen,
                           const uint8_t *input, int ilen) {
 #if defined(USE_CRYPTO_OPENSSL)
-        return EVP_CipherUpdate(evp, (uint8_t *) output, (size_t *) olen, \
+        return EVP_CipherUpdate(evp, (uint8_t *) output, olen,
                                 (const uint8_t *) input, (size_t) ilen);
 #elif defined(USE_CRYPTO_POLARSSL)
-        return !cipher_update(evp, (const uint8_t *) input, (size_t) ilen, \
+        return !cipher_update(evp, (const uint8_t *) input, (size_t) ilen,
                               (uint8_t *) output, (size_t *) olen);
 #endif
 }
