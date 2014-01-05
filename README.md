@@ -11,10 +11,15 @@ It is a port of [shadowsocks](https://github.com/clowwindy/shadowsocks)
 created by [@clowwindy](https://github.com/clowwindy) maintained by 
 [@madeye](https://github.com/madeye) and [@linusyang](https://github.com/linusyang).
 
-Current version: 1.4.1 | [![Build Status](https://travis-ci.org/madeye/shadowsocks-libev.png?branch=master)](https://travis-ci.org/madeye/shadowsocks-libev)
+Current version: 1.4.2 | [![Build Status](https://travis-ci.org/madeye/shadowsocks-libev.png?branch=master)](https://travis-ci.org/madeye/shadowsocks-libev)
 
 Changelog
 ---------
+
+1.4.2 -- Sun, 05 Jan 2014 10:05:29 +0900
+
+  * Fix the UDP relay issues.
+  * Add syslog support.
 
 1.4.1 -- Tue, 12 Nov 2013 03:57:21 +0000
 
