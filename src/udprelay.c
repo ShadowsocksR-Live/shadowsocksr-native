@@ -445,7 +445,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
     ev_timer_again(EV_A_ &remote_ctx->watcher);
 
     struct sockaddr src_addr;
-    unsigned int addr_len = sizeof(src_addr);
+    socklen_t addr_len = sizeof(src_addr);
     unsigned int addr_header_len = remote_ctx->addr_header_len;
     char *buf = malloc(BUF_SIZE);
 
@@ -512,7 +512,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     struct sockaddr src_addr;
     char *buf = malloc(BUF_SIZE);
 
-    unsigned int addr_len = sizeof(src_addr);
+    socklen_t addr_len = sizeof(src_addr);
     unsigned int offset = 0;
 
     ssize_t buf_len = recvfrom(server_ctx->fd, buf, BUF_SIZE, 0, &src_addr, &addr_len);

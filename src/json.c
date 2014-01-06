@@ -508,14 +508,14 @@ whitespace:
 
                     default:
 
-                        if (isdigit (b) || b == '-')
+                        if (isdigit ((unsigned char)b) || b == '-')
                         {
                             if (!new_value (&state, &top, &root, &alloc, json_integer))
                                 goto e_alloc_failure;
 
                             if (!state.first_pass)
                             {
-                                while (isdigit (b) || b == '+' || b == '-'
+                                while (isdigit ((unsigned char)b) || b == '+' || b == '-'
                                         || b == 'e' || b == 'E' || b == '.')
                                 {
                                     b = *++ i;
@@ -600,7 +600,7 @@ whitespace:
                 case json_integer:
                 case json_double:
 
-                    if (isdigit (b))
+                    if (isdigit ((unsigned char)b))
                     {
                         ++ num_digits;
 
