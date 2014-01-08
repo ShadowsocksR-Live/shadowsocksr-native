@@ -249,8 +249,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = -g -O2 -Wall -Werror -Wno-deprecated-declarations \
-	-fno-strict-aliasing -std=gnu99 -I$(top_builddir)/libev \
-	-I$(top_builddir)/libasyncns
+	-fno-strict-aliasing -std=gnu99 -D_GNU_SOURCE \
+	-I$(top_builddir)/libev -I$(top_builddir)/libasyncns
 AM_LDFLAGS = -static
 SS_COMMON_LIBS = $(top_builddir)/libev/libev.la $(INET_NTOP_LIB)
 ss_local_SOURCES = utils.c jconf.c json.c encrypt.c udprelay.c cache.c \
