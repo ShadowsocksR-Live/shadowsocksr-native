@@ -1,4 +1,4 @@
-AM_CFLAGS = -g -O2 -Wall -Werror -Wno-deprecated-declarations -fno-strict-aliasing
+AM_CFLAGS = -g -O2 -Wall -Werror -Wno-deprecated-declarations -fno-strict-aliasing -std=c99
 AM_CFLAGS += -I$(top_builddir)/libev
 AM_CFLAGS += -I$(top_builddir)/libasyncns
 
