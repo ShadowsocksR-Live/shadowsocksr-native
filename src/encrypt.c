@@ -339,8 +339,8 @@ int rand_bytes(uint8_t *output, int len)
 #if defined(USE_CRYPTO_OPENSSL)
     return RAND_bytes(output, len);
 #elif defined(USE_CRYPTO_POLARSSL)
-    static entropy_context ec = {0};
-    static ctr_drbg_context cd_ctx = {0};
+    static entropy_context ec = {};
+    static ctr_drbg_context cd_ctx = {};
     static unsigned char rand_initialised = 0;
     const size_t blen = min(len, CTR_DRBG_MAX_REQUEST);
 
