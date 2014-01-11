@@ -1,6 +1,10 @@
 #ifndef _WIN32_H
 #define _WIN32_H
 
+#ifdef _WIN32_WINNT
+#undef _WIN32_WINNT
+#endif
+
 #define _WIN32_WINNT 0x0501
 
 #include <winsock2.h>
@@ -29,5 +33,7 @@ void winsock_init(void);
 void winsock_cleanup(void);
 void ss_error(const char *s);
 size_t strnlen(const char *s, size_t maxlen);
+int setnonblocking(int fd);
+const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
 
 #endif
