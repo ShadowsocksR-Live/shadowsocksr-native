@@ -8,6 +8,6 @@ int udprelay_init(const char *server_host, const char *server_port,
 #ifdef UDPRELAY_REMOTE
              asyncns_t *asyncns,
 #endif
-             int method, int timeout, const char *interface);
+             int method, int timeout, const char *iface);
 
 #endif // _INCLUDE_H
