@@ -4,13 +4,13 @@
 START=95
 STOP=95
 
-SERVICE_USE_PID=1
-
 start() {
-        service_start /usr/bin/ss-local -c /etc/config/shadowsocks.json -f /var/run/shadowsocks.pid
+    echo "starting shadowsocks..."
+    /usr/bin/ss-local -c /etc/config/shadowsocks.json -f /var/run/shadowsocks.pid
 }
 
 stop() {
-        service_stop /usr/bin/ss-local
+    echo "shadowsocks stopped."
+    kill -9 `cat /var/run/shadowsocks.pid`
 }
 
