@@ -85,7 +85,7 @@ CAST5-CFB, DES-CFB, IDEA-CFB, RC2-CFB and SEED-CFB.
 
 ### Debian & Ubuntu
 
-Add either of the following lines to your /etc/apt/source.list
+Add either of the following lines to your /etc/apt/sources.list
 
 ```
 # Debian Wheezy, Ubuntu 12.04 or any distribution with libssl > 1.0.1
