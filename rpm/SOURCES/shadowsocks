@@ -1,85 +1,123 @@
-#!/bin/sh
-### BEGIN INIT INFO
-# Provides:          shadowsocks
-# Required-Start:    $network $local_fs $remote_fs
-# Required-Stop:     $remote_fs
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-# Short-Description: lightweight secured scoks5 proxy
-# Description:       Shadowsocks-libev is a lightweight secured 
-#                    scoks5 proxy for embedded devices and low end boxes.
-#                    
-### END INIT INFO
+#!/bin/bash
+#
+# Script to run Shadowsocks in daemon mode at boot time.
+# ScriptAuthor: icyboy
+# Revision 1.0 - 14th Sep 2013
+#====================================================================
+# Run level information:
+# chkconfig: 2345 99 99
+# Description: lightweight secured scoks5 proxy
+# processname: ss-server
+# Author: Max Lv <max.c.lv@gmail.com>;
+# Run "/sbin/chkconfig --add shadowsocks" to add the Run levels.
+#====================================================================
 
-# Author: Winny
+#====================================================================
+# Paths and variables and system checks.
 
-# Source function library.
+# Source function library
 . /etc/rc.d/init.d/functions
 
-# Source networking configuration.
-. /etc/sysconfig/network
+# Check that networking is up.
+#
+[ ${NETWORKING} ="yes" ] || exit 0
 
-NAME=shadowsocks
+# Daemon
+NAME=Shadowsocks-Server
 DAEMON=/usr/local/bin/ss-server
-prog=$(basename $DAEMON)
 
-PIDFILE=/var/run/$NAME/$prog.pid
-CONFFILE=/etc/$NAME/config.json
+# Path to the configuration file.
+#
+CONF=/usr/local/etc/shadowsocks.json
 
-lockfile=/var/lock/subsys/$NAME/$prog
+USER="nobody"
+GROUP="nobody"
 
-start()
-{
-    echo -n $"Starting $prog: "
-    daemon $DAEMON -c $CONFFILE -f $PIDFILE
-    retval=$?
-    echo
-    [ $retval -eq 0 ] && touch $lockfile
-    return $retval
+# Take care of pidfile permissions
+mkdir /var/run/$NAME 2>/dev/null || true
+chown "$USER:$GROUP" /var/run/$NAME
+
+# Check the configuration file exists.
+#
+if [ ! -f $CONF ] ; then
+echo "The configuration file cannot be found!"
+exit 0
+fi
+
+# Path to the lock file.
+#
+LOCK_FILE=/var/lock/subsys/shadowsocks
+
+# Path to the pid file.
+#
+PID=/var/run/shadowsocks/shadowsocks.pid
+
+
+#====================================================================
+
+#====================================================================
+# Run controls:
+
+RETVAL=0
+
+# Start shadowsocks as daemon.
+#
+start() {
+if [ -f $LOCK_FILE ]; then
+echo "$NAME is already running!"
+exit 0
+else
+echo -n $"Starting ${NAME}: "
+daemon --check $DAEMON --user $USER "$DAEMON -f $PID -c $CONF > /dev/null"
+fi
+
+RETVAL=$?
+[ $RETVAL -eq 0 ] && success
+echo
+[ $RETVAL -eq 0 ] && touch $LOCK_FILE
+return $RETVAL
 }
 
-stop()
-{
-	echo -n $"Stopping $prog: "
-	killproc -p $PIDFILE $DAEMON
-	RETVAL=$?
-	[ $RETVAL -eq 0 ] && rm -f $lockfile
-	echo
-	return $retval
+
+# Stop shadowsocks.
+#
+stop() {
+echo -n $"Shutting down ${NAME}: "
+killproc -p ${PID}
+RETVAL=$?
+[ $RETVAL -eq 0 ]
+rm -f $LOCK_FILE
+rm -f ${PID}
+echo
+return $RETVAL
 }
 
-restart() {
-    stop
-    start
-}
-
-rh_status() {
-    status $prog
-}
-
-rh_status_q() {
-    rh_status >/dev/null 2>&1
-}
-
+# See how we were called.
 case "$1" in
-    start)
-        rh_status_q && exit 0
-        $1
-        ;;
-    stop)
-        rh_status_q || exit 0
-        $1
-        ;;
-    restart)
-        $1
-        ;;
-    status)
-        rh_status
-        ;;
-    condrestart|try-restart)
-        rh_status_q || exit 0
-            ;;
-    *)
-        echo $"Usage: $0 {start|stop|status|restart|condrestart|try-restart}"
-        exit 2
+start)
+start
+;;
+stop)
+stop
+;;
+restart)
+stop
+start
+;;
+condrestart)
+if [ -f $LOCK_FILE ]; then
+stop
+start
+RETVAL=$?
+fi
+;;
+status)
+status $DAEMON
+RETVAL=$?
+;;
+*)
+echo $"Usage: $0 {start|stop|restart|condrestart|status}"
+RETVAL=1
 esac
+
+exit $RETVAL
