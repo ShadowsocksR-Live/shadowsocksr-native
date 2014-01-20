@@ -1,0 +1,85 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          shadowsocks
+# Required-Start:    $network $local_fs $remote_fs
+# Required-Stop:     $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: lightweight secured scoks5 proxy
+# Description:       Shadowsocks-libev is a lightweight secured 
+#                    scoks5 proxy for embedded devices and low end boxes.
+#                    
+### END INIT INFO
+
+# Author: Winny
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+# Source networking configuration.
+. /etc/sysconfig/network
+
+NAME=shadowsocks
+DAEMON=/usr/local/bin/ss-server
+prog=$(basename $DAEMON)
+
+PIDFILE=/var/run/$NAME/$prog.pid
+CONFFILE=/etc/$NAME/config.json
+
+lockfile=/var/lock/subsys/$NAME/$prog
+
+start()
+{
+    echo -n $"Starting $prog: "
+    daemon $DAEMON -c $CONFFILE -f $PIDFILE
+    retval=$?
+    echo
+    [ $retval -eq 0 ] && touch $lockfile
+    return $retval
+}
+
+stop()
+{
+	echo -n $"Stopping $prog: "
+	killproc -p $PIDFILE $DAEMON
+	RETVAL=$?
+	[ $RETVAL -eq 0 ] && rm -f $lockfile
+	echo
+	return $retval
+}
+
+restart() {
+    stop
+    start
+}
+
+rh_status() {
+    status $prog
+}
+
+rh_status_q() {
+    rh_status >/dev/null 2>&1
+}
+
+case "$1" in
+    start)
+        rh_status_q && exit 0
+        $1
+        ;;
+    stop)
+        rh_status_q || exit 0
+        $1
+        ;;
+    restart)
+        $1
+        ;;
+    status)
+        rh_status
+        ;;
+    condrestart|try-restart)
+        rh_status_q || exit 0
+            ;;
+    *)
+        echo $"Usage: $0 {start|stop|status|restart|condrestart|try-restart}"
+        exit 2
+esac
