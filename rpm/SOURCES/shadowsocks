@@ -30,12 +30,12 @@ DAEMON=/usr/local/bin/ss-server
 #
 CONF=/usr/local/etc/shadowsocks.json
 
-USER="nobody"
-GROUP="nobody"
+#USER="nobody"
+#GROUP="nobody"
 
 # Take care of pidfile permissions
 mkdir /var/run/$NAME 2>/dev/null || true
-chown "$USER:$GROUP" /var/run/$NAME
+#chown "$USER:$GROUP" /var/run/$NAME
 
 # Check the configuration file exists.
 #
