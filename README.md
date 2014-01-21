@@ -110,19 +110,21 @@ sudo /etc/init.d/shadowsocks start
 
 ### CentOS
 
-Install the compile tools
+Install the dependencies,
+
 ```bash
 yum install -y gcc automake autoconf libtool make build-essential autoconf libtool gcc
 yum install -y curl curl-devel zlib-devel openssl-devel perl perl-devel cpio expat-devel gettext-devel
 ```
 
-Compile and install
+Compile and install,
+
 ```bash
 ./configure && make
 make install
 ```
-here is the [init script](rpm/SOURCES/etc/init.d/shadowsocks) .
-Notice:default config file is /usr/local/etc/shadowsocks.json
+
+Then copy this [init script](rpm/SOURCES/etc/init.d/shadowsocks) to `/etc/init.d/`.
 
 ### Linux
 
