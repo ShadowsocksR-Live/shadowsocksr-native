@@ -68,7 +68,8 @@ echo "$NAME is already running!"
 exit 0
 else
 echo -n $"Starting ${NAME}: "
-daemon --check $DAEMON --user $USER "$DAEMON -f $PID -c $CONF > /dev/null"
+#daemon --check $DAEMON --user $USER "$DAEMON -f $PID -c $CONF > /dev/null"
+daemon $DAEMON -c $CONF -f $PID
 fi
 
 RETVAL=$?
