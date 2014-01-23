@@ -35,7 +35,7 @@ static char *to_string(const json_value *value)
     return 0;
 }
 
-static void parse_addr(const char *str, remote_addr_t *addr) {
+void parse_addr(const char *str, addr_t *addr) {
     int ret = -1;
     char *pch;
     pch = strchr(str, ':');
