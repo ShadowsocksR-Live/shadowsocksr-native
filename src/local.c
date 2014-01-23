@@ -808,7 +808,7 @@ int main (int argc, char **argv)
     char *iface = NULL;
 
     int remote_num = 0;
-    remote_addr_t remote_addr[MAX_REMOTE_NUM];
+    addr_t remote_addr[MAX_REMOTE_NUM];
     char *remote_port = NULL;
 
     opterr = 0;
@@ -929,7 +929,7 @@ int main (int argc, char **argv)
     // Setup proxy context
     struct listen_ctx listen_ctx;
     listen_ctx.remote_num = remote_num;
-    listen_ctx.remote_addr = malloc(sizeof(remote_addr_t) * remote_num);
+    listen_ctx.remote_addr = malloc(sizeof(addr_t) * remote_num);
     while (remote_num > 0)
     {
         int index = --remote_num;
