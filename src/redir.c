@@ -630,7 +630,6 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
     if (sockfd < 0)
     {
         ERROR("socket");
-        close(sockfd);
         freeaddrinfo(res);
         return;
     }

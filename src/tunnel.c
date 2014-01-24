@@ -168,6 +168,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     }
 
     remote->buf = ss_encrypt(BUF_SIZE, remote->buf, &r, server->e_ctx);
+
     if (remote->buf == NULL)
     {
         LOGE("invalid password or cipher");
@@ -175,7 +176,9 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         close_and_free_server(EV_A_ server);
         return;
     }
+
     int s = send(remote->fd, remote->buf, r, 0);
+
     if(s == -1)
     {
         if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -323,6 +326,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
     }
 
     server->buf = ss_decrypt(BUF_SIZE, server->buf, &r, server->d_ctx);
+
     if (server->buf == NULL)
     {
         LOGE("invalid password or cipher");
@@ -330,6 +334,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
         close_and_free_server(EV_A_ server);
         return;
     }
+
     int s = send(server->fd, server->buf, r, 0);
 
     if (s == -1)
@@ -378,7 +383,63 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
             remote_send_ctx->connected = 1;
             ev_io_stop(EV_A_ &remote_send_ctx->io);
             ev_timer_stop(EV_A_ &remote_send_ctx->watcher);
+
+            // send destaddr
+            char *addr_to_send = malloc(BUF_SIZE);
+            ssize_t addr_len = 0;
+            struct sockaddr *sa = &server->destaddr;
+            addr_to_send[addr_len++] = 1;
+            
+            if (sa->sa_family == AF_INET)
+            {
+                // handle IPv4
+                struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+                size_t in_addr_len = sizeof(struct in_addr);
+                memcpy(addr_to_send + addr_len, &sin->sin_addr, in_addr_len);
+                addr_len += in_addr_len;
+                memcpy(addr_to_send + addr_len, &sin->sin_port, 2);
+                addr_len += 2;
+            }
+            else if (sa->sa_family == AF_INET6)
+            {
+                // handle IPv6
+                struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+                size_t in6_addr_len = sizeof(struct in6_addr);
+                memcpy(addr_to_send + addr_len, &sin6->sin6_addr, in6_addr_len);
+                addr_len += in6_addr_len;
+                memcpy(addr_to_send + addr_len, &sin6->sin6_port, 2);
+                addr_len += 2;
+            }
+            else
+            {
+                LOGE("unsupported addr type");
+                close_and_free_remote(EV_A_ remote);
+                close_and_free_server(EV_A_ server);
+                return;
+            }
+
+            addr_to_send = ss_encrypt(BUF_SIZE, addr_to_send, &addr_len, server->e_ctx);
+            if (addr_to_send == NULL)
+            {
+                LOGE("invalid password or cipher");
+                close_and_free_remote(EV_A_ remote);
+                close_and_free_server(EV_A_ server);
+                return;
+            }
+
+            int s = send(remote->fd, addr_to_send, addr_len, 0);
+            free(addr_to_send);
+
+            if (s < addr_len)
+            {
+                LOGE("failed to send remote addr.");
+                close_and_free_remote(EV_A_ remote);
+                close_and_free_server(EV_A_ server);
+            }
+
+            ev_io_start(EV_A_ &remote->recv_ctx->io);
             ev_io_start(EV_A_ &server->recv_ctx->io);
+
             return;
         }
         else
@@ -508,7 +569,6 @@ struct server* new_server(int fd, int method)
     server->recv_ctx->connected = 0;
     server->send_ctx->server = server;
     server->send_ctx->connected = 0;
-    server->stage = 0;
     if (method)
     {
         server->e_ctx = malloc(sizeof(struct enc_ctx));
@@ -581,7 +641,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
     setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
-    struct addrinfo hints, *res;
+    struct addrinfo hints, *res, *dest;
     int sockfd;
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -598,12 +658,20 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
         return;
     }
 
+    err = getaddrinfo(listener->tunnel_addr.host, listener->tunnel_addr.port, &hints, &dest);
+    if (err)
+    {
+        freeaddrinfo(res);
+        ERROR("getaddrinfo");
+        return;
+    }
+
     sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (sockfd < 0)
     {
         ERROR("socket");
-        close(sockfd);
         freeaddrinfo(res);
+        freeaddrinfo(dest);
         return;
     }
 
@@ -620,10 +688,12 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
 
     struct server *server = new_server(serverfd, listener->method);
     struct remote *remote = new_remote(sockfd, listener->timeout);
+    server->destaddr = *dest->ai_addr;
     server->remote = remote;
     remote->server = server;
     connect(sockfd, res->ai_addr, res->ai_addrlen);
     freeaddrinfo(res);
+    freeaddrinfo(dest);
     // listen to remote connected event
     ev_io_start(EV_A_ &remote->send_ctx->io);
     ev_timer_start(EV_A_ &remote->send_ctx->watcher);
@@ -651,7 +721,7 @@ int main (int argc, char **argv)
 
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:i:c:b:uv")) != -1)
+    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:i:c:b:L:uv")) != -1)
     {
         switch (c)
         {
@@ -690,7 +760,7 @@ int main (int argc, char **argv)
         case 'u':
             udprelay = 1;
             break;
-        case "L":
+        case 'L':
             tunnel_addr.host = optarg;
             break;
         case 'v':
