@@ -8,8 +8,8 @@
 
 typedef struct
 {
-    const char *host;
-    const char *port;
+    char *host;
+    char *port;
 } addr_t;
 
 typedef struct
@@ -26,5 +26,6 @@ typedef struct
 
 jconf_t *read_jconf(const char* file);
 void parse_addr(const char *str, addr_t *addr);
+void free_addr(addr_t *addr);
 
 #endif // _JCONF_H
