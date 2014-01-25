@@ -718,6 +718,7 @@ int main (int argc, char **argv)
     char *remote_port = NULL;
 
     addr_t tunnel_addr = {.host = NULL, .port = NULL};
+    char *tunnel_addr_str = NULL;
 
     opterr = 0;
 
@@ -761,7 +762,7 @@ int main (int argc, char **argv)
             udprelay = 1;
             break;
         case 'L':
-            tunnel_addr.host = optarg;
+            tunnel_addr_str = optarg;
             break;
         case 'v':
             verbose = 1;
@@ -794,7 +795,7 @@ int main (int argc, char **argv)
         if (timeout == NULL) timeout = conf->timeout;
     }
 
-    if (remote_num == 0 || remote_port == NULL ||
+    if (remote_num == 0 || remote_port == NULL || tunnel_addr_str == NULL ||
             local_port == NULL || password == NULL)
     {
         usage();
@@ -811,9 +812,9 @@ int main (int argc, char **argv)
         demonize(pid_path);
     }
 
-    if (tunnel_addr.host != NULL) {
-        parse_addr(tunnel_addr.host, &tunnel_addr);
-    }
+    // parse tunnel addr
+    parse_addr(tunnel_addr_str, &tunnel_addr);
+    free(tunnel_addr_str);
 
 #ifdef __MINGW32__
     winsock_init();
@@ -869,7 +870,8 @@ int main (int argc, char **argv)
     if (udprelay)
     {
         LOGD("udprelay enabled.");
-        udprelay_init(local_addr, local_port, remote_addr[0].host, remote_addr[0].port, m, listen_ctx.timeout, iface);
+        udprelay_init(local_addr, local_port, remote_addr[0].host, remote_addr[0].port,
+                tunnel_addr, m, listen_ctx.timeout, iface);
     }
 
     ev_run (loop, 0);

@@ -538,8 +538,10 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
 #endif
 
 #ifdef UDPRELAY_LOCAL
+#ifndef UDPRELAY_TUNNEL
     uint8_t frag = *(uint8_t*)(buf + 2);
     offset += 3;
+#endif
 #endif
 
     /*
@@ -581,6 +583,21 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
      *
      */
 
+#ifdef UDPRELAY_TUNNEL
+    char addr_header[256] = {0};
+    char* host = server_ctx->tunnel_addr.host;
+    char* port = server_ctx->tunnel_addr.port;
+    int host_len = strlen(host);
+    uint16_t port_num = (uint16_t)atoi(port);
+    uint16_t port_net_num = htons(port_num);
+    int addr_header_len = 1 + host_len + 2;
+
+    // initialize the addr header
+    addr_header[0] = 3;
+    memcpy(addr_header + 1, host, host_len);
+    memcpy(addr_header + 1 + host_len, &port_net_num, 2);
+
+#else
     char host[256] = {0};
     char port[64] = {0};
 
@@ -592,6 +609,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         goto CLEAN_UP;
     }
     char *addr_header = buf + offset;
+#endif
+
     char *key = hash_key(addr_header, addr_header_len, &src_addr);
     struct cache *conn_cache = server_ctx->conn_cache;
 
@@ -615,11 +634,13 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
 
 #ifdef UDPRELAY_LOCAL
 
+#ifndef UDPRELAY_TUNNEL
     if (frag)
     {
         LOGE("drop a message since frag is not 0, but %d", frag);
         goto CLEAN_UP;
     }
+#endif
 
     if (remote_ctx == NULL)
     {
@@ -750,6 +771,9 @@ void free_cb(void *element)
 int udprelay_init(const char *server_host, const char *server_port,
 #ifdef UDPRELAY_LOCAL
              const char *remote_host, const char *remote_port,
+#ifdef UDPRELAY_TUNNEL
+             const addr_t tunnel_addr,
+#endif
 #endif
 #ifdef UDPRELAY_REMOTE
              asyncns_t *asyncns,
@@ -783,6 +807,9 @@ int udprelay_init(const char *server_host, const char *server_port,
 #ifdef UDPRELAY_LOCAL
     server_ctx->remote_host = remote_host;
     server_ctx->remote_port = remote_port;
+#ifdef UDPRELAY_TUNNEL
+    server_ctx->tunnel_addr = tunnel_addr;
+#endif
 #endif
 #ifdef UDPRELAY_REMOTE
     server_ctx->asyncns = asyncns;

@@ -4,6 +4,9 @@
 int udprelay_init(const char *server_host, const char *server_port,
 #ifdef UDPRELAY_LOCAL
              const char *remote_host, const char *remote_port,
+#ifdef UDPRELAY_TUNNEL
+             const addr_t tunnel_addr,
+#endif
 #endif
 #ifdef UDPRELAY_REMOTE
              asyncns_t *asyncns,

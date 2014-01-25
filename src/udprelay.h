@@ -32,6 +32,9 @@ struct server_ctx
 #ifdef UDPRELAY_LOCAL
     const char *remote_host;
     const char *remote_port;
+#ifdef UDPRELAY_TUNNEL
+    addr_t tunnel_addr;
+#endif
 #endif
 };
 
