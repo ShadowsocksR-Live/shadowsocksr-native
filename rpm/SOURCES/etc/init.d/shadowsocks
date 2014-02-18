@@ -23,7 +23,7 @@
 [ ${NETWORKING} ="yes" ] || exit 0
 
 # Daemon
-NAME=Shadowsocks-Server
+NAME=shadowsocks-server
 DAEMON=/usr/local/bin/ss-server
 
 # Path to the configuration file.
@@ -50,7 +50,7 @@ LOCK_FILE=/var/lock/subsys/shadowsocks
 
 # Path to the pid file.
 #
-PID=/var/run/shadowsocks.pid
+PID=/var/run/$NAME/pid
 
 
 #====================================================================
