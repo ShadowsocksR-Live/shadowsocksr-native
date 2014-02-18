@@ -28,7 +28,7 @@ DAEMON=/usr/local/bin/ss-server
 
 # Path to the configuration file.
 #
-CONF=/usr/local/etc/shadowsocks.json
+CONF=/etc/shadowsocks/config.json
 
 #USER="nobody"
 #GROUP="nobody"
@@ -50,7 +50,7 @@ LOCK_FILE=/var/lock/subsys/shadowsocks
 
 # Path to the pid file.
 #
-PID=/var/run/shadowsocks/shadowsocks.pid
+PID=/var/run/shadowsocks.pid
 
 
 #====================================================================
