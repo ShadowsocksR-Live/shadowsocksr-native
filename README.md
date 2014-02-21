@@ -11,7 +11,7 @@ It is a port of [shadowsocks](https://github.com/clowwindy/shadowsocks)
 created by [@clowwindy](https://github.com/clowwindy) maintained by 
 [@madeye](https://github.com/madeye) and [@linusyang](https://github.com/linusyang).
 
-Current version: 1.4.2 | [![Build Status](https://travis-ci.org/madeye/shadowsocks-libev.png?branch=master)](https://travis-ci.org/madeye/shadowsocks-libev) | [Changelog](Changes)
+Current version: 1.4.3 | [![Build Status](https://travis-ci.org/madeye/shadowsocks-libev.png?branch=master)](https://travis-ci.org/madeye/shadowsocks-libev) | [Changelog](Changes)
 
 Features
 --------
@@ -179,28 +179,30 @@ Usage
 ```
 usage:
 
-ss-[local|redir|server]
-      -s <server_host>           host name or ip address of your remote server
-      -p <server_port>           port number of your remote server
-      -l <local_port>            port number of your local server
-      -k <password>              password of your remote server
+    ss-[local|redir|server|tunnel]
+          -s <server_host>           host name or ip address of your remote server
+          -p <server_port>           port number of your remote server
+          -l <local_port>            port number of your local server
+          -k <password>              password of your remote server
 
-      [-m <encrypt_method>]      encrypt method, supporting table, rc4,
-                                 aes-128-cfb, aes-192-cfb, aes-256-cfb,
-                                 bf-cfb, camellia-128-cfb, camellia-192-cfb,
-                                 camellia-256-cfb, cast5-cfb, des-cfb,
-                                 idea-cfb, rc2-cfb and seed-cfb
-      [-f <pid_file>]            valid path to the pid file
-      [-t <timeout>]             socket timeout in seconds
-      [-c <config_file>]         json format config file
+          [-m <encrypt_method>]      encrypt method, supporting table, rc4,
+                                     aes-128-cfb, aes-192-cfb, aes-256-cfb,
+                                     bf-cfb, camellia-128-cfb, camellia-192-cfb,
+                                     camellia-256-cfb, cast5-cfb, des-cfb,
+                                     idea-cfb, rc2-cfb and seed-cfb
+          [-f <pid_file>]            valid path to the pid file
+          [-t <timeout>]             socket timeout in seconds
+          [-c <config_file>]         json format config file
 
-      [-i <interface>]           specific network interface to bind,
-                                 only available in local and server modes
-      [-b <local_address>]       specific local address to bind,
-                                 only available in local and redir modes
-      [-u]                       udprelay mode to supprot udp traffic
-                                 only available in local and server modes
-      [-v]                       verbose mode, debug output in console
+          [-i <interface>]           specific network interface to bind,
+                                     not available in redir mode
+          [-b <local_address>]       specific local address to bind,
+                                     not available in server mode
+          [-u]                       udprelay mode to supprot udp traffic
+                                     not available in redir mode
+          [-L <addr>:<port>]         setup a local port forwarding tunnel
+                                     only available in tunnel mode
+          [-v]                       verbose mode, debug output in console
 
 notes:
 
