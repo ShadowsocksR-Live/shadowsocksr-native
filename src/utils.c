@@ -82,9 +82,10 @@ void usage()
 {
     printf("\n");
     printf("shadowsocks-libev %s\n\n", VERSION);
-    printf("  maintained by Max Lv <max.c.lv@gmail.com>\n\n");
+    printf("  maintained by Max Lv <max.c.lv@gmail.com>\n");
+    printf("             and Linus Yang <laokongzi@gmail.com>\n\n");
     printf("  usage:\n\n");
-    printf("    ss-[local|redir|server]\n");
+    printf("    ss-[local|redir|server|tunnel]\n");
     printf("          -s <server_host>           host name or ip address of your remote server\n");
     printf("          -p <server_port>           port number of your remote server\n");
     printf("          -l <local_port>            port number of your local server\n");
@@ -100,11 +101,13 @@ void usage()
     printf("          [-c <config_file>]         json format config file\n");
     printf("\n");
     printf("          [-i <interface>]           specific network interface to bind,\n");
-    printf("                                     only available in local and server modes\n");
+    printf("                                     not available in redir mode\n");
     printf("          [-b <local_address>]       specific local address to bind,\n");
-    printf("                                     only available in local and redir modes\n");
+    printf("                                     not available in server mode\n");
     printf("          [-u]                       udprelay mode to supprot udp traffic\n");
-    printf("                                     only available in local and server modes\n");
+    printf("                                     not available in redir mode\n");
+    printf("          [-L <addr>:<port>]         setup a local port forwarding tunnel\n");
+    printf("                                     only available in tunnel mode\n");
     printf("          [-v]                       verbose mode, debug output in console\n");
     printf("\n");
 }
