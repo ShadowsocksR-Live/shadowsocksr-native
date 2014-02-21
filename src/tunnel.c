@@ -814,7 +814,6 @@ int main (int argc, char **argv)
 
     // parse tunnel addr
     parse_addr(tunnel_addr_str, &tunnel_addr);
-    free(tunnel_addr_str);
 
 #ifdef __MINGW32__
     winsock_init();
