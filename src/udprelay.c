@@ -473,6 +473,11 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
         goto CLEAN_UP;
     }
 
+#ifdef UDPRELAY_TUNNEL
+    // Construct packet
+    buf_len -= addr_header_len;
+    memmove(buf, buf + addr_header_len, buf_len);
+#else
     // Construct packet
     char *tmpbuf = malloc(buf_len + 3);
     memset(tmpbuf, 0, 3);
@@ -480,6 +485,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
     free(buf);
     buf = tmpbuf;
     buf_len += 3;
+#endif
 #endif
 
 #ifdef UDPRELAY_REMOTE
@@ -590,12 +596,20 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     int host_len = strlen(host);
     uint16_t port_num = (uint16_t)atoi(port);
     uint16_t port_net_num = htons(port_num);
-    int addr_header_len = 1 + host_len + 2;
+    int addr_header_len = 2 + host_len + 2;
 
     // initialize the addr header
     addr_header[0] = 3;
-    memcpy(addr_header + 1, host, host_len);
-    memcpy(addr_header + 1 + host_len, &port_net_num, 2);
+    addr_header[1] = host_len;
+    memcpy(addr_header + 2, host, host_len);
+    memcpy(addr_header + 2 + host_len, &port_net_num, 2);
+
+    // reconstruct the buffer
+    char *tmp = malloc(buf_len + addr_header_len);
+    memcpy(tmp, addr_header, addr_header_len);
+    memcpy(tmp + addr_header_len, buf, buf_len);
+    free(buf);
+    buf = tmp;
 
 #else
     char host[256] = {0};
@@ -696,8 +710,11 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         freeaddrinfo(result);
     }
 
-    buf_len -= offset;
-    memmove(buf, buf + offset, buf_len);
+    if (offset > 0)
+    {
+        buf_len -= offset;
+        memmove(buf, buf + offset, buf_len);
+    }
 
     buf = ss_encrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
 
