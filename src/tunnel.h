@@ -10,6 +10,7 @@
 struct listen_ctx
 {
     ev_io io;
+    addr_t tunnel_addr;
     addr_t *remote_addr;
     char *iface;
     int remote_num;
@@ -32,12 +33,12 @@ struct server
     int buf_len;
     int buf_idx;
     char *buf; // server send from, remote recv into
-    char stage;
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;
     struct server_ctx *recv_ctx;
     struct server_ctx *send_ctx;
     struct remote *remote;
+    struct sockaddr destaddr;
 };
 
 struct remote_ctx
@@ -59,7 +60,6 @@ struct remote
     struct server *server;
 };
 
-
 static void accept_cb (EV_P_ ev_io *w, int revents);
 static void server_recv_cb (EV_P_ ev_io *w, int revents);
 static void server_send_cb (EV_P_ ev_io *w, int revents);
@@ -73,4 +73,4 @@ static void close_and_free_server(EV_P_ struct server *server);
 struct remote* new_remote(int fd, int timeout);
 struct server* new_server(int fd, int method);
 
-#endif // _LOCAL_H
+#endif // _TUNNEL_H

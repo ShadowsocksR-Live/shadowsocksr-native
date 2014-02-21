@@ -35,7 +35,16 @@ static char *to_string(const json_value *value)
     return 0;
 }
 
-static void parse_addr(const char *str, remote_addr_t *addr) {
+void free_addr(addr_t *addr)
+{
+    free(addr->host);
+    free(addr->port);
+    addr->host = NULL;
+    addr->port = NULL;
+}
+
+void parse_addr(const char *str, addr_t *addr)
+{
     int ret = -1, n = 0;
     char *pch;
     pch = strchr(str, ':');
@@ -52,13 +61,13 @@ static void parse_addr(const char *str, remote_addr_t *addr) {
     }
     if (ret == -1)
     {
-        addr->host = str;
+        addr->host = strdup(str);
         addr->port = NULL;
     }
     else
     {
         addr->host = ss_strndup(str, ret);
-        addr->port = str + ret + 1;
+        addr->port = strdup(str + ret + 1);
     }
 }
 

@@ -766,7 +766,6 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
     if (sockfd < 0)
     {
         ERROR("socket");
-        close(sockfd);
         freeaddrinfo(res);
         return;
     }
@@ -808,7 +807,7 @@ int main (int argc, char **argv)
     char *iface = NULL;
 
     int remote_num = 0;
-    remote_addr_t remote_addr[MAX_REMOTE_NUM];
+    addr_t remote_addr[MAX_REMOTE_NUM];
     char *remote_port = NULL;
 
     opterr = 0;
@@ -929,7 +928,7 @@ int main (int argc, char **argv)
     // Setup proxy context
     struct listen_ctx listen_ctx;
     listen_ctx.remote_num = remote_num;
-    listen_ctx.remote_addr = malloc(sizeof(remote_addr_t) * remote_num);
+    listen_ctx.remote_addr = malloc(sizeof(addr_t) * remote_num);
     while (remote_num > 0)
     {
         int index = --remote_num;

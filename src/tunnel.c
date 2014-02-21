@@ -1,27 +1,37 @@
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <arpa/inet.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <locale.h>
+#include <signal.h>
+#include <string.h>
+#include <strings.h>
+#include <unistd.h>
+
+#ifndef __MINGW32__
+#include <errno.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <pthread.h>
-#include <signal.h>
-#include <string.h>
-#include <strings.h>
-#include <time.h>
-#include <unistd.h>
-#include <limits.h>
-#include <linux/netfilter_ipv4.h>
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
+#if defined(HAVE_SYS_IOCTL_H) && defined(HAVE_NET_IF_H) && defined(__linux__)
+#include <net/if.h>
+#include <sys/ioctl.h>
+#define SET_INTERFACE
+#endif
+
+#ifdef __MINGW32__
+#include "win32.h"
+#endif
+
 #include "utils.h"
-#include "redir.h"
+#include "tunnel.h"
 
 #ifndef EAGAIN
 #define EAGAIN EWOULDBLOCK
@@ -35,26 +45,29 @@
 #define BUF_SIZE 512
 #endif
 
-int getdestaddr(int fd, struct sockaddr_in *destaddr)
-{
-    socklen_t socklen = sizeof(*destaddr);
-    int error;
+int verbose = 0;
+int udprelay = 0;
 
-    error = getsockopt(fd, SOL_IP, SO_ORIGINAL_DST, destaddr, &socklen);
-    if (error)
-    {
-        return -1;
-    }
-    return 0;
-}
-
-int setnonblocking(int fd)
+#ifndef __MINGW32__
+static int setnonblocking(int fd)
 {
     int flags;
     if (-1 ==(flags = fcntl(fd, F_GETFL, 0)))
         flags = 0;
     return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
+#endif
+
+#ifdef SET_INTERFACE
+int setinterface(int socket_fd, const char* interface_name)
+{
+    struct ifreq interface;
+    memset(&interface, 0, sizeof(interface));
+    strncpy(interface.ifr_name, interface_name, IFNAMSIZ);
+    int res = setsockopt(socket_fd, SOL_SOCKET, SO_BINDTODEVICE, &interface, sizeof(struct ifreq));
+    return res;
+}
+#endif
 
 int create_and_bind(const char *addr, const char *port)
 {
@@ -155,6 +168,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     }
 
     remote->buf = ss_encrypt(BUF_SIZE, remote->buf, &r, server->e_ctx);
+
     if (remote->buf == NULL)
     {
         LOGE("invalid password or cipher");
@@ -164,6 +178,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     }
 
     int s = send(remote->fd, remote->buf, r, 0);
+
     if(s == -1)
     {
         if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -191,7 +206,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         ev_io_start(EV_A_ &remote->send_ctx->io);
         return;
     }
-
 }
 
 static void server_send_cb (EV_P_ ev_io *w, int revents)
@@ -312,6 +326,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
     }
 
     server->buf = ss_decrypt(BUF_SIZE, server->buf, &r, server->d_ctx);
+
     if (server->buf == NULL)
     {
         LOGE("invalid password or cipher");
@@ -319,6 +334,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
         close_and_free_server(EV_A_ server);
         return;
     }
+
     int s = send(server->fd, server->buf, r, 0);
 
     if (s == -1)
@@ -371,14 +387,37 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
             // send destaddr
             char *addr_to_send = malloc(BUF_SIZE);
             ssize_t addr_len = 0;
+            struct sockaddr *sa = &server->destaddr;
             addr_to_send[addr_len++] = 1;
+            
+            if (sa->sa_family == AF_INET)
+            {
+                // handle IPv4
+                struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+                size_t in_addr_len = sizeof(struct in_addr);
+                memcpy(addr_to_send + addr_len, &sin->sin_addr, in_addr_len);
+                addr_len += in_addr_len;
+                memcpy(addr_to_send + addr_len, &sin->sin_port, 2);
+                addr_len += 2;
+            }
+            else if (sa->sa_family == AF_INET6)
+            {
+                // handle IPv6
+                struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+                size_t in6_addr_len = sizeof(struct in6_addr);
+                memcpy(addr_to_send + addr_len, &sin6->sin6_addr, in6_addr_len);
+                addr_len += in6_addr_len;
+                memcpy(addr_to_send + addr_len, &sin6->sin6_port, 2);
+                addr_len += 2;
+            }
+            else
+            {
+                LOGE("unsupported addr type");
+                close_and_free_remote(EV_A_ remote);
+                close_and_free_server(EV_A_ server);
+                return;
+            }
 
-            // handle IP V4 only
-            size_t in_addr_len = sizeof(struct in_addr);
-            memcpy(addr_to_send + addr_len, &server->destaddr.sin_addr, in_addr_len);
-            addr_len += in_addr_len;
-            memcpy(addr_to_send + addr_len, &server->destaddr.sin_port, 2);
-            addr_len += 2;
             addr_to_send = ss_encrypt(BUF_SIZE, addr_to_send, &addr_len, server->e_ctx);
             if (addr_to_send == NULL)
             {
@@ -398,8 +437,8 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
                 close_and_free_server(EV_A_ server);
             }
 
-            ev_io_start(EV_A_ &server->recv_ctx->io);
             ev_io_start(EV_A_ &remote->recv_ctx->io);
+            ev_io_start(EV_A_ &server->recv_ctx->io);
 
             return;
         }
@@ -486,7 +525,7 @@ struct remote* new_remote(int fd, int timeout)
     return remote;
 }
 
-void free_remote(struct remote *remote)
+static void free_remote(struct remote *remote)
 {
     if (remote != NULL)
     {
@@ -494,7 +533,7 @@ void free_remote(struct remote *remote)
         {
             remote->server->remote = NULL;
         }
-        if (remote->buf != NULL)
+        if (remote->buf)
         {
             free(remote->buf);
         }
@@ -504,7 +543,7 @@ void free_remote(struct remote *remote)
     }
 }
 
-void close_and_free_remote(EV_P_ struct remote *remote)
+static void close_and_free_remote(EV_P_ struct remote *remote)
 {
     if (remote != NULL)
     {
@@ -547,7 +586,7 @@ struct server* new_server(int fd, int method)
     return server;
 }
 
-void free_server(struct server *server)
+static void free_server(struct server *server)
 {
     if (server != NULL)
     {
@@ -565,7 +604,7 @@ void free_server(struct server *server)
             cipher_context_release(&server->d_ctx->evp);
             free(server->d_ctx);
         }
-        if (server->buf != NULL)
+        if (server->buf)
         {
             free(server->buf);
         }
@@ -575,7 +614,7 @@ void free_server(struct server *server)
     }
 }
 
-void close_and_free_server(EV_P_ struct server *server)
+static void close_and_free_server(EV_P_ struct server *server)
 {
     if (server != NULL)
     {
@@ -589,39 +628,40 @@ void close_and_free_server(EV_P_ struct server *server)
 static void accept_cb (EV_P_ ev_io *w, int revents)
 {
     struct listen_ctx *listener = (struct listen_ctx *)w;
-    struct sockaddr_in destaddr;
-    int err;
-
-    int clientfd = accept(listener->fd, NULL, NULL);
-    if (clientfd == -1)
+    int serverfd = accept(listener->fd, NULL, NULL);
+    if (serverfd == -1)
     {
         ERROR("accept");
         return;
     }
-
-    err = getdestaddr(clientfd, &destaddr);
-    if (err)
-    {
-        ERROR("getdestaddr");
-        return;
-    }
-
-    setnonblocking(clientfd);
+    setnonblocking(serverfd);
     int opt = 1;
-    setsockopt(clientfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
+    setsockopt(serverfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
-    setsockopt(clientfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+    setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
-    struct addrinfo hints, *res;
+    struct addrinfo hints, *res, *dest;
     int sockfd;
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     int index = rand() % listener->remote_num;
-    err = getaddrinfo(listener->remote_addr[index].host, listener->remote_addr[index].port, &hints, &res);
+    if (verbose)
+    {
+        LOGD("connect to %s:%s", listener->remote_addr[index].host, listener->remote_addr[index].port);
+    }
+    int err = getaddrinfo(listener->remote_addr[index].host, listener->remote_addr[index].port, &hints, &res);
     if (err)
     {
+        ERROR("getaddrinfo");
+        return;
+    }
+
+    err = getaddrinfo(listener->tunnel_addr.host, listener->tunnel_addr.port, &hints, &dest);
+    if (err)
+    {
+        freeaddrinfo(res);
         ERROR("getaddrinfo");
         return;
     }
@@ -631,6 +671,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
     {
         ERROR("socket");
         freeaddrinfo(res);
+        freeaddrinfo(dest);
         return;
     }
 
@@ -641,15 +682,18 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
 
     // Setup
     setnonblocking(sockfd);
+#ifdef SET_INTERFACE
+    if (listener->iface) setinterface(sockfd, listener->iface);
+#endif
 
-    struct server *server = new_server(clientfd, listener->method);
+    struct server *server = new_server(serverfd, listener->method);
     struct remote *remote = new_remote(sockfd, listener->timeout);
+    server->destaddr = *dest->ai_addr;
     server->remote = remote;
     remote->server = server;
-    server->destaddr = destaddr;
-
     connect(sockfd, res->ai_addr, res->ai_addrlen);
     freeaddrinfo(res);
+    freeaddrinfo(dest);
     // listen to remote connected event
     ev_io_start(EV_A_ &remote->send_ctx->io);
     ev_timer_start(EV_A_ &remote->send_ctx->watcher);
@@ -667,14 +711,18 @@ int main (int argc, char **argv)
     char *method = NULL;
     char *pid_path = NULL;
     char *conf_path = NULL;
+    char *iface = NULL;
 
     int remote_num = 0;
     addr_t remote_addr[MAX_REMOTE_NUM];
     char *remote_port = NULL;
 
+    addr_t tunnel_addr = {.host = NULL, .port = NULL};
+    char *tunnel_addr_str = NULL;
+
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:c:b:")) != -1)
+    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:i:c:b:L:uv")) != -1)
     {
         switch (c)
         {
@@ -704,8 +752,20 @@ int main (int argc, char **argv)
         case 'c':
             conf_path = optarg;
             break;
+        case 'i':
+            iface = optarg;
+            break;
         case 'b':
             local_addr = optarg;
+            break;
+        case 'u':
+            udprelay = 1;
+            break;
+        case 'L':
+            tunnel_addr_str = optarg;
+            break;
+        case 'v':
+            verbose = 1;
             break;
         }
     }
@@ -735,7 +795,7 @@ int main (int argc, char **argv)
         if (timeout == NULL) timeout = conf->timeout;
     }
 
-    if (remote_num == 0 || remote_port == NULL ||
+    if (remote_num == 0 || remote_port == NULL || tunnel_addr_str == NULL ||
             local_port == NULL || password == NULL)
     {
         usage();
@@ -752,9 +812,16 @@ int main (int argc, char **argv)
         demonize(pid_path);
     }
 
+    // parse tunnel addr
+    parse_addr(tunnel_addr_str, &tunnel_addr);
+
+#ifdef __MINGW32__
+    winsock_init();
+#else
     // ignore SIGPIPE
     signal(SIGPIPE, SIG_IGN);
     signal(SIGABRT, SIG_IGN);
+#endif
 
     // Setup keys
     LOGD("initialize ciphers... %s", method);
@@ -776,6 +843,7 @@ int main (int argc, char **argv)
 
     // Setup proxy context
     struct listen_ctx listen_ctx;
+    listen_ctx.tunnel_addr = tunnel_addr;
     listen_ctx.remote_num = remote_num;
     listen_ctx.remote_addr = malloc(sizeof(addr_t) * remote_num);
     while (remote_num > 0)
@@ -786,6 +854,7 @@ int main (int argc, char **argv)
     }
     listen_ctx.timeout = atoi(timeout);
     listen_ctx.fd = listenfd;
+    listen_ctx.iface = iface;
     listen_ctx.method = m;
 
     struct ev_loop *loop = ev_default_loop(0);
@@ -795,7 +864,21 @@ int main (int argc, char **argv)
     }
     ev_io_init (&listen_ctx.io, accept_cb, listenfd, EV_READ);
     ev_io_start (loop, &listen_ctx.io);
+
+    // Setup UDP
+    if (udprelay)
+    {
+        LOGD("udprelay enabled.");
+        udprelay_init(local_addr, local_port, remote_addr[0].host, remote_addr[0].port,
+                tunnel_addr, m, listen_ctx.timeout, iface);
+    }
+
     ev_run (loop, 0);
+
+#ifdef __MINGW32__
+    winsock_cleanup();
+#endif
+
     return 0;
 }
 
