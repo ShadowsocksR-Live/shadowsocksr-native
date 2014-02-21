@@ -36,13 +36,19 @@ static char *to_string(const json_value *value)
 }
 
 static void parse_addr(const char *str, remote_addr_t *addr) {
-    int ret = -1;
+    int ret = -1, n = 0;
     char *pch;
     pch = strchr(str, ':');
     while (pch != NULL)
     {
+        n++;
         ret = pch - str;
         pch = strchr(pch + 1, ':');
+    }
+    if (n > 1) {
+        if (strcmp(str+ret, "]") != 0) {
+            ret = -1;
+        }
     }
     if (ret == -1)
     {
