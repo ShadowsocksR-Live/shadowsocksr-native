@@ -279,7 +279,7 @@ struct query_ctx *new_query_ctx(asyncns_query_t *query,
     ctx->buf_len = buf_len;
     memcpy(ctx->buf, buf, buf_len);
     ctx->query = query;
-    ev_timer_init(&ctx->watcher, query_resolve_cb, 0.2, 0.5);
+    ev_timer_init(&ctx->watcher, query_resolve_cb, 0.1, 0.2);
     return ctx;
 }
 
@@ -610,6 +610,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     memcpy(tmp + addr_header_len, buf, buf_len);
     free(buf);
     buf = tmp;
+    buf_len += addr_header_len;
 
 #else
     char host[256] = {0};
