@@ -148,8 +148,44 @@ static int parse_udprealy_header(const char* buf, const int buf_len, char *host,
     offset += 2;
 
     return offset;
-
 }
+
+static char *get_ip_str(const struct sockaddr *sa)
+{
+    static char s[256];
+    memset(s, 0, 256);
+    char addr[128] = {0};
+    char port[16] = {0};
+    uint16_t p;
+
+    switch(sa->sa_family) {
+        case AF_INET:
+            inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr),
+                    addr, 256);
+            p = ntohs(((struct sockaddr_in *)sa)->sin_port);
+            sprintf(port, "%d", p);
+            break;
+
+        case AF_INET6:
+            inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr),
+                    addr, 256);
+            p = ntohs(((struct sockaddr_in *)sa)->sin_port);
+            sprintf(port, "%d", p);
+            break;
+
+        default:
+            strncpy(s, "Unknown AF", 128);
+    }
+
+    int addr_len = strlen(addr);
+    int port_len = strlen(port);
+    memcpy(s, addr, addr_len);
+    memcpy(s + addr_len + 1, port, port_len);
+    s[addr_len] = ':';
+
+    return s;
+}
+
 
 int create_remote_socket(int ipv6)
 {
@@ -632,18 +668,27 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     struct remote_ctx *remote_ctx = NULL;
     cache_lookup(conn_cache, key, (void*)&remote_ctx);
 
+    if (remote_ctx != NULL)
+    {
+        if (memcmp(&src_addr, &remote_ctx->src_addr, sizeof(src_addr))
+                || strcmp(addr_header, remote_ctx->addr_header) != 0)
+        {
+            remote_ctx = NULL;
+        }
+    }
+
     if (remote_ctx == NULL)
     {
         if (verbose)
         {
-            LOGD("[udp] cache missed: %s:%s", host, port);
+            LOGD("[udp] cache missed: %s:%s <-> %s", host, port, get_ip_str(&src_addr));
         }
     }
     else
     {
         if (verbose)
         {
-            LOGD("[udp] cache hit: %s:%s", host, port);
+            LOGD("[udp] cache hit: %s:%s <-> %s", host, port, get_ip_str(&src_addr));
         }
     }
 
@@ -757,7 +802,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     }
     else
     {
-
         int s = sendto(remote_ctx->fd, buf + addr_header_len,
                 buf_len - addr_header_len, 0, &remote_ctx->dst_addr, sizeof(remote_ctx->dst_addr));
 
@@ -765,7 +809,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         {
             ERROR("udprelay_sendto_remote");
         }
-
     }
 #endif
 
