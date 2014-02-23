@@ -1,13 +1,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=shadowsocks-libev
-PKG_VERSION:=1.4.2
+PKG_VERSION:=1.4.3
 PKG_RELEASE=$(PKG_SOURCE_VERSION)
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/madeye/shadowsocks-libev.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=343940e6ffd2062b11dccab0894b73f7f32722f7
+PKG_SOURCE_VERSION:=69f8bd61c096337abb34a9e64534865d08022957
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_MAINTAINER:=Max Lv <max.c.lv@gmail.com>
 
@@ -57,6 +57,7 @@ define Package/shadowsocks-libev/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/etc/init.d $(1)/etc/config
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/ss-local $(1)/usr/bin/ss-local
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/ss-redir $(1)/usr/bin/ss-redir
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/ss-tunnel $(1)/usr/bin/ss-tunnel
 	$(INSTALL_BIN) ./files/shadowsocks.init $(1)/etc/init.d/shadowsocks
 	$(INSTALL_CONF) ./files/shadowsocks.json $(1)/etc/config/shadowsocks.json
 endef
