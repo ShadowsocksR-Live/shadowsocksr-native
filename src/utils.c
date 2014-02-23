@@ -82,8 +82,7 @@ void usage()
 {
     printf("\n");
     printf("shadowsocks-libev %s\n\n", VERSION);
-    printf("  maintained by Max Lv <max.c.lv@gmail.com>\n");
-    printf("             and Linus Yang <laokongzi@gmail.com>\n\n");
+    printf("  maintained by Max Lv <max.c.lv@gmail.com> and Linus Yang <laokongzi@gmail.com>\n\n");
     printf("  usage:\n\n");
     printf("    ss-[local|redir|server|tunnel]\n");
     printf("          -s <server_host>           host name or ip address of your remote server\n");
