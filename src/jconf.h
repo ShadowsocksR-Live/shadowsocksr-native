@@ -10,12 +10,12 @@ typedef struct
 {
     char *host;
     char *port;
-} addr_t;
+} ss_addr_t;
 
 typedef struct
 {
     int  remote_num;
-    addr_t remote_addr[MAX_REMOTE_NUM];
+    ss_addr_t remote_addr[MAX_REMOTE_NUM];
     char *remote_port;
     char *local_addr;
     char *local_port;
@@ -25,7 +25,7 @@ typedef struct
 } jconf_t;
 
 jconf_t *read_jconf(const char* file);
-void parse_addr(const char *str, addr_t *addr);
-void free_addr(addr_t *addr);
+void parse_addr(const char *str, ss_addr_t *addr);
+void free_addr(ss_addr_t *addr);
 
 #endif // _JCONF_H

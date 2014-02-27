@@ -35,7 +35,7 @@ static char *to_string(const json_value *value)
     return 0;
 }
 
-void free_addr(addr_t *addr)
+void free_addr(ss_addr_t *addr)
 {
     free(addr->host);
     free(addr->port);
@@ -43,7 +43,7 @@ void free_addr(addr_t *addr)
     addr->port = NULL;
 }
 
-void parse_addr(const char *str, addr_t *addr)
+void parse_addr(const char *str, ss_addr_t *addr)
 {
     int ret = -1, n = 0;
     char *pch;

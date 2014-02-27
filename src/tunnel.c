@@ -385,19 +385,19 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
             ev_timer_stop(EV_A_ &remote_send_ctx->watcher);
 
             // send destaddr
-            char *addr_to_send = malloc(BUF_SIZE);
+            char *ss_addr_to_send = malloc(BUF_SIZE);
             ssize_t addr_len = 0;
             struct sockaddr *sa = &server->destaddr;
-            addr_to_send[addr_len++] = 1;
-            
+            ss_addr_to_send[addr_len++] = 1;
+
             if (sa->sa_family == AF_INET)
             {
                 // handle IPv4
                 struct sockaddr_in *sin = (struct sockaddr_in *)sa;
                 size_t in_addr_len = sizeof(struct in_addr);
-                memcpy(addr_to_send + addr_len, &sin->sin_addr, in_addr_len);
+                memcpy(ss_addr_to_send + addr_len, &sin->sin_addr, in_addr_len);
                 addr_len += in_addr_len;
-                memcpy(addr_to_send + addr_len, &sin->sin_port, 2);
+                memcpy(ss_addr_to_send + addr_len, &sin->sin_port, 2);
                 addr_len += 2;
             }
             else if (sa->sa_family == AF_INET6)
@@ -405,9 +405,9 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
                 // handle IPv6
                 struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
                 size_t in6_addr_len = sizeof(struct in6_addr);
-                memcpy(addr_to_send + addr_len, &sin6->sin6_addr, in6_addr_len);
+                memcpy(ss_addr_to_send + addr_len, &sin6->sin6_addr, in6_addr_len);
                 addr_len += in6_addr_len;
-                memcpy(addr_to_send + addr_len, &sin6->sin6_port, 2);
+                memcpy(ss_addr_to_send + addr_len, &sin6->sin6_port, 2);
                 addr_len += 2;
             }
             else
@@ -418,8 +418,8 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
                 return;
             }
 
-            addr_to_send = ss_encrypt(BUF_SIZE, addr_to_send, &addr_len, server->e_ctx);
-            if (addr_to_send == NULL)
+            ss_addr_to_send = ss_encrypt(BUF_SIZE, ss_addr_to_send, &addr_len, server->e_ctx);
+            if (ss_addr_to_send == NULL)
             {
                 LOGE("invalid password or cipher");
                 close_and_free_remote(EV_A_ remote);
@@ -427,8 +427,8 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
                 return;
             }
 
-            int s = send(remote->fd, addr_to_send, addr_len, 0);
-            free(addr_to_send);
+            int s = send(remote->fd, ss_addr_to_send, addr_len, 0);
+            free(ss_addr_to_send);
 
             if (s < addr_len)
             {
@@ -714,10 +714,10 @@ int main (int argc, char **argv)
     char *iface = NULL;
 
     int remote_num = 0;
-    addr_t remote_addr[MAX_REMOTE_NUM];
+    ss_addr_t remote_addr[MAX_REMOTE_NUM];
     char *remote_port = NULL;
 
-    addr_t tunnel_addr = {.host = NULL, .port = NULL};
+    ss_addr_t tunnel_addr = {.host = NULL, .port = NULL};
     char *tunnel_addr_str = NULL;
 
     opterr = 0;
@@ -845,7 +845,7 @@ int main (int argc, char **argv)
     struct listen_ctx listen_ctx;
     listen_ctx.tunnel_addr = tunnel_addr;
     listen_ctx.remote_num = remote_num;
-    listen_ctx.remote_addr = malloc(sizeof(addr_t) * remote_num);
+    listen_ctx.remote_addr = malloc(sizeof(ss_addr_t) * remote_num);
     while (remote_num > 0)
     {
         int index = --remote_num;
