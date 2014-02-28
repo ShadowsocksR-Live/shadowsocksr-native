@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <time.h>
 
+#define PORTSTRLEN 16
+#define SS_ADDRSTRLEN (INET6_ADDRSTRLEN + PORTSTRLEN + 1)
+
 #ifdef ANDROID
 
 #include <android/log.h>

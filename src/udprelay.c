@@ -150,31 +150,31 @@ static int parse_udprealy_header(const char* buf, const int buf_len, char *host,
     return offset;
 }
 
-static char *get_ip_str(const struct sockaddr *sa)
+static char *get_addr_str(const struct sockaddr *sa)
 {
-    static char s[256];
-    memset(s, 0, 256);
-    char addr[128] = {0};
-    char port[16] = {0};
+    static char s[SS_ADDRSTRLEN];
+    memset(s, 0, SS_ADDRSTRLEN);
+    char addr[INET6_ADDRSTRLEN] = {0};
+    char port[PORTSTRLEN] = {0};
     uint16_t p;
 
     switch(sa->sa_family) {
         case AF_INET:
             inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr),
-                    addr, 256);
+                    addr, INET_ADDRSTRLEN);
             p = ntohs(((struct sockaddr_in *)sa)->sin_port);
             sprintf(port, "%d", p);
             break;
 
         case AF_INET6:
             inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr),
-                    addr, 256);
+                    addr, INET6_ADDRSTRLEN);
             p = ntohs(((struct sockaddr_in *)sa)->sin_port);
             sprintf(port, "%d", p);
             break;
 
         default:
-            strncpy(s, "Unknown AF", 128);
+            strncpy(s, "Unknown AF", SS_ADDRSTRLEN);
     }
 
     int addr_len = strlen(addr);
@@ -481,12 +481,12 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
     ev_timer_again(EV_A_ &remote_ctx->watcher);
 
     struct sockaddr src_addr;
-    socklen_t addr_len = sizeof(src_addr);
+    socklen_t src_addr_len = sizeof(src_addr);
     unsigned int addr_header_len = remote_ctx->addr_header_len;
     char *buf = malloc(BUF_SIZE);
 
     // recv
-    ssize_t buf_len = recvfrom(remote_ctx->fd, buf, BUF_SIZE, 0, &src_addr, &addr_len);
+    ssize_t buf_len = recvfrom(remote_ctx->fd, buf, BUF_SIZE, 0, &src_addr, &src_addr_len);
 
     if (buf_len == -1)
     {
@@ -554,10 +554,10 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     struct sockaddr src_addr;
     char *buf = malloc(BUF_SIZE);
 
-    socklen_t addr_len = sizeof(src_addr);
+    socklen_t src_addr_len = sizeof(src_addr);
     unsigned int offset = 0;
 
-    ssize_t buf_len = recvfrom(server_ctx->fd, buf, BUF_SIZE, 0, &src_addr, &addr_len);
+    ssize_t buf_len = recvfrom(server_ctx->fd, buf, BUF_SIZE, 0, &src_addr, &src_addr_len);
 
     if (buf_len == -1)
     {
@@ -681,14 +681,14 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     {
         if (verbose)
         {
-            LOGD("[udp] cache missed: %s:%s <-> %s", host, port, get_ip_str(&src_addr));
+            LOGD("[udp] cache missed: %s:%s <-> %s", host, port, get_addr_str(&src_addr));
         }
     }
     else
     {
         if (verbose)
         {
-            LOGD("[udp] cache hit: %s:%s <-> %s", host, port, get_ip_str(&src_addr));
+            LOGD("[udp] cache hit: %s:%s <-> %s", host, port, get_addr_str(&src_addr));
         }
     }
 
