@@ -898,6 +898,7 @@ int main (int argc, char **argv)
 
     int i, c;
     int pid_flags = 0;
+    char *user = NULL;
     char *password = NULL;
     char *timeout = NULL;
     char *method = NULL;
@@ -913,7 +914,7 @@ int main (int argc, char **argv)
 
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:c:i:d:uv")) != -1)
+    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:c:i:d:a:uv")) != -1)
     {
         switch (c)
         {
@@ -945,6 +946,9 @@ int main (int argc, char **argv)
         case 'd':
             dns_thread_num = atoi(optarg);
             if (!dns_thread_num) FATAL("Invalid DNS thread number");
+            break;
+        case 'a':
+            user = optarg;
             break;
         case 'u':
             udprelay = 1;
@@ -1051,6 +1055,10 @@ int main (int argc, char **argv)
         LOGD("udprelay enabled.");
         udprelay_init(server_host[0], server_port, asyncns, m, listen_ctx.timeout, iface);
     }
+
+    // setuid
+    if (user != NULL)
+        run_as(user);
 
     // start ev loop
     ev_run (loop, 0);

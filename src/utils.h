@@ -97,6 +97,7 @@ char *itoa(int i);
 
 #endif
 
+int run_as(const char *user);
 void FATAL(const char *msg);
 void usage(void);
 void demonize(const char* path);

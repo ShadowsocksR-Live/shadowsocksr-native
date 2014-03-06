@@ -660,6 +660,7 @@ int main (int argc, char **argv)
 
     int i, c;
     int pid_flags = 0;
+    char *user = NULL;
     char *local_port = NULL;
     char *local_addr = NULL;
     char *password = NULL;
@@ -674,7 +675,7 @@ int main (int argc, char **argv)
 
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:c:b:")) != -1)
+    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:c:b:a:")) != -1)
     {
         switch (c)
         {
@@ -706,6 +707,9 @@ int main (int argc, char **argv)
             break;
         case 'b':
             local_addr = optarg;
+            break;
+        case 'a':
+            user = optarg;
             break;
         }
     }
@@ -795,7 +799,13 @@ int main (int argc, char **argv)
     }
     ev_io_init (&listen_ctx.io, accept_cb, listenfd, EV_READ);
     ev_io_start (loop, &listen_ctx.io);
+
+    // setuid
+    if (user != NULL)
+        run_as(user);
+
     ev_run (loop, 0);
+
     return 0;
 }
 

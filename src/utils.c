@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <pwd.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -58,6 +59,93 @@ char *itoa(int i)
     }
     return p;
 }
+
+/*
+ * setuid() and setgid() for a specified user.
+ */
+int run_as(const char *user)
+{
+#ifndef __MINGW32__
+	if (user[0])
+    {
+#ifdef HAVE_GETPWNAM_R
+		struct passwd pwdbuf, *pwd;
+		size_t buflen;
+		int err;
+
+		for (buflen = 128;; buflen *= 2)
+        {
+			char buf[buflen];  /* variable length array */
+
+			/* Note that we use getpwnam_r() instead of getpwnam(),
+			   which returns its result in a statically allocated buffer and
+			   cannot be considered thread safe. */
+			err = getpwnam_r(user, &pwdbuf, buf, buflen, &pwd);
+			if(err == 0 && pwd)
+            {
+				/* setgid first, because we may not be allowed to do it anymore after setuid */
+				if (setgid(pwd->pw_gid) != 0)
+                {
+					LOGE("Could not change group id to that of run_as user '%s': %s",
+						  user,strerror(errno));
+					return 0;
+				}
+
+				if (setuid(pwd->pw_uid) != 0)
+                {
+					LOGE("Could not change user id to that of run_as user '%s': %s",
+						  user,strerror(errno));
+					return 0;
+				}
+				break;
+			}
+			else if (err != ERANGE)
+            {
+				if(err)
+					LOGE("run_as user '%s' could not be found: %s",user,strerror(err));
+				else
+					LOGE("run_as user '%s' could not be found.",user);
+				return 0;
+			}
+			else if (buflen >= 16*1024)
+            {
+				/* If getpwnam_r() seems defective, call it quits rather than
+				   keep on allocating ever larger buffers until we crash. */
+				LOGE("getpwnam_r() requires more than %u bytes of buffer space.",(unsigned)buflen);
+				return 0;
+			}
+			/* Else try again with larger buffer. */
+		}
+#else
+		/* No getpwnam_r() :-(  We'll use getpwnam() and hope for the best. */
+		struct passwd *pwd;
+
+		if (!(pwd=getpwnam(user)))
+        {
+			LOGE("run_as user %s could not be found.",user);
+			return 0;
+		}
+		/* setgid first, because we may not allowed to do it anymore after setuid */
+		if (setgid(pwd->pw_gid) != 0)
+        {
+			LOGE("Could not change group id to that of run_as user '%s': %s",
+				  user,strerror(errno));
+			return 0;
+		}
+		if (setuid(pwd->pw_uid) != 0)
+        {
+			LOGE("Could not change user id to that of run_as user '%s': %s",
+				  user,strerror(errno));
+			return 0;
+		}
+#endif
+	}
+
+#endif //__MINGW32__
+	return 1;
+}
+
+
 
 char *ss_strndup(const char *s, size_t n)
 {
