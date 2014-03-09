@@ -2,15 +2,15 @@
 # Copyright (C) 2006-2011 OpenWrt.org
 
 START=95
-STOP=95
+
+SERVICE_USE_PID=1
+SERVICE_WRITE_PID=1
+SERVICE_DAEMONIZE=1
 
 start() {
-    echo "starting shadowsocks..."
-    /usr/bin/ss-local -c /etc/config/shadowsocks.json -f /var/run/shadowsocks.pid
+    service_start /usr/bin/ss-local -c /etc/shadowsocks.json
 }
 
 stop() {
-    echo "shadowsocks stopped."
-    kill -9 `cat /var/run/shadowsocks.pid`
+    service_stop /usr/bin/ss-local
 }
-
