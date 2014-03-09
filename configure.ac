@@ -55,6 +55,21 @@ case "${with_crypto_library}" in
     ;;
 esac
 
+dnl Checks for Apple CommonCrypto API
+AC_ARG_ENABLE(applecc,
+  AS_HELP_STRING([--enable-applecc], [enable Apple CommonCrypto API support]),
+  [
+    AC_CHECK_HEADERS(CommonCrypto/CommonCrypto.h,
+      [],
+      [AC_MSG_ERROR([CommonCrypto header files not found.]); break]
+    )
+    AC_CHECK_FUNCS([CCCryptorCreateWithMode], ,
+      [AC_MSG_ERROR([CommonCrypto API needs OS X (>= 10.7) and iOS (>= 5.0).]); break]
+    )
+    AC_DEFINE([USE_CRYPTO_APPLECC], [1], [Use Apple CommonCrypto library])
+  ]
+)
+
 dnl Checks for inet_ntop
 ss_FUNC_INET_NTOP
 
