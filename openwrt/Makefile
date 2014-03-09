@@ -11,9 +11,10 @@ PKG_SOURCE_VERSION:=69f8bd61c096337abb34a9e64534865d08022957
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_MAINTAINER:=Max Lv <max.c.lv@gmail.com>
 
-PKG_INSTALL:=1 
-PKG_FIXUP:=autoreconf 
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(BUILD_VARIANT)/$(PKG_NAME)-$(PKG_VERSION)
 
+PKG_INSTALL:=1
+PKG_FIXUP:=autoreconf
 PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -46,7 +47,7 @@ endef
 Package/shadowsocks-libev-polarssl/description=$(Package/shadowsocks-libev/description)
 
 define Package/shadowsocks-libev/conffiles
-/etc/config/shadowsocks.json
+/etc/shadowsocks.json
 endef
 
 ifeq ($(BUILD_VARIANT),polarssl)
@@ -54,12 +55,11 @@ ifeq ($(BUILD_VARIANT),polarssl)
 endif
 
 define Package/shadowsocks-libev/install
-	$(INSTALL_DIR) $(1)/usr/bin $(1)/etc/init.d $(1)/etc/config
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/ss-local $(1)/usr/bin/ss-local
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/ss-redir $(1)/usr/bin/ss-redir
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/ss-tunnel $(1)/usr/bin/ss-tunnel
+	$(INSTALL_DIR) $(1)/etc/init.d
+	$(INSTALL_CONF) ./files/shadowsocks.json $(1)/etc
 	$(INSTALL_BIN) ./files/shadowsocks.init $(1)/etc/init.d/shadowsocks
-	$(INSTALL_CONF) ./files/shadowsocks.json $(1)/etc/config/shadowsocks.json
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/ss-{local,redir,tunnel} $(1)/usr/bin
 endef
 
 Package/shadowsocks-libev-polarssl/install=$(Package/shadowsocks-libev/install)
