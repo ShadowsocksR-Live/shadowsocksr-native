@@ -25,7 +25,7 @@
 
 #include <openssl/evp.h>
 typedef EVP_CIPHER cipher_kt_t;
-typedef EVP_CIPHER_CTX cipher_ctx_t;
+typedef EVP_CIPHER_CTX cipher_evp_t;
 typedef EVP_MD digest_type_t;
 #define MAX_KEY_LENGTH EVP_MAX_KEY_LENGTH
 #define MAX_IV_LENGTH EVP_MAX_IV_LENGTH
@@ -36,13 +36,43 @@ typedef EVP_MD digest_type_t;
 #include <polarssl/cipher.h>
 #include <polarssl/md.h>
 typedef cipher_info_t cipher_kt_t;
-typedef cipher_context_t cipher_ctx_t;
+typedef cipher_context_t cipher_evp_t;
 typedef md_info_t digest_type_t;
 #define MAX_KEY_LENGTH 64
 #define MAX_IV_LENGTH POLARSSL_MAX_IV_LENGTH
 #define MAX_MD_SIZE POLARSSL_MD_MAX_SIZE
 
 #endif
+
+#ifdef USE_CRYPTO_APPLECC
+
+#include <CommonCrypto/CommonCrypto.h>
+
+#define kCCAlgorithmInvalid UINT32_MAX
+#define kCCContextValid 0
+#define kCCContextInvalid -1
+
+typedef struct {
+    CCCryptorRef cryptor;
+    int valid;
+    CCOperation encrypt;
+    CCAlgorithm cipher;
+    CCMode mode;
+    CCPadding padding;
+    uint8_t iv[MAX_IV_LENGTH];
+    uint8_t key[MAX_KEY_LENGTH];
+    size_t iv_len;
+    size_t key_len;
+} cipher_cc_t;
+
+#endif
+
+typedef struct {
+    cipher_evp_t evp;
+#ifdef USE_CRYPTO_APPLECC
+    cipher_cc_t cc;
+#endif
+} cipher_ctx_t;
 
 #ifdef HAVE_STDINT_H
 #include <stdint.h>

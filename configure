@@ -752,6 +752,7 @@ with_openssl_lib
 with_polarssl
 with_polarssl_include
 with_polarssl_lib
+enable_applecc
 enable_assert
 enable_largefile
 '
@@ -1391,6 +1392,7 @@ Optional Features:
   --enable-fast-install[=PKGS]
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --enable-applecc        enable Apple CommonCrypto API support
   --disable-assert        turn off assertions
   --disable-largefile     omit support for large files
 
@@ -12977,6 +12979,46 @@ $as_echo "#define USE_CRYPTO_POLARSSL 1" >>confdefs.h
 
     ;;
 esac
+
+# Check whether --enable-applecc was given.
+if test "${enable_applecc+set}" = set; then :
+  enableval=$enable_applecc;
+    for ac_header in CommonCrypto/CommonCrypto.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "CommonCrypto/CommonCrypto.h" "ac_cv_header_CommonCrypto_CommonCrypto_h" "$ac_includes_default"
+if test "x$ac_cv_header_CommonCrypto_CommonCrypto_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_COMMONCRYPTO_COMMONCRYPTO_H 1
+_ACEOF
+
+else
+  as_fn_error $? "CommonCrypto header files not found." "$LINENO" 5; break
+
+fi
+
+done
+
+    for ac_func in CCCryptorCreateWithMode
+do :
+  ac_fn_c_check_func "$LINENO" "CCCryptorCreateWithMode" "ac_cv_func_CCCryptorCreateWithMode"
+if test "x$ac_cv_func_CCCryptorCreateWithMode" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_CCCRYPTORCREATEWITHMODE 1
+_ACEOF
+
+else
+  as_fn_error $? "CommonCrypto API needs OS X (>= 10.7) and iOS (>= 5.0)." "$LINENO" 5; break
+
+fi
+done
+
+
+$as_echo "#define USE_CRYPTO_APPLECC 1" >>confdefs.h
+
+
+
+fi
+
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for C/C++ restrict keyword" >&5
 $as_echo_n "checking for C/C++ restrict keyword... " >&6; }

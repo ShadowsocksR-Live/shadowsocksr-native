@@ -18,11 +18,17 @@
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 
+/* Define to 1 if you have the `CCCryptorCreateWithMode' function. */
+#undef HAVE_CCCRYPTORCREATEWITHMODE
+
 /* Define to 1 if you have the `clock_gettime' function. */
 #undef HAVE_CLOCK_GETTIME
 
 /* Define to 1 to use the syscall interface for clock_gettime */
 #undef HAVE_CLOCK_SYSCALL
+
+/* Define to 1 if you have the <CommonCrypto/CommonCrypto.h> header file. */
+#undef HAVE_COMMONCRYPTO_COMMONCRYPTO_H
 
 /* Define to 1 if you have the declaration of `inet_ntop', and to 0 if you
    don't. */
@@ -275,6 +281,9 @@
 
 /* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
 #undef TIME_WITH_SYS_TIME
+
+/* Use Apple CommonCrypto library */
+#undef USE_CRYPTO_APPLECC
 
 /* Use OpenSSL library */
 #undef USE_CRYPTO_OPENSSL
