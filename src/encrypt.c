@@ -108,6 +108,7 @@ static const CCAlgorithm supported_ciphers_applecc[CIPHER_NUM] =
     kCCAlgorithmInvalid
 };
 
+#ifdef USE_CRYPTO_POLARSSL
 static const int supported_ciphers_iv_size[CIPHER_NUM] = {
     0, 0, 16, 16, 16, 8, 16, 16, 16, 8, 8, 8, 8, 16
 };
@@ -115,6 +116,7 @@ static const int supported_ciphers_iv_size[CIPHER_NUM] = {
 static const int supported_ciphers_key_size[CIPHER_NUM] = {
     0, 16, 16, 24, 32, 16, 16, 24, 32, 16, 8, 16, 16, 16
 };
+#endif
 #endif
 
 static int random_compare(const void *_x, const void *_y, uint32_t i, uint64_t a)
@@ -517,6 +519,14 @@ void cipher_context_init(cipher_ctx_t *ctx, int method, int enc)
 
 void cipher_context_set_iv(cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len, int enc)
 {
+    if (iv == NULL) {
+        LOGE("cipher_context_set_iv(): IV is null");
+        return;
+    }
+    if (enc) {
+        rand_bytes(iv, iv_len);
+    }
+
 #ifdef USE_CRYPTO_APPLECC
     cipher_cc_t *cc = &ctx->cc;
     if (cc->valid == kCCContextValid) {
@@ -551,12 +561,9 @@ void cipher_context_set_iv(cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len, int en
 #endif
 
     cipher_evp_t *evp = &ctx->evp;
-    if (evp == NULL || iv == NULL) {
-        LOGE("cipher_context_set_keyiv(): Cipher context or IV is null");
+    if (evp == NULL) {
+        LOGE("cipher_context_set_iv(): Cipher context is null");
         return;
-    }
-    if (enc) {
-        rand_bytes(iv, iv_len);
     }
 #if defined(USE_CRYPTO_OPENSSL)
     if (!EVP_CipherInit_ex(evp, NULL, NULL, enc_key, iv, enc)) {
@@ -612,7 +619,6 @@ void cipher_context_release(cipher_ctx_t *ctx) {
 
 static int cipher_context_update(cipher_ctx_t *ctx, uint8_t *output, int *olen,
                                  const uint8_t *input, int ilen) {
-    cipher_evp_t *evp = &ctx->evp;
 #ifdef USE_CRYPTO_APPLECC
     cipher_cc_t *cc = &ctx->cc;
     if (cc->valid == kCCContextValid) {
@@ -621,6 +627,7 @@ static int cipher_context_update(cipher_ctx_t *ctx, uint8_t *output, int *olen,
         return (ret == kCCSuccess) ? 1 : 0;
     }
 #endif
+    cipher_evp_t *evp = &ctx->evp;
 #if defined(USE_CRYPTO_OPENSSL)
     return EVP_CipherUpdate(evp, (uint8_t *) output, olen,
                             (const uint8_t *) input, (size_t) ilen);
