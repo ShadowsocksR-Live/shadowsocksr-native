@@ -108,6 +108,7 @@ static const CCAlgorithm supported_ciphers_applecc[CIPHER_NUM] =
     kCCAlgorithmInvalid
 };
 
+#ifdef USE_CRYPTO_POLARSSL
 static const int supported_ciphers_iv_size[CIPHER_NUM] = {
     0, 0, 16, 16, 16, 8, 16, 16, 16, 8, 8, 8, 8, 16
 };
@@ -115,6 +116,7 @@ static const int supported_ciphers_iv_size[CIPHER_NUM] = {
 static const int supported_ciphers_key_size[CIPHER_NUM] = {
     0, 16, 16, 24, 32, 16, 16, 24, 32, 16, 8, 16, 16, 16
 };
+#endif
 #endif
 
 static int random_compare(const void *_x, const void *_y, uint32_t i, uint64_t a)
