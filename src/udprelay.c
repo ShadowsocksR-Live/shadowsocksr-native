@@ -350,7 +350,10 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
     struct remote_ctx *remote_ctx = (struct remote_ctx *) (((void*)watcher)
                                     - sizeof(ev_io));
 
-    LOGE("UDP connection timeout");
+    if (verbose)
+    {
+        LOGD("UDP connection timeout");
+    }
 
     char *key = hash_key(remote_ctx->addr_header,
                          remote_ctx->addr_header_len, &remote_ctx->src_addr);
