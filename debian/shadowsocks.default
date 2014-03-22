@@ -12,6 +12,9 @@ START=yes
 # Configuration file
 CONFFILE="/etc/shadowsocks/config.json"
 
+# Extra command line arguments
+DAEMON_ARGS=""
+
 # User and group to run the server as
 USER=root
 GROUP=root
