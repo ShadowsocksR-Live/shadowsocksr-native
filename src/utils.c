@@ -2,7 +2,9 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#ifndef __MINGW32__
 #include <pwd.h>
+#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
