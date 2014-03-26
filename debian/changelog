@@ -1,3 +1,10 @@
+shadowsocks (1.4.4-1) unstable; urgency=low
+
+  * Add CommonCrypto support for darwin.
+  * Fix some config related issues.
+
+ -- Max Lv <max.c.lv@gmail.com>  Wed, 26 Mar 2014 13:29:03 +0800
+
 shadowsocks (1.4.3-1) unstable; urgency=low
 
   * Add tunnel mode with local port forwarding feature.
