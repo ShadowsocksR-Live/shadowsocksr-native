@@ -704,7 +704,6 @@ int main (int argc, char **argv)
 
     int i, c;
     int pid_flags = 0;
-    char *user = NULL;
     char *local_port = NULL;
     char *local_addr = NULL;
     char *password = NULL;
@@ -723,7 +722,7 @@ int main (int argc, char **argv)
 
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:uv")) != -1)
+    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:i:c:b:L:uv")) != -1)
     {
         switch (c)
         {
@@ -764,9 +763,6 @@ int main (int argc, char **argv)
             break;
         case 'L':
             tunnel_addr_str = optarg;
-            break;
-        case 'a':
-            user = optarg;
             break;
         case 'v':
             verbose = 1;
@@ -876,10 +872,6 @@ int main (int argc, char **argv)
         udprelay_init(local_addr, local_port, remote_addr[0].host, remote_addr[0].port,
                 tunnel_addr, m, listen_ctx.timeout, iface);
     }
-
-    // setuid
-    if (user != NULL)
-        run_as(user);
 
     ev_run (loop, 0);
 

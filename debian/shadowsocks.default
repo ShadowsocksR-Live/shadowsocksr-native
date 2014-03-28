@@ -18,3 +18,6 @@ DAEMON_ARGS=""
 # User and group to run the server as
 USER=root
 GROUP=root
+
+# Number of maximum file descriptors
+MAXFD=1024
