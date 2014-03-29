@@ -45,9 +45,6 @@ SCRIPTNAME=/etc/init.d/$NAME
 #
 do_start()
 {
-    # Modify the file descriptor limit
-    ulimit -n ${MAXFD}
-
 	# Take care of pidfile permissions
 	mkdir /var/run/$NAME 2>/dev/null || true
 	chown "$USER:$GROUP" /var/run/$NAME
@@ -59,7 +56,7 @@ do_start()
 	start-stop-daemon --start --quiet --pidfile $PIDFILE --chuid $USER:$GROUP --exec $DAEMON --test > /dev/null \
 		|| return 1
 	start-stop-daemon --start --quiet --pidfile $PIDFILE --chuid $USER:$GROUP --exec $DAEMON -- \
-		-c "$CONFFILE" -u -f $PIDFILE $DAEMON_ARGS \
+		-c "$CONFFILE" -a "$USER" -u -f $PIDFILE $DAEMON_ARGS \
 		|| return 2
 }
 
