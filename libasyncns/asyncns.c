@@ -717,8 +717,12 @@ static void* thread_worker(void *p) {
                 FD_SET(in_fd, &fds);
 
                 if (select(in_fd+1, &fds, NULL, NULL, &tv) < 0) {
-                    perror("test");
-                    break;
+                    if (errno == EAGAIN || errno == EINTR) {
+                        continue;
+                    } else {
+                        perror("error on select");
+                        break;
+                    }
                 }
             }
 
