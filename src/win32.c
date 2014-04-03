@@ -33,7 +33,7 @@ void ss_error(const char *s)
                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                   (LPTSTR) &msg, 0, NULL);
     if (msg != NULL) {
-        LOGE("%s: %s", s, msg);
+        LOGE("%s: %s", s, (char *)msg);
         LocalFree(msg);
     }
 }
@@ -41,7 +41,7 @@ void ss_error(const char *s)
 int setnonblocking(int fd)
 {
     u_long iMode = 0;
-    int iResult;
+    long int iResult;
     iResult = ioctlsocket(fd, FIONBIO, &iMode);
     if (iResult != NO_ERROR) {
         LOGE("ioctlsocket failed with error: %ld\n", iResult);
