@@ -132,7 +132,7 @@ static int new_value
             values_size = sizeof (*value->u.object.values) * value->u.object.length;
 
             if (! ((*(void **) &value->u.object.values) = json_alloc
-                  (state, values_size + ((unsigned long) value->u.object.values), 0)) )
+                  (state, values_size + ((unsigned long long) value->u.object.values), 0)) )
             {
                return 0;
             }
