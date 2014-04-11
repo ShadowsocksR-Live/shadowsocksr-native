@@ -504,6 +504,13 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
 
 #ifdef UDPRELAY_LOCAL
     buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
+    if (buf == NULL){
+        if (verbose)
+        {
+            ERROR("udprelay_server_ss_decrypt_all");
+        }
+        goto CLEAN_UP;
+    }
 
     int len = parse_udprealy_header(buf, buf_len, NULL, NULL);
     if (len == 0 || len != addr_header_len)
@@ -580,6 +587,13 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
 
 #ifdef UDPRELAY_REMOTE
     buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
+    if (buf == NULL){
+        if (verbose)
+        {
+            ERROR("udprelay_server_ss_decrypt_all");
+        }
+        goto CLEAN_UP;
+    }
 #endif
 
 #ifdef UDPRELAY_LOCAL
