@@ -874,7 +874,7 @@ int main (int argc, char **argv)
     {
         LOGD("udprelay enabled.");
         udprelay_init(local_addr, local_port, remote_addr[0].host, remote_addr[0].port,
-                tunnel_addr, m, listen_ctx.timeout, iface);
+                      tunnel_addr, m, listen_ctx.timeout, iface);
     }
 
     // setuid

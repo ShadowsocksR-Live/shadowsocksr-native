@@ -158,23 +158,24 @@ static char *get_addr_str(const struct sockaddr *sa)
     char port[PORTSTRLEN] = {0};
     uint16_t p;
 
-    switch(sa->sa_family) {
-        case AF_INET:
-            inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr),
-                    addr, INET_ADDRSTRLEN);
-            p = ntohs(((struct sockaddr_in *)sa)->sin_port);
-            sprintf(port, "%d", p);
-            break;
+    switch(sa->sa_family)
+    {
+    case AF_INET:
+        inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr),
+                  addr, INET_ADDRSTRLEN);
+        p = ntohs(((struct sockaddr_in *)sa)->sin_port);
+        sprintf(port, "%d", p);
+        break;
 
-        case AF_INET6:
-            inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr),
-                    addr, INET6_ADDRSTRLEN);
-            p = ntohs(((struct sockaddr_in *)sa)->sin_port);
-            sprintf(port, "%d", p);
-            break;
+    case AF_INET6:
+        inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr),
+                  addr, INET6_ADDRSTRLEN);
+        p = ntohs(((struct sockaddr_in *)sa)->sin_port);
+        sprintf(port, "%d", p);
+        break;
 
-        default:
-            strncpy(s, "Unknown AF", SS_ADDRSTRLEN);
+    default:
+        strncpy(s, "Unknown AF", SS_ADDRSTRLEN);
     }
 
     int addr_len = strlen(addr);
@@ -504,7 +505,8 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
 
 #ifdef UDPRELAY_LOCAL
     buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
-    if (buf == NULL){
+    if (buf == NULL)
+    {
         if (verbose)
         {
             ERROR("udprelay_server_ss_decrypt_all");
@@ -587,7 +589,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
 
 #ifdef UDPRELAY_REMOTE
     buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
-    if (buf == NULL){
+    if (buf == NULL)
+    {
         if (verbose)
         {
             ERROR("udprelay_server_ss_decrypt_all");
@@ -808,7 +811,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         }
 
         struct query_ctx *query_ctx = new_query_ctx(query, buf + addr_header_len,
-                buf_len - addr_header_len);
+                                      buf_len - addr_header_len);
         query_ctx->server_ctx = server_ctx;
         query_ctx->addr_header_len = addr_header_len;
         query_ctx->src_addr = src_addr;
@@ -820,7 +823,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     else
     {
         int s = sendto(remote_ctx->fd, buf + addr_header_len,
-                buf_len - addr_header_len, 0, &remote_ctx->dst_addr, sizeof(remote_ctx->dst_addr));
+                       buf_len - addr_header_len, 0, &remote_ctx->dst_addr, sizeof(remote_ctx->dst_addr));
 
         if (s == -1)
         {
@@ -848,15 +851,15 @@ void free_cb(void *element)
 
 int udprelay_init(const char *server_host, const char *server_port,
 #ifdef UDPRELAY_LOCAL
-             const char *remote_host, const char *remote_port,
+                  const char *remote_host, const char *remote_port,
 #ifdef UDPRELAY_TUNNEL
-             const ss_addr_t tunnel_addr,
+                  const ss_addr_t tunnel_addr,
 #endif
 #endif
 #ifdef UDPRELAY_REMOTE
-             asyncns_t *asyncns,
+                  asyncns_t *asyncns,
 #endif
-             int method, int timeout, const char *iface)
+                  int method, int timeout, const char *iface)
 {
 
     // Inilitialize ev loop

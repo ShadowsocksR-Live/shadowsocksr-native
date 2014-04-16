@@ -54,7 +54,8 @@ void parse_addr(const char *str, ss_addr_t *addr)
         ret = pch - str;
         pch = strchr(pch + 1, ':');
     }
-    if (n > 1) {
+    if (n > 1)
+    {
         if (strcmp(str+ret, "]") != 0)
         {
             ret = -1;

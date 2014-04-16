@@ -52,7 +52,8 @@ typedef md_info_t digest_type_t;
 #define kCCContextValid 0
 #define kCCContextInvalid -1
 
-typedef struct {
+typedef struct
+{
     CCCryptorRef cryptor;
     int valid;
     CCOperation encrypt;
@@ -67,7 +68,8 @@ typedef struct {
 
 #endif
 
-typedef struct {
+typedef struct
+{
     cipher_evp_t evp;
 #ifdef USE_CRYPTO_APPLECC
     cipher_cc_t cc;
