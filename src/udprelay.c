@@ -486,7 +486,6 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
 
     struct sockaddr src_addr;
     socklen_t src_addr_len = sizeof(src_addr);
-    unsigned int addr_header_len = remote_ctx->addr_header_len;
     char *buf = malloc(BUF_SIZE);
 
     // recv
@@ -523,12 +522,11 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
     }
     // server may return using a different address type other than the type we
     // have used during sending
-    addr_header_len = len;
 
 #ifdef UDPRELAY_TUNNEL
     // Construct packet
-    buf_len -= addr_header_len;
-    memmove(buf, buf + addr_header_len, buf_len);
+    buf_len -= len;
+    memmove(buf, buf + len, buf_len);
 #else
     // Construct packet
     char *tmpbuf = malloc(buf_len + 3);
@@ -541,6 +539,9 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
 #endif
 
 #ifdef UDPRELAY_REMOTE
+
+    unsigned int addr_header_len = remote_ctx->addr_header_len;
+
     // Construct packet
     char *tmpbuf = malloc(buf_len + addr_header_len);
     memcpy(tmpbuf, remote_ctx->addr_header, addr_header_len);
