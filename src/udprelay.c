@@ -515,11 +515,15 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
     }
 
     int len = parse_udprealy_header(buf, buf_len, NULL, NULL);
-    if (len == 0 || len != addr_header_len)
+    if (len == 0)
     {
+        LOGD("[udp] Error in parse header");
         // error in parse header
         goto CLEAN_UP;
     }
+    // server may return using a different address type other than the type we
+    // have used during sending
+    addr_header_len = len;
 
 #ifdef UDPRELAY_TUNNEL
     // Construct packet
