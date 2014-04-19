@@ -316,7 +316,6 @@ struct query_ctx *new_query_ctx(asyncns_query_t *query,
     ctx->buf_len = buf_len;
     memcpy(ctx->buf, buf, buf_len);
     ctx->query = query;
-    ev_timer_init(&ctx->watcher, query_resolve_cb, 0.1, 0.2);
     return ctx;
 }
 
@@ -324,7 +323,6 @@ void close_and_free_query(EV_P_ struct query_ctx *ctx)
 {
     if (ctx != NULL)
     {
-        ev_timer_stop(EV_A_ &ctx->watcher);
         if (ctx->buf != NULL)
         {
             free(ctx->buf);
@@ -362,26 +360,27 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 }
 
 #ifdef UDPRELAY_REMOTE
-static void query_resolve_cb(EV_P_ ev_timer *watcher, int revents)
+static void query_resolve_cb(EV_P_ ev_io *w, int revents)
 {
     int err;
     struct addrinfo *result, *rp;
-    struct query_ctx *query_ctx = (struct query_ctx *)((void*)watcher);
-    asyncns_t *asyncns = query_ctx->server_ctx->asyncns;
-    asyncns_query_t *query = query_ctx->query;
+    struct resolve_ctx *resolve_ctx = (struct resolve_ctx*)w;
+    asyncns_t *asyncns = resolve_ctx->asyncns;
 
-    if (asyncns == NULL || query == NULL)
+    err = asyncns_handle(asyncns);
+    if (err == ASYNCNS_HANDLE_AGAIN)
     {
-        LOGE("invalid dns query.");
-        close_and_free_query(EV_A_ query_ctx);
+        // try again
         return;
     }
-
-    if (asyncns_wait(asyncns, 0) == -1)
+    else if (err == ASYNCNS_HANDLE_ERROR)
     {
         // asyncns error
         FATAL("asyncns exit unexpectedly.");
     }
+
+    asyncns_query_t *query = asyncns_getnext(asyncns);
+    struct query_ctx *query_ctx= (struct query_ctx*) asyncns_getuserdata(asyncns, query);
 
     if (!asyncns_isdone(asyncns, query))
     {
@@ -394,7 +393,7 @@ static void query_resolve_cb(EV_P_ ev_timer *watcher, int revents)
         LOGD("[udp] asyncns resolved.");
     }
 
-    ev_timer_stop(EV_A_ watcher);
+    query_ctx->query = NULL;
 
     err = asyncns_getaddrinfo_done(asyncns, query, &result);
 
@@ -821,9 +820,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         query_ctx->addr_header_len = addr_header_len;
         query_ctx->src_addr = src_addr;
         memcpy(query_ctx->addr_header, addr_header, addr_header_len);
-
-        ev_timer_start(EV_A_ &query_ctx->watcher);
-
+        asyncns_setuserdata(server_ctx->asyncns, query, query_ctx);
     }
     else
     {
@@ -862,7 +859,7 @@ int udprelay_init(const char *server_host, const char *server_port,
 #endif
 #endif
 #ifdef UDPRELAY_REMOTE
-                  asyncns_t *asyncns,
+                  int dns_thread_num,
 #endif
                   int method, int timeout, const char *iface)
 {
@@ -876,6 +873,21 @@ int udprelay_init(const char *server_host, const char *server_port,
 
     //////////////////////////////////////////////////
     // Setup server context
+
+#ifdef UDPRELAY_REMOTE
+    // setup asyncns
+    asyncns_t *asyncns;
+    if (!(asyncns = asyncns_new(dns_thread_num)))
+    {
+        FATAL("asyncns failed");
+    }
+    struct resolve_ctx *resolve_ctx = malloc(sizeof(struct resolve_ctx));
+    resolve_ctx->asyncns = asyncns;
+
+    int asyncnsfd = asyncns_fd(asyncns);
+    ev_io_init (&resolve_ctx->io, query_resolve_cb, asyncnsfd, EV_READ);
+    ev_io_start (loop, &resolve_ctx->io);
+#endif
 
     // Bind to port
     int serverfd = create_server_socket(server_host, server_port);

@@ -39,9 +39,14 @@ struct server_ctx
 };
 
 #ifdef UDPRELAY_REMOTE
+struct resolve_ctx
+{
+    ev_io io;
+    asyncns_t *asyncns;
+};
+
 struct query_ctx
 {
-    ev_timer watcher;
     asyncns_query_t *query;
     struct sockaddr src_addr;
     int buf_len;
@@ -69,7 +74,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents);
 static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents);
 static char *hash_key(const char *header, const int header_len, const struct sockaddr *addr);
 #ifdef UDPRELAY_REMOTE
-static void query_resolve_cb(EV_P_ ev_timer *watcher, int revents);
+static void query_resolve_cb(EV_P_ ev_io *w, int revents);
 #endif
 static void close_and_free_remote(EV_P_ struct remote_ctx *ctx);
 

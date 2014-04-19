@@ -1069,7 +1069,7 @@ int main (int argc, char **argv)
     if (udprelay)
     {
         LOGD("udprelay enabled.");
-        udprelay_init(server_host[0], server_port, asyncns, m, listen_ctx->timeout, iface);
+        udprelay_init(server_host[0], server_port, dns_thread_num, m, listen_ctx->timeout, iface);
     }
 
     // setuid
