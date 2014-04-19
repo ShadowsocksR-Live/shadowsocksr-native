@@ -9,7 +9,7 @@ int udprelay_init(const char *server_host, const char *server_port,
 #endif
 #endif
 #ifdef UDPRELAY_REMOTE
-                  asyncns_t *asyncns,
+                  int dns_thread_num,
 #endif
                   int method, int timeout, const char *iface);
 
