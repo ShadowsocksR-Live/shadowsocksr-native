@@ -357,7 +357,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         server->query = query;
 
         ev_io_stop(EV_A_ &server_recv_ctx->io);
-        ev_timer_start(EV_A_ &server->send_ctx->watcher);
 
         return;
     }
@@ -468,8 +467,7 @@ static void server_resolve_cb(EV_P_ ev_io *w, int revents)
     }
 
     asyncns_query_t *query = asyncns_getnext(asyncns);
-    struct server_ctx *server_ctx = (struct server_ctx *) asyncns_getuserdata(asyncns, query);
-    struct server *server = server_ctx->server;
+    struct server *server= (struct server*) asyncns_getuserdata(asyncns, query);
 
     if (!asyncns_isdone(asyncns, query))
     {
@@ -860,7 +858,6 @@ void close_and_free_server(EV_P_ struct server *server)
         }
         ev_io_stop(EV_A_ &server->send_ctx->io);
         ev_io_stop(EV_A_ &server->recv_ctx->io);
-        ev_timer_stop(EV_A_ &server->send_ctx->watcher);
         ev_timer_stop(EV_A_ &server->recv_ctx->watcher);
         close(server->fd);
         free_server(server);

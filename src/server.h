@@ -32,17 +32,17 @@ struct server_ctx
 struct server
 {
     int fd;
+    int stage;
     int buf_len;
     int buf_idx;
     char *buf; // server send from, remote recv into
-    char stage;
+    asyncns_query_t *query;
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;
     struct server_ctx *recv_ctx;
     struct server_ctx *send_ctx;
     struct listen_ctx *listen_ctx;
     struct remote *remote;
-    asyncns_query_t *query;
 };
 
 struct remote_ctx
