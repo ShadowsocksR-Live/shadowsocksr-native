@@ -41,8 +41,8 @@ struct server
     struct server_ctx *recv_ctx;
     struct server_ctx *send_ctx;
     struct listen_ctx *listen_ctx;
-    asyncns_query_t *query;
     struct remote *remote;
+    asyncns_query_t *query;
 };
 
 struct remote_ctx
@@ -69,8 +69,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents);
 static void server_send_cb (EV_P_ ev_io *w, int revents);
 static void remote_recv_cb (EV_P_ ev_io *w, int revents);
 static void remote_send_cb (EV_P_ ev_io *w, int revents);
+static void server_resolve_cb(EV_P_ ev_io *w, int revents);
 static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents);
-static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents);
 
 struct remote* new_remote(int fd);
 struct remote *connect_to_remote(struct addrinfo *res, const char *iface);
