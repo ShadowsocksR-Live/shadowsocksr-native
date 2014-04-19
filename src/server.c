@@ -344,6 +344,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
             return;
         }
 
+        asyncns_setuserdata(server->listen_ctx->asyncns, query, server);
+
         // XXX: should handle buffer carefully
         if (r > offset)
         {
@@ -446,28 +448,28 @@ static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents)
     close_and_free_server(EV_A_ server);
 }
 
-static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents)
+static void server_resolve_cb(EV_P_ ev_io *w, int revents)
 {
     int err;
     struct addrinfo *result, *rp;
-    struct server_ctx *server_ctx = (struct server_ctx *) (((void*)watcher)
-                                    - sizeof(ev_io));
-    struct server *server = server_ctx->server;
-    asyncns_t *asyncns = server->listen_ctx->asyncns;
-    asyncns_query_t *query = server->query;
+    struct listen_ctx *listen_ctx = (struct listen_ctx *)w;
+    asyncns_t *asyncns = listen_ctx->asyncns;
 
-    if (asyncns == NULL || query == NULL)
+    err = asyncns_handle(asyncns);
+    if (err == ASYNCNS_HANDLE_AGAIN)
     {
-        LOGE("invalid dns query.");
-        close_and_free_server(EV_A_ server);
+        // try again
         return;
     }
-
-    if (asyncns_wait(asyncns, 0) == -1)
+    else if (err == ASYNCNS_HANDLE_ERROR)
     {
         // asyncns error
         FATAL("asyncns exit unexpectedly.");
     }
+
+    asyncns_query_t *query = asyncns_getnext(asyncns);
+    struct server_ctx *server_ctx = (struct server_ctx *) asyncns_getuserdata(asyncns, query);
+    struct server *server = server_ctx->server;
 
     if (!asyncns_isdone(asyncns, query))
     {
@@ -475,12 +477,12 @@ static void server_resolve_cb(EV_P_ ev_timer *watcher, int revents)
         return;
     }
 
+    server->query = NULL;
+
     if (verbose)
     {
         LOGD("asyncns resolved.");
     }
-
-    ev_timer_stop(EV_A_ watcher);
 
     err = asyncns_getaddrinfo_done(asyncns, query, &result);
 
@@ -793,7 +795,6 @@ struct server* new_server(int fd, struct listen_ctx *listener)
     server->fd = fd;
     ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
     ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
-    ev_timer_init(&server->send_ctx->watcher, server_resolve_cb, 0.1, 0.2);
     ev_timer_init(&server->recv_ctx->watcher, server_timeout_cb, listener->timeout, listener->timeout * 5);
     server->recv_ctx->server = server;
     server->recv_ctx->connected = 0;
@@ -852,6 +853,11 @@ void close_and_free_server(EV_P_ struct server *server)
 {
     if (server != NULL)
     {
+        if (server->query != NULL)
+        {
+            asyncns_cancel(server->listen_ctx->asyncns, server->query);
+            server->query = NULL;
+        }
         ev_io_stop(EV_A_ &server->send_ctx->io);
         ev_io_stop(EV_A_ &server->recv_ctx->io);
         ev_timer_stop(EV_A_ &server->send_ctx->watcher);
@@ -1016,7 +1022,7 @@ int main (int argc, char **argv)
     struct ev_loop *loop = EV_DEFAULT;
 
     // inilitialize listen context
-    struct listen_ctx listen_ctx;
+    struct listen_ctx listen_ctx_list[server_num + 1];
 
     // bind to each interface
     while (server_num > 0)
@@ -1038,22 +1044,35 @@ int main (int argc, char **argv)
         setnonblocking(listenfd);
         LOGD("server listening at port %s.", server_port);
 
-        // Setup proxy context
-        listen_ctx.timeout = atoi(timeout);
-        listen_ctx.asyncns = asyncns;
-        listen_ctx.fd = listenfd;
-        listen_ctx.method = m;
-        listen_ctx.iface = iface;
+        struct listen_ctx *listen_ctx = &listen_ctx_list[index + 1];
 
-        ev_io_init (&listen_ctx.io, accept_cb, listenfd, EV_READ);
-        ev_io_start (loop, &listen_ctx.io);
+        // Setup proxy context
+        listen_ctx->timeout = atoi(timeout);
+        listen_ctx->asyncns = asyncns;
+        listen_ctx->fd = listenfd;
+        listen_ctx->method = m;
+        listen_ctx->iface = iface;
+
+        ev_io_init (&listen_ctx->io, accept_cb, listenfd, EV_READ);
+        ev_io_start (loop, &listen_ctx->io);
     }
+
+    // initialize the DNS
+    struct listen_ctx *listen_ctx = &listen_ctx_list[0];
+    int asyncnsfd = asyncns_fd(asyncns);
+    listen_ctx->timeout = atoi(timeout);
+    listen_ctx->asyncns = asyncns;
+    listen_ctx->fd = asyncnsfd;
+    listen_ctx->method = m;
+    listen_ctx->iface = iface;
+    ev_io_init (&listen_ctx->io, server_resolve_cb, asyncnsfd, EV_READ);
+    ev_io_start (loop, &listen_ctx->io);
 
     // Setup UDP
     if (udprelay)
     {
         LOGD("udprelay enabled.");
-        udprelay_init(server_host[0], server_port, asyncns, m, listen_ctx.timeout, iface);
+        udprelay_init(server_host[0], server_port, asyncns, m, listen_ctx->timeout, iface);
     }
 
     // setuid
