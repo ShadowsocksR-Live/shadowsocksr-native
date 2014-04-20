@@ -1047,6 +1047,30 @@ static int handle_response(asyncns_t *asyncns, const packet_t *packet, size_t le
     return 0;
 }
 
+int asyncns_handle(asyncns_t *asyncns) {
+    assert(asyncns);
+
+    if (asyncns->dead) {
+        errno = ECHILD;
+        return ASYNCNS_HANDLE_ERROR;
+    }
+
+    packet_t buf[BUFSIZE/sizeof(packet_t) + 1];
+    ssize_t l;
+
+    if (((l = recv(asyncns->fds[RESPONSE_RECV_FD], buf, sizeof(buf), 0)) < 0)) {
+        if (errno != EAGAIN)
+            return ASYNCNS_HANDLE_ERROR;
+        else
+            return ASYNCNS_HANDLE_AGAIN;
+    }
+
+    if (handle_response(asyncns, buf, (size_t) l) < 0)
+        return ASYNCNS_HANDLE_ERROR;
+
+    return ASYNCNS_HANDLE_SUCCESS;
+}
+
 int asyncns_wait(asyncns_t *asyncns, int block) {
     int handled = 0;
     assert(asyncns);

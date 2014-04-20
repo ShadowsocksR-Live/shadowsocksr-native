@@ -47,6 +47,12 @@
 extern "C" {
 #endif
 
+enum {
+    ASYNCNS_HANDLE_ERROR = -1,
+    ASYNCNS_HANDLE_AGAIN = 0,
+    ASYNCNS_HANDLE_SUCCESS = 1,
+};
+
 /** An opaque libasyncns session structure */
 typedef struct asyncns asyncns_t;
 
@@ -64,6 +70,10 @@ void asyncns_free(asyncns_t *asyncns);
  * on. Use this function to integrate libasyncns with your custom main
  * loop. */
 int asyncns_fd(asyncns_t *asyncns);
+
+/** Process pending responses. If return ASYNCNS_HANDLE_SUCCESS, you can
+ * get the next completed query object(s) using asyncns_getnext(). */
+int asyncns_handle(asyncns_t *asyncns);
 
 /** Process pending responses. After this function is called you can
  * get the next completed query object(s) using asyncns_getnext(). If
