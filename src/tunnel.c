@@ -387,36 +387,17 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
             // send destaddr
             char *ss_addr_to_send = malloc(BUF_SIZE);
             ssize_t addr_len = 0;
-            struct sockaddr *sa = &server->destaddr;
-            ss_addr_to_send[addr_len++] = 1;
+            ss_addr_t *sa = &server->destaddr;
+            int host_len = strlen(sa->host);
+            uint16_t port = htons(atoi(sa->port));
 
-            if (sa->sa_family == AF_INET)
-            {
-                // handle IPv4
-                struct sockaddr_in *sin = (struct sockaddr_in *)sa;
-                size_t in_addr_len = sizeof(struct in_addr);
-                memcpy(ss_addr_to_send + addr_len, &sin->sin_addr, in_addr_len);
-                addr_len += in_addr_len;
-                memcpy(ss_addr_to_send + addr_len, &sin->sin_port, 2);
-                addr_len += 2;
-            }
-            else if (sa->sa_family == AF_INET6)
-            {
-                // handle IPv6
-                struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
-                size_t in6_addr_len = sizeof(struct in6_addr);
-                memcpy(ss_addr_to_send + addr_len, &sin6->sin6_addr, in6_addr_len);
-                addr_len += in6_addr_len;
-                memcpy(ss_addr_to_send + addr_len, &sin6->sin6_port, 2);
-                addr_len += 2;
-            }
-            else
-            {
-                LOGE("unsupported addr type");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
+            // treat as domain
+            ss_addr_to_send[addr_len++] = 3;
+            ss_addr_to_send[addr_len++] = host_len;
+            memcpy(ss_addr_to_send + addr_len, sa->host, host_len);
+            addr_len += host_len;
+            memcpy(ss_addr_to_send + addr_len, &port, 2);
+            addr_len += 2;
 
             ss_addr_to_send = ss_encrypt(BUF_SIZE, ss_addr_to_send, &addr_len, server->e_ctx);
             if (ss_addr_to_send == NULL)
@@ -641,7 +622,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
     setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
-    struct addrinfo hints, *res, *dest;
+    struct addrinfo hints, *res;
     int sockfd;
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -658,20 +639,11 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
         return;
     }
 
-    err = getaddrinfo(listener->tunnel_addr.host, listener->tunnel_addr.port, &hints, &dest);
-    if (err)
-    {
-        freeaddrinfo(res);
-        ERROR("getaddrinfo");
-        return;
-    }
-
     sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (sockfd < 0)
     {
         ERROR("socket");
         freeaddrinfo(res);
-        freeaddrinfo(dest);
         return;
     }
 
@@ -688,12 +660,11 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
 
     struct server *server = new_server(serverfd, listener->method);
     struct remote *remote = new_remote(sockfd, listener->timeout);
-    server->destaddr = *dest->ai_addr;
+    server->destaddr = listener->tunnel_addr;
     server->remote = remote;
     remote->server = server;
     connect(sockfd, res->ai_addr, res->ai_addrlen);
     freeaddrinfo(res);
-    freeaddrinfo(dest);
     // listen to remote connected event
     ev_io_start(EV_A_ &remote->send_ctx->io);
     ev_timer_start(EV_A_ &remote->send_ctx->watcher);
