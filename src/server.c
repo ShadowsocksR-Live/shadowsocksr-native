@@ -98,7 +98,7 @@ int create_and_bind(const char *host, const char *port)
         if (fast_open)
         {
             opt = 5;
-            int r = setsockopt(listen_sock, SOL_TCP, TCP_FASTOPEN, &opt, sizeof(opt));
+            setsockopt(listen_sock, SOL_TCP, TCP_FASTOPEN, &opt, sizeof(opt));
         }
 #endif
 
