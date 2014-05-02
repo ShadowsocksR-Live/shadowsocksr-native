@@ -42,7 +42,9 @@
 
 int verbose = 0;
 int udprelay = 0;
+#ifdef TCP_FASTOPEN
 static int fast_open = 0;
+#endif
 static int remote_conn = 0;
 static int server_conn = 0;
 
