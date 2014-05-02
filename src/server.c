@@ -1012,6 +1012,9 @@ int main (int argc, char **argv)
         if (password == NULL) password = conf->password;
         if (method == NULL) method = conf->method;
         if (timeout == NULL) timeout = conf->timeout;
+#ifdef TCP_FASTOPEN
+        if (fast_open == 0) fast_open = conf->fast_open;
+#endif
     }
 
     if (server_num == 0 || server_port == NULL || password == NULL)

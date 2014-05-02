@@ -160,7 +160,7 @@ jconf_t *read_jconf(const char* file)
             }
             else if (strcmp(name, "fast_open") == 0)
             {
-                conf.fast_open = 1;
+                conf.fast_open = value->u.boolean;
             }
         }
     }
