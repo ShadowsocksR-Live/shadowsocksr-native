@@ -13,6 +13,7 @@
 #include <strings.h>
 #include <time.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -41,6 +42,9 @@
 
 int verbose = 0;
 int udprelay = 0;
+#ifdef TCP_FASTOPEN
+static int fast_open = 0;
+#endif
 static int remote_conn = 0;
 static int server_conn = 0;
 
@@ -91,6 +95,13 @@ int create_and_bind(const char *host, const char *port)
         setsockopt(listen_sock, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
         setsockopt(listen_sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+#endif
+#ifdef TCP_FASTOPEN
+        if (fast_open)
+        {
+            opt = 5;
+            setsockopt(listen_sock, SOL_TCP, TCP_FASTOPEN, &opt, sizeof(opt));
+        }
 #endif
 
         s = bind(listen_sock, rp->ai_addr, rp->ai_addrlen);
@@ -915,12 +926,30 @@ int main (int argc, char **argv)
 
     int dns_thread_num = DNS_THREAD_NUM;
 
+    int option_index = 0;
+    static struct option long_options[] = {
+        {"fast-open", no_argument, 0,  0 },
+        {0,           0,           0,  0 }
+    };
+
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:c:i:d:a:uv")) != -1)
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:c:i:d:a:uv",
+                            long_options, &option_index)) != -1)
     {
         switch (c)
         {
+        case 0:
+          if (option_index == 0)
+          {
+#ifdef TCP_FASTOPEN
+              fast_open = 1;
+              LOGD("using tcp fast open");
+#else
+              LOGE("tcp fast open is not supported by this environment");
+#endif
+          }
+          break;
         case 's':
             server_host[server_num++] = optarg;
             break;
