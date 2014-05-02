@@ -32,6 +32,8 @@ struct server
     int buf_len;
     int buf_idx;
     char *buf; // server send from, remote recv into
+    int addr_len;
+    char *addr_to_send;
     char stage;
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;

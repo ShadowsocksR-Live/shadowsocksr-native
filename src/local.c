@@ -6,6 +6,7 @@
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #ifndef __MINGW32__
 #include <errno.h>
@@ -47,7 +48,9 @@
 #endif
 
 int verbose = 0;
+int fast_open = 0;
 int udprelay = 0;
+static struct addrinfo *remote_res = NULL;
 
 #ifndef __MINGW32__
 static int setnonblocking(int fd)
@@ -171,6 +174,15 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     // local socks5 server
     if (server->stage == 5)
     {
+        if (fast_open && !remote->send_ctx->connected)
+        {
+            char *buf = malloc(r + server->addr_len);
+            memcpy(buf, server->addr_to_send, server->addr_len);
+            memcpy(buf + server->addr_len, remote->buf, r);
+            r += server->addr_len;
+            free(remote->buf);
+            remote->buf = buf;
+        }
         remote->buf = ss_encrypt(BUF_SIZE, remote->buf, &r, server->e_ctx);
         if (remote->buf == NULL)
         {
@@ -179,7 +191,24 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
             close_and_free_server(EV_A_ server);
             return;
         }
-        int s = send(remote->fd, remote->buf, r, 0);
+        int s;
+        if (fast_open && !remote->send_ctx->connected)
+        {
+#ifdef TCP_FASTOPEN
+            s = sendto(remote->fd, remote->buf, r, MSG_FASTOPEN,
+                       remote_res->ai_addr, remote_res->ai_addrlen);
+            remote->send_ctx->connected = 1;
+            ev_io_start(EV_A_ &remote->recv_ctx->io);
+#else
+            // if TCP_FASTOPEN is not defined, fast_open will always be 0
+            LOGE("can't come here");
+            exit(1);
+#endif
+        }
+        else
+        {
+            s = send(remote->fd, remote->buf, r, 0);
+        }
         if(s == -1)
         {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -316,27 +345,42 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                 return;
             }
 
-            ss_addr_to_send = ss_encrypt(BUF_SIZE, ss_addr_to_send, &addr_len, server->e_ctx);
-            if (ss_addr_to_send == NULL)
+            if (!fast_open)
             {
-                LOGE("invalid password or cipher");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
-            int s = send(remote->fd, ss_addr_to_send, addr_len, 0);
-            free(ss_addr_to_send);
+                ss_addr_to_send = ss_encrypt(BUF_SIZE, ss_addr_to_send, &addr_len, server->e_ctx);
+                if (ss_addr_to_send == NULL)
+                {
+                    LOGE("invalid password or cipher");
+                    close_and_free_remote(EV_A_ remote);
+                    close_and_free_server(EV_A_ server);
+                    return;
+                }
+                int s = send(remote->fd, ss_addr_to_send, addr_len, 0);
+                free(ss_addr_to_send);
 
-            if (s < addr_len)
+                if (s < addr_len)
+                {
+                    LOGE("failed to send remote addr.");
+                    close_and_free_remote(EV_A_ remote);
+                    close_and_free_server(EV_A_ server);
+                    return;
+                }
+                ev_io_start(EV_A_ &remote->recv_ctx->io);
+            }
+            else
             {
-                LOGE("failed to send remote addr.");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
+                if (addr_len > BUF_SIZE)
+                {
+                    LOGE("addr_len is too large");
+                    close_and_free_remote(EV_A_ remote);
+                    close_and_free_server(EV_A_ server);
+                    return;
+                }
+                server->addr_to_send = ss_addr_to_send;
+                server->addr_len = addr_len;
             }
 
             server->stage = 5;
-            ev_io_start(EV_A_ &remote->recv_ctx->io);
         }
 
         // Fake reply
@@ -544,6 +588,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
             ev_io_stop(EV_A_ &remote_send_ctx->io);
             ev_timer_stop(EV_A_ &remote_send_ctx->watcher);
             ev_io_start(EV_A_ &server->recv_ctx->io);
+            ev_io_start(EV_A_ &remote->recv_ctx->io);
             return;
         }
         else
@@ -663,6 +708,7 @@ struct server* new_server(int fd, int method)
 {
     struct server *server;
     server = malloc(sizeof(struct server));
+    memset(server, 0, sizeof(struct server));
     server->buf = malloc(BUF_SIZE);
     server->recv_ctx = malloc(sizeof(struct server_ctx));
     server->send_ctx = malloc(sizeof(struct server_ctx));
@@ -715,6 +761,7 @@ static void free_server(struct server *server)
         }
         free(server->recv_ctx);
         free(server->send_ctx);
+        free(server->addr_to_send);
         free(server);
     }
 }
@@ -746,28 +793,35 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
     setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
-    struct addrinfo hints, *res;
     int sockfd;
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    int index = rand() % listener->remote_num;
-    if (verbose)
+
+    if (remote_res == NULL)
     {
-        LOGD("connect to %s:%s", listener->remote_addr[index].host, listener->remote_addr[index].port);
-    }
-    int err = getaddrinfo(listener->remote_addr[index].host, listener->remote_addr[index].port, &hints, &res);
-    if (err)
-    {
-        ERROR("getaddrinfo");
-        return;
+        struct addrinfo hints;
+        memset(&hints, 0, sizeof hints);
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        int index = rand() % listener->remote_num;
+        if (verbose)
+        {
+            LOGD("connect to %s:%s", listener->remote_addr[index].host,
+                listener->remote_addr[index].port);
+        }
+        int err = getaddrinfo(listener->remote_addr[index].host,
+                              listener->remote_addr[index].port,
+                              &hints, &remote_res);
+        if (err)
+        {
+            ERROR("getaddrinfo");
+            return;
+        }
     }
 
-    sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    sockfd = socket(remote_res->ai_family, remote_res->ai_socktype,
+                    remote_res->ai_protocol);
     if (sockfd < 0)
     {
         ERROR("socket");
-        freeaddrinfo(res);
         return;
     }
 
@@ -786,11 +840,16 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
     struct remote *remote = new_remote(sockfd, listener->timeout);
     server->remote = remote;
     remote->server = server;
-    connect(sockfd, res->ai_addr, res->ai_addrlen);
-    freeaddrinfo(res);
-    // listen to remote connected event
-    ev_io_start(EV_A_ &remote->send_ctx->io);
-    ev_timer_start(EV_A_ &remote->send_ctx->watcher);
+    if (!fast_open) {
+        connect(sockfd, remote_res->ai_addr, remote_res->ai_addrlen);
+        // listen to remote connected event
+        ev_io_start(EV_A_ &remote->send_ctx->io);
+        ev_timer_start(EV_A_ &remote->send_ctx->watcher);
+    }
+    else
+    {
+        ev_io_start(EV_A_ &server->recv_ctx->io);
+    }
 }
 
 int main (int argc, char **argv)
@@ -812,12 +871,30 @@ int main (int argc, char **argv)
     ss_addr_t remote_addr[MAX_REMOTE_NUM];
     char *remote_port = NULL;
 
+    int option_index = 0;
+    static struct option long_options[] = {
+        {"fast-open", no_argument, 0,  0 },
+        {0,           0,           0,  0 }
+    };
+
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:i:c:b:a:uv")) != -1)
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:uv",
+                            long_options, &option_index)) != -1)
     {
         switch (c)
         {
+        case 0:
+          if (option_index == 0)
+          {
+#ifdef TCP_FASTOPEN
+              fast_open = 1;
+              LOGD("using tcp fast open");
+#else
+              LOGE("tcp fast open is not supported by this environment");
+#endif
+          }
+          break;
         case 's':
             remote_addr[remote_num].host = optarg;
             remote_addr[remote_num++].port = NULL;
@@ -885,6 +962,7 @@ int main (int argc, char **argv)
         if (password == NULL) password = conf->password;
         if (method == NULL) method = conf->method;
         if (timeout == NULL) timeout = conf->timeout;
+        if (fast_open == 0) fast_open = conf->fast_open;
     }
 
     if (remote_num == 0 || remote_port == NULL ||
