@@ -20,7 +20,7 @@ Shadowsocks-libev is writen in pure C and only depends on
 [libev](http://software.schmorp.de/pkg/libev.html) and 
 [openssl](http://www.openssl.org/) or [polarssl](https://polarssl.org/).
 
-In normal usage, the memory consumption is about 600KB and the CPU utilization is 
+In normal usage, the memory footprint is about 600KB and the CPU utilization is 
 no more than 5% on a low-end router (Buffalo WHR-G300N V2 with a 400MHz MIPS CPU, 
 32MB memory and 4MB flash).
 
