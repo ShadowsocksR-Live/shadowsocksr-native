@@ -48,8 +48,8 @@
 #endif
 
 int verbose = 0;
-int fast_open = 0;
 int udprelay = 0;
+static int fast_open = 0;
 static struct addrinfo *remote_res = NULL;
 
 #ifndef __MINGW32__
