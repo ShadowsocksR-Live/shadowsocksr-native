@@ -197,7 +197,27 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
 #ifdef TCP_FASTOPEN
             s = sendto(remote->fd, remote->buf, r, MSG_FASTOPEN,
                        remote_res->ai_addr, remote_res->ai_addrlen);
+            if (s == -1)
+            {
+                if (errno == EINPROGRESS)
+                {
+                    // in progress, wait until connected
+                    remote->buf_len = r;
+                    remote->buf_idx = 0;
+                    ev_io_stop(EV_A_ &server_recv_ctx->io);
+                    ev_io_start(EV_A_ &remote->send_ctx->io);
+                    return;
+                }
+                else
+                {
+                    ERROR("sendto");
+                    close_and_free_remote(EV_A_ remote);
+                    close_and_free_server(EV_A_ server);
+                    return;
+                }
+            }
             remote->send_ctx->connected = 1;
+            ev_timer_stop(EV_A_ &remote->send_ctx->watcher);
             ev_io_start(EV_A_ &remote->recv_ctx->io);
 #else
             // if TCP_FASTOPEN is not defined, fast_open will always be 0
@@ -576,13 +596,33 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
     struct remote *remote = remote_send_ctx->remote;
     struct server *server = remote->server;
 
-    if (!remote_send_ctx->connected)
+    if (fast_open && !remote_send_ctx->connected)
     {
-
         struct sockaddr_storage addr;
         socklen_t len = sizeof addr;
         int r = getpeername(remote->fd, (struct sockaddr*)&addr, &len);
         if (r == 0)
+        {
+            remote_send_ctx->connected = 1;
+            ev_timer_stop(EV_A_ &remote_send_ctx->watcher);
+            ev_io_start(EV_A_ &remote->recv_ctx->io);
+        }
+        else
+        {
+            // not connected
+            ERROR("getpeername");
+            close_and_free_remote(EV_A_ remote);
+            close_and_free_server(EV_A_ server);
+            return;
+        }
+    }
+
+    if (!remote_send_ctx->connected)
+    {
+        struct sockaddr_storage addr;
+        socklen_t len = sizeof addr;
+        int r = getpeername(remote->fd, (struct sockaddr*)&addr, &len);
+            if (r == 0)
         {
             remote_send_ctx->connected = 1;
             ev_io_stop(EV_A_ &remote_send_ctx->io);
@@ -849,6 +889,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
     else
     {
         ev_io_start(EV_A_ &server->recv_ctx->io);
+        ev_timer_start(EV_A_ &remote->send_ctx->watcher);
     }
 }
 
