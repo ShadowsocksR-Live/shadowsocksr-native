@@ -2,6 +2,7 @@ shadowsocks (1.4.5-1) unstable; urgency=high
 
   * Fix the compatibility issue of udprelay.
   * Enhance asyncns to reduce the latency.
+  * Add TCP_FASTOPEN support.
 
  -- Max Lv <max.c.lv@gmail.com>  Sun, 20 Apr 2014 08:12:45 +0800
 
