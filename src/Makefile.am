@@ -7,8 +7,8 @@ AM_CFLAGS += -I$(top_builddir)/libcork/include
 AM_LDFLAGS = -static
 
 SS_COMMON_LIBS = $(top_builddir)/libev/libev.la \
-				 $(top_builddir)/libcork/libcork.la \
 				 $(top_builddir)/libipset/libipset.la \
+				 $(top_builddir)/libcork/libcork.la \
 				 $(INET_NTOP_LIB)
  
 bin_PROGRAMS = ss-local ss-tunnel

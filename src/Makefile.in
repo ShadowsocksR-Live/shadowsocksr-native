@@ -87,8 +87,8 @@ am_ss_local_OBJECTS = ss_local-utils.$(OBJEXT) \
 ss_local_OBJECTS = $(am_ss_local_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(top_builddir)/libev/libev.la \
-	$(top_builddir)/libcork/libcork.la \
-	$(top_builddir)/libipset/libipset.la $(am__DEPENDENCIES_1)
+	$(top_builddir)/libipset/libipset.la \
+	$(top_builddir)/libcork/libcork.la $(am__DEPENDENCIES_1)
 ss_local_DEPENDENCIES = $(am__DEPENDENCIES_2)
 ss_local_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(ss_local_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -273,8 +273,8 @@ AM_CFLAGS = -g -O2 -Wall -Werror -Wno-deprecated-declarations \
 	-I$(top_builddir)/libcork/include
 AM_LDFLAGS = -static
 SS_COMMON_LIBS = $(top_builddir)/libev/libev.la \
-				 $(top_builddir)/libcork/libcork.la \
 				 $(top_builddir)/libipset/libipset.la \
+				 $(top_builddir)/libcork/libcork.la \
 				 $(INET_NTOP_LIB)
 
 ss_local_SOURCES = utils.c jconf.c json.c encrypt.c udprelay.c cache.c \
