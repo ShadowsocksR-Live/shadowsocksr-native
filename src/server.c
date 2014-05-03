@@ -100,7 +100,18 @@ int create_and_bind(const char *host, const char *port)
         if (fast_open)
         {
             opt = 5;
-            setsockopt(listen_sock, SOL_TCP, TCP_FASTOPEN, &opt, sizeof(opt));
+            int r = setsockopt(listen_sock, IPPROTO_TCP, TCP_FASTOPEN, &opt, sizeof(opt));
+            if (r == -1)
+            {
+                if (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)
+                {
+                    LOGE("fast open is not supported on this platform");
+                }
+                else
+                {
+                    ERROR("setsockopt");
+                }
+            }
         }
 #endif
 
