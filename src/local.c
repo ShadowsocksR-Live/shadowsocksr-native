@@ -502,16 +502,7 @@ static void server_send_cb (EV_P_ ev_io *w, int revents)
             server->buf_len = 0;
             server->buf_idx = 0;
             ev_io_stop(EV_A_ &server_send_ctx->io);
-            if (remote != NULL)
-            {
-                ev_io_start(EV_A_ &remote->recv_ctx->io);
-            }
-            else
-            {
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
+            ev_io_start(EV_A_ &remote->recv_ctx->io);
         }
     }
 
@@ -543,13 +534,8 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
     if (r == 0)
     {
         // connection closed
-        server->buf_len = 0;
-        server->buf_idx = 0;
         close_and_free_remote(EV_A_ remote);
-        if (server != NULL)
-        {
-            ev_io_start(EV_A_ &server->send_ctx->io);
-        }
+        close_and_free_server(EV_A_ server);
         return;
     }
     else if(r < 0)
@@ -675,16 +661,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
             remote->buf_len = 0;
             remote->buf_idx = 0;
             ev_io_stop(EV_A_ &remote_send_ctx->io);
-            if (server != NULL)
-            {
-                ev_io_start(EV_A_ &server->recv_ctx->io);
-            }
-            else
-            {
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
+            ev_io_start(EV_A_ &server->recv_ctx->io);
         }
     }
 }
