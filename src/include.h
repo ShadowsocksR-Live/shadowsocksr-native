@@ -1,6 +1,9 @@
 #ifndef _INCLUDE_H
 #define _INCLUDE_H
 
+// only enable TCP_FASTOPEN on linux
+#if __linux
+
 /*  conditional define for TCP_FASTOPEN */
 #ifndef TCP_FASTOPEN
 #define TCP_FASTOPEN   23
@@ -9,6 +12,8 @@
 /*  conditional define for MSG_FASTOPEN */
 #ifndef MSG_FASTOPEN
 #define MSG_FASTOPEN   0x20000000
+#endif
+
 #endif
 
 int udprelay_init(const char *server_host, const char *server_port,
