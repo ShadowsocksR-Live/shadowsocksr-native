@@ -616,7 +616,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
         else
         {
             // not connected
-            ERROR("getpeername");
+            ERROR("fast_open_getpeername");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
@@ -628,7 +628,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
         struct sockaddr_storage addr;
         socklen_t len = sizeof addr;
         int r = getpeername(remote->fd, (struct sockaddr*)&addr, &len);
-            if (r == 0)
+        if (r == 0)
         {
             remote_send_ctx->connected = 1;
             ev_io_stop(EV_A_ &remote_send_ctx->io);
@@ -851,7 +851,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
         if (verbose)
         {
             LOGD("connect to %s:%s", listener->remote_addr[index].host,
-                listener->remote_addr[index].port);
+                 listener->remote_addr[index].port);
         }
         int err = getaddrinfo(listener->remote_addr[index].host,
                               listener->remote_addr[index].port,
@@ -886,7 +886,8 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
     struct remote *remote = new_remote(sockfd, listener->timeout);
     server->remote = remote;
     remote->server = server;
-    if (!fast_open) {
+    if (!fast_open)
+    {
         connect(sockfd, remote_res->ai_addr, remote_res->ai_addrlen);
         // listen to remote connected event
         ev_io_start(EV_A_ &remote->send_ctx->io);
@@ -919,7 +920,8 @@ int main (int argc, char **argv)
     char *remote_port = NULL;
 
     int option_index = 0;
-    static struct option long_options[] = {
+    static struct option long_options[] =
+    {
         {"fast-open", no_argument, 0,  0 },
         {0,           0,           0,  0 }
     };
@@ -932,16 +934,16 @@ int main (int argc, char **argv)
         switch (c)
         {
         case 0:
-          if (option_index == 0)
-          {
+            if (option_index == 0)
+            {
 #ifdef TCP_FASTOPEN
-              fast_open = 1;
-              LOGD("using tcp fast open");
+                fast_open = 1;
+                LOGD("using tcp fast open");
 #else
-              LOGE("tcp fast open is not supported by this environment");
+                LOGE("tcp fast open is not supported by this environment");
 #endif
-          }
-          break;
+            }
+            break;
         case 's':
             remote_addr[remote_num].host = optarg;
             remote_addr[remote_num++].port = NULL;

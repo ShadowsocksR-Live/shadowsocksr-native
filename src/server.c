@@ -938,7 +938,8 @@ int main (int argc, char **argv)
     int dns_thread_num = DNS_THREAD_NUM;
 
     int option_index = 0;
-    static struct option long_options[] = {
+    static struct option long_options[] =
+    {
         {"fast-open", no_argument, 0,  0 },
         {0,           0,           0,  0 }
     };
@@ -951,16 +952,16 @@ int main (int argc, char **argv)
         switch (c)
         {
         case 0:
-          if (option_index == 0)
-          {
+            if (option_index == 0)
+            {
 #ifdef TCP_FASTOPEN
-              fast_open = 1;
-              LOGD("using tcp fast open");
+                fast_open = 1;
+                LOGD("using tcp fast open");
 #else
-              LOGE("tcp fast open is not supported by this environment");
+                LOGE("tcp fast open is not supported by this environment");
 #endif
-          }
-          break;
+            }
+            break;
         case 's':
             server_host[server_num++] = optarg;
             break;
