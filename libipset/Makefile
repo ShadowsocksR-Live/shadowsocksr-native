@@ -126,8 +126,8 @@ am__objects_3 = set/libipset_la-allocation.lo \
 	set/libipset_la-inspection.lo set/libipset_la-ipv4_set.lo \
 	set/libipset_la-ipv6_set.lo set/libipset_la-iterator.lo \
 	set/libipset_la-storage.lo
-am_libipset_la_OBJECTS = $(am__objects_1) $(am__objects_2) \
-	$(am__objects_3)
+am_libipset_la_OBJECTS = libipset_la-general.lo $(am__objects_1) \
+	$(am__objects_2) $(am__objects_3)
 libipset_la_OBJECTS = $(am_libipset_la_OBJECTS)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
@@ -326,7 +326,7 @@ map_src = map/allocation.c map/inspection.c map/ipv4_map.c map/ipv6_map.c \
 set_src = set/allocation.c set/inspection.c set/ipv4_set.c set/ipv6_set.c \
 		  set/iterator.c set/storage.c
 
-libipset_la_SOURCES = ${bdd_src} ${map_src} ${set_src}
+libipset_la_SOURCES = general.c ${bdd_src} ${map_src} ${set_src}
 libipset_la_CFLAGS = -Iinclude
 libipset_la_LDFLAGS = -static
 all: all-am
@@ -444,6 +444,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+include ./$(DEPDIR)/libipset_la-general.Plo
 include bdd/$(DEPDIR)/libipset_la-assignments.Plo
 include bdd/$(DEPDIR)/libipset_la-basics.Plo
 include bdd/$(DEPDIR)/libipset_la-bdd-iterator.Plo
@@ -486,6 +487,13 @@ include set/$(DEPDIR)/libipset_la-storage.Plo
 #	$(AM_V_CC)source='$<' object='$@' libtool=yes \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(AM_V_CC_no)$(LTCOMPILE) -c -o $@ $<
+
+libipset_la-general.lo: general.c
+	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libipset_la_CFLAGS) $(CFLAGS) -MT libipset_la-general.lo -MD -MP -MF $(DEPDIR)/libipset_la-general.Tpo -c -o libipset_la-general.lo `test -f 'general.c' || echo '$(srcdir)/'`general.c
+	$(AM_V_at)$(am__mv) $(DEPDIR)/libipset_la-general.Tpo $(DEPDIR)/libipset_la-general.Plo
+#	$(AM_V_CC)source='general.c' object='libipset_la-general.lo' libtool=yes \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libipset_la_CFLAGS) $(CFLAGS) -c -o libipset_la-general.lo `test -f 'general.c' || echo '$(srcdir)/'`general.c
 
 bdd/libipset_la-assignments.lo: bdd/assignments.c
 	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libipset_la_CFLAGS) $(CFLAGS) -MT bdd/libipset_la-assignments.lo -MD -MP -MF bdd/$(DEPDIR)/libipset_la-assignments.Tpo -c -o bdd/libipset_la-assignments.lo `test -f 'bdd/assignments.c' || echo '$(srcdir)/'`bdd/assignments.c
@@ -750,7 +758,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf bdd/$(DEPDIR) map/$(DEPDIR) set/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) bdd/$(DEPDIR) map/$(DEPDIR) set/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -796,7 +804,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf bdd/$(DEPDIR) map/$(DEPDIR) set/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) bdd/$(DEPDIR) map/$(DEPDIR) set/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

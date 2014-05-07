@@ -59,6 +59,7 @@ struct remote
     struct remote_ctx *recv_ctx;
     struct remote_ctx *send_ctx;
     struct server *server;
+    struct addrinfo *addr_info;
 };
 
 

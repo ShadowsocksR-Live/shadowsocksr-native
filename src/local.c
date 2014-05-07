@@ -50,7 +50,6 @@
 int verbose = 0;
 int udprelay = 0;
 static int fast_open = 0;
-static struct addrinfo *remote_res = NULL;
 
 #ifndef __MINGW32__
 static int setnonblocking(int fd)
@@ -196,7 +195,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         {
 #ifdef TCP_FASTOPEN
             s = sendto(remote->fd, remote->buf, r, MSG_FASTOPEN,
-                       remote_res->ai_addr, remote_res->ai_addrlen);
+                       remote->addr_info->ai_addr, remote->addr_info->ai_addrlen);
             if (s == -1)
             {
                 if (errno == EINPROGRESS)
@@ -717,6 +716,7 @@ struct remote* new_remote(int fd, int timeout)
     remote->send_ctx->connected = 0;
     remote->buf_len = 0;
     remote->buf_idx = 0;
+    remote->addr_info = NULL;
     return remote;
 }
 
@@ -731,6 +731,10 @@ static void free_remote(struct remote *remote)
         if (remote->buf)
         {
             free(remote->buf);
+        }
+        if (remote->addr_info)
+        {
+            freeaddrinfo(remote->addr_info);
         }
         free(remote->recv_ctx);
         free(remote->send_ctx);
@@ -823,6 +827,57 @@ static void close_and_free_server(EV_P_ struct server *server)
     }
 }
 
+static struct remote* connect_to_remote(struct listen_ctx *listener)
+{
+    int opt = 1;
+    int sockfd;
+    struct addrinfo *remote_res;
+
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    int index = rand() % listener->remote_num;
+    if (verbose)
+    {
+        LOGD("connect to %s:%s", listener->remote_addr[index].host,
+                listener->remote_addr[index].port);
+    }
+    int err = getaddrinfo(listener->remote_addr[index].host,
+            listener->remote_addr[index].port,
+            &hints, &remote_res);
+    if (err)
+    {
+        ERROR("getaddrinfo");
+        return NULL;
+    }
+
+    sockfd = socket(remote_res->ai_family, remote_res->ai_socktype,
+                    remote_res->ai_protocol);
+    if (sockfd < 0)
+    {
+        ERROR("socket");
+        return NULL;
+    }
+
+    setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
+#ifdef SO_NOSIGPIPE
+    setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+#endif
+
+    // Setup
+    setnonblocking(sockfd);
+#ifdef SET_INTERFACE
+    if (listener->iface) setinterface(sockfd, listener->iface);
+#endif
+
+    struct remote *remote = new_remote(sockfd, listener->timeout);
+    remote->addr_info = remote_res;
+
+    return remote;
+}
+
+
 static void accept_cb (EV_P_ ev_io *w, int revents)
 {
     struct listen_ctx *listener = (struct listen_ctx *)w;
@@ -839,56 +894,16 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
     setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
-    int sockfd;
+    struct remote *remote = connect_to_remote(listener);
 
-    if (remote_res == NULL)
-    {
-        struct addrinfo hints;
-        memset(&hints, 0, sizeof hints);
-        hints.ai_family = AF_UNSPEC;
-        hints.ai_socktype = SOCK_STREAM;
-        int index = rand() % listener->remote_num;
-        if (verbose)
-        {
-            LOGD("connect to %s:%s", listener->remote_addr[index].host,
-                 listener->remote_addr[index].port);
-        }
-        int err = getaddrinfo(listener->remote_addr[index].host,
-                              listener->remote_addr[index].port,
-                              &hints, &remote_res);
-        if (err)
-        {
-            ERROR("getaddrinfo");
-            return;
-        }
-    }
-
-    sockfd = socket(remote_res->ai_family, remote_res->ai_socktype,
-                    remote_res->ai_protocol);
-    if (sockfd < 0)
-    {
-        ERROR("socket");
-        return;
-    }
-
-    setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
-#ifdef SO_NOSIGPIPE
-    setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
-#endif
-
-    // Setup
-    setnonblocking(sockfd);
-#ifdef SET_INTERFACE
-    if (listener->iface) setinterface(sockfd, listener->iface);
-#endif
+    if (remote == NULL) return;
 
     struct server *server = new_server(serverfd, listener->method);
-    struct remote *remote = new_remote(sockfd, listener->timeout);
     server->remote = remote;
     remote->server = server;
     if (!fast_open)
     {
-        connect(sockfd, remote_res->ai_addr, remote_res->ai_addrlen);
+        connect(remote->fd, remote->addr_info->ai_addr, remote->addr_info->ai_addrlen);
         // listen to remote connected event
         ev_io_start(EV_A_ &remote->send_ctx->io);
         ev_timer_start(EV_A_ &remote->send_ctx->watcher);

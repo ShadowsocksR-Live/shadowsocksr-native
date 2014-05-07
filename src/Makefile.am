@@ -2,6 +2,7 @@ AM_CFLAGS = -g -O2 -Wall -Werror -Wno-deprecated-declarations -fno-strict-aliasi
 AM_CFLAGS += -I$(top_builddir)/libev
 AM_CFLAGS += -I$(top_builddir)/libasyncns
 AM_CFLAGS += -I$(top_builddir)/libipset/include
+AM_CFLAGS += -I$(top_builddir)/libcork/include
 
 AM_LDFLAGS = -static
 
