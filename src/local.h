@@ -56,6 +56,7 @@ struct remote
     int fd;
     int buf_len;
     int buf_idx;
+    int direct;
     char *buf; // remote send from, server recv into
     struct remote_ctx *recv_ctx;
     struct remote_ctx *send_ctx;
@@ -64,7 +65,7 @@ struct remote
 };
 
 
-static struct remote* connect_to_remote(struct listen_ctx *listener);
+static struct remote* connect_to_remote(struct listen_ctx *listener, const char *host, const char *port);
 static void accept_cb (EV_P_ ev_io *w, int revents);
 static void server_recv_cb (EV_P_ ev_io *w, int revents);
 static void server_send_cb (EV_P_ ev_io *w, int revents);

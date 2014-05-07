@@ -34,6 +34,7 @@
 #include "utils.h"
 #include "local.h"
 #include "socks5.h"
+#include "acl.h"
 
 #ifndef EAGAIN
 #define EAGAIN EWOULDBLOCK
@@ -47,6 +48,7 @@
 #define BUF_SIZE 512
 #endif
 
+int acl = 0;
 int verbose = 0;
 int udprelay = 0;
 static int fast_open = 0;
@@ -135,7 +137,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     char *buf;
     int *buf_idx, *buf_len;
 
-    if (remote == NULL)
+    if (remote == NULL || !remote->send_ctx->connected)
     {
        buf = server->buf;
        buf_idx = &server->buf_idx;
@@ -182,21 +184,9 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     // local socks5 server
     if (server->stage == 5)
     {
-        if (remote == NULL)
+        // insert shadowsocks header
+        if (!remote->direct)
         {
-            remote = connect_to_remote(server->listener);
-
-            if (remote == NULL)
-            {
-                LOGE("invalid password or cipher");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
-
-            server->remote = remote;
-            remote->server = server;
-
             char *tmp = malloc(r + server->addr_len);
             memcpy(tmp, server->addr_to_send, server->addr_len);
             memcpy(tmp + server->addr_len, buf, r);
@@ -204,20 +194,21 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
             remote->buf = tmp;
             remote->buf_idx = 0;
             remote->buf_len = r;
-        }
 
-        remote->buf = ss_encrypt(BUF_SIZE, remote->buf, &r, server->e_ctx);
-        if (remote->buf == NULL)
-        {
-            LOGE("invalid password or cipher");
-            close_and_free_remote(EV_A_ remote);
-            close_and_free_server(EV_A_ server);
-            return;
+            remote->buf = ss_encrypt(BUF_SIZE, remote->buf, &r, server->e_ctx);
+
+            if (remote->buf == NULL)
+            {
+                LOGE("invalid password or cipher");
+                close_and_free_remote(EV_A_ remote);
+                close_and_free_server(EV_A_ server);
+                return;
+            }
         }
 
         if (!remote->send_ctx->connected)
         {
-            if (!fast_open) 
+            if (!fast_open || remote->direct) 
             {
                 // connecting, wait until connected
                 connect(remote->fd, remote->addr_info->ai_addr, remote->addr_info->ai_addrlen);
@@ -343,6 +334,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
             char *ss_addr_to_send = malloc(BUF_SIZE);
             ssize_t addr_len = 0;
             ss_addr_to_send[addr_len++] = request->atyp;
+            char host[256], port[16];
 
             // get remote addr and port
             if (request->atyp == 1)
@@ -352,13 +344,12 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                 memcpy(ss_addr_to_send + addr_len, buf + 4, in_addr_len + 2);
                 addr_len += in_addr_len + 2;
 
-                if (verbose)
+                if (acl || verbose)
                 {
-                    char host[INET_ADDRSTRLEN];
-                    uint16_t port = ntohs(*(uint16_t *)(buf + 4 + in_addr_len));
+                    uint16_t p = ntohs(*(uint16_t *)(buf + 4 + in_addr_len));
                     inet_ntop(AF_INET, (const void *)(buf + 4),
                               host, INET_ADDRSTRLEN);
-                    LOGD("connect to %s:%d", host, port);
+                    sprintf(port, "%d", p);
                 }
 
             }
@@ -370,13 +361,12 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                 memcpy(ss_addr_to_send + addr_len, buf + 4 + 1, name_len + 2);
                 addr_len += name_len + 2;
 
-                if (verbose)
+                if (acl || verbose)
                 {
-                    char host[256];
-                    uint16_t port = ntohs(*(uint16_t *)(buf + 4 + 1 + name_len));
+                    uint16_t p = ntohs(*(uint16_t *)(buf + 4 + 1 + name_len));
                     memcpy(host, buf + 4 + 1, name_len);
                     host[name_len] = '\0';
-                    LOGD("connect to %s:%d", host, port);
+                    sprintf(port, "%d", p);
                 }
 
             }
@@ -387,13 +377,12 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                 memcpy(ss_addr_to_send + addr_len, buf + 4, in6_addr_len + 2);
                 addr_len += in6_addr_len + 2;
 
-                if (verbose)
+                if (acl || verbose)
                 {
-                    char host[INET6_ADDRSTRLEN];
-                    uint16_t port = ntohs(*(uint16_t *)(buf + 4 + in6_addr_len));
+                    uint16_t p = ntohs(*(uint16_t *)(buf + 4 + in6_addr_len));
                     inet_ntop(AF_INET6, (const void *)(buf + 4),
                               host, INET6_ADDRSTRLEN);
-                    LOGD("connect to %s:%d", host, port);
+                    sprintf(port, "%d", p);
                 }
 
             }
@@ -409,6 +398,35 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
             server->addr_len = addr_len;
 
             server->stage = 5;
+
+            if (verbose)
+            {
+                LOGD("connect to %s:%s", host, port);
+            }
+
+            if (remote == NULL)
+            {
+                if (is_bypass(host))
+                {
+                    remote = connect_to_remote(server->listener, host, port);
+                    remote->direct = 1;
+                }
+                else
+                {
+                    remote = connect_to_remote(server->listener, NULL, NULL);
+                }
+
+                if (remote == NULL)
+                {
+                    LOGE("invalid password or cipher");
+                    close_and_free_remote(EV_A_ remote);
+                    close_and_free_server(EV_A_ server);
+                    return;
+                }
+
+                server->remote = remote;
+                remote->server = server;
+            }
         }
 
         // Fake reply
@@ -559,13 +577,16 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
         }
     }
 
-    server->buf = ss_decrypt(BUF_SIZE, server->buf, &r, server->d_ctx);
-    if (server->buf == NULL)
+    if (!remote->direct)
     {
-        LOGE("invalid password or cipher");
-        close_and_free_remote(EV_A_ remote);
-        close_and_free_server(EV_A_ server);
-        return;
+        server->buf = ss_decrypt(BUF_SIZE, server->buf, &r, server->d_ctx);
+        if (server->buf == NULL)
+        {
+            LOGE("invalid password or cipher");
+            close_and_free_remote(EV_A_ remote);
+            close_and_free_server(EV_A_ server);
+            return;
+        }
     }
 
     int s = send(server->fd, server->buf, r, 0);
@@ -694,6 +715,7 @@ struct remote* new_remote(int fd, int timeout)
     remote->buf_len = 0;
     remote->buf_idx = 0;
     remote->addr_info = NULL;
+    remote->direct = 0;
     return remote;
 }
 
@@ -807,7 +829,8 @@ static void close_and_free_server(EV_P_ struct server *server)
     }
 }
 
-static struct remote* connect_to_remote(struct listen_ctx *listener)
+static struct remote* connect_to_remote(struct listen_ctx *listener, 
+        const char *host, const char *port)
 {
     int opt = 1;
     int sockfd;
@@ -823,9 +846,13 @@ static struct remote* connect_to_remote(struct listen_ctx *listener)
         LOGD("connect to %s:%s", listener->remote_addr[index].host,
                 listener->remote_addr[index].port);
     }
-    int err = getaddrinfo(listener->remote_addr[index].host,
-            listener->remote_addr[index].port,
-            &hints, &remote_res);
+    int err;
+    if (host == NULL || port == NULL)
+        err = getaddrinfo(listener->remote_addr[index].host,
+                listener->remote_addr[index].port, &hints, &remote_res);
+    else
+        err = getaddrinfo(host, port, &hints, &remote_res);
+
     if (err)
     {
         ERROR("getaddrinfo");
