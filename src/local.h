@@ -39,6 +39,7 @@ struct server
     struct enc_ctx *d_ctx;
     struct server_ctx *recv_ctx;
     struct server_ctx *send_ctx;
+    struct listen_ctx *listener;
     struct remote *remote;
 };
 
@@ -63,6 +64,7 @@ struct remote
 };
 
 
+static struct remote* connect_to_remote(struct listen_ctx *listener);
 static void accept_cb (EV_P_ ev_io *w, int revents);
 static void server_recv_cb (EV_P_ ev_io *w, int revents);
 static void server_send_cb (EV_P_ ev_io *w, int revents);
