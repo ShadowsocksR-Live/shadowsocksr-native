@@ -404,29 +404,30 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                 LOGD("connect to %s:%s", host, port);
             }
 
+            if (acl_is_bypass(host))
+            {
+                remote = connect_to_remote(server->listener, host, port);
+                remote->direct = 1;
+                if (verbose)
+                {
+                    LOGD("bypass %s:%s", host, port);
+                }
+            }
+            else
+            {
+                remote = connect_to_remote(server->listener, NULL, NULL);
+            }
+
             if (remote == NULL)
             {
-                if (is_bypass(host))
-                {
-                    remote = connect_to_remote(server->listener, host, port);
-                    remote->direct = 1;
-                }
-                else
-                {
-                    remote = connect_to_remote(server->listener, NULL, NULL);
-                }
-
-                if (remote == NULL)
-                {
-                    LOGE("invalid password or cipher");
-                    close_and_free_remote(EV_A_ remote);
-                    close_and_free_server(EV_A_ server);
-                    return;
-                }
-
-                server->remote = remote;
-                remote->server = server;
+                LOGE("invalid password or cipher");
+                close_and_free_remote(EV_A_ remote);
+                close_and_free_server(EV_A_ server);
+                return;
             }
+
+            server->remote = remote;
+            remote->server = server;
         }
 
         // Fake reply
@@ -929,8 +930,9 @@ int main (int argc, char **argv)
     int option_index = 0;
     static struct option long_options[] =
     {
-        {"fast-open", no_argument, 0,  0 },
-        {0,           0,           0,  0 }
+        {"fast-open", no_argument,       0,  0 },
+        {"acl",       required_argument, 0,  0 },
+        {0,           0,                 0,  0 }
     };
 
     opterr = 0;
@@ -949,6 +951,11 @@ int main (int argc, char **argv)
 #else
                 LOGE("tcp fast open is not supported by this environment");
 #endif
+            }
+            else if (option_index == 1)
+            {
+                acl = 1;
+                init_acl(optarg);
             }
             break;
         case 's':
