@@ -8,6 +8,10 @@
 #include <unistd.h>
 #include <getopt.h>
 
+#ifdef ANDROID
+#include "android.h"
+#endif
+
 #ifndef __MINGW32__
 #include <errno.h>
 #include <arpa/inet.h>
@@ -757,7 +761,11 @@ static void close_and_free_remote(EV_P_ struct remote *remote)
         ev_timer_stop(EV_A_ &remote->send_ctx->watcher);
         ev_io_stop(EV_A_ &remote->send_ctx->io);
         ev_io_stop(EV_A_ &remote->recv_ctx->io);
+#ifdef ANDROID
+        free_protect_fd(remote->fd);
+#else
         close(remote->fd);
+#endif
         free_remote(remote);
     }
 }
@@ -868,8 +876,16 @@ static struct remote* connect_to_remote(struct listen_ctx *listener,
         return NULL;
     }
 
+#ifdef ANDROID
+
+    sockfd = new_protect_socket();
+
+#else
+
     sockfd = socket(remote_res->ai_family, remote_res->ai_socktype,
                     remote_res->ai_protocol);
+#endif
+
     if (sockfd < 0)
     {
         ERROR("socket");
