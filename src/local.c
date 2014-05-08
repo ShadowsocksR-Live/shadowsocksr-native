@@ -188,13 +188,14 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         if (!remote->direct)
         {
             char *tmp = malloc(r + server->addr_len);
+
             memcpy(tmp, server->addr_to_send, server->addr_len);
             memcpy(tmp + server->addr_len, buf, r);
             r += server->addr_len;
-            remote->buf = tmp;
-            remote->buf_idx = 0;
-            remote->buf_len = r;
 
+            free(remote->buf);
+
+            remote->buf = tmp;
             remote->buf = ss_encrypt(BUF_SIZE, remote->buf, &r, server->e_ctx);
 
             if (remote->buf == NULL)
@@ -205,6 +206,13 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                 return;
             }
         }
+        else
+        {
+            memcpy(remote->buf, buf, r);
+        }
+
+        remote->buf_idx = 0;
+        remote->buf_len = r;
 
         if (!remote->send_ctx->connected)
         {
@@ -844,7 +852,7 @@ static struct remote* connect_to_remote(struct listen_ctx *listener,
     int index = rand() % listener->remote_num;
     if (verbose)
     {
-        LOGD("connect to %s:%s", listener->remote_addr[index].host,
+        LOGD("connect to server: %s:%s", listener->remote_addr[index].host,
                 listener->remote_addr[index].port);
     }
     int err;
