@@ -762,7 +762,7 @@ static void close_and_free_remote(EV_P_ struct remote *remote)
         ev_io_stop(EV_A_ &remote->send_ctx->io);
         ev_io_stop(EV_A_ &remote->recv_ctx->io);
 #ifdef ANDROID
-        free_protect_fd(remote->fd);
+        free_protected_socket(remote->fd);
 #else
         close(remote->fd);
 #endif
@@ -878,7 +878,7 @@ static struct remote* connect_to_remote(struct listen_ctx *listener,
 
 #ifdef ANDROID
 
-    sockfd = new_protect_socket();
+    sockfd = new_protected_socket();
 
 #else
 
