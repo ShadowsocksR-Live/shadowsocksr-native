@@ -58,6 +58,9 @@ private:
 static UnionJNIEnvToVoid uenv;
 static jmethodID newProtectedSocketMethod = NULL;
 static jmethodID freeProtectedSocketMethod = NULL;
+static jclass vpnClazz = NULL;
+static jclass daemonClazz = NULL;
+
 
 int main (int argc, char **argv);
 
@@ -92,39 +95,43 @@ jint Java_com_github_shadowsocks_daemon_exec(JNIEnv *env, jobject thiz, jobjectA
  */
 static int registerNativeMethods(JNIEnv* env)
 {
-    jclass clazz = NULL;
-
     const char *daemonClassPathName = "com/github/shadowsocks/Daemon";
     const char *vpnClassPathName = "com/github/shadowsocks/ShadowsocksVPNService";
 
-    clazz = env->FindClass(vpnClassPathName);
+    vpnClazz = env->FindClass(vpnClassPathName);
 
-    if (clazz == NULL)
+    if (vpnClazz == NULL)
     {
         LOGE("Native registration unable to find class '%s'", vpnClassPathName);
         return JNI_FALSE;
     }
-    newProtectedSocketMethod = env->GetStaticMethodID(clazz, "newProtectedSocket", "()I");
+    newProtectedSocketMethod = env->GetStaticMethodID(vpnClazz, "newProtectedSocket", "()I");
     if (newProtectedSocketMethod < 0)
     {
         LOGE("RegisterNatives failed for newProtectedSocketMethod");
         return JNI_FALSE;
     }
-    freeProtectedSocketMethod = env->GetStaticMethodID(clazz, "freeProtectedSocket", "(I)V");
+    freeProtectedSocketMethod = env->GetStaticMethodID(vpnClazz, "freeProtectedSocket", "(I)V");
     if (freeProtectedSocketMethod < 0)
     {
         LOGE("RegisterNatives failed for freeProtectedSocketMethod");
         return JNI_FALSE;
     }
 
-    clazz = env->FindClass(daemonClassPathName);
+    daemonClazz = env->FindClass(daemonClassPathName);
+
+    if (daemonClazz == NULL)
+    {
+        LOGE("Native registration unable to find class '%s'", daemonClassPathName);
+        return JNI_FALSE;
+    }
 
     JNINativeMethod methods[] = {
         { "exec", "([Ljava/lang/String;)I",
         (void*) Java_com_github_shadowsocks_daemon_exec }
     };
 
-    if (env->RegisterNatives(clazz, methods, 1) < 0) {
+    if (env->RegisterNatives(daemonClazz, methods, 1) < 0) {
         LOGE("RegisterNatives failed for '%s'", daemonClassPathName);
         return JNI_FALSE;
     }
@@ -137,7 +144,7 @@ jint new_protected_socket()
     if (newProtectedSocketMethod != NULL)
     {
         JNIEnv* env = uenv.env;
-        return env->CallStaticIntMethod(clazz, newProtectedSocketMethod);
+        return env->CallStaticIntMethod(vpnClazz, newProtectedSocketMethod);
     }
     return -1;
 }
@@ -147,7 +154,7 @@ void free_protected_socket(jint fd)
     if (newProtectedSocketMethod != NULL)
     {
         JNIEnv* env = uenv.env;
-        env->CallStaticVoidMethod(clazz, freeProtectedSocketMethod, fd);
+        env->CallStaticVoidMethod(vpnClazz, freeProtectedSocketMethod, fd);
     }
 }
 
