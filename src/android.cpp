@@ -62,7 +62,7 @@ jint new_protected_socket()
     if (newProtectedSocketMethod != NULL)
     {
         JNIEnv* env = uenv.env;
-        return (*env)->CallStaticIntMethod(env, SocketCls, newProtectedSocketMethod);
+        return env->CallStaticIntMethod(clazz, newProtectedSocketMethod);
     }
     return -1;
 }
@@ -72,7 +72,7 @@ void free_protected_socket(jint fd)
     if (newProtectedSocketMethod != NULL)
     {
         JNIEnv* env = uenv.env;
-        (*env)->CallStaticVoidMethod(env, SocketCls, freeProtectedSocketMethod, fd);
+        env->CallStaticVoidMethod(clazz, freeProtectedSocketMethod, fd);
     }
 }
 
