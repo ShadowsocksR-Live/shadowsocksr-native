@@ -8,10 +8,6 @@
 #include <unistd.h>
 #include <getopt.h>
 
-#ifdef ANDROID
-#include "android.h"
-#endif
-
 #ifndef __MINGW32__
 #include <errno.h>
 #include <arpa/inet.h>
@@ -762,12 +758,7 @@ static void close_and_free_remote(EV_P_ struct remote *remote)
         ev_timer_stop(EV_A_ &remote->send_ctx->watcher);
         ev_io_stop(EV_A_ &remote->send_ctx->io);
         ev_io_stop(EV_A_ &remote->recv_ctx->io);
-#ifdef ANDROID
-        if (protect_socket)
-            free_protected_socket(remote->fd);
-        else
-#endif
-            close(remote->fd);
+        close(remote->fd);
         free_remote(remote);
     }
 }
@@ -878,12 +869,7 @@ static struct remote* connect_to_remote(struct listen_ctx *listener,
         return NULL;
     }
 
-#ifdef ANDROID
-    if (protect_socket)
-        sockfd = new_protected_socket();
-    else
-#endif
-        sockfd = socket(remote_res->ai_family, remote_res->ai_socktype,
+    sockfd = socket(remote_res->ai_family, remote_res->ai_socktype,
                     remote_res->ai_protocol);
 
     if (sockfd < 0)
@@ -1071,18 +1057,7 @@ int main (int argc, char **argv)
     if (pid_flags)
     {
         USE_SYSLOG(argv[0]);
-#ifndef ANDROID
         daemonize(pid_path);
-#else
-        pid_t pid = getpid();
-        if (pid > 0)
-        {
-            FILE *file = fopen(pid_path, "w");
-            if (file == NULL) FATAL("Invalid pid file\n");
-            fprintf(file, "%d", pid);
-            fclose(file);
-        }
-#endif
     }
 
 #ifdef __MINGW32__
