@@ -1066,7 +1066,18 @@ int main (int argc, char **argv)
     if (pid_flags)
     {
         USE_SYSLOG(argv[0]);
-        demonize(pid_path);
+#ifndef ANDROID
+        daemonize(pid_path);
+#else
+        pid_t pid = getpid();
+        if (pid > 0)
+        {
+            FILE *file = fopen(pid_path, "w");
+            if (file == NULL) FATAL("Invalid pid file\n");
+            fprintf(file, "%d", pid);
+            fclose(file);
+        }
+#endif
     }
 
 #ifdef __MINGW32__

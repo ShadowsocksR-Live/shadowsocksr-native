@@ -100,7 +100,7 @@ char *itoa(int i);
 int run_as(const char *user);
 void FATAL(const char *msg);
 void usage(void);
-void demonize(const char* path);
+void daemonize(const char* path);
 char *ss_strndup(const char *s, size_t n);
 
 #endif // _UTILS_H
