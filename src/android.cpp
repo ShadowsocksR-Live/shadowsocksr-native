@@ -62,7 +62,9 @@ static jclass clazz = NULL;
 
 static const char *classPathName = "com/github/shadowsocks/Daemon";
 
-void Java_com_github_shadowsocks_daemon_exec(JNIEnv *env, jobject thiz, jobjectArray argv) {
+int main (int argc, char **argv);
+
+jint Java_com_github_shadowsocks_daemon_exec(JNIEnv *env, jobject thiz, jobjectArray argv) {
 
     int argc = argv ? env->GetArrayLength(argv) : 0;
     char **daemon_argv = NULL;
@@ -77,13 +79,15 @@ void Java_com_github_shadowsocks_daemon_exec(JNIEnv *env, jobject thiz, jobjectA
             env->ReleaseStringCritical(arg, str);
             daemon_argv[i] = strdup(tmp_8.string());
         }
-        daemon_argv[args] = NULL;
+        daemon_argv[argc] = NULL;
     }
 
     int ret = main(argc, daemon_argv);
 
-    for (init i = 0; i < argc; i++) free(daemon_argv[i]);
+    for (int i = 0; i < argc; i++) free(daemon_argv[i]);
     free(daemon_argv);
+
+    return ret;
 }
 
 /*
@@ -114,7 +118,7 @@ static int registerNativeMethods(JNIEnv* env, const char* className)
     }
 
     JNINativeMethod methods[] = {
-        { "exec", "([Ljava/lang/String;)V",
+        { "exec", "([Ljava/lang/String;)I",
         (void*) Java_com_github_shadowsocks_daemon_exec }
     };
 
