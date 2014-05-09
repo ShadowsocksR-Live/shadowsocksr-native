@@ -1,11 +1,11 @@
 #define LOG_TAG "Shadowsocks"
 
-#include "android.h"
 #include <android/log.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <cpu-features.h>
+
+#include "android.h"
 
 #define LOGI(...) do { __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__); } while(0)
 #define LOGW(...) do { __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__); } while(0)
