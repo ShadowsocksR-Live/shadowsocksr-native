@@ -56,6 +56,7 @@ int acl = 0;
 int verbose = 0;
 int udprelay = 0;
 static int fast_open = 0;
+static int protect_socket = 0;
 
 #ifndef __MINGW32__
 static int setnonblocking(int fd)
@@ -762,10 +763,11 @@ static void close_and_free_remote(EV_P_ struct remote *remote)
         ev_io_stop(EV_A_ &remote->send_ctx->io);
         ev_io_stop(EV_A_ &remote->recv_ctx->io);
 #ifdef ANDROID
-        free_protected_socket(remote->fd);
-#else
-        close(remote->fd);
+        if (protect_socket)
+            free_protected_socket(remote->fd);
+        else
 #endif
+            close(remote->fd);
         free_remote(remote);
     }
 }
@@ -877,14 +879,12 @@ static struct remote* connect_to_remote(struct listen_ctx *listener,
     }
 
 #ifdef ANDROID
-
-    sockfd = new_protected_socket();
-
-#else
-
-    sockfd = socket(remote_res->ai_family, remote_res->ai_socktype,
-                    remote_res->ai_protocol);
+    if (protect_socket)
+        sockfd = new_protected_socket();
+    else
 #endif
+        sockfd = socket(remote_res->ai_family, remote_res->ai_socktype,
+                    remote_res->ai_protocol);
 
     if (sockfd < 0)
     {
@@ -954,9 +954,10 @@ int main (int argc, char **argv)
     int option_index = 0;
     static struct option long_options[] =
     {
-        {"fast-open", no_argument,       0,  0 },
-        {"acl",       required_argument, 0,  0 },
-        {0,           0,                 0,  0 }
+        {"fast-open",      no_argument,       0,  0 },
+        {"acl",            required_argument, 0,  0 },
+        {"protect-socket", no_argument,       0,  0 },
+        {0,                0,                 0,  0 }
     };
 
     opterr = 0;
@@ -980,6 +981,10 @@ int main (int argc, char **argv)
             {
                 acl = 1;
                 init_acl(optarg);
+            }
+            else if (option_index == 2)
+            {
+                protect_socket = 1;
             }
             break;
         case 's':
