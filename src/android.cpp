@@ -58,9 +58,6 @@ private:
 static UnionJNIEnvToVoid uenv;
 static jmethodID newProtectedSocketMethod = NULL;
 static jmethodID freeProtectedSocketMethod = NULL;
-static jclass clazz = NULL;
-
-static const char *classPathName = "com/github/shadowsocks/Daemon";
 
 int main (int argc, char **argv);
 
@@ -93,15 +90,18 @@ jint Java_com_github_shadowsocks_daemon_exec(JNIEnv *env, jobject thiz, jobjectA
 /*
  * Register several native methods for one class.
  */
-static int registerNativeMethods(JNIEnv* env, const char* className)
+static int registerNativeMethods(JNIEnv* env)
 {
+    jclass clazz = NULL;
+
+    const char *daemonClassPathName = "com/github/shadowsocks/Daemon";
+    const char *vpnClassPathName = "com/github/shadowsocks/ShadowsocksVPNService";
+
+    clazz = env->FindClass(vpnClassPathName);
+
     if (clazz == NULL)
     {
-        clazz = env->FindClass(className);
-    }
-    if (clazz == NULL)
-    {
-        LOGE("Native registration unable to find class '%s'", className);
+        LOGE("Native registration unable to find class '%s'", vpnClassPathName);
         return JNI_FALSE;
     }
     newProtectedSocketMethod = env->GetStaticMethodID(clazz, "newProtectedSocket", "()I");
@@ -117,13 +117,15 @@ static int registerNativeMethods(JNIEnv* env, const char* className)
         return JNI_FALSE;
     }
 
+    clazz = env->FindClass(daemonClassPathName);
+
     JNINativeMethod methods[] = {
         { "exec", "([Ljava/lang/String;)I",
         (void*) Java_com_github_shadowsocks_daemon_exec }
     };
 
     if (env->RegisterNatives(clazz, methods, 1) < 0) {
-        LOGE("RegisterNatives failed for '%s'", className);
+        LOGE("RegisterNatives failed for '%s'", daemonClassPathName);
         return JNI_FALSE;
     }
 
@@ -163,7 +165,7 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved)
     }
     env = uenv.env;
 
-    if (registerNativeMethods(env, classPathName) != JNI_TRUE) {
+    if (registerNativeMethods(env) != JNI_TRUE) {
         LOGE("ERROR: registerNatives failed");
         goto bail;
     }
