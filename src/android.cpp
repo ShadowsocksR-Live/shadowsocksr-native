@@ -96,7 +96,7 @@ jint Java_com_github_shadowsocks_daemon_exec(JNIEnv *env, jobject thiz, jobjectA
 static int registerNativeMethods(JNIEnv* env)
 {
     const char *daemonClassPathName = "com/github/shadowsocks/Daemon";
-    const char *vpnClassPathName = "com/github/shadowsocks/ShadowsocksVPNService";
+    const char *vpnClassPathName = "com/github/shadowsocks/ShadowsocksVpnService";
 
     vpnClazz = env->FindClass(vpnClassPathName);
 
