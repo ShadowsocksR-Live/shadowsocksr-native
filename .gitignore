@@ -30,7 +30,6 @@ debian/*.debhelper*
 *~
 *.bak
 *.bin
-core
 *.dll
 *.exe
 *-ISO*.bdf
