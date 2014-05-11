@@ -135,19 +135,14 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     struct server *server = server_recv_ctx->server;
     struct remote *remote = server->remote;
     char *buf;
-    int *buf_idx, *buf_len;
 
     if (remote == NULL || !remote->send_ctx->connected)
     {
-       buf = server->buf;
-       buf_idx = &server->buf_idx;
-       buf_len = &server->buf_len;
+        buf = server->buf;
     }
     else
     {
-       buf = remote->buf;
-       buf_idx = &remote->buf_idx;
-       buf_len = &remote->buf_len;
+        buf = remote->buf;
     }
 
     ssize_t r = recv(server->fd, buf, BUF_SIZE, 0);
@@ -155,16 +150,11 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     if (r == 0)
     {
         // connection closed
-        *buf_len = 0;
-        *buf_idx = 0;
+        close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
-        if (remote != NULL)
-        {
-            ev_io_start(EV_A_ &remote->send_ctx->io);
-        }
         return;
     }
-    else if(r < 0)
+    else if (r < 0)
     {
         if (errno == EAGAIN || errno == EWOULDBLOCK)
         {
@@ -174,7 +164,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         }
         else
         {
-            ERROR("server recv");
+            ERROR("server_recv_cb_recv");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
@@ -220,7 +210,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
 
         if (!remote->send_ctx->connected)
         {
-            if (!fast_open || remote->direct) 
+            if (!fast_open || remote->direct)
             {
                 // connecting, wait until connected
                 connect(remote->fd, remote->addr_info->ai_addr, remote->addr_info->ai_addrlen);
@@ -234,7 +224,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
             {
 #ifdef TCP_FASTOPEN
                 int s = sendto(remote->fd, remote->buf, r, MSG_FASTOPEN,
-                        remote->addr_info->ai_addr, remote->addr_info->ai_addrlen);
+                               remote->addr_info->ai_addr, remote->addr_info->ai_addrlen);
                 if (s == -1)
                 {
                     if (errno == EINPROGRESS)
@@ -284,7 +274,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                 }
                 else
                 {
-                    ERROR("send");
+                    ERROR("server_recv_cb_send");
                     close_and_free_remote(EV_A_ remote);
                     close_and_free_server(EV_A_ server);
                     return;
@@ -433,7 +423,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
             if (remote == NULL)
             {
                 LOGE("invalid password or cipher");
-                close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
                 return;
             }
@@ -494,7 +483,7 @@ static void server_send_cb (EV_P_ ev_io *w, int revents)
         {
             if (errno != EAGAIN && errno != EWOULDBLOCK)
             {
-                ERROR("send");
+                ERROR("server_send_cb_send");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
             }
@@ -617,7 +606,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
         }
         else
         {
-            ERROR("send");
+            ERROR("remote_recv_cb_send");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
@@ -671,7 +660,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
     {
         // has data to send
         ssize_t s = send(remote->fd, remote->buf + remote->buf_idx,
-                remote->buf_len, 0);
+                         remote->buf_len, 0);
         if (s < 0)
         {
             if (errno != EAGAIN && errno != EWOULDBLOCK)
@@ -714,21 +703,20 @@ struct remote* new_remote(int fd, int timeout)
 {
     struct remote *remote;
     remote = malloc(sizeof(struct remote));
+
+    memset(remote, 0, sizeof(struct remote));
+
     remote->buf = malloc(BUF_SIZE);
     remote->recv_ctx = malloc(sizeof(struct remote_ctx));
     remote->send_ctx = malloc(sizeof(struct remote_ctx));
+    remote->recv_ctx->connected = 0;
+    remote->send_ctx->connected = 0;
     remote->fd = fd;
     ev_io_init(&remote->recv_ctx->io, remote_recv_cb, fd, EV_READ);
     ev_io_init(&remote->send_ctx->io, remote_send_cb, fd, EV_WRITE);
     ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb, timeout, 0);
     remote->recv_ctx->remote = remote;
-    remote->recv_ctx->connected = 0;
     remote->send_ctx->remote = remote;
-    remote->send_ctx->connected = 0;
-    remote->buf_len = 0;
-    remote->buf_idx = 0;
-    remote->addr_info = NULL;
-    remote->direct = 0;
     return remote;
 }
 
@@ -770,18 +758,19 @@ struct server* new_server(int fd, int method)
 {
     struct server *server;
     server = malloc(sizeof(struct server));
+
     memset(server, 0, sizeof(struct server));
+
     server->buf = malloc(BUF_SIZE);
     server->recv_ctx = malloc(sizeof(struct server_ctx));
     server->send_ctx = malloc(sizeof(struct server_ctx));
+    server->recv_ctx->connected = 0;
+    server->send_ctx->connected = 0;
     server->fd = fd;
     ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
     ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
     server->recv_ctx->server = server;
-    server->recv_ctx->connected = 0;
     server->send_ctx->server = server;
-    server->send_ctx->connected = 0;
-    server->stage = 0;
     if (method)
     {
         server->e_ctx = malloc(sizeof(struct enc_ctx));
@@ -794,8 +783,6 @@ struct server* new_server(int fd, int method)
         server->e_ctx = NULL;
         server->d_ctx = NULL;
     }
-    server->buf_len = 0;
-    server->buf_idx = 0;
     return server;
 }
 
@@ -842,8 +829,8 @@ static void close_and_free_server(EV_P_ struct server *server)
     }
 }
 
-static struct remote* connect_to_remote(struct listen_ctx *listener, 
-        const char *host, const char *port)
+static struct remote* connect_to_remote(struct listen_ctx *listener,
+                                        const char *host, const char *port)
 {
     int opt = 1;
     int sockfd;
@@ -860,10 +847,10 @@ static struct remote* connect_to_remote(struct listen_ctx *listener,
         if (verbose)
         {
             LOGD("connect to server: %s:%s", listener->remote_addr[index].host,
-                    listener->remote_addr[index].port);
+                 listener->remote_addr[index].port);
         }
         err = getaddrinfo(listener->remote_addr[index].host,
-                listener->remote_addr[index].port, &hints, &remote_res);
+                          listener->remote_addr[index].port, &hints, &remote_res);
     }
     else
         err = getaddrinfo(host, port, &hints, &remote_res);
