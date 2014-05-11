@@ -187,15 +187,19 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         // insert shadowsocks header
         if (!remote->direct)
         {
-            char *tmp = malloc(r + server->addr_len);
+            if (!remote->send_ctx->connected)
+            {
+                char *tmp = malloc(r + server->addr_len);
 
-            memcpy(tmp, server->addr_to_send, server->addr_len);
-            memcpy(tmp + server->addr_len, buf, r);
-            r += server->addr_len;
+                memcpy(tmp, server->addr_to_send, server->addr_len);
+                memcpy(tmp + server->addr_len, buf, r);
+                r += server->addr_len;
 
-            free(remote->buf);
+                free(remote->buf);
 
-            remote->buf = tmp;
+                remote->buf = tmp;
+            }
+
             remote->buf = ss_encrypt(BUF_SIZE, remote->buf, &r, server->e_ctx);
 
             if (remote->buf == NULL)
@@ -850,15 +854,17 @@ static struct remote* connect_to_remote(struct listen_ctx *listener,
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     int index = rand() % listener->remote_num;
-    if (verbose)
-    {
-        LOGD("connect to server: %s:%s", listener->remote_addr[index].host,
-                listener->remote_addr[index].port);
-    }
     int err;
     if (host == NULL || port == NULL)
+    {
+        if (verbose)
+        {
+            LOGD("connect to server: %s:%s", listener->remote_addr[index].host,
+                    listener->remote_addr[index].port);
+        }
         err = getaddrinfo(listener->remote_addr[index].host,
                 listener->remote_addr[index].port, &hints, &remote_res);
+    }
     else
         err = getaddrinfo(host, port, &hints, &remote_res);
 
@@ -963,6 +969,7 @@ int main (int argc, char **argv)
             }
             else if (option_index == 1)
             {
+                LOGD("initialize acl...");
                 acl = 1;
                 init_acl(optarg);
             }
