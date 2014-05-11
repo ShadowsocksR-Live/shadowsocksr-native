@@ -555,7 +555,7 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
         }
         else
         {
-            ERROR("remote recv");
+            ERROR("remote_recv_cb_recv");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
@@ -648,7 +648,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
         {
             if (errno != EAGAIN && errno != EWOULDBLOCK)
             {
-                ERROR("send");
+                ERROR("remote_send_cb_send");
                 // close and free
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
