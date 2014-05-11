@@ -136,7 +136,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     struct remote *remote = server->remote;
     char *buf;
 
-    if (remote == NULL || !remote->send_ctx->connected)
+    if (remote == NULL)
     {
         buf = server->buf;
     }
@@ -174,6 +174,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     // local socks5 server
     if (server->stage == 5)
     {
+        if (remote == NULL) FATAL("remote should not be null.");
+
         // insert shadowsocks header
         if (!remote->direct)
         {
@@ -182,9 +184,10 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                 char *tmp = malloc(r + server->addr_len);
 
                 memcpy(tmp, server->addr_to_send, server->addr_len);
-                memcpy(tmp + server->addr_len, buf, r);
+                memcpy(tmp + server->addr_len, remote->buf, r);
                 r += server->addr_len;
 
+                // deallocate
                 free(remote->buf);
 
                 remote->buf = tmp;
