@@ -528,11 +528,6 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 
     ev_timer_stop(EV_A_ watcher);
 
-    if (server == NULL)
-    {
-        close_and_free_remote(EV_A_ remote);
-        return;
-    }
     close_and_free_remote(EV_A_ remote);
     close_and_free_server(EV_A_ server);
 }
@@ -542,11 +537,6 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
     struct remote_ctx *remote_recv_ctx = (struct remote_ctx *)w;
     struct remote *remote = remote_recv_ctx->remote;
     struct server *server = remote->server;
-    if (server == NULL)
-    {
-        close_and_free_remote(EV_A_ remote);
-        return;
-    }
 
     ssize_t r = recv(remote->fd, server->buf, BUF_SIZE, 0);
 
