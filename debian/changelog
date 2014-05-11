@@ -1,3 +1,9 @@
+shadowsocks (1.4.6-1) untable; urgency=low
+
+  * Add ACL support.
+
+ -- Max Lv <max.c.lv@gmail.com>  Sat, 03 May 2014 04:37:10 -0400
+
 shadowsocks (1.4.5-1) unstable; urgency=high
 
   * Fix the compatibility issue of udprelay.

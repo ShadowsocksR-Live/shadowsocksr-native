@@ -77,17 +77,18 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__ss_local_SOURCES_DIST = utils.c jconf.c json.c encrypt.c \
-	udprelay.c cache.c local.c win32.c
+	udprelay.c cache.c acl.c local.c win32.c
 @BUILD_WINCOMPAT_TRUE@am__objects_1 = ss_local-win32.$(OBJEXT)
 am_ss_local_OBJECTS = ss_local-utils.$(OBJEXT) \
 	ss_local-jconf.$(OBJEXT) ss_local-json.$(OBJEXT) \
 	ss_local-encrypt.$(OBJEXT) ss_local-udprelay.$(OBJEXT) \
-	ss_local-cache.$(OBJEXT) ss_local-local.$(OBJEXT) \
-	$(am__objects_1)
+	ss_local-cache.$(OBJEXT) ss_local-acl.$(OBJEXT) \
+	ss_local-local.$(OBJEXT) $(am__objects_1)
 ss_local_OBJECTS = $(am_ss_local_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(top_builddir)/libev/libev.la \
-	$(am__DEPENDENCIES_1)
+	$(top_builddir)/libcork/libcork.la \
+	$(top_builddir)/libipset/libipset.la $(am__DEPENDENCIES_1)
 ss_local_DEPENDENCIES = $(am__DEPENDENCIES_2)
 ss_local_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(ss_local_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -267,11 +268,17 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = -g -O2 -Wall -Werror -Wno-deprecated-declarations \
 	-fno-strict-aliasing -std=gnu99 -D_GNU_SOURCE \
-	-I$(top_builddir)/libev -I$(top_builddir)/libasyncns
+	-I$(top_builddir)/libev -I$(top_builddir)/libasyncns \
+	-I$(top_builddir)/libipset/include \
+	-I$(top_builddir)/libcork/include
 AM_LDFLAGS = -static
-SS_COMMON_LIBS = $(top_builddir)/libev/libev.la $(INET_NTOP_LIB)
+SS_COMMON_LIBS = $(top_builddir)/libev/libev.la \
+				 $(top_builddir)/libcork/libcork.la \
+				 $(top_builddir)/libipset/libipset.la \
+				 $(INET_NTOP_LIB)
+
 ss_local_SOURCES = utils.c jconf.c json.c encrypt.c udprelay.c cache.c \
-	local.c $(am__append_2)
+	acl.c local.c $(am__append_2)
 ss_tunnel_SOURCES = utils.c jconf.c json.c encrypt.c udprelay.c \
 	cache.c tunnel.c $(am__append_3)
 ss_server_SOURCES = utils.c \
@@ -399,6 +406,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jconf.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/json.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/redir.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ss_local-acl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ss_local-cache.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ss_local-encrypt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ss_local-jconf.Po@am__quote@
@@ -425,22 +433,25 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/utils.Po@am__quote@
 
 .c.o:
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(COMPILE) -c $<
+@am__fastdepCC_FALSE@	$(COMPILE) -c -o $@ $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+@am__fastdepCC_FALSE@	$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCC_TRUE@	depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
@@ -528,6 +539,20 @@ ss_local-cache.obj: cache.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cache.c' object='ss_local-cache.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ss_local_CFLAGS) $(CFLAGS) -c -o ss_local-cache.obj `if test -f 'cache.c'; then $(CYGPATH_W) 'cache.c'; else $(CYGPATH_W) '$(srcdir)/cache.c'; fi`
+
+ss_local-acl.o: acl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ss_local_CFLAGS) $(CFLAGS) -MT ss_local-acl.o -MD -MP -MF $(DEPDIR)/ss_local-acl.Tpo -c -o ss_local-acl.o `test -f 'acl.c' || echo '$(srcdir)/'`acl.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ss_local-acl.Tpo $(DEPDIR)/ss_local-acl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='acl.c' object='ss_local-acl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ss_local_CFLAGS) $(CFLAGS) -c -o ss_local-acl.o `test -f 'acl.c' || echo '$(srcdir)/'`acl.c
+
+ss_local-acl.obj: acl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ss_local_CFLAGS) $(CFLAGS) -MT ss_local-acl.obj -MD -MP -MF $(DEPDIR)/ss_local-acl.Tpo -c -o ss_local-acl.obj `if test -f 'acl.c'; then $(CYGPATH_W) 'acl.c'; else $(CYGPATH_W) '$(srcdir)/acl.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ss_local-acl.Tpo $(DEPDIR)/ss_local-acl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='acl.c' object='ss_local-acl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ss_local_CFLAGS) $(CFLAGS) -c -o ss_local-acl.obj `if test -f 'acl.c'; then $(CYGPATH_W) 'acl.c'; else $(CYGPATH_W) '$(srcdir)/acl.c'; fi`
 
 ss_local-local.o: local.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ss_local_CFLAGS) $(CFLAGS) -MT ss_local-local.o -MD -MP -MF $(DEPDIR)/ss_local-local.Tpo -c -o ss_local-local.o `test -f 'local.c' || echo '$(srcdir)/'`local.c

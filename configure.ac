@@ -2,11 +2,11 @@ dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.67])
-AC_INIT([shadowsocks], [1.4.5], [max.c.lv@gmail.com])
+AC_INIT([shadowsocks], [1.4.6], [max.c.lv@gmail.com])
 AC_CONFIG_SRCDIR([src/encrypt.c])
 AC_CONFIG_HEADERS([config.h])
 
-AM_INIT_AUTOMAKE([foreign -Wall -Werror])
+AM_INIT_AUTOMAKE([subdir-objects foreign -Wall -Werror])
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
 dnl Checks for crypto library
@@ -192,6 +192,8 @@ ACX_PTHREAD
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_CONFIG_FILES([Makefile
+                 libcork/Makefile
+                 libipset/Makefile
                  libasyncns/Makefile
                  libev/Makefile
                  src/Makefile])

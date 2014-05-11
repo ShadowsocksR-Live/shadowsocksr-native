@@ -1040,7 +1040,7 @@ int main (int argc, char **argv)
     if (pid_flags)
     {
         USE_SYSLOG(argv[0]);
-        demonize(pid_path);
+        daemonize(pid_path);
     }
 
     // ignore SIGPIPE

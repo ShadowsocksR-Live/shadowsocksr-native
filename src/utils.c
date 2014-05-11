@@ -201,7 +201,7 @@ void usage()
     printf("\n");
 }
 
-void demonize(const char* path)
+void daemonize(const char* path)
 {
 #ifndef __MINGW32__
     /* Our process ID and Session ID */
