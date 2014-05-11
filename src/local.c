@@ -174,8 +174,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     // local socks5 server
     if (server->stage == 5)
     {
-        if (remote == NULL) FATAL("remote should not be null.");
-
         // insert shadowsocks header
         if (!remote->direct)
         {
