@@ -174,6 +174,13 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     // local socks5 server
     if (server->stage == 5)
     {
+        if (remote == NULL)
+        {
+            LOGE("invalid remote.");
+            close_and_free_server(EV_A_ server);
+            return;
+        }
+
         // insert shadowsocks header
         if (!remote->direct)
         {
@@ -399,7 +406,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
 
             server->addr_to_send = ss_addr_to_send;
             server->addr_len = addr_len;
-
             server->stage = 5;
 
             if (verbose)
@@ -423,7 +429,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
 
             if (remote == NULL)
             {
-                LOGE("invalid password or cipher");
+                LOGE("invalid remote addr.");
                 close_and_free_server(EV_A_ server);
                 return;
             }
@@ -835,6 +841,7 @@ static struct remote* connect_to_remote(struct listen_ctx *listener,
     if (sockfd < 0)
     {
         ERROR("socket");
+        freeaddrinfo(remote_res);
         return NULL;
     }
 
