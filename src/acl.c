@@ -1,7 +1,10 @@
 #include <ipset/ipset.h>
+#include <libcork/ds.h>
+
 #include "utils.h"
 
-static struct ip_set set;
+static struct ip_set acl_ip_set;
+static struct cork_string_array acl_domain_array;
 
 static void parse_addr_cidr(const char *str, char **host, int *cidr)
 {
@@ -35,8 +38,12 @@ static void parse_addr_cidr(const char *str, char **host, int *cidr)
 
 int init_acl(const char *path)
 {
+    // initialize ipset
     ipset_init_library();
-    ipset_init(&set);
+    ipset_init(&acl_ip_set);
+
+    // initialize array
+    cork_string_array_init(&acl_domain_array);
 
     FILE *f = fopen(path, "r");
     if (f == NULL) FATAL("Invalid acl path.");
@@ -49,13 +56,23 @@ int init_acl(const char *path)
             char *host = NULL;
             int cidr;
             parse_addr_cidr(line, &host, &cidr);
-            struct cork_ipv4 addr;
-            int err = cork_ipv4_init(&addr, host);
-            if (err) continue;
-            if (cidr >= 0)
-                ipset_ipv4_add_network(&set, &addr, cidr);
+
+            if (cidr == -1)
+            {
+                cork_string_array_append(&acl_domain_array, host);
+            }
             else
-                ipset_ipv4_add(&set, &addr);
+            {
+                struct cork_ipv4 addr;
+                int err = cork_ipv4_init(&addr, host);
+                if (!err)
+                {
+                    if (cidr >= 0)
+                        ipset_ipv4_add_network(&acl_ip_set, &addr, cidr);
+                    else
+                        ipset_ipv4_add(&acl_ip_set, &addr);
+                }
+            }
 
             if (host != NULL) free(host);
         }
@@ -68,15 +85,42 @@ int init_acl(const char *path)
 
 void free_acl(void)
 {
-    ipset_done(&set);
+    ipset_done(&acl_ip_set);
 }
 
-int acl_is_bypass(const char* host)
+int acl_contains_domain(const char* domain)
+{
+    const char **list = acl_domain_array.items;
+    const int size = acl_domain_array.size;
+    const int domain_len = strlen(domain);
+
+    for (int i = 0; i < size; i++)
+    {
+        const char *acl_domain = list[i];
+        const int acl_domain_len = strlen(acl_domain);
+        if (acl_domain_len > domain_len) continue;
+        int match = true;
+        for (int offset = 1; offset <= acl_domain_len; offset++)
+        {
+            if (domain[domain_len - offset] != acl_domain[acl_domain_len - offset])
+            {
+                match = false;
+                break;
+            }
+        }
+        if (match) return 1;
+    }
+
+    return 0;
+}
+
+int acl_contains_ip(const char* host)
 {
     struct cork_ipv4 addr;
     int err = cork_ipv4_init(&addr, host);
     if (err) return 0;
+
     struct cork_ip ip;
     cork_ip_from_ipv4(&ip, &addr);
-    return ipset_contains_ip(&set, &ip);
+    return ipset_contains_ip(&acl_ip_set, &ip);
 }

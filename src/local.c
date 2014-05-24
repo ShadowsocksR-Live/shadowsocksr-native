@@ -361,7 +361,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                               host, INET_ADDRSTRLEN);
                     sprintf(port, "%d", p);
                 }
-
             }
             else if (request->atyp == 3)
             {
@@ -378,7 +377,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                     host[name_len] = '\0';
                     sprintf(port, "%d", p);
                 }
-
             }
             else if (request->atyp == 4)
             {
@@ -394,7 +392,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                               host, INET6_ADDRSTRLEN);
                     sprintf(port, "%d", p);
                 }
-
             }
             else
             {
@@ -413,7 +410,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                 LOGD("connect to %s:%s", host, port);
             }
 
-            if (acl_is_bypass(host))
+            if ((request->atyp == 1 && acl_contains_ip(host))
+                || (request->atyp = 3 && acl_contains_domain(host)))
             {
                 remote = connect_to_remote(server->listener, host, port);
                 remote->direct = 1;
