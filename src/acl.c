@@ -10,6 +10,7 @@ static void parse_addr_cidr(const char *str, char **host, int *cidr)
 {
     int ret = -1, n = 0;
     char *pch;
+
     pch = strchr(str, '/');
     while (pch != NULL)
     {
@@ -53,6 +54,13 @@ int init_acl(const char *path)
     {
         if (fgets(line, 256, f))
         {
+            // Trim the newline
+            int len = strlen(line);
+            if (len > 0 && line[len - 1] == '\n')
+            {
+                line[len - 1] = '\0';
+            }
+
             char *host = NULL;
             int cidr;
             parse_addr_cidr(line, &host, &cidr);
@@ -110,6 +118,7 @@ int acl_contains_domain(const char* domain)
         }
         if (match) return 1;
     }
+
 
     return 0;
 }
