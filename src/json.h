@@ -1,4 +1,3 @@
-
 /* vim: set et ts=3 sw=3 sts=3 ft=c:
  *
  * Copyright (C) 2012, 2013, 2014 James McLaughlin et al.  All rights reserved.
@@ -120,151 +119,151 @@ typedef struct _json_value
             } * values;
 
 #if defined(__cplusplus) && __cplusplus >= 201103L
-                decltype(values) begin () const
-                {
-                    return values;
-                }
-                decltype(values) end () const
-                {
-                    return values + length;
-                }
+            decltype(values) begin () const
+            {
+                return values;
+            }
+            decltype(values) end () const
+            {
+                return values + length;
+            }
 #endif
 
-            } object;
+        } object;
 
-            struct
-            {
-                unsigned int length;
-                struct _json_value ** values;
+        struct
+        {
+            unsigned int length;
+            struct _json_value ** values;
 
 #if defined(__cplusplus) && __cplusplus >= 201103L
-                decltype(values) begin () const
-                {
-                    return values;
-                }
-                decltype(values) end () const
-                {
-                    return values + length;
-                }
+            decltype(values) begin () const
+            {
+                return values;
+            }
+            decltype(values) end () const
+            {
+                return values + length;
+            }
 #endif
 
-            } array;
+        } array;
 
-        } u;
+    } u;
 
-        union
-        {
-            struct _json_value * next_alloc;
-            void * object_mem;
+    union
+    {
+        struct _json_value * next_alloc;
+        void * object_mem;
 
-        } _reserved;
+    } _reserved;
 
 
-        /* Some C++ operator sugar */
+    /* Some C++ operator sugar */
 
 #ifdef __cplusplus
 
-    public:
+public:
 
-        inline _json_value ()
+    inline _json_value ()
+    {
+        memset (this, 0, sizeof (_json_value));
+    }
+
+    inline const struct _json_value &operator [] (int index) const
+    {
+        if (type != json_array || index < 0
+                || ((unsigned int) index) >= u.array.length)
         {
-            memset (this, 0, sizeof (_json_value));
-        }
-
-        inline const struct _json_value &operator [] (int index) const
-        {
-            if (type != json_array || index < 0
-                    || ((unsigned int) index) >= u.array.length)
-            {
-                return json_value_none;
-            }
-
-            return *u.array.values [index];
-        }
-
-        inline const struct _json_value &operator [] (const char * index) const
-        {
-            if (type != json_object)
-                return json_value_none;
-
-            for (unsigned int i = 0; i < u.object.length; ++ i)
-                if (!strcmp (u.object.values [i].name, index))
-                    return *u.object.values [i].value;
-
             return json_value_none;
         }
 
-        inline operator const char * () const
+        return *u.array.values [index];
+    }
+
+    inline const struct _json_value &operator [] (const char * index) const
+    {
+        if (type != json_object)
+            return json_value_none;
+
+        for (unsigned int i = 0; i < u.object.length; ++ i)
+            if (!strcmp (u.object.values [i].name, index))
+                return *u.object.values [i].value;
+
+        return json_value_none;
+    }
+
+    inline operator const char * () const
+    {
+        switch (type)
         {
-            switch (type)
-            {
-            case json_string:
-                return u.string.ptr;
+        case json_string:
+            return u.string.ptr;
 
-            default:
-                return "";
-            };
-        }
+        default:
+            return "";
+        };
+    }
 
-        inline operator json_int_t () const
+    inline operator json_int_t () const
+    {
+        switch (type)
         {
-            switch (type)
-            {
-            case json_integer:
-                return u.integer;
+        case json_integer:
+            return u.integer;
 
-            case json_double:
-                return (json_int_t) u.dbl;
+        case json_double:
+            return (json_int_t) u.dbl;
 
-            default:
-                return 0;
-            };
-        }
+        default:
+            return 0;
+        };
+    }
 
-        inline operator bool () const
+    inline operator bool () const
+    {
+        if (type != json_boolean)
+            return false;
+
+        return u.boolean != 0;
+    }
+
+    inline operator double () const
+    {
+        switch (type)
         {
-            if (type != json_boolean)
-                return false;
+        case json_integer:
+            return (double) u.integer;
 
-            return u.boolean != 0;
-        }
+        case json_double:
+            return u.dbl;
 
-        inline operator double () const
-        {
-            switch (type)
-            {
-            case json_integer:
-                return (double) u.integer;
-
-            case json_double:
-                return u.dbl;
-
-            default:
-                return 0;
-            };
-        }
+        default:
+            return 0;
+        };
+    }
 
 #endif
 
-    } json_value;
+} json_value;
 
-    json_value * json_parse (const json_char * json,
-                             size_t length);
+json_value * json_parse (const json_char * json,
+                         size_t length);
 
 #define json_error_max 128
-    json_value * json_parse_ex (json_settings * settings,
-                                const json_char * json,
-                                size_t length,
-                                char * error);
+json_value * json_parse_ex (json_settings * settings,
+                            const json_char * json,
+                            size_t length,
+                            char * error);
 
-    void json_value_free (json_value *);
+void json_value_free (json_value *);
 
 
-    /* Not usually necessary, unless you used a custom mem_alloc and now want to
-     * use a custom mem_free.
-     */
-    void json_value_free_ex (json_settings * settings,
-                             json_value *);
+/* Not usually necessary, unless you used a custom mem_alloc and now want to
+ * use a custom mem_free.
+ */
+void json_value_free_ex (json_settings * settings,
+                         json_value *);
 
 
 #ifdef __cplusplus
