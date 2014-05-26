@@ -12,8 +12,10 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+#ifndef __MINGW32__
 #include <sys/select.h>
 #include <sys/wait.h>
+#endif
 #include <unistd.h>
 
 #include "libcork/core.h"
@@ -506,7 +508,7 @@ cork_subprocess_is_finished(struct cork_subprocess *self)
         && cork_read_pipe_is_finished(&self->stderr_pipe);
 }
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__MINGW32__)
 #include <pthread.h>
 #define THREAD_YIELD   pthread_yield_np
 #elif defined(__linux__) || defined(BSD)
