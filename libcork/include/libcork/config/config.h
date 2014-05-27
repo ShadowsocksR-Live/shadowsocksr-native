@@ -52,6 +52,10 @@
 /* Do some BSD (4.3 code base or newer)specific autodetection. */
 #include <libcork/config/bsd.h>
 
+#elif defined(__MINGW32__)
+/* Do some mingw32 autodetection. */
+#include <libcork/config/mingw32.h>
+
 #endif  /* platforms */
 
 

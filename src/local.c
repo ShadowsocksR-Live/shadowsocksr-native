@@ -1,3 +1,25 @@
+/*
+ * local.c - Setup a socks5 proxy through remote shadowsocks server
+ *
+ * Copyright (C) 2013 - 2014, Max Lv <max.c.lv@gmail.com>
+ *
+ * This file is part of the shadowsocks-libev.
+ *
+ * shadowsocks-libev is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * shadowsocks-libev is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with pdnsd; see the file COPYING. If not, see
+ * <http://www.gnu.org/licenses/>.
+ */
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -361,7 +383,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                               host, INET_ADDRSTRLEN);
                     sprintf(port, "%d", p);
                 }
-
             }
             else if (request->atyp == 3)
             {
@@ -378,7 +399,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                     host[name_len] = '\0';
                     sprintf(port, "%d", p);
                 }
-
             }
             else if (request->atyp == 4)
             {
@@ -394,7 +414,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                               host, INET6_ADDRSTRLEN);
                     sprintf(port, "%d", p);
                 }
-
             }
             else
             {
@@ -413,7 +432,8 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                 LOGD("connect to %s:%s", host, port);
             }
 
-            if (acl_is_bypass(host))
+            if ((request->atyp == 1 && acl_contains_ip(host))
+                    || (request->atyp = 3 && acl_contains_domain(host)))
             {
                 remote = connect_to_remote(server->listener, host, port);
                 remote->direct = 1;
