@@ -123,14 +123,15 @@ int acl_contains_domain(const char* domain)
     const char **list = acl_domain_array.items;
     const int size = acl_domain_array.size;
     const int domain_len = strlen(domain);
+    int i, offset;
 
-    for (int i = 0; i < size; i++)
+    for (i = 0; i < size; i++)
     {
         const char *acl_domain = list[i];
         const int acl_domain_len = strlen(acl_domain);
         if (acl_domain_len > domain_len) continue;
         int match = true;
-        for (int offset = 1; offset <= acl_domain_len; offset++)
+        for (offset = 1; offset <= acl_domain_len; offset++)
         {
             if (domain[domain_len - offset] != acl_domain[acl_domain_len - offset])
             {
