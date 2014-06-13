@@ -433,7 +433,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
             }
 
             if ((acl && request->atyp == 1 && acl_contains_ip(host))
-                    || (acl && request->atyp = 3 && acl_contains_domain(host)))
+                    || (acl && request->atyp == 3 && acl_contains_domain(host)))
             {
                 remote = connect_to_remote(server->listener, host, port);
                 remote->direct = 1;
