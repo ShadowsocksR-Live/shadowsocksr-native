@@ -1,3 +1,4 @@
+build/
 .deps/
 /Makefile
 src/Makefile
@@ -20,6 +21,7 @@ debian/patches/
 debian/files
 debian/shadowsocks.substvars
 debian/*.debhelper*
+.dirstamp
 
 # Ignore garbage of OS X
 *.DS_Store

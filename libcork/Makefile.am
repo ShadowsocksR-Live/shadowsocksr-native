@@ -31,6 +31,6 @@ pthreads_src = pthreads/thread.c
 
 libcork_la_SOURCES = $(cli_src) $(core_src) $(ds_src) \
 					 $(posix_src) $(pthreads_src)
-libcork_la_CFLAGS = -Iinclude -DCORK_API=CORK_LOCAL
+libcork_la_CFLAGS = -I$(top_srcdir)/libcork/include -DCORK_API=CORK_LOCAL
 					 
 libcork_la_LDFLAGS = -static
