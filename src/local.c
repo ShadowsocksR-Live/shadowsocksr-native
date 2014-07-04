@@ -208,7 +208,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         {
             if (!remote->send_ctx->connected)
             {
-                char *tmp = malloc(r + server->addr_len);
+                char *tmp = malloc(max(BUF_SIZE, r + server->addr_len));
 
                 memcpy(tmp, server->addr_to_send, server->addr_len);
                 memcpy(tmp + server->addr_len, remote->buf, r);
@@ -216,7 +216,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
 
                 // deallocate
                 free(remote->buf);
-
                 remote->buf = tmp;
             }
 
@@ -722,11 +721,11 @@ static void free_remote(struct remote *remote)
         {
             remote->server->remote = NULL;
         }
-        if (remote->buf)
+        if (remote->buf != NULL)
         {
             free(remote->buf);
         }
-        if (remote->addr_info)
+        if (remote->addr_info != NULL)
         {
             freeaddrinfo(remote->addr_info);
         }
