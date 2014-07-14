@@ -44,6 +44,7 @@ typedef struct
     char *method;
     char *timeout;
     int  fast_open;
+    int  nofile;
 } jconf_t;
 
 jconf_t *read_jconf(const char* file);

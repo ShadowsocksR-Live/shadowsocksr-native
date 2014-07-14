@@ -74,6 +74,9 @@ int acl = 0;
 int verbose = 0;
 int udprelay = 0;
 static int fast_open = 0;
+#ifdef HAVE_SETRLIMIT
+static int nofile = 0;
+#endif
 
 #ifndef __MINGW32__
 static int setnonblocking(int fd)
@@ -1025,6 +1028,21 @@ int main (int argc, char **argv)
         if (method == NULL) method = conf->method;
         if (timeout == NULL) timeout = conf->timeout;
         if (fast_open == 0) fast_open = conf->fast_open;
+#ifdef HAVE_SETRLIMIT
+        if (nofile == 0) nofile = conf->nofile;
+        /*
+         * no need to check the return value here since we will show
+         * the user an error message if setrlimit(2) fails
+         */
+        if (nofile)
+        {
+            if (verbose)
+            {
+                LOGD("setting NOFILE to %d", nofile);
+            }
+            set_nofile(nofile);
+        }
+#endif
     }
 
     if (remote_num == 0 || remote_port == NULL ||

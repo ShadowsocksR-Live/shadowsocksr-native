@@ -153,7 +153,7 @@ dnl Checks for library functions.
 AC_FUNC_FORK
 AC_FUNC_SELECT_ARGTYPES
 AC_TYPE_SIGNAL
-AC_CHECK_FUNCS([memset select setresuid setreuid strerror getpwnam_r])
+AC_CHECK_FUNCS([memset select setresuid setreuid strerror getpwnam_r setrlimit])
 
 dnl Check for select() into ws2_32 for Msys/Mingw
 if test "$ac_cv_func_select" != "yes"; then
