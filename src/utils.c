@@ -37,6 +37,11 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_SETRLIMIT
+#include <sys/time.h>
+#include <sys/resource.h>
+#endif
+
 #define INT_DIGITS 19		/* enough for 64 bit integer */
 
 #ifdef HAS_SYSLOG
@@ -274,4 +279,37 @@ void daemonize(const char* path)
     close(STDERR_FILENO);
 #endif
 }
+
+#ifdef HAVE_SETRLIMIT
+int set_nofile(int nofile)
+{
+    struct rlimit limit = {nofile, nofile}; /* set both soft and hard limit */
+
+    if (nofile <= 0)
+    {
+        FATAL("nofile must be greater than 0\n");
+    }
+
+    if (setrlimit(RLIMIT_NOFILE, &limit) < 0)
+    {
+        if (errno == EPERM)
+        {
+            LOGE("insufficient permission to change NOFILE, not starting as root?");
+            return -1;
+        }
+        else if (errno == EINVAL)
+        {
+            LOGE("invalid fileno, decrease nofile and try again");
+            return -1;
+        }
+        else
+        {
+            LOGE("setrlimit failed: %s", strerror(errno));
+            return -1;
+        }
+    }
+
+    return 0;
+}
+#endif
 

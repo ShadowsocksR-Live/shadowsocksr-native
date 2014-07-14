@@ -67,6 +67,9 @@ int udprelay = 0;
 #ifdef TCP_FASTOPEN
 static int fast_open = 0;
 #endif
+#ifdef HAVE_SETRLIMIT
+static int nofile = 0;
+#endif
 static int remote_conn = 0;
 static int server_conn = 0;
 
@@ -1048,6 +1051,21 @@ int main (int argc, char **argv)
         if (timeout == NULL) timeout = conf->timeout;
 #ifdef TCP_FASTOPEN
         if (fast_open == 0) fast_open = conf->fast_open;
+#endif
+#ifdef HAVE_SETRLIMIT
+        if (nofile == 0) nofile = conf->nofile;
+        /*
+         * no need to check the return value here since we will show
+         * the user an error message if setrlimit(2) fails
+         */
+        if (nofile)
+        {
+            if (verbose)
+            {
+                LOGD("setting NOFILE to %d", nofile);
+            }
+            set_nofile(nofile);
+        }
 #endif
     }
 
