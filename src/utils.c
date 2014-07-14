@@ -299,7 +299,7 @@ int set_nofile(int nofile)
         }
         else if (errno == EINVAL)
         {
-            LOGE("invalid fileno, decrease nofile and try again");
+            LOGE("invalid nofile, decrease nofile and try again");
             return -1;
         }
         else
