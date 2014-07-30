@@ -40,7 +40,7 @@
 #include <sys/param.h>
 #endif
 
-#if defined(__linux)
+#if defined(__linux) || defined(__CYGWIN__)
 /* Do some Linux-specific autodetection. */
 #include <libcork/config/linux.h>
 

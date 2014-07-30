@@ -508,7 +508,7 @@ cork_subprocess_is_finished(struct cork_subprocess *self)
         && cork_read_pipe_is_finished(&self->stderr_pipe);
 }
 
-#if defined(__APPLE__) || defined(__MINGW32__)
+#if defined(__APPLE__) || defined(__MINGW32__) || defined(__CYGWIN__)
 #include <pthread.h>
 #define THREAD_YIELD   pthread_yield_np
 #elif defined(__linux__) || defined(BSD)
