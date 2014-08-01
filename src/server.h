@@ -56,7 +56,7 @@ struct server
     int fd;
     int stage;
     ssize_t buf_len;
-    int buf_idx;
+    ssize_t buf_idx;
     char *buf; // server send from, remote recv into
     asyncns_query_t *query;
     struct enc_ctx *e_ctx;
@@ -78,7 +78,7 @@ struct remote
 {
     int fd;
     ssize_t buf_len;
-    int buf_idx;
+    ssize_t buf_idx;
     char *buf; // remote send from, server recv into
     struct remote_ctx *recv_ctx;
     struct remote_ctx *send_ctx;

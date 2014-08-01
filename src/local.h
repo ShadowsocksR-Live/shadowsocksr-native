@@ -52,7 +52,7 @@ struct server
 {
     int fd;
     ssize_t buf_len;
-    int buf_idx;
+    ssize_t buf_idx;
     char *buf; // server send from, remote recv into
     int addr_len;
     char *addr_to_send;
@@ -77,7 +77,7 @@ struct remote
 {
     int fd;
     ssize_t buf_len;
-    int buf_idx;
+    ssize_t buf_idx;
     int direct;
     char *buf; // remote send from, server recv into
     struct remote_ctx *recv_ctx;
