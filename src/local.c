@@ -560,8 +560,6 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 
     LOGD("remote timeout");
 
-    ev_timer_stop(EV_A_ watcher);
-
     close_and_free_remote(EV_A_ remote);
     close_and_free_server(EV_A_ server);
 }
@@ -571,6 +569,8 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
     struct remote_ctx *remote_recv_ctx = (struct remote_ctx *)w;
     struct remote *remote = remote_recv_ctx->remote;
     struct server *server = remote->server;
+
+    ev_timer_again(EV_A_ &remote->recv_ctx->watcher);
 
     ssize_t r = recv(remote->fd, server->buf, BUF_SIZE, 0);
 
@@ -656,6 +656,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
         {
             remote_send_ctx->connected = 1;
             ev_timer_stop(EV_A_ &remote_send_ctx->watcher);
+            ev_timer_start(EV_A_ &remote->recv_ctx->watcher);
             ev_io_start(EV_A_ &remote->recv_ctx->io);
         }
         else
@@ -725,6 +726,7 @@ struct remote* new_remote(int fd, int timeout)
     ev_io_init(&remote->recv_ctx->io, remote_recv_cb, fd, EV_READ);
     ev_io_init(&remote->send_ctx->io, remote_send_cb, fd, EV_WRITE);
     ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb, timeout, 0);
+    ev_timer_init(&remote->recv_ctx->watcher, remote_timeout_cb, timeout, timeout * 10);
     remote->recv_ctx->remote = remote;
     remote->send_ctx->remote = remote;
     return remote;
@@ -757,6 +759,7 @@ static void close_and_free_remote(EV_P_ struct remote *remote)
     if (remote != NULL)
     {
         ev_timer_stop(EV_A_ &remote->send_ctx->watcher);
+        ev_timer_stop(EV_A_ &remote->recv_ctx->watcher);
         ev_io_stop(EV_A_ &remote->send_ctx->io);
         ev_io_stop(EV_A_ &remote->recv_ctx->io);
         close(remote->fd);

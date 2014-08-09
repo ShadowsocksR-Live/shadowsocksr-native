@@ -488,8 +488,6 @@ static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 
     LOGE("TCP connection timeout");
 
-    ev_timer_stop(EV_A_ watcher);
-
     close_and_free_remote(EV_A_ remote);
     close_and_free_server(EV_A_ server);
 }
