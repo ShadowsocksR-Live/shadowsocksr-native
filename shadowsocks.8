@@ -24,7 +24,7 @@
 .ds Se  \fBss-server\fR
 .ds Me  \fBshadowsocks\fR
 
-.TH SHADOWSOCKS-LIBEV 8 "April 25, 2013"
+.TH SHADOWSOCKS-LIBEV 8 "August 18, 2014"
 .SH NAME
 shadowsocks-libev \- a lightweight secured scoks5 proxy 
 
@@ -38,17 +38,16 @@ shadowsocks-libev \- a lightweight secured scoks5 proxy
 .SH DESCRIPTION
 \*(Me is a lightweight secured socks5 proxy. It is a port of 
 the original shadowsocks created by clowwindy. \*(Me is written in pure
-C and uses \fBlibev\fP to provide a both high performance and low resource 
-consumption socks5 proxy for users that need a secured tunnel to visit the
-internet freely and privately.
+C and takes advantage of \fBlibev\fP to provide a socks5 proxy with both high
+performance and low resource consumption.
 .PP
 \*(Me consists of three components. One is \*(Se that runs on a remote server
 to provide secured tunnel service. \*(Lo and \*(Re are clients that run on your
 local machines for proxying all your TCP traffic.
 .PP
-While \*(Lo can be used as a standard socks5 proxy, \*(Re works as a transparent 
-proxy and should be used with the kernel's NAT function. For more information,
-check the example section.
+While \*(Lo is a standard socks5 proxy, \*(Re works as a transparent proxy and
+requires netfilter's NAT function. For more information, check out the example
+section.
 
 .SH OPTIONS
 .TP
@@ -66,10 +65,11 @@ Set the shadowsocks password. The server and the client should use the same
 password.
 .TP
 .B \-m \fIencrypt_method\fP
-Set the shadowsocks encryption method. Currently, shadowsocks accepts several
-encryption methods: table, rc4, aes-128-cfb, aes-192-cfb, aes-256-cfb, bf-cfb, 
-camellia-128-cfb, camellia-192-cfb, camellia-256-cfb, cast5-cfb, des-cfb,
-idea-cfb, rc2-cfb and seed-cfb. The default method is \fItable\fP. 
+Set the cipher. Shadowsocks accepts 14 different ciphers: table, rc4,
+aes-128-cfb, aes-192-cfb, aes-256-cfb, bf-cfb, camellia-128-cfb,
+camellia-192-cfb, camellia-256-cfb, cast5-cfb, des-cfb, idea-cfb, rc2-cfb
+and seed-cfb. The default method is \fItable\fP. If compiled with PolarSSL
+or custom OpenSSL builds, some of these ciphers may not work.
 .TP
 .B \-f \fIpid_file\fP
 Start shadowsocks as a daemon with a specific pid file.
@@ -79,11 +79,24 @@ Set the socket timeout in secondes. The default value is 10.
 .TP
 .B \-c \fIconfig_file\fP
 Use a configuration file.
+.TP
 .B \-a \fIuser_name\fP
 Run as a specific user.
+.TP
+.B \-u
+Enable UDP relay.
+.TP
+.B \-v
+Enable verbose mode.
+.TP
+.B \--fast-open
+Enable TCP fast open.
+.TP
+.B \--acl \fIacl_config\fP
+Enable ACL (Access Control List).
 
 .SH EXAMPLE
-\*(Re needs to be used with the NAT function. Here is an example:
+\*(Re requires netfilter's NAT function. Here is an example:
 
     # Create new chain
     root@Wrt:~# iptables -t nat -N SHADOWSOCKS
@@ -119,6 +132,7 @@ Run as a specific user.
 .br
 .SH AUTHOR
 shadowsocks was created by clowwindy <clowwindy42@gmail.com> and
-shadowsocks-libev was maintained by Max Lv <max.c.lv@gmail.com>.
+shadowsocks-libev was maintained by Max Lv <max.c.lv@gmail.com> and Linus Yang
+<laokongzi@gmail.com>.
 .PP
 This manual page was written by Max Lv <max.c.lv@gmail.com>.
