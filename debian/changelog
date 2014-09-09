@@ -1,4 +1,10 @@
-shadowsocks (1.4.6-1) untable; urgency=low
+shadowsocks (1.4.7-1) unstable; urgency=low
+
+  * Add a new encryptor rc4-md5.
+
+ -- Max Lv <max.c.lv@gmail.com>  Tue, 09 Sep 2014 07:50:10 +0800
+
+shadowsocks (1.4.6-1) unstable; urgency=low
 
   * Add ACL support.
 
