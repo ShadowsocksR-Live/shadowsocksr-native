@@ -106,22 +106,23 @@ typedef struct
 
 #define BLOCK_SIZE 32
 
-#define CIPHER_NUM          14
+#define CIPHER_NUM          15
 #define NONE                -1
 #define TABLE               0
 #define RC4                 1
-#define AES_128_CFB         2
-#define AES_192_CFB         3
-#define AES_256_CFB         4
-#define BF_CFB              5
-#define CAMELLIA_128_CFB    6
-#define CAMELLIA_192_CFB    7
-#define CAMELLIA_256_CFB    8
-#define CAST5_CFB           9
-#define DES_CFB             10
-#define IDEA_CFB            11
-#define RC2_CFB             12
-#define SEED_CFB            13
+#define RC4_MD5             2
+#define AES_128_CFB         3
+#define AES_192_CFB         4
+#define AES_256_CFB         5
+#define BF_CFB              6
+#define CAMELLIA_128_CFB    7
+#define CAMELLIA_192_CFB    8
+#define CAMELLIA_256_CFB    9
+#define CAST5_CFB           10
+#define DES_CFB             11
+#define IDEA_CFB            12
+#define RC2_CFB             13
+#define SEED_CFB            14
 
 #define min(a,b) (((a)<(b))?(a):(b))
 #define max(a,b) (((a)>(b))?(a):(b))
