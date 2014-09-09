@@ -11,7 +11,7 @@ It is a port of [shadowsocks](https://github.com/clowwindy/shadowsocks)
 created by [@clowwindy](https://github.com/clowwindy) maintained by 
 [@madeye](https://github.com/madeye) and [@linusyang](https://github.com/linusyang).
 
-Current version: 1.4.6 | [![Build Status](https://travis-ci.org/madeye/shadowsocks-libev.png?branch=master)](https://travis-ci.org/madeye/shadowsocks-libev) | [Changelog](Changes)
+Current version: 1.4.7 | [![Build Status](https://travis-ci.org/madeye/shadowsocks-libev.png?branch=master)](https://travis-ci.org/madeye/shadowsocks-libev) | [Changelog](Changes)
 
 Features
 --------
@@ -187,7 +187,7 @@ usage:
           -k <password>              password of your remote server
 
 
-          [-m <encrypt_method>]      encrypt method: table, rc4,
+          [-m <encrypt_method>]      encrypt method: table, rc4, rc4-md5
                                      aes-128-cfb, aes-192-cfb, aes-256-cfb,
                                      bf-cfb, camellia-128-cfb, camellia-192-cfb,
                                      camellia-256-cfb, cast5-cfb, des-cfb,
