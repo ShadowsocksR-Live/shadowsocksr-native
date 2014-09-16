@@ -102,7 +102,7 @@ jconf_t *read_jconf(const char* file)
     char *buf;
     json_value *obj;
 
-    FILE *f = fopen(file, "r");
+    FILE *f = fopen(file, "rb");
     if (f == NULL) FATAL("Invalid config path.");
 
     fseek(f, 0, SEEK_END);
