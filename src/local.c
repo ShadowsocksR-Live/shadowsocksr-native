@@ -67,7 +67,7 @@
 #endif
 
 #ifndef BUF_SIZE
-#define BUF_SIZE 512
+#define BUF_SIZE 2048
 #endif
 
 int acl = 0;
