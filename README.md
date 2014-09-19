@@ -38,6 +38,7 @@ CAST5-CFB, DES-CFB, IDEA-CFB, RC2-CFB and SEED-CFB.
 
 ### Debian & Ubuntu
 
+#### Install from repository
 Add either of the following lines to your /etc/apt/sources.list
 
 ```
@@ -53,7 +54,21 @@ Then,
 ``` bash
 sudo apt-get update
 sudo apt-get install shadowsocks
+```
 
+#### Build package from source
+
+``` bash
+cd shadowsocks-libev
+sudo apt-get install build-essential autoconf libtool libssl-dev gawk debhelper
+sudo dpkg-buildpackage
+cd ..
+sudo dpkg -i install shadowsocks*.deb
+```
+
+#### Configure and start the service
+
+```
 # Edit the configuration
 sudo vim /etc/shadowsocks/config.json
 
