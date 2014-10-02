@@ -63,7 +63,7 @@ cd shadowsocks-libev
 sudo apt-get install build-essential autoconf libtool libssl-dev gawk debhelper
 sudo dpkg-buildpackage
 cd ..
-sudo dpkg -i install shadowsocks*.deb
+sudo dpkg -i shadowsocks*.deb
 ```
 
 #### Configure and start the service
