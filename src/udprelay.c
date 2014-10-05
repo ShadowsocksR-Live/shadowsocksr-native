@@ -219,7 +219,6 @@ int create_remote_socket(int ipv6)
         // Try to bind IPv6 first
         struct sockaddr_in6 addr;
         memset(&addr, 0, sizeof(addr));
-        addr.sin6_len = sizeof(addr);
         addr.sin6_family = AF_INET6;
         addr.sin6_addr = in6addr_any;
         addr.sin6_port = 0;
@@ -240,7 +239,6 @@ int create_remote_socket(int ipv6)
         // Or else bind to IPv4
         struct sockaddr_in addr;
         memset(&addr, 0, sizeof(addr));
-        addr.sin_len = sizeof(addr);
         addr.sin_family = AF_INET;
         addr.sin_addr.s_addr = INADDR_ANY;
         addr.sin_port = 0;
