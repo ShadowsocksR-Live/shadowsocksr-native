@@ -96,17 +96,17 @@ static int setinterface(int socket_fd, const char* interface_name)
 }
 #endif
 
-static char *hash_key(const char *header, const int header_len, const struct sockaddr *addr)
+static char *hash_key(const char *header, const int header_len, const struct sockaddr_storage *addr)
 {
     char key[384];
 
     // calculate hash key
     // assert header_len < 256
     memset(key, 0, 384);
-    memcpy(key, addr, sizeof(struct sockaddr));
-    memcpy(key + sizeof(struct sockaddr), header, header_len);
+    memcpy(key, addr, sizeof(struct sockaddr_storage));
+    memcpy(key + sizeof(struct sockaddr_storage), header, header_len);
 
-    return (char*) enc_md5((const uint8_t *)key, sizeof(struct sockaddr) + header_len, NULL);
+    return (char*) enc_md5((const uint8_t *)key, sizeof(struct sockaddr_storage) + header_len, NULL);
 }
 
 static int parse_udprealy_header(const char* buf, const int buf_len, char *host, char *port)
@@ -218,39 +218,45 @@ int create_remote_socket(int ipv6)
     {
         // Try to bind IPv6 first
         struct sockaddr_in6 addr;
-        memset(&addr, 0, sizeof(struct sockaddr_in6));
+        memset(&addr, 0, sizeof(addr));
+        addr.sin6_len = sizeof(addr);
         addr.sin6_family = AF_INET6;
         addr.sin6_addr = in6addr_any;
-        addr.sin6_port = htons(0);
+        addr.sin6_port = 0;
         remote_sock = socket(AF_INET6, SOCK_DGRAM , 0);
-        if (remote_sock != -1)
+        if (remote_sock == -1)
         {
-            if (bind(remote_sock, (struct sockaddr *)&addr, sizeof(addr)) != -1)
-            {
-                return remote_sock;
-            }
+            ERROR("Cannot create socket.");
+            return -1;
+        }
+        if (bind(remote_sock, (struct sockaddr *)&addr, sizeof(addr)) != 0)
+        {
+            FATAL("Cannot bind remote.");
+            return -1;
         }
     }
-
-    // Then bind to IPv4
-    struct sockaddr_in addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_port = htons(0);
-    remote_sock = socket(AF_INET, SOCK_DGRAM , 0);
-    if (remote_sock == -1)
+    else
     {
-        ERROR("Cannot create socket.");
-        return -1;
-    }
+        // Or else bind to IPv4
+        struct sockaddr_in addr;
+        memset(&addr, 0, sizeof(addr));
+        addr.sin_len = sizeof(addr);
+        addr.sin_family = AF_INET;
+        addr.sin_addr.s_addr = INADDR_ANY;
+        addr.sin_port = 0;
+        remote_sock = socket(AF_INET, SOCK_DGRAM , 0);
+        if (remote_sock == -1)
+        {
+            ERROR("Cannot create socket.");
+            return -1;
+        }
 
-    if (bind(remote_sock, (struct sockaddr *)&addr, sizeof(addr)) != 0)
-    {
-        FATAL("Cannot bind remote.");
-        return -1;
+        if (bind(remote_sock, (struct sockaddr *)&addr, sizeof(addr)) != 0)
+        {
+            FATAL("Cannot bind remote.");
+            return -1;
+        }
     }
-
     return remote_sock;
 }
 
@@ -451,7 +457,7 @@ static void query_resolve_cb(EV_P_ ev_io *w, int revents)
 
             struct remote_ctx *remote_ctx = new_remote(remotefd, query_ctx->server_ctx);
             remote_ctx->src_addr = query_ctx->src_addr;
-            remote_ctx->dst_addr = *rp->ai_addr;
+            remote_ctx->dst_addr = *((struct sockaddr_storage *)rp->ai_addr);
             remote_ctx->server_ctx = query_ctx->server_ctx;
             remote_ctx->addr_header_len = query_ctx->addr_header_len;
             memcpy(remote_ctx->addr_header, query_ctx->addr_header, query_ctx->addr_header_len);
@@ -463,7 +469,10 @@ static void query_resolve_cb(EV_P_ ev_io *w, int revents)
 
             ev_io_start(EV_A_ &remote_ctx->io);
 
-            int s = sendto(remote_ctx->fd, query_ctx->buf, query_ctx->buf_len, 0, &remote_ctx->dst_addr, sizeof(remote_ctx->dst_addr));
+            size_t addr_len = sizeof(struct sockaddr_in);
+            if (remote_ctx->dst_addr.ss_family == AF_INET6)
+                addr_len = sizeof(struct sockaddr_in6);
+            int s = sendto(remote_ctx->fd, query_ctx->buf, query_ctx->buf_len, 0, (struct sockaddr *)&remote_ctx->dst_addr, addr_len);
 
             if (s == -1)
             {
@@ -574,7 +583,10 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
     buf = ss_encrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
 #endif
 
-    int s = sendto(server_ctx->fd, buf, buf_len, 0, &remote_ctx->src_addr, sizeof(remote_ctx->src_addr));
+    size_t addr_len = sizeof(struct sockaddr_in);
+    if (remote_ctx->src_addr.ss_family == AF_INET6)
+        addr_len = sizeof(struct sockaddr_in6);
+    int s = sendto(server_ctx->fd, buf, buf_len, 0, (struct sockaddr *)&remote_ctx->src_addr, addr_len);
 
     if (s == -1)
     {
@@ -589,13 +601,13 @@ CLEAN_UP:
 static void server_recv_cb (EV_P_ ev_io *w, int revents)
 {
     struct server_ctx *server_ctx = (struct server_ctx *)w;
-    struct sockaddr src_addr;
+    struct sockaddr_storage src_addr;
     char *buf = malloc(BUF_SIZE);
 
-    socklen_t src_addr_len = sizeof(src_addr);
+    socklen_t src_addr_len = sizeof(struct sockaddr_storage);
     unsigned int offset = 0;
 
-    ssize_t buf_len = recvfrom(server_ctx->fd, buf, BUF_SIZE, 0, &src_addr, &src_addr_len);
+    ssize_t buf_len = recvfrom(server_ctx->fd, buf, BUF_SIZE, 0, (struct sockaddr *)&src_addr, &src_addr_len);
 
     if (buf_len == -1)
     {
@@ -727,14 +739,14 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     {
         if (verbose)
         {
-            LOGD("[udp] cache missed: %s:%s <-> %s", host, port, get_addr_str(&src_addr));
+            LOGD("[udp] cache missed: %s:%s <-> %s", host, port, get_addr_str((struct sockaddr *)&src_addr));
         }
     }
     else
     {
         if (verbose)
         {
-            LOGD("[udp] cache hit: %s:%s <-> %s", host, port, get_addr_str(&src_addr));
+            LOGD("[udp] cache hit: %s:%s <-> %s", host, port, get_addr_str((struct sockaddr *)&src_addr));
         }
     }
 
@@ -788,7 +800,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         // Init remote_ctx
         remote_ctx = new_remote(remotefd, server_ctx);
         remote_ctx->src_addr = src_addr;
-        remote_ctx->dst_addr = *result->ai_addr;
+        remote_ctx->dst_addr = *((struct sockaddr_storage *)result->ai_addr);
         remote_ctx->addr_header_len = addr_header_len;
         memcpy(remote_ctx->addr_header, addr_header, addr_header_len);
 
@@ -810,7 +822,10 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
 
     buf = ss_encrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
 
-    int s = sendto(remote_ctx->fd, buf, buf_len, 0, &remote_ctx->dst_addr, sizeof(remote_ctx->dst_addr));
+    size_t addr_len = sizeof(struct sockaddr_in);
+    if (remote_ctx->dst_addr.ss_family == AF_INET6)
+        addr_len = sizeof(struct sockaddr_in6);
+    int s = sendto(remote_ctx->fd, buf, buf_len, 0, (struct sockaddr*)&remote_ctx->dst_addr, addr_len);
 
     if (s == -1)
     {
@@ -846,8 +861,11 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     }
     else
     {
+        size_t addr_len = sizeof(struct sockaddr_in);
+        if (remote_ctx->dst_addr.ss_family == AF_INET6)
+            addr_len = sizeof(struct sockaddr_in6);
         int s = sendto(remote_ctx->fd, buf + addr_header_len,
-                       buf_len - addr_header_len, 0, &remote_ctx->dst_addr, sizeof(remote_ctx->dst_addr));
+                       buf_len - addr_header_len, 0, (struct sockaddr*)&remote_ctx->dst_addr, addr_len);
 
         if (s == -1)
         {

@@ -70,7 +70,7 @@ struct resolve_ctx
 struct query_ctx
 {
     asyncns_query_t *query;
-    struct sockaddr src_addr;
+    struct sockaddr_storage src_addr;
     int buf_len;
     char *buf; // server send from, remote recv into
     int addr_header_len;
@@ -86,15 +86,15 @@ struct remote_ctx
     int fd;
     int addr_header_len;
     char addr_header[384];
-    struct sockaddr src_addr;
-    struct sockaddr dst_addr;
+    struct sockaddr_storage src_addr;
+    struct sockaddr_storage dst_addr;
     struct server_ctx *server_ctx;
 };
 
 static void server_recv_cb (EV_P_ ev_io *w, int revents);
 static void remote_recv_cb (EV_P_ ev_io *w, int revents);
 static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents);
-static char *hash_key(const char *header, const int header_len, const struct sockaddr *addr);
+static char *hash_key(const char *header, const int header_len, const struct sockaddr_storage *addr);
 #ifdef UDPRELAY_REMOTE
 static void query_resolve_cb(EV_P_ ev_io *w, int revents);
 #endif
