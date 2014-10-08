@@ -242,10 +242,18 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
 
             if (!remote->send_ctx->connected)
             {
+                remote->buf_idx = 0;
+                remote->buf_len = r;
+
                 if (!fast_open || remote->direct)
                 {
                     // connecting, wait until connected
                     connect(remote->fd, remote->addr_info->ai_addr, remote->addr_info->ai_addrlen);
+
+                    // wait on remote connected event
+                    ev_io_stop(EV_A_ &server_recv_ctx->io);
+                    ev_io_start(EV_A_ &remote->send_ctx->io);
+                    ev_timer_start(EV_A_ &remote->send_ctx->watcher);
                 }
                 else
                 {
@@ -282,18 +290,17 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                         remote->buf_len = r - s;
                         remote->buf_idx = s;
                     }
+
+                    // Just connected
+                    remote->send_ctx->connected = 1;
+                    ev_timer_stop(EV_A_ &remote->send_ctx->watcher);
+                    ev_io_start(EV_A_ &remote->recv_ctx->io);
 #else
                     // if TCP_FASTOPEN is not defined, fast_open will always be 0
                     LOGE("can't come here");
                     exit(1);
 #endif
                 }
-                // wait on remote connected event
-                remote->buf_idx = 0;
-                remote->buf_len = r;
-                ev_io_stop(EV_A_ &server_recv_ctx->io);
-                ev_io_start(EV_A_ &remote->send_ctx->io);
-                ev_timer_start(EV_A_ &remote->send_ctx->watcher);
             }
             else
             {
