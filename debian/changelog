@@ -1,3 +1,9 @@
+shadowsocks (1.4.8-1) unstable; urgency=low
+
+  * Fix a bug of tcp fast open.
+
+ -- Max Lv <max.c.lv@gmail.com>  Wed, 08 Oct 2014 18:02:02 +0800
+
 shadowsocks (1.4.7-1) unstable; urgency=low
 
   * Add a new encryptor rc4-md5.
