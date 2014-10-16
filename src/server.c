@@ -64,9 +64,7 @@
 
 int verbose = 0;
 int udprelay = 0;
-#ifdef TCP_FASTOPEN
 static int fast_open = 0;
-#endif
 #ifdef HAVE_SETRLIMIT
 static int nofile = 0;
 #endif
@@ -165,10 +163,11 @@ int create_and_bind(const char *host, const char *port)
     return listen_sock;
 }
 
-struct remote *connect_to_remote(struct addrinfo *res, const char *iface)
+struct remote *connect_to_remote(struct addrinfo *res, struct server *server)
 {
     int sockfd;
     int opt = 1;
+    const char *iface = server->listen_ctx->iface;
 
     // initilize remote socks
     sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
@@ -192,7 +191,24 @@ struct remote *connect_to_remote(struct addrinfo *res, const char *iface)
     if (iface) setinterface(sockfd, iface);
 #endif
 
-    connect(sockfd, res->ai_addr, res->ai_addrlen);
+    if (fast_open) {
+        ssize_t s = sendto(sockfd, server->buf + server->buf_idx, server->buf_len, MSG_FASTOPEN, res->ai_addr, res->ai_addrlen);
+        if (s == -1) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // data not sent in SYN
+            }
+        }
+        else if (s < server->buf_len) {
+            server->buf_idx += s;
+            server->buf_len -= s;
+        }
+        else {
+            server->buf_idx = 0;
+            server->buf_len = 0;
+        }
+    } else {
+        connect(sockfd, res->ai_addr, res->ai_addrlen);
+    }
 
     return remote;
 }
@@ -547,7 +563,7 @@ static void server_resolve_cb(EV_P_ ev_io *w, int revents)
             rp = result;
         }
 
-        struct remote *remote = connect_to_remote(rp, server->listen_ctx->iface);
+        struct remote *remote = connect_to_remote(rp, server);
 
         if (remote == NULL)
         {
