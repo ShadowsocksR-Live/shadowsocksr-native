@@ -70,6 +70,18 @@ AC_ARG_ENABLE(applecc,
   ]
 )
 
+dnl Enable building a libshadowsocks. Useful for Windows and OSX GUI clients
+AC_ARG_ENABLE(lib,
+  AS_HELP_STRING([--enable-lib], [build a libshadowsocks]),
+  [
+    AS_IF([test "x$enableval" = "xyes"], [enable_lib="yes"], [enable_lib="no"])
+  ],
+  [
+    enable_lib="no"
+  ]
+)
+AM_CONDITIONAL([BUILD_LIB], [test x$enable_lib = xyes])
+
 dnl Checks for inet_ntop
 ss_FUNC_INET_NTOP
 
@@ -188,6 +200,8 @@ dnl Checks for library functions.
 AC_CHECK_FUNCS([malloc memset socket])
 
 ACX_PTHREAD
+
+LT_INIT([dlopen])
 
 AC_CONFIG_MACRO_DIR([m4])
 
