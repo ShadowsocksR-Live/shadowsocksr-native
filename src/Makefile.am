@@ -10,7 +10,7 @@ SS_COMMON_LIBS = $(top_builddir)/libev/libev.la \
 				 $(top_builddir)/libipset/libipset.la \
 				 $(top_builddir)/libcork/libcork.la \
 				 $(INET_NTOP_LIB)
- 
+
 bin_PROGRAMS = ss-local ss-tunnel
 
 if !BUILD_WINCOMPAT
@@ -64,5 +64,12 @@ ss_redir_SOURCES = utils.c \
                    encrypt.c \
                    redir.c
 ss_redir_LDADD = $(SS_COMMON_LIBS)
+endif
+
+if BUILD_LIB
+lib_LTLIBRARIES = libshadowsocks.la
+libshadowsocks_la_SOURCES = $(ss_local_SOURCES)
+libshadowsocks_la_CFLAGS = $(ss_local_CFLAGS) -DLIB_ONLY
+libshadowsocks_la_LIBADD = $(ss_local_LDADD)
 endif
 

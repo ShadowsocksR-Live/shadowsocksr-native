@@ -86,9 +86,11 @@ struct remote
     struct addrinfo *addr_info;
 };
 
+// exported for library use
+int create_and_bind(const char *addr, const char *port);
+void accept_cb (EV_P_ ev_io *w, int revents);
 
 static struct remote* connect_to_remote(struct listen_ctx *listener, const char *host, const char *port);
-static void accept_cb (EV_P_ ev_io *w, int revents);
 static void server_recv_cb (EV_P_ ev_io *w, int revents);
 static void server_send_cb (EV_P_ ev_io *w, int revents);
 static void remote_recv_cb (EV_P_ ev_io *w, int revents);

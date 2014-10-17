@@ -75,11 +75,13 @@ int verbose = 0;
 int udprelay = 0;
 static int fast_open = 0;
 #ifdef HAVE_SETRLIMIT
+#ifndef LIB_ONLY
 static int nofile = 0;
+#endif
 #endif
 
 #ifndef __MINGW32__
-static int setnonblocking(int fd)
+int setnonblocking(int fd)
 {
     int flags;
     if (-1 ==(flags = fcntl(fd, F_GETFL, 0)))
@@ -909,7 +911,7 @@ static struct remote* connect_to_remote(struct listen_ctx *listener,
 }
 
 
-static void accept_cb (EV_P_ ev_io *w, int revents)
+void accept_cb (EV_P_ ev_io *w, int revents)
 {
     struct listen_ctx *listener = (struct listen_ctx *)w;
     int serverfd = accept(listener->fd, NULL, NULL);
@@ -931,6 +933,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
     ev_io_start(EV_A_ &server->recv_ctx->io);
 }
 
+#ifndef LIB_ONLY
 int main (int argc, char **argv)
 {
 
@@ -1154,4 +1157,5 @@ int main (int argc, char **argv)
 
     return 0;
 }
+#endif
 
