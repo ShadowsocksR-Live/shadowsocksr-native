@@ -64,7 +64,9 @@
 
 int verbose = 0;
 int udprelay = 0;
+#ifdef TCP_FASTOPEN
 static int fast_open = 0;
+#endif
 #ifdef HAVE_SETRLIMIT
 static int nofile = 0;
 #endif
@@ -191,11 +193,20 @@ struct remote *connect_to_remote(struct addrinfo *res, struct server *server)
     if (iface) setinterface(sockfd, iface);
 #endif
 
+#ifdef TCP_FASTOPEN
     if (fast_open) {
         ssize_t s = sendto(sockfd, server->buf + server->buf_idx, server->buf_len, MSG_FASTOPEN, res->ai_addr, res->ai_addrlen);
         if (s == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                // data not sent in SYN
+                // The remote server doesn't support tfo or it's the first connection to the server.
+                // It will automatically fall back to conventional TCP.
+            }
+            else if (errno == EOPNOTSUPP || errno == EPROTONOSUPPORT || errno == ENOPROTOOPT) {
+                LOGE("fast open is not supported on this platform");
+                connect(sockfd, res->ai_addr, res->ai_addrlen);
+            }
+            else {
+                ERROR("sendto");
             }
         }
         else if (s < server->buf_len) {
@@ -206,9 +217,9 @@ struct remote *connect_to_remote(struct addrinfo *res, struct server *server)
             server->buf_idx = 0;
             server->buf_len = 0;
         }
-    } else {
+    } else
+#endif
         connect(sockfd, res->ai_addr, res->ai_addrlen);
-    }
 
     return remote;
 }
