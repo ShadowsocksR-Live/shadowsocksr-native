@@ -95,7 +95,7 @@ static void server_resolve_cb(EV_P_ ev_io *w, int revents);
 static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents);
 
 struct remote* new_remote(int fd);
-struct remote *connect_to_remote(struct addrinfo *res, const char *iface);
+struct remote *connect_to_remote(struct addrinfo *res, struct server *server);
 void free_remote(struct remote *remote);
 void close_and_free_remote(EV_P_ struct remote *remote);
 struct server* new_server(int fd, struct listen_ctx *listener);
