@@ -5,6 +5,8 @@ AC_PREREQ([2.67])
 AC_INIT([shadowsocks], [1.4.8], [max.c.lv@gmail.com])
 AC_CONFIG_SRCDIR([src/encrypt.c])
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_AUX_DIR(auto)
+AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([subdir-objects foreign -Wall -Werror])
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
@@ -24,12 +26,12 @@ AC_ARG_WITH(
 
 dnl Checks for programs.
 AC_PROG_CC
+AM_PROG_CC_C_O
 AC_PROG_INSTALL
-AC_PROG_LIBTOOL
 AC_PROG_LN_S
+AC_PROG_LIBTOOL
 AC_PROG_MAKE_SET
 AC_LANG_SOURCE
-AM_PROG_CC_C_O
 
 dnl Checks for libev
 m4_include([libev/libev.m4])
@@ -202,8 +204,6 @@ AC_CHECK_FUNCS([malloc memset socket])
 ACX_PTHREAD
 
 LT_INIT([dlopen])
-
-AC_CONFIG_MACRO_DIR([m4])
 
 AC_CONFIG_FILES([Makefile
                  libcork/Makefile
