@@ -2,7 +2,7 @@ language: c
 compiler:
     - gcc
     - clang
-script: "sudo apt-get install libev-dev && ./configure && make"
+script: "./configure && make"
 branches:
     only:
         - master
