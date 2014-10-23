@@ -169,7 +169,9 @@ struct remote *connect_to_remote(struct addrinfo *res, struct server *server)
 {
     int sockfd;
     int opt = 1;
+#ifdef SET_INTERFACE
     const char *iface = server->listen_ctx->iface;
+#endif
 
     // initilize remote socks
     sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
