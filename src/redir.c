@@ -397,10 +397,9 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
             // send destaddr
             char *ss_addr_to_send = malloc(BUF_SIZE);
             ssize_t addr_len = 0;
-            ss_addr_to_send[addr_len++] = 1;
+            ss_addr_to_send[addr_len++] = 4;
 
-            // handle IP V4 only
-            size_t in_addr_len = sizeof(struct in_addr);
+            size_t in_addr_len = sizeof(struct in6_addr);
             memcpy(ss_addr_to_send + addr_len, &server->destaddr.sin6_addr, in_addr_len);
             addr_len += in_addr_len;
             memcpy(ss_addr_to_send + addr_len, &server->destaddr.sin6_port, 2);
@@ -628,7 +627,6 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
     //err = getdestaddr(listener, &destaddr);
     printf("Connet server %s, port %s.\n",listener->remote_addr->host,listener->remote_addr->port);
     socklen_t socklen = sizeof(destaddr);
-    //err = getsockopt(listener->fd, (listener->local.isIPv6()?SOL_IP6:SOL_IP), (listener->local.isIPv6()?IP6T_SO_ORIGINAL_DST:SO_ORIGINAL_DST), destaddr, &socklen);
     err = getsockopt(clientfd, SOL_IPV6, IP6T_SO_ORIGINAL_DST, &destaddr, &socklen);
     unsigned char * ipv6addrr=(unsigned char*)(&destaddr.sin6_addr);
     printf("sizeofaddr=%d connecting:",(int)(sizeof(destaddr.sin6_addr)));
