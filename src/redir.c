@@ -627,16 +627,14 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
 
     //err = getdestaddr(listener, &destaddr);
     printf("Connet server %s, port %s.\n",listener->remote_addr->host,listener->remote_addr->port);
-    printf("%d %s\n",listener->sock.sa_family,listener->sock.sa_data);
     socklen_t socklen = sizeof(destaddr);
     //err = getsockopt(listener->fd, (listener->local.isIPv6()?SOL_IP6:SOL_IP), (listener->local.isIPv6()?IP6T_SO_ORIGINAL_DST:SO_ORIGINAL_DST), destaddr, &socklen);
-    err = getsockopt(clientfd, IPPROTO_IPV6, IP6T_SO_ORIGINAL_DST, &destaddr, &socklen);
-    //
-   char str[INET6_ADDRSTRLEN];
-   inet_ntop(AF_INET6, &destaddr, str, INET6_ADDRSTRLEN);
-   printf("%s\n", str);
-
-  
+    err = getsockopt(clientfd, SOL_IPV6, IP6T_SO_ORIGINAL_DST, &destaddr, &socklen);
+    unsigned char * ipv6addrr=(unsigned char*)(&destaddr.sin6_addr);
+    printf("sizeofaddr=%d connecting:",(int)(sizeof(destaddr.sin6_addr)));
+    for(int iii=0;iii<16;++iii)
+    printf("%02x",ipv6addrr[iii]);
+    printf("\n");
     if (err)
     {
         ERROR("getdestaddr");
