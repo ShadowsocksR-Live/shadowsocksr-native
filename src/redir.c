@@ -60,16 +60,20 @@
 #define BUF_SIZE 2048
 #endif
 
-int getdestaddr( struct listen_ctx * listener, struct sockaddr_in *destaddr)
+int getdestaddr(int fd, struct sockaddr_storage *destaddr)
 {
-/*    socklen_t socklen = sizeof(*destaddr);
+    socklen_t socklen = sizeof(*destaddr);
     int error=0;
 
- //   error = getsockopt(listener->fd, (listener->local.isIPv6()?SOL_IP6:SOL_IP), (listener->local.isIPv6()?IP6T_SO_ORIGINAL_DST:SO_ORIGINAL_DST), destaddr, &socklen);
-    if (error)
+    error = getsockopt(fd, SOL_IPV6, IP6T_SO_ORIGINAL_DST,destaddr, &socklen);
+    if (error)  // Didn't find a proper way to detect IP version.
     {
-        return -1;
-    }*/
+        error = getsockopt(fd, SOL_IP, SO_ORIGINAL_DST,destaddr, &socklen);
+        if(error)
+        {
+            return -1;
+        }
+    }
     return 0;
 }
 
@@ -397,12 +401,24 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
             // send destaddr
             char *ss_addr_to_send = malloc(BUF_SIZE);
             ssize_t addr_len = 0;
-            ss_addr_to_send[addr_len++] = 4;
+            if(AF_INET6==server->destaddr.ss_family)    // IPv6
+            {
+                ss_addr_to_send[addr_len++] = 4;    //Type 4 is IPv6 address
 
-            size_t in_addr_len = sizeof(struct in6_addr);
-            memcpy(ss_addr_to_send + addr_len, &server->destaddr.sin6_addr, in_addr_len);
-            addr_len += in_addr_len;
-            memcpy(ss_addr_to_send + addr_len, &server->destaddr.sin6_port, 2);
+                size_t in_addr_len = sizeof(struct in6_addr);
+                memcpy(ss_addr_to_send + addr_len, &(((struct sockaddr_in6*)&(server->destaddr))->sin6_addr), in_addr_len);
+                addr_len += in_addr_len;
+                memcpy(ss_addr_to_send + addr_len, &(((struct sockaddr_in6*)&(server->destaddr))->sin6_port), 2);
+            }
+            else    //IPv4
+            {
+                ss_addr_to_send[addr_len++] = 1;    //Type 1 is IPv4 address
+
+                size_t in_addr_len = sizeof(struct in_addr);
+                memcpy(ss_addr_to_send + addr_len, &((struct sockaddr_in*)&(server->destaddr))->sin_addr, in_addr_len);
+                addr_len += in_addr_len;
+                memcpy(ss_addr_to_send + addr_len, &((struct sockaddr_in*)&(server->destaddr))->sin_port, 2);
+            }
             addr_len += 2;
             ss_addr_to_send = ss_encrypt(BUF_SIZE, ss_addr_to_send, &addr_len, server->e_ctx);
             if (ss_addr_to_send == NULL)
@@ -614,7 +630,7 @@ void close_and_free_server(EV_P_ struct server *server)
 static void accept_cb (EV_P_ ev_io *w, int revents)
 {
     struct listen_ctx *listener = (struct listen_ctx *)w;
-    struct sockaddr_in6 destaddr;
+    struct sockaddr_storage destaddr;
     int err;
 
     int clientfd = accept(listener->fd, NULL, NULL);
@@ -624,15 +640,7 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
         return;
     }
 
-    //err = getdestaddr(listener, &destaddr);
-    printf("Connet server %s, port %s.\n",listener->remote_addr->host,listener->remote_addr->port);
-    socklen_t socklen = sizeof(destaddr);
-    err = getsockopt(clientfd, SOL_IPV6, IP6T_SO_ORIGINAL_DST, &destaddr, &socklen);
-    unsigned char * ipv6addrr=(unsigned char*)(&destaddr.sin6_addr);
-    printf("sizeofaddr=%d connecting:",(int)(sizeof(destaddr.sin6_addr)));
-    for(int iii=0;iii<16;++iii)
-    printf("%02x",ipv6addrr[iii]);
-    printf("\n");
+    err = getdestaddr(clientfd, &destaddr);
     if (err)
     {
         ERROR("getdestaddr");
