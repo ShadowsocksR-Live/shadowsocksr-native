@@ -358,8 +358,11 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
             struct sockaddr_in sock_addr;
             memset(&sock_addr, 0, sizeof(sock_addr));
 
+            int udp_assc = 0;
+
             if (udprelay && request->cmd == 3)
             {
+                udp_assc = 1;
                 socklen_t addr_len = sizeof(sock_addr);
                 getsockname(server->fd, (struct sockaddr *)&sock_addr,
                             &addr_len);
@@ -504,7 +507,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                 return;
             }
 
-            if (request->cmd == 3)
+            if (udp_assc)
             {
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
