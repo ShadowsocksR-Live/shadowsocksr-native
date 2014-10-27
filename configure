@@ -13293,6 +13293,35 @@ fi
 done
 
     ;;
+  *-linux*)
+        for ac_header in linux/if.h linux/netfilter_ipv4.h linux/netfilter_ipv6/ip6_tables.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_c_check_header_compile "$LINENO" "$ac_header" "$as_ac_Header" "
+    #if HAVE_LIMITS_H
+    #include <limits.h>
+    #endif
+    /* Netfilter ip(6)tables v1.4.0 has broken headers */
+    #if HAVE_NETINET_IN_H
+    #include <netinet/in.h>
+    #endif
+    #if HAVE_LINUX_IF_H
+    #include <net/if.h>
+    #endif
+
+"
+if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+else
+  as_fn_error $? "Missing netfilter headers" "$LINENO" 5
+fi
+
+done
+
+    ;;
   *)
     # These are POSIX-like systems using BSD-like sockets API.
     ;;

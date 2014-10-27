@@ -119,6 +119,23 @@ case $host in
   *-mingw*)
     AC_CHECK_HEADERS([windows.h winsock2.h ws2tcpip.h], [], [AC_MSG_ERROR([Missing MinGW headers])], [])
     ;;
+  *-linux*)
+    dnl Checks for netfilter headers
+    AC_CHECK_HEADERS([linux/if.h linux/netfilter_ipv4.h linux/netfilter_ipv6/ip6_tables.h],
+                     [], [AC_MSG_ERROR([Missing netfilter headers])],
+    [[
+    #if HAVE_LIMITS_H
+    #include <limits.h>
+    #endif
+    /* Netfilter ip(6)tables v1.4.0 has broken headers */
+    #if HAVE_NETINET_IN_H
+    #include <netinet/in.h>
+    #endif
+    #if HAVE_LINUX_IF_H
+    #include <net/if.h>
+    #endif
+    ]])
+    ;;
   *)
     # These are POSIX-like systems using BSD-like sockets API.
     ;;

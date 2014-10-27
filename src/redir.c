@@ -60,6 +60,10 @@
 #define BUF_SIZE 2048
 #endif
 
+#ifndef IP6T_SO_ORIGINAL_DST
+#define IP6T_SO_ORIGINAL_DST 80
+#endif
+
 int getdestaddr(int fd, struct sockaddr_storage *destaddr)
 {
     socklen_t socklen = sizeof(*destaddr);
