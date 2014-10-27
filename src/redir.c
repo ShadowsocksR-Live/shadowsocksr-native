@@ -110,7 +110,6 @@ int create_and_bind(const char *addr, const char *port)
 
         int opt = 1;
         setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-//        setsockopt(listen_sock, IPPROTO_IPV6, SO_REUSEADDR, &opt, sizeof(opt));
         setsockopt(listen_sock, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
         setsockopt(listen_sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
