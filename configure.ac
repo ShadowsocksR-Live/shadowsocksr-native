@@ -113,7 +113,26 @@ AM_CONDITIONAL(BUILD_REDIRECTOR, test "$os_support" = "linux")
 AM_CONDITIONAL(BUILD_WINCOMPAT, test "$os_support" = "mingw")
 
 dnl Checks for header files.
-AC_CHECK_HEADERS([stdint.h inttypes.h arpa/inet.h fcntl.h langinfo.h locale.h netdb.h netinet/in.h stdlib.h string.h strings.h unistd.h sys/ioctl.h])
+AC_CHECK_HEADERS([limits.h stdint.h inttypes.h arpa/inet.h fcntl.h langinfo.h locale.h netdb.h netinet/in.h stdlib.h string.h strings.h unistd.h sys/ioctl.h])
+
+dnl A special check required for <net/if.h> on Darwin. See
+dnl http://www.gnu.org/software/autoconf/manual/html_node/Header-Portability.html.
+AC_CHECK_HEADERS([sys/socket.h])
+AC_CHECK_HEADERS([net/if.h], [], [],
+[
+#include <stdio.h>
+#ifdef STDC_HEADERS
+# include <stdlib.h>
+# include <stddef.h>
+#else
+# ifdef HAVE_STDLIB_H
+#  include <stdlib.h>
+# endif
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+# include <sys/socket.h>
+#endif
+])
 
 case $host in
   *-mingw*)
@@ -134,31 +153,15 @@ case $host in
     #if HAVE_LINUX_IF_H
     #include <net/if.h>
     #endif
+    #if HAVE_SYS_SOCKET_H
+    #include <sys/socket.h>
+    #endif
     ]])
     ;;
   *)
     # These are POSIX-like systems using BSD-like sockets API.
     ;;
 esac
-
-dnl A special check required for <net/if.h> on Darwin. See
-dnl http://www.gnu.org/software/autoconf/manual/html_node/Header-Portability.html.
-AC_CHECK_HEADERS([sys/socket.h])
-AC_CHECK_HEADERS([net/if.h], [], [],
-[
-#include <stdio.h>
-#ifdef STDC_HEADERS
-# include <stdlib.h>
-# include <stddef.h>
-#else
-# ifdef HAVE_STDLIB_H
-#  include <stdlib.h>
-# endif
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-# include <sys/socket.h>
-#endif
-])
 
 AC_C_BIGENDIAN
 
