@@ -319,7 +319,7 @@ struct remote_ctx *new_remote(int fd, struct server_ctx *server_ctx)
     ctx->fd = fd;
     ctx->server_ctx = server_ctx;
     ev_io_init(&ctx->io, remote_recv_cb, fd, EV_READ);
-    ev_timer_init(&ctx->watcher, remote_timeout_cb, server_ctx->timeout, server_ctx->timeout * 5);
+    ev_timer_init(&ctx->watcher, remote_timeout_cb, server_ctx->timeout, server_ctx->timeout);
     return ctx;
 }
 
