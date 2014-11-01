@@ -58,6 +58,12 @@
 #include "cache.h"
 
 #ifdef UDPRELAY_REMOTE
+#define MAX_UDP_CONN_NUM 1024
+#else
+#define MAX_UDP_CONN_NUM 256
+#endif
+
+#ifdef UDPRELAY_REMOTE
 #ifdef UDPRELAY_LOCAL
 #error "UDPRELAY_REMOTE and UDPRELAY_LOCAL should not be both defined"
 #endif
