@@ -23,21 +23,29 @@
 #define _SHADOWSOCKS_H
 
 typedef struct {
-    char *server;         // server hostname or ip
+    char *remote_host;    // hostname or ip of remote server
+    char *local_addr;     // local ip to bind 
     char *method;         // encryption method
-    char *passwd;         // password of server
-    char *config;         // file path to config
+    char *password;       // password of remote server
     char *acl;            // file path to acl
-    int server_port;      // port number of server
-    int local_port;       // port number of local
+    char *log;            // file path to log
+    int remote_port;      // port number of remote server
+    int local_port;       // port number of local server
     int timeout;          // connection timeout
-    int fast_open;        // tcp fast open
+    int fast_open;        // enable tcp fast open
+    int udp_relay;        // enable udp relay
     int verbose;          // verbose mode
 } profile_t;
 
 // create and start a shadowsocks service,
-// if success, return the pid.
+// if success, return the tid.
 // if not, return -1
-int create_ss_service (profile_t profile, char *log_file);
+int start_ss_service(profile_t profile);
+
+// stop the current shadowsocks service,
+// if blocking set true, this call will be blocked until no events left.
+// call this function in blocking mode would take quite long time, depends on
+// the timeout you set.
+void stop_ss_service(int blocking);
 
 #endif // _SHADOWSOCKS_H

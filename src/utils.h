@@ -42,7 +42,37 @@
 #define STR(x) #x
 #define TOSTR(x) STR(x)
 
-#ifdef _WIN32
+#ifdef LIB_ONLY
+
+#define TIME_FORMAT "%Y-%m-%d %H:%M:%S"
+
+#define USE_SYSLOG(ident)
+
+FILE *logfile;
+
+#define USE_LOGFILE(ident) do {\
+    if (ident != NULL) logfile = fopen(ident, "w+");}\
+while(0)
+
+#define LOGD(format, ...) do {\
+    if (logfile != NULL) {\
+        time_t now = time(NULL);\
+        char timestr[20];\
+        strftime(timestr, 20, TIME_FORMAT, localtime(&now));\
+        fprintf(logfile, " %s INFO: " format "\n", timestr, ##__VA_ARGS__);}\
+    }\
+while(0)
+
+#define LOGE(format, ...) do {\
+    if (logfile != NULL) {\
+        time_t now = time(NULL);\
+        char timestr[20];\
+        strftime(timestr, 20, TIME_FORMAT, localtime(&now));\
+        fprintf(logfile, " %s ERROR: " format "\n", timestr, ##__VA_ARGS__);}\
+    }\
+while(0)
+
+#elif defined(_WIN32)
 
 #define TIME_FORMAT "%Y-%m-%d %H:%M:%S"
 

@@ -43,6 +43,11 @@
 #include "config.h"
 #endif
 
+#ifdef LIB_ONLY
+#include <pthread.h>
+#include "shadowsocks.h"
+#endif
+
 #if defined(HAVE_SYS_IOCTL_H) && defined(HAVE_NET_IF_H) && defined(__linux__)
 #include <net/if.h>
 #include <sys/ioctl.h>
@@ -986,8 +991,7 @@ int main (int argc, char **argv)
             else if (option_index == 1)
             {
                 LOGD("initialize acl...");
-                acl = 1;
-                init_acl(optarg);
+                acl = !init_acl(optarg);
             }
             break;
         case 's':
@@ -1159,6 +1163,131 @@ int main (int argc, char **argv)
 #endif
 
     return 0;
+}
+#else
+
+static int running = 0;
+static pthread_t worker_tid;
+
+static void *
+start_worker(void *arg)
+{
+    srand(time(NULL));
+
+    profile_t profile = *((profile_t *)arg);
+    char *remote_host = profile.remote_host;
+    char *local_addr = profile.local_addr;
+    char *method = profile.method;
+    char *password = profile.password;
+    char *log = profile.log;
+    int remote_port = profile.remote_port;
+    int local_port = profile.local_port;
+    int timeout = profile.timeout;
+
+    udprelay = profile.udp_relay;
+    fast_open = profile.fast_open;
+    verbose = profile.verbose;
+
+    char local_port_str[16];
+    char remote_port_str[16];
+    sprintf(local_port_str, "%d", local_port);
+    sprintf(remote_port_str, "%d", remote_port);
+
+    if (profile.acl != NULL)
+    {
+        acl = !init_acl(profile.acl);
+    }
+
+    if (local_addr == NULL) local_addr = "0.0.0.0";
+
+    USE_LOGFILE(log);
+
+#ifdef __MINGW32__
+    winsock_init();
+#else
+    // ignore SIGPIPE
+    signal(SIGPIPE, SIG_IGN);
+    signal(SIGABRT, SIG_IGN);
+#endif
+
+    // Setup keys
+    LOGD("initialize ciphers... %s", method);
+    int m = enc_init(password, method);
+
+    // Setup socket
+    int listenfd;
+    listenfd = create_and_bind(local_addr, local_port_str);
+    if (listenfd < 0)
+    {
+        FATAL("bind() error..");
+    }
+    if (listen(listenfd, SOMAXCONN) == -1)
+    {
+        FATAL("listen() error.");
+    }
+    setnonblocking(listenfd);
+    LOGD("server listening at port %s.", local_port_str);
+
+    // Setup proxy context
+    struct listen_ctx listen_ctx;
+
+    listen_ctx.remote_num = 1;
+    listen_ctx.remote_addr = malloc(sizeof(ss_addr_t));
+    listen_ctx.remote_addr[0].host = remote_host;
+    listen_ctx.remote_addr[0].port = remote_port_str;
+    listen_ctx.timeout = timeout;
+    listen_ctx.fd = listenfd;
+    listen_ctx.method = m;
+    listen_ctx.iface = NULL;
+
+    struct ev_loop *loop = ev_default_loop(0);
+    if (!loop)
+    {
+        FATAL("ev_loop error.");
+    }
+    ev_io_init (&listen_ctx.io, accept_cb, listenfd, EV_READ);
+    ev_io_start (loop, &listen_ctx.io);
+
+    // Setup UDP
+    if (udprelay)
+    {
+        LOGD("udprelay enabled.");
+        udprelay_init(local_addr, local_port_str, remote_host, remote_port_str, m, listen_ctx.timeout, NULL);
+    }
+
+    ev_run (loop, 0);
+
+#ifdef __MINGW32__
+    winsock_cleanup();
+#endif
+
+    return 0;
+}
+
+void stop_ss_service(int blocking)
+{
+    if (running) {
+        struct ev_loop *loop = ev_default_loop(0);
+        ev_break(loop, EVBREAK_ALL);
+        if (blocking)
+        {
+            pthread_join(worker_tid, NULL);
+        }
+    }
+}
+
+int start_ss_service(profile_t profile)
+{
+    pthread_attr_t attr;
+
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+    int err = pthread_create(&worker_tid, NULL, start_worker, &profile);
+
+    if (err) return -1;
+    return 0;
+
 }
 #endif
 

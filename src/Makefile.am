@@ -71,5 +71,6 @@ lib_LTLIBRARIES = libshadowsocks.la
 libshadowsocks_la_SOURCES = $(ss_local_SOURCES)
 libshadowsocks_la_CFLAGS = $(ss_local_CFLAGS) -DLIB_ONLY
 libshadowsocks_la_LIBADD = $(ss_local_LDADD)
+include_HEADERS = src/shadowsocks.h
 endif
 

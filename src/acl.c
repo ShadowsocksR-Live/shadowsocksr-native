@@ -69,7 +69,10 @@ int init_acl(const char *path)
     cork_string_array_init(&acl_domain_array);
 
     FILE *f = fopen(path, "r");
-    if (f == NULL) FATAL("Invalid acl path.");
+    if (f == NULL) {
+        LOGE("Invalid acl path.");
+        return -1;
+    }
 
     char line[256];
     while(!feof(f))
