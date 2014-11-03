@@ -54,12 +54,17 @@ FILE *logfile;
     if (ident != NULL) logfile = fopen(ident, "w+");}\
 while(0)
 
+#define CLOSE_LOGFILE do {\
+    if (logfile != NULL) fclose(logfile);}\
+while(0)
+
 #define LOGD(format, ...) do {\
     if (logfile != NULL) {\
         time_t now = time(NULL);\
         char timestr[20];\
         strftime(timestr, 20, TIME_FORMAT, localtime(&now));\
-        fprintf(logfile, " %s INFO: " format "\n", timestr, ##__VA_ARGS__);}\
+        fprintf(logfile, " %s INFO: " format "\n", timestr, ##__VA_ARGS__);\
+        fflush(logfile);}\
     }\
 while(0)
 
@@ -68,7 +73,8 @@ while(0)
         time_t now = time(NULL);\
         char timestr[20];\
         strftime(timestr, 20, TIME_FORMAT, localtime(&now));\
-        fprintf(logfile, " %s ERROR: " format "\n", timestr, ##__VA_ARGS__);}\
+        fprintf(logfile, " %s ERROR: " format "\n", timestr, ##__VA_ARGS__);\
+        fflush(logfile);}\
     }\
 while(0)
 

@@ -23,29 +23,50 @@
 #define _SHADOWSOCKS_H
 
 typedef struct {
+    /*  Required  */
     char *remote_host;    // hostname or ip of remote server
     char *local_addr;     // local ip to bind 
     char *method;         // encryption method
     char *password;       // password of remote server
-    char *acl;            // file path to acl
-    char *log;            // file path to log
     int remote_port;      // port number of remote server
     int local_port;       // port number of local server
     int timeout;          // connection timeout
+
+    /*  Optional, set NULL if not valid   */
+    char *acl;            // file path to acl
+    char *log;            // file path to log
     int fast_open;        // enable tcp fast open
     int udp_relay;        // enable udp relay
     int verbose;          // verbose mode
 } profile_t;
 
-// create and start a shadowsocks service,
-// if success, return the tid.
-// if not, return -1
+/*
+ * An example profile
+
+const profile_t EXAMPLE_PROFILE = {
+    .remote_host = "example.com",
+    .local_addr = "127.0.0.1",
+    .method = "bf-cfb",
+    .password = "barfoo!",
+    .remote_port = 8338,
+    .local_port = 1080,
+
+    .acl = NULL,
+    .log = NULL,
+    .fast_open = 0,
+    .udp_relay = 0,
+    .verbose = 0
+};
+
+*/
+
+// Create and start a shadowsocks service,
+// If success, return the pid, if not, return -1
+// On win32, this function won't return,
+// you have to call it in on other processes
 int start_ss_service(profile_t profile);
 
-// stop the current shadowsocks service,
-// if blocking set true, this call will be blocked until no events left.
-// call this function in blocking mode would take quite long time, depends on
-// the timeout you set.
-void stop_ss_service(int blocking);
+// To stop the service on posix system, just kill the daemon process
+// kill(pid, SIGKILL);
 
 #endif // _SHADOWSOCKS_H

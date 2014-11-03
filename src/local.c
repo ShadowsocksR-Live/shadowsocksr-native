@@ -1166,15 +1166,35 @@ int main (int argc, char **argv)
 }
 #else
 
-static int running = 0;
-static pthread_t worker_tid;
-
-static void *
-start_worker(void *arg)
+int start_ss_service(profile_t profile)
 {
+
+#ifndef __MINGW32__
+    /* Our process ID and Session ID */
+    pid_t pid;
+
+    /* Fork off the parent process */
+    pid = fork();
+    if (pid < 0)
+    {
+       return -1;
+    }
+
+    /* If we got a good PID, then
+       we can exit the parent process. */
+    if (pid > 0)
+    {
+        return pid;
+    }
+
+    /* Close out the standard file descriptors */
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+#endif
+
     srand(time(NULL));
 
-    profile_t profile = *((profile_t *)arg);
     char *remote_host = profile.remote_host;
     char *local_addr = profile.local_addr;
     char *method = profile.method;
@@ -1193,14 +1213,14 @@ start_worker(void *arg)
     sprintf(local_port_str, "%d", local_port);
     sprintf(remote_port_str, "%d", remote_port);
 
+    USE_LOGFILE(log);
+
     if (profile.acl != NULL)
     {
         acl = !init_acl(profile.acl);
     }
 
     if (local_addr == NULL) local_addr = "0.0.0.0";
-
-    USE_LOGFILE(log);
 
 #ifdef __MINGW32__
     winsock_init();
@@ -1219,11 +1239,11 @@ start_worker(void *arg)
     listenfd = create_and_bind(local_addr, local_port_str);
     if (listenfd < 0)
     {
-        FATAL("bind() error..");
+        FATAL("bind()");
     }
     if (listen(listenfd, SOMAXCONN) == -1)
     {
-        FATAL("listen() error.");
+        FATAL("listen()");
     }
     setnonblocking(listenfd);
     LOGD("server listening at port %s.", local_port_str);
@@ -1261,33 +1281,9 @@ start_worker(void *arg)
     winsock_cleanup();
 #endif
 
+    // cannot reach here
     return 0;
 }
 
-void stop_ss_service(int blocking)
-{
-    if (running) {
-        struct ev_loop *loop = ev_default_loop(0);
-        ev_break(loop, EVBREAK_ALL);
-        if (blocking)
-        {
-            pthread_join(worker_tid, NULL);
-        }
-    }
-}
-
-int start_ss_service(profile_t profile)
-{
-    pthread_attr_t attr;
-
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-
-    int err = pthread_create(&worker_tid, NULL, start_worker, &profile);
-
-    if (err) return -1;
-    return 0;
-
-}
 #endif
 
