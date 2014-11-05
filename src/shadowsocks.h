@@ -40,8 +40,7 @@ typedef struct {
     int verbose;          // verbose mode
 } profile_t;
 
-/*
- * An example profile
+/* An example profile
 
 const profile_t EXAMPLE_PROFILE = {
     .remote_host = "example.com",
@@ -57,14 +56,21 @@ const profile_t EXAMPLE_PROFILE = {
     .udp_relay = 0,
     .verbose = 0
 };
-
 */
 
-// Create and start a shadowsocks service,
-// If success, return the pid, if not, return -1
-// On win32, this function won't return,
-// you have to call it in on other processes
-int start_ss_service(profile_t profile);
+/*
+ * Create and start a shadowsocks service.
+ *
+ * If background is set to true, the service will run in a child process and
+ * return the pid if success. Otherwise, calling this function will block the
+ * current thread forever.
+ *
+ * On Win32, background mode is invalid. This function will always block the
+ * caller and never return.
+ *
+ * If failed, -1 is returned.
+*/
+int start_ss_service(profile_t profile, int background);
 
 // To stop the service on posix system, just kill the daemon process
 // kill(pid, SIGKILL);
