@@ -44,11 +44,11 @@
 
 #ifdef LIB_ONLY
 
+extern FILE* logfile;
+
 #define TIME_FORMAT "%Y-%m-%d %H:%M:%S"
 
 #define USE_SYSLOG(ident)
-
-FILE *logfile;
 
 #define USE_LOGFILE(ident) do {\
     if (ident != NULL) logfile = fopen(ident, "w+");}\

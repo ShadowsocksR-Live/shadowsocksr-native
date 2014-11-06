@@ -1,3 +1,5 @@
+VERSION_INFO = 1:0:0
+
 AM_CFLAGS = -g -O2 -Wall -Werror -Wno-deprecated-declarations -fno-strict-aliasing -std=gnu99 -D_GNU_SOURCE
 AM_CFLAGS += -I$(top_srcdir)/libev
 AM_CFLAGS += -I$(top_srcdir)/libasyncns
@@ -66,11 +68,9 @@ ss_redir_SOURCES = utils.c \
 ss_redir_LDADD = $(SS_COMMON_LIBS)
 endif
 
-if BUILD_LIB
 lib_LTLIBRARIES = libshadowsocks.la
 libshadowsocks_la_SOURCES = $(ss_local_SOURCES)
 libshadowsocks_la_CFLAGS = $(ss_local_CFLAGS) -DLIB_ONLY
+libshadowsocks_la_LDFLAGS = -version-info $(VERSION_INFO)
 libshadowsocks_la_LIBADD = $(ss_local_LDADD)
 include_HEADERS = shadowsocks.h
-endif
-

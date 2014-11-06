@@ -11,7 +11,7 @@ man_MANS = ev.3
 
 include_HEADERS = ev.h ev++.h event.h
 
-lib_LTLIBRARIES = libev.la
+noinst_LTLIBRARIES = libev.la
 
 libev_la_SOURCES = ev.c event.c
 libev_la_LDFLAGS = -version-info $(VERSION_INFO)

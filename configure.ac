@@ -11,6 +11,11 @@ AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([subdir-objects foreign -Wall -Werror])
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
+dnl Checks for lib
+AC_DISABLE_STATIC
+AC_DISABLE_SHARED
+LT_INIT([dlopen])
+
 dnl Checks for crypto library
 AC_ARG_WITH(
   [crypto-library],
@@ -71,18 +76,6 @@ AC_ARG_ENABLE(applecc,
     AC_DEFINE([USE_CRYPTO_APPLECC], [1], [Use Apple CommonCrypto library])
   ]
 )
-
-dnl Enable building a libshadowsocks. Useful for Windows and OSX GUI clients
-AC_ARG_ENABLE(lib,
-  AS_HELP_STRING([--enable-lib], [build a libshadowsocks]),
-  [
-    AS_IF([test "x$enableval" = "xyes"], [enable_lib="yes"], [enable_lib="no"])
-  ],
-  [
-    enable_lib="no"
-  ]
-)
-AM_CONDITIONAL([BUILD_LIB], [test x$enable_lib = xyes])
 
 dnl Checks for inet_ntop
 ss_FUNC_INET_NTOP
@@ -222,8 +215,6 @@ dnl Checks for library functions.
 AC_CHECK_FUNCS([malloc memset socket])
 
 ACX_PTHREAD
-
-LT_INIT([dlopen])
 
 AC_CONFIG_FILES([Makefile
                  libcork/Makefile

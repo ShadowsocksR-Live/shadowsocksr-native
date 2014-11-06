@@ -59,18 +59,17 @@ const profile_t EXAMPLE_PROFILE = {
 */
 
 /*
- * Create and start a shadowsocks service.
+ * Create and start a shadowsocks local server.
  *
- * If background is set to true, the service will run in a child process and
- * return the pid if success. Otherwise, calling this function will block the
- * current thread forever.
+ * Calling this function will block the current thread forever if the server
+ * starts successfully.
  *
- * On Win32, background mode is invalid. This function will always block the
- * caller and never return.
+ * Make sure start the server in a seperate process to avoid any potential
+ * memory and socket leak.
  *
- * If failed, -1 is returned.
+ * If failed, -1 is returned. Errors will output to the log file.
 */
-int start_ss_service(profile_t profile, int background);
+int start_ss_local_server(profile_t profile);
 
 // To stop the service on posix system, just kill the daemon process
 // kill(pid, SIGKILL);

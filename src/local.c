@@ -1166,35 +1166,8 @@ int main (int argc, char **argv)
 }
 #else
 
-int start_ss_service(profile_t profile, int background)
+int start_ss_local_server(profile_t profile)
 {
-
-#ifndef __MINGW32__
-    if (background) {
-        /* Our process ID and Session ID */
-        pid_t pid;
-
-        /* Fork off the parent process */
-        pid = fork();
-        if (pid < 0)
-        {
-            return -1;
-        }
-
-        /* If we got a good PID, then
-           we can exit the parent process. */
-        if (pid > 0)
-        {
-            return pid;
-        }
-
-        /* Close out the standard file descriptors */
-        close(STDIN_FILENO);
-        close(STDOUT_FILENO);
-        close(STDERR_FILENO);
-    }
-#endif
-
     srand(time(NULL));
 
     char *remote_host = profile.remote_host;
