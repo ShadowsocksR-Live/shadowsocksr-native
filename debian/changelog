@@ -1,3 +1,11 @@
+shadowsocks (1.5.0-1) unstable; urgency=low
+
+  * Support to build static or shared library.
+  * Supprot IPv6 NAT in redirect mode.
+  * Refine the cache size of UDPRelay.
+
+ -- Max Lv <max.c.lv@gmail.com>  Fri, 07 Nov 2014 09:33:19 +0800
+
 shadowsocks (1.4.8-1) unstable; urgency=low
 
   * Fix a bug of tcp fast open.
