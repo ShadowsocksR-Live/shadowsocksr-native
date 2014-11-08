@@ -203,7 +203,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         }
     }
 
-    while (r > 0)
+    while (1)
     {
         // local socks5 server
         if (server->stage == 5)
@@ -215,27 +215,9 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                 return;
             }
 
-            // Copy to remote->buf
-            if (buf != remote->buf) {
-                memcpy(remote->buf, buf, r);
-            }
-
             // insert shadowsocks header
             if (!remote->direct)
             {
-                if (!remote->send_ctx->connected)
-                {
-                    char *tmp = malloc(max(BUF_SIZE, r + server->addr_len));
-
-                    memcpy(tmp, server->addr_to_send, server->addr_len);
-                    memcpy(tmp + server->addr_len, remote->buf, r);
-                    r += server->addr_len;
-
-                    // deallocate
-                    free(remote->buf);
-                    remote->buf = tmp;
-                }
-
                 remote->buf = ss_encrypt(BUF_SIZE, remote->buf, &r, server->e_ctx);
 
                 if (remote->buf == NULL)
@@ -342,7 +324,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
             }
 
             // all processed
-            r = 0;
+            return;
         }
         else if (server->stage == 0)
         {
@@ -352,8 +334,6 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
             char *send_buf = (char *)&response;
             send(server->fd, send_buf, sizeof(response), 0);
             server->stage = 1;
-            r -= 3;
-            buf += 3;
             return;
         }
         else if (server->stage == 1)
@@ -452,12 +432,10 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                     return;
                 }
 
-                server->addr_to_send = ss_addr_to_send;
-                server->addr_len = addr_len;
                 server->stage = 5;
 
-                r -= (4 + addr_len);
-                buf += (4 + addr_len);
+                r -= (3 + addr_len);
+                buf += (3 + addr_len);
 
                 if (verbose)
                 {
@@ -484,6 +462,23 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
                     LOGE("invalid remote addr.");
                     close_and_free_server(EV_A_ server);
                     return;
+                }
+
+                if (!remote->direct)
+                {
+                    memcpy(remote->buf, ss_addr_to_send, addr_len);
+                    if (r > 0)
+                    {
+                        memcpy(remote->buf + addr_len, buf, r);
+                    }
+                    r += addr_len;
+                }
+                else
+                {
+                    if (r > 0)
+                    {
+                        memcpy(remote->buf, buf, r);
+                    }
                 }
 
                 server->remote = remote;
@@ -675,6 +670,14 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
             ev_timer_stop(EV_A_ &remote_send_ctx->watcher);
             ev_timer_start(EV_A_ &remote->recv_ctx->watcher);
             ev_io_start(EV_A_ &remote->recv_ctx->io);
+
+            // no need to send any data
+            if (remote->buf_len == 0)
+            {
+                ev_io_stop(EV_A_ &remote_send_ctx->io);
+                ev_io_start(EV_A_ &server->recv_ctx->io);
+                return;
+            }
         }
         else
         {
@@ -837,10 +840,6 @@ static void free_server(struct server *server)
         if (server->buf != NULL)
         {
             free(server->buf);
-        }
-        if (server->addr_to_send != NULL)
-        {
-            free(server->addr_to_send);
         }
         free(server->recv_ctx);
         free(server->send_ctx);
