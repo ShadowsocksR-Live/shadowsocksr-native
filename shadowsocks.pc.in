@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: shadowsocks
+Description: a lightweight secured scoks5
+URL: http://shadowsocks.org
+Version: @VERSION@
+Requires:
+Libs: -I${includedir}
+Cflags: -L${libdir} -lshadowsocks -lcrypto
