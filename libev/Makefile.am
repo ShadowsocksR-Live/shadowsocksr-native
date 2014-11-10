@@ -7,9 +7,9 @@ EXTRA_DIST = LICENSE Changes libev.m4 autogen.sh \
 	     ev_epoll.c ev_select.c ev_poll.c ev_kqueue.c ev_port.c ev_win32.c \
 	     ev.3 ev.pod Symbols.ev Symbols.event
 
-man_MANS = ev.3
+noinst_MANS = ev.3
 
-include_HEADERS = ev.h ev++.h event.h
+noinst_HEADERS = ev.h ev++.h event.h
 
 noinst_LTLIBRARIES = libev.la
 

@@ -58,6 +58,10 @@ const profile_t EXAMPLE_PROFILE = {
 };
 */
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 /*
  * Create and start a shadowsocks local server.
  *
@@ -70,6 +74,10 @@ const profile_t EXAMPLE_PROFILE = {
  * If failed, -1 is returned. Errors will output to the log file.
 */
 int start_ss_local_server(profile_t profile);
+
+#ifdef __cplusplus
+}
+#endif
 
 // To stop the service on posix system, just kill the daemon process
 // kill(pid, SIGKILL);

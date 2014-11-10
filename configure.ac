@@ -216,7 +216,8 @@ AC_CHECK_FUNCS([malloc memset socket])
 
 ACX_PTHREAD
 
-AC_CONFIG_FILES([Makefile
+AC_CONFIG_FILES([ shadowsocks.pc
+                 Makefile
                  libcork/Makefile
                  libipset/Makefile
                  libasyncns/Makefile
