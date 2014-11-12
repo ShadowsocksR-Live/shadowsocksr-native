@@ -54,6 +54,8 @@
 #define SET_INTERFACE
 #endif
 
+#include <libcork/core.h>
+
 #ifdef __MINGW32__
 #include "win32.h"
 #endif
@@ -103,7 +105,7 @@ static void close_and_free_server(EV_P_ struct server *server);
 static struct remote * new_remote(int fd, int timeout);
 static struct server * new_server(int fd, int method);
 
-static TAILQ_HEAD(connection_head, server) connections;
+static struct cork_dllist connections;
 
 #ifndef __MINGW32__
 int setnonblocking(int fd)
@@ -180,10 +182,12 @@ int create_and_bind(const char *addr, const char *port)
 
 static void free_connections(struct ev_loop *loop)
 {
-    struct server *iter;
-    while ((iter = TAILQ_FIRST(&connections)) != NULL) {
-        struct remote *remote = iter->remote;
-        close_and_free_server(loop, iter);
+    struct cork_dllist_item *curr;
+    for (curr = cork_dllist_start(&connections); !cork_dllist_is_end(&connections, curr);
+            curr = curr->next) {
+        struct server *server = cork_container_of(curr, struct server, entries);
+        struct remote *remote = server->remote;
+        close_and_free_server(loop, server);
         close_and_free_remote(loop, remote);
     }
 }
@@ -749,14 +753,14 @@ static struct server * new_server(int fd, int method)
         server->d_ctx = NULL;
     }
 
-    TAILQ_INSERT_HEAD(&connections, server, entries);
+    cork_dllist_add(&connections, &server->entries);
 
     return server;
 }
 
 static void free_server(struct server *server)
 {
-    TAILQ_REMOVE(&connections, server, entries);
+    cork_dllist_remove(&server->entries);
 
     if (server->remote != NULL) {
         server->remote->server = NULL;
@@ -1109,7 +1113,7 @@ int main(int argc, char **argv)
     }
 
     // Init connections
-    TAILQ_INIT(&connections);
+    cork_dllist_init(&connections);
 
     // Enter the loop
     ev_run(loop, 0);
@@ -1223,7 +1227,7 @@ int start_ss_local_server(profile_t profile)
     }
 
     // Init connections
-    TAILQ_INIT(&connections);
+    cork_dllist_init(&connections);
 
     // Enter the loop
     ev_run(loop, 0);

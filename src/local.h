@@ -23,8 +23,9 @@
 #ifndef _LOCAL_H
 #define _LOCAL_H
 
-#include <sys/queue.h>
 #include <ev.h>
+#include <libcork/ds.h>
+
 #include "encrypt.h"
 #include "jconf.h"
 
@@ -60,7 +61,7 @@ struct server {
     struct listen_ctx *listener;
     struct remote *remote;
 
-    TAILQ_ENTRY(server) entries;
+    struct cork_dllist_item entries;
 };
 
 struct remote_ctx {
