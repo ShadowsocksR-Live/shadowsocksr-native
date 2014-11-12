@@ -88,24 +88,27 @@ struct resolve_ctx *resolve_ctx = NULL;
 static int setnonblocking(int fd)
 {
     int flags;
-    if (-1 ==(flags = fcntl(fd, F_GETFL, 0)))
+    if (-1 == (flags = fcntl(fd, F_GETFL, 0))) {
         flags = 0;
+    }
     return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
 #endif
 
 #ifdef SET_INTERFACE
-static int setinterface(int socket_fd, const char* interface_name)
+static int setinterface(int socket_fd, const char * interface_name)
 {
     struct ifreq interface;
     memset(&interface, 0, sizeof(interface));
     strncpy(interface.ifr_name, interface_name, IFNAMSIZ);
-    int res = setsockopt(socket_fd, SOL_SOCKET, SO_BINDTODEVICE, &interface, sizeof(struct ifreq));
+    int res = setsockopt(socket_fd, SOL_SOCKET, SO_BINDTODEVICE, &interface,
+                         sizeof(struct ifreq));
     return res;
 }
 #endif
 
-static char *hash_key(const char *header, const int header_len, const struct sockaddr_storage *addr)
+static char *hash_key(const char *header, const int header_len,
+                      const struct sockaddr_storage *addr)
 {
     char key[384];
 
@@ -115,65 +118,54 @@ static char *hash_key(const char *header, const int header_len, const struct soc
     memcpy(key, addr, sizeof(struct sockaddr_storage));
     memcpy(key + sizeof(struct sockaddr_storage), header, header_len);
 
-    return (char*) enc_md5((const uint8_t *)key, sizeof(struct sockaddr_storage) + header_len, NULL);
+    return (char *)enc_md5((const uint8_t *)key,
+                           sizeof(struct sockaddr_storage) + header_len, NULL);
 }
 
-static int parse_udprealy_header(const char* buf, const int buf_len, char *host, char *port)
+static int parse_udprealy_header(const char * buf, const int buf_len,
+                                 char *host, char *port)
 {
 
-    const uint8_t atyp = *(uint8_t*)buf;
+    const uint8_t atyp = *(uint8_t *)buf;
     int offset = 1;
     // get remote addr and port
-    if (atyp == 1)
-    {
+    if (atyp == 1) {
         // IP V4
         size_t in_addr_len = sizeof(struct in_addr);
-        if (buf_len > in_addr_len)
-        {
-            if (host != NULL)
-            {
+        if (buf_len > in_addr_len) {
+            if (host != NULL) {
                 inet_ntop(AF_INET, (const void *)(buf + offset),
                           host, INET_ADDRSTRLEN);
             }
             offset += in_addr_len;
         }
-    }
-    else if (atyp == 3)
-    {
+    } else if (atyp == 3) {
         // Domain name
         uint8_t name_len = *(uint8_t *)(buf + offset);
-        if (name_len < buf_len && name_len < 255 && name_len > 0)
-        {
-            if (host != NULL)
-            {
+        if (name_len < buf_len && name_len < 255 && name_len > 0) {
+            if (host != NULL) {
                 memcpy(host, buf + offset + 1, name_len);
             }
             offset += name_len + 1;
         }
-    }
-    else if (atyp == 4)
-    {
+    } else if (atyp == 4) {
         // IP V6
         size_t in6_addr_len = sizeof(struct in6_addr);
-        if (buf_len > in6_addr_len)
-        {
-            if (host != NULL)
-            {
-                inet_ntop(AF_INET6, (const void*)(buf + offset),
+        if (buf_len > in6_addr_len) {
+            if (host != NULL) {
+                inet_ntop(AF_INET6, (const void *)(buf + offset),
                           host, INET6_ADDRSTRLEN);
             }
             offset += in6_addr_len;
         }
     }
 
-    if (offset == 1)
-    {
+    if (offset == 1) {
         LOGE("invalid header with addr type %d", atyp);
         return 0;
     }
 
-    if (port != NULL)
-    {
+    if (port != NULL) {
         sprintf(port, "%d", ntohs(*(uint16_t *)(buf + offset)));
     }
     offset += 2;
@@ -185,12 +177,11 @@ static char *get_addr_str(const struct sockaddr *sa)
 {
     static char s[SS_ADDRSTRLEN];
     memset(s, 0, SS_ADDRSTRLEN);
-    char addr[INET6_ADDRSTRLEN] = {0};
-    char port[PORTSTRLEN] = {0};
+    char addr[INET6_ADDRSTRLEN] = { 0 };
+    char port[PORTSTRLEN] = { 0 };
     uint16_t p;
 
-    switch(sa->sa_family)
-    {
+    switch (sa->sa_family) {
     case AF_INET:
         inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr),
                   addr, INET_ADDRSTRLEN);
@@ -223,43 +214,36 @@ int create_remote_socket(int ipv6)
 {
     int remote_sock;
 
-    if (ipv6)
-    {
+    if (ipv6) {
         // Try to bind IPv6 first
         struct sockaddr_in6 addr;
         memset(&addr, 0, sizeof(addr));
         addr.sin6_family = AF_INET6;
         addr.sin6_addr = in6addr_any;
         addr.sin6_port = 0;
-        remote_sock = socket(AF_INET6, SOCK_DGRAM , 0);
-        if (remote_sock == -1)
-        {
+        remote_sock = socket(AF_INET6, SOCK_DGRAM, 0);
+        if (remote_sock == -1) {
             ERROR("Cannot create socket.");
             return -1;
         }
-        if (bind(remote_sock, (struct sockaddr *)&addr, sizeof(addr)) != 0)
-        {
+        if (bind(remote_sock, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
             FATAL("Cannot bind remote.");
             return -1;
         }
-    }
-    else
-    {
+    } else {
         // Or else bind to IPv4
         struct sockaddr_in addr;
         memset(&addr, 0, sizeof(addr));
         addr.sin_family = AF_INET;
         addr.sin_addr.s_addr = INADDR_ANY;
         addr.sin_port = 0;
-        remote_sock = socket(AF_INET, SOCK_DGRAM , 0);
-        if (remote_sock == -1)
-        {
+        remote_sock = socket(AF_INET, SOCK_DGRAM, 0);
+        if (remote_sock == -1) {
             ERROR("Cannot create socket.");
             return -1;
         }
 
-        if (bind(remote_sock, (struct sockaddr *)&addr, sizeof(addr)) != 0)
-        {
+        if (bind(remote_sock, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
             FATAL("Cannot bind remote.");
             return -1;
         }
@@ -274,21 +258,20 @@ int create_server_socket(const char *host, const char *port)
     int s, server_sock;
 
     memset(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family = AF_UNSPEC; /* Return IPv4 and IPv6 choices */
+    hints.ai_family = AF_UNSPEC;    /* Return IPv4 and IPv6 choices */
     hints.ai_socktype = SOCK_DGRAM; /* We want a UDP socket */
 
     s = getaddrinfo(host, port, &hints, &result);
-    if (s != 0)
-    {
+    if (s != 0) {
         LOGE("getaddrinfo: %s", gai_strerror(s));
         return -1;
     }
 
-    for (rp = result; rp != NULL; rp = rp->ai_next)
-    {
+    for (rp = result; rp != NULL; rp = rp->ai_next) {
         server_sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-        if (server_sock == -1)
+        if (server_sock == -1) {
             continue;
+        }
 
         int opt = 1;
         setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
@@ -297,21 +280,17 @@ int create_server_socket(const char *host, const char *port)
 #endif
 
         s = bind(server_sock, rp->ai_addr, rp->ai_addrlen);
-        if (s == 0)
-        {
+        if (s == 0) {
             /* We managed to bind successfully! */
             break;
-        }
-        else
-        {
+        } else {
             ERROR("bind");
         }
 
         close(server_sock);
     }
 
-    if (rp == NULL)
-    {
+    if (rp == NULL) {
         LOGE("Could not bind");
         return -1;
     }
@@ -328,7 +307,8 @@ struct remote_ctx *new_remote(int fd, struct server_ctx *server_ctx)
     ctx->fd = fd;
     ctx->server_ctx = server_ctx;
     ev_io_init(&ctx->io, remote_recv_cb, fd, EV_READ);
-    ev_timer_init(&ctx->watcher, remote_timeout_cb, server_ctx->timeout, server_ctx->timeout);
+    ev_timer_init(&ctx->watcher, remote_timeout_cb, server_ctx->timeout,
+                  server_ctx->timeout);
     return ctx;
 }
 
@@ -356,10 +336,8 @@ struct query_ctx *new_query_ctx(asyncns_query_t *query,
 
 void close_and_free_query(EV_P_ struct query_ctx *ctx)
 {
-    if (ctx != NULL)
-    {
-        if (ctx->buf != NULL)
-        {
+    if (ctx != NULL) {
+        if (ctx->buf != NULL) {
             free(ctx->buf);
         }
         free(ctx);
@@ -370,10 +348,9 @@ void close_and_free_query(EV_P_ struct query_ctx *ctx)
 
 void close_and_free_remote(EV_P_ struct remote_ctx *ctx)
 {
-    if (ctx != NULL)
-    {
-        ev_timer_stop(EV_A_ &ctx->watcher);
-        ev_io_stop(EV_A_ &ctx->io);
+    if (ctx != NULL) {
+        ev_timer_stop(EV_A_ & ctx->watcher);
+        ev_io_stop(EV_A_ & ctx->io);
         close(ctx->fd);
         free(ctx);
     }
@@ -381,11 +358,10 @@ void close_and_free_remote(EV_P_ struct remote_ctx *ctx)
 
 static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 {
-    struct remote_ctx *remote_ctx = (struct remote_ctx *) (((void*)watcher)
-                                    - sizeof(ev_io));
+    struct remote_ctx *remote_ctx = (struct remote_ctx *)(((void *)watcher)
+                                                          - sizeof(ev_io));
 
-    if (verbose)
-    {
+    if (verbose) {
         LOGD("UDP connection timeout");
     }
 
@@ -399,32 +375,28 @@ static void query_resolve_cb(EV_P_ ev_io *w, int revents)
 {
     int err;
     struct addrinfo *result, *rp;
-    struct resolve_ctx *resolve_ctx = (struct resolve_ctx*)w;
+    struct resolve_ctx *resolve_ctx = (struct resolve_ctx *)w;
     asyncns_t *asyncns = resolve_ctx->asyncns;
 
     err = asyncns_handle(asyncns);
-    if (err == ASYNCNS_HANDLE_AGAIN)
-    {
+    if (err == ASYNCNS_HANDLE_AGAIN) {
         // try again
         return;
-    }
-    else if (err == ASYNCNS_HANDLE_ERROR)
-    {
+    } else if (err == ASYNCNS_HANDLE_ERROR) {
         // asyncns error
         FATAL("asyncns exit unexpectedly.");
     }
 
     asyncns_query_t *query = asyncns_getnext(asyncns);
-    struct query_ctx *query_ctx= (struct query_ctx*) asyncns_getuserdata(asyncns, query);
+    struct query_ctx *query_ctx = (struct query_ctx *)asyncns_getuserdata(
+        asyncns, query);
 
-    if (!asyncns_isdone(asyncns, query))
-    {
+    if (!asyncns_isdone(asyncns, query)) {
         // wait reolver
         return;
     }
 
-    if (verbose)
-    {
+    if (verbose) {
         LOGD("[udp] asyncns resolved.");
     }
 
@@ -432,64 +404,65 @@ static void query_resolve_cb(EV_P_ ev_io *w, int revents)
 
     err = asyncns_getaddrinfo_done(asyncns, query, &result);
 
-    if (err)
-    {
+    if (err) {
         ERROR("getaddrinfo");
-    }
-    else
-    {
+    } else {
         // Use IPV4 address if possible
-        for (rp = result; rp != NULL; rp = rp->ai_next)
-        {
-            if (rp->ai_family == AF_INET) break;
+        for (rp = result; rp != NULL; rp = rp->ai_next) {
+            if (rp->ai_family == AF_INET) {
+                break;
+            }
         }
 
-        if (rp == NULL)
-        {
+        if (rp == NULL) {
             rp = result;
         }
 
         int remotefd = create_remote_socket(rp->ai_family == AF_INET6);
-        if (remotefd != -1)
-        {
+        if (remotefd != -1) {
             setnonblocking(remotefd);
 #ifdef SO_NOSIGPIPE
             int opt = 1;
             setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 #ifdef SET_INTERFACE
-            if (query_ctx->server_ctx->iface)
+            if (query_ctx->server_ctx->iface) {
                 setinterface(remotefd, query_ctx->server_ctx->iface);
+            }
 #endif
 
-            struct remote_ctx *remote_ctx = new_remote(remotefd, query_ctx->server_ctx);
+            struct remote_ctx *remote_ctx = new_remote(remotefd,
+                                                       query_ctx->server_ctx);
             remote_ctx->src_addr = query_ctx->src_addr;
             remote_ctx->dst_addr = *((struct sockaddr_storage *)rp->ai_addr);
             remote_ctx->server_ctx = query_ctx->server_ctx;
             remote_ctx->addr_header_len = query_ctx->addr_header_len;
-            memcpy(remote_ctx->addr_header, query_ctx->addr_header, query_ctx->addr_header_len);
+            memcpy(remote_ctx->addr_header, query_ctx->addr_header,
+                   query_ctx->addr_header_len);
 
             // Add to conn cache
             char *key = hash_key(remote_ctx->addr_header,
-                                 remote_ctx->addr_header_len, &remote_ctx->src_addr);
-            cache_insert(query_ctx->server_ctx->conn_cache, key, (void *)remote_ctx);
+                                 remote_ctx->addr_header_len,
+                                 &remote_ctx->src_addr);
+            cache_insert(query_ctx->server_ctx->conn_cache, key,
+                         (void *)remote_ctx);
 
-            ev_io_start(EV_A_ &remote_ctx->io);
+            ev_io_start(EV_A_ & remote_ctx->io);
 
             size_t addr_len = sizeof(struct sockaddr_in);
-            if (remote_ctx->dst_addr.ss_family == AF_INET6)
+            if (remote_ctx->dst_addr.ss_family == AF_INET6) {
                 addr_len = sizeof(struct sockaddr_in6);
-            int s = sendto(remote_ctx->fd, query_ctx->buf, query_ctx->buf_len, 0, (struct sockaddr *)&remote_ctx->dst_addr, addr_len);
+            }
+            int s = sendto(remote_ctx->fd, query_ctx->buf, query_ctx->buf_len,
+                           0, (struct sockaddr *)&remote_ctx->dst_addr,
+                           addr_len);
 
-            if (s == -1)
-            {
+            if (s == -1) {
                 ERROR("udprelay_sendto_remote");
                 close_and_free_remote(EV_A_ remote_ctx);
             }
 
-        }
-        else
-        {
+        } else {
             ERROR("udprelay bind() error..");
         }
     }
@@ -500,40 +473,37 @@ static void query_resolve_cb(EV_P_ ev_io *w, int revents)
 }
 #endif
 
-static void remote_recv_cb (EV_P_ ev_io *w, int revents)
+static void remote_recv_cb(EV_P_ ev_io *w, int revents)
 {
     struct remote_ctx *remote_ctx = (struct remote_ctx *)w;
     struct server_ctx *server_ctx = remote_ctx->server_ctx;
 
     // server has been closed
-    if (server_ctx == NULL)
-    {
+    if (server_ctx == NULL) {
         LOGE("invalid server.");
         close_and_free_remote(EV_A_ remote_ctx);
         return;
     }
 
-    if (verbose)
-    {
+    if (verbose) {
         LOGD("[udp] remote receive a packet");
     }
 
     // triger the timer
-    ev_timer_again(EV_A_ &remote_ctx->watcher);
+    ev_timer_again(EV_A_ & remote_ctx->watcher);
 
     struct sockaddr src_addr;
     socklen_t src_addr_len = sizeof(src_addr);
     char *buf = malloc(BUF_SIZE);
 
     // recv
-    ssize_t buf_len = recvfrom(remote_ctx->fd, buf, BUF_SIZE, 0, &src_addr, &src_addr_len);
+    ssize_t buf_len = recvfrom(remote_ctx->fd, buf, BUF_SIZE, 0, &src_addr,
+                               &src_addr_len);
 
-    if (buf_len == -1)
-    {
+    if (buf_len == -1) {
         // error on recv
         // simply drop that packet
-        if (verbose)
-        {
+        if (verbose) {
             ERROR("udprelay_server_recvfrom");
         }
         goto CLEAN_UP;
@@ -541,18 +511,15 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
 
 #ifdef UDPRELAY_LOCAL
     buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
-    if (buf == NULL)
-    {
-        if (verbose)
-        {
+    if (buf == NULL) {
+        if (verbose) {
             ERROR("udprelay_server_ss_decrypt_all");
         }
         goto CLEAN_UP;
     }
 
     int len = parse_udprealy_header(buf, buf_len, NULL, NULL);
-    if (len == 0)
-    {
+    if (len == 0) {
         LOGD("[udp] Error in parse header");
         // error in parse header
         goto CLEAN_UP;
@@ -591,21 +558,22 @@ static void remote_recv_cb (EV_P_ ev_io *w, int revents)
 #endif
 
     size_t addr_len = sizeof(struct sockaddr_in);
-    if (remote_ctx->src_addr.ss_family == AF_INET6)
+    if (remote_ctx->src_addr.ss_family == AF_INET6) {
         addr_len = sizeof(struct sockaddr_in6);
-    int s = sendto(server_ctx->fd, buf, buf_len, 0, (struct sockaddr *)&remote_ctx->src_addr, addr_len);
+    }
+    int s = sendto(server_ctx->fd, buf, buf_len, 0,
+                   (struct sockaddr *)&remote_ctx->src_addr, addr_len);
 
-    if (s == -1)
-    {
+    if (s == -1) {
         ERROR("udprelay_sendto_local");
     }
 
-CLEAN_UP:
+ CLEAN_UP:
     free(buf);
 
 }
 
-static void server_recv_cb (EV_P_ ev_io *w, int revents)
+static void server_recv_cb(EV_P_ ev_io *w, int revents)
 {
     struct server_ctx *server_ctx = (struct server_ctx *)w;
     struct sockaddr_storage src_addr;
@@ -614,30 +582,27 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     socklen_t src_addr_len = sizeof(struct sockaddr_storage);
     unsigned int offset = 0;
 
-    ssize_t buf_len = recvfrom(server_ctx->fd, buf, BUF_SIZE, 0, (struct sockaddr *)&src_addr, &src_addr_len);
+    ssize_t buf_len =
+        recvfrom(server_ctx->fd, buf, BUF_SIZE, 0, (struct sockaddr *)&src_addr,
+                 &src_addr_len);
 
-    if (buf_len == -1)
-    {
+    if (buf_len == -1) {
         // error on recv
         // simply drop that packet
-        if (verbose)
-        {
+        if (verbose) {
             ERROR("udprelay_server_recvfrom");
         }
         goto CLEAN_UP;
     }
 
-    if (verbose)
-    {
+    if (verbose) {
         LOGD("[udp] server receive a packet.");
     }
 
 #ifdef UDPRELAY_REMOTE
     buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
-    if (buf == NULL)
-    {
-        if (verbose)
-        {
+    if (buf == NULL) {
+        if (verbose) {
             ERROR("udprelay_server_ss_decrypt_all");
         }
         goto CLEAN_UP;
@@ -646,7 +611,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
 
 #ifdef UDPRELAY_LOCAL
 #ifndef UDPRELAY_TUNNEL
-    uint8_t frag = *(uint8_t*)(buf + 2);
+    uint8_t frag = *(uint8_t *)(buf + 2);
     offset += 3;
 #endif
 #endif
@@ -691,9 +656,9 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
      */
 
 #ifdef UDPRELAY_TUNNEL
-    char addr_header[256] = {0};
-    char* host = server_ctx->tunnel_addr.host;
-    char* port = server_ctx->tunnel_addr.port;
+    char addr_header[256] = { 0 };
+    char * host = server_ctx->tunnel_addr.host;
+    char * port = server_ctx->tunnel_addr.port;
     int host_len = strlen(host);
     uint16_t port_num = (uint16_t)atoi(port);
     uint16_t port_net_num = htons(port_num);
@@ -714,13 +679,12 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     buf_len += addr_header_len;
 
 #else
-    char host[256] = {0};
-    char port[64] = {0};
+    char host[256] = { 0 };
+    char port[64] = { 0 };
 
     int addr_header_len = parse_udprealy_header(buf + offset,
-                          buf_len - offset, host, port);
-    if (addr_header_len == 0)
-    {
+                                                buf_len - offset, host, port);
+    if (addr_header_len == 0) {
         // error in parse header
         goto CLEAN_UP;
     }
@@ -731,63 +695,54 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     struct cache *conn_cache = server_ctx->conn_cache;
 
     struct remote_ctx *remote_ctx = NULL;
-    cache_lookup(conn_cache, key, (void*)&remote_ctx);
+    cache_lookup(conn_cache, key, (void *)&remote_ctx);
 
-    if (remote_ctx != NULL)
-    {
+    if (remote_ctx != NULL) {
         if (memcmp(&src_addr, &remote_ctx->src_addr, sizeof(src_addr))
-                || strcmp(addr_header, remote_ctx->addr_header) != 0)
-        {
+            || strcmp(addr_header, remote_ctx->addr_header) != 0) {
             remote_ctx = NULL;
         }
     }
 
-    if (remote_ctx == NULL)
-    {
-        if (verbose)
-        {
-            LOGD("[udp] cache missed: %s:%s <-> %s", host, port, get_addr_str((struct sockaddr *)&src_addr));
+    if (remote_ctx == NULL) {
+        if (verbose) {
+            LOGD("[udp] cache missed: %s:%s <-> %s", host, port,
+                 get_addr_str((struct sockaddr *)&src_addr));
         }
-    }
-    else
-    {
-        if (verbose)
-        {
-            LOGD("[udp] cache hit: %s:%s <-> %s", host, port, get_addr_str((struct sockaddr *)&src_addr));
+    } else {
+        if (verbose) {
+            LOGD("[udp] cache hit: %s:%s <-> %s", host, port,
+                 get_addr_str((struct sockaddr *)&src_addr));
         }
     }
 
 #ifdef UDPRELAY_LOCAL
 
 #ifndef UDPRELAY_TUNNEL
-    if (frag)
-    {
+    if (frag) {
         LOGE("drop a message since frag is not 0, but %d", frag);
         goto CLEAN_UP;
     }
 #endif
 
-    if (remote_ctx == NULL)
-    {
+    if (remote_ctx == NULL) {
         struct addrinfo hints;
         struct addrinfo *result;
 
         memset(&hints, 0, sizeof(struct addrinfo));
-        hints.ai_family = AF_UNSPEC; /* Return IPv4 and IPv6 choices */
+        hints.ai_family = AF_UNSPEC;    /* Return IPv4 and IPv6 choices */
         hints.ai_socktype = SOCK_DGRAM; /* We want a UDP socket */
 
         int s = getaddrinfo(server_ctx->remote_host, server_ctx->remote_port,
                             &hints, &result);
-        if (s != 0 || result == NULL)
-        {
+        if (s != 0 || result == NULL) {
             LOGE("getaddrinfo: %s", gai_strerror(s));
             goto CLEAN_UP;
         }
 
         // Bind to any port
         int remotefd = create_remote_socket(result->ai_family == AF_INET6);
-        if (remotefd < 0)
-        {
+        if (remotefd < 0) {
             ERROR("udprelay bind() error..");
             // remember to free addrinfo
             freeaddrinfo(result);
@@ -800,8 +755,9 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 #ifdef SET_INTERFACE
-        if (server_ctx->iface)
+        if (server_ctx->iface) {
             setinterface(remotefd, server_ctx->iface);
+        }
 #endif
 
         // Init remote_ctx
@@ -815,14 +771,13 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         cache_insert(conn_cache, key, (void *)remote_ctx);
 
         // Start remote io
-        ev_io_start(EV_A_ &remote_ctx->io);
+        ev_io_start(EV_A_ & remote_ctx->io);
 
         // clean up
         freeaddrinfo(result);
     }
 
-    if (offset > 0)
-    {
+    if (offset > 0) {
         buf_len -= offset;
         memmove(buf, buf + offset, buf_len);
     }
@@ -830,19 +785,19 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
     buf = ss_encrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
 
     size_t addr_len = sizeof(struct sockaddr_in);
-    if (remote_ctx->dst_addr.ss_family == AF_INET6)
+    if (remote_ctx->dst_addr.ss_family == AF_INET6) {
         addr_len = sizeof(struct sockaddr_in6);
-    int s = sendto(remote_ctx->fd, buf, buf_len, 0, (struct sockaddr*)&remote_ctx->dst_addr, addr_len);
+    }
+    int s = sendto(remote_ctx->fd, buf, buf_len, 0,
+                   (struct sockaddr *)&remote_ctx->dst_addr, addr_len);
 
-    if (s == -1)
-    {
+    if (s == -1) {
         ERROR("udprelay_sendto_remote");
     }
 
 #else
 
-    if (remote_ctx == NULL)
-    {
+    if (remote_ctx == NULL) {
         struct addrinfo hints;
         asyncns_query_t *query;
         memset(&hints, 0, sizeof(hints));
@@ -852,36 +807,35 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents)
         query = asyncns_getaddrinfo(server_ctx->asyncns,
                                     host, port, &hints);
 
-        if (query == NULL)
-        {
+        if (query == NULL) {
             ERROR("udp_asyncns_getaddrinfo");
             goto CLEAN_UP;
         }
 
-        struct query_ctx *query_ctx = new_query_ctx(query, buf + addr_header_len,
-                                      buf_len - addr_header_len);
+        struct query_ctx *query_ctx = new_query_ctx(query,
+                                                    buf + addr_header_len,
+                                                    buf_len - addr_header_len);
         query_ctx->server_ctx = server_ctx;
         query_ctx->addr_header_len = addr_header_len;
         query_ctx->src_addr = src_addr;
         memcpy(query_ctx->addr_header, addr_header, addr_header_len);
         asyncns_setuserdata(server_ctx->asyncns, query, query_ctx);
-    }
-    else
-    {
+    } else {
         size_t addr_len = sizeof(struct sockaddr_in);
-        if (remote_ctx->dst_addr.ss_family == AF_INET6)
+        if (remote_ctx->dst_addr.ss_family == AF_INET6) {
             addr_len = sizeof(struct sockaddr_in6);
+        }
         int s = sendto(remote_ctx->fd, buf + addr_header_len,
-                       buf_len - addr_header_len, 0, (struct sockaddr*)&remote_ctx->dst_addr, addr_len);
+                       buf_len - addr_header_len, 0,
+                       (struct sockaddr *)&remote_ctx->dst_addr, addr_len);
 
-        if (s == -1)
-        {
+        if (s == -1) {
             ERROR("udprelay_sendto_remote");
         }
     }
 #endif
 
-CLEAN_UP:
+ CLEAN_UP:
     free(buf);
 
 }
@@ -890,8 +844,7 @@ void free_cb(void *element)
 {
     struct remote_ctx *remote_ctx = (struct remote_ctx *)element;
 
-    if (verbose)
-    {
+    if (verbose) {
         LOGD("free a remote ctx");
     }
 
@@ -923,22 +876,20 @@ int init_udprelay(const char *server_host, const char *server_port,
 #ifdef UDPRELAY_REMOTE
     // setup asyncns
     asyncns_t *asyncns;
-    if (!(asyncns = asyncns_new(dns_thread_num)))
-    {
+    if (!(asyncns = asyncns_new(dns_thread_num))) {
         FATAL("asyncns failed");
     }
     resolve_ctx = malloc(sizeof(struct resolve_ctx));
     resolve_ctx->asyncns = asyncns;
 
     int asyncnsfd = asyncns_fd(asyncns);
-    ev_io_init (&resolve_ctx->io, query_resolve_cb, asyncnsfd, EV_READ);
-    ev_io_start (loop, &resolve_ctx->io);
+    ev_io_init(&resolve_ctx->io, query_resolve_cb, asyncnsfd, EV_READ);
+    ev_io_start(loop, &resolve_ctx->io);
 #endif
 
     // Bind to port
     int serverfd = create_server_socket(server_host, server_port);
-    if (serverfd < 0)
-    {
+    if (serverfd < 0) {
         FATAL("udprelay bind() error..");
     }
     setnonblocking(serverfd);
@@ -968,16 +919,14 @@ void free_udprelay()
 {
     struct ev_loop *loop = EV_DEFAULT;
 #ifdef UDPRELAY_REMOTE
-    if (resolve_ctx != NULL)
-    {
+    if (resolve_ctx != NULL) {
         asyncns_free(resolve_ctx->asyncns);
         ev_io_stop(loop, &resolve_ctx->io);
         free(resolve_ctx);
         resolve_ctx = NULL;
     }
 #endif
-    if (server_ctx != NULL)
-    {
+    if (server_ctx != NULL) {
         ev_io_stop(loop, &server_ctx->io);
         close(server_ctx->fd);
         cache_delete(server_ctx->conn_cache, 0);

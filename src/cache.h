@@ -30,26 +30,24 @@
 
 #include "uthash.h"
 
-#define KEY_MAX_LENGTH		32
+#define KEY_MAX_LENGTH          32
 
 /**
  * A cache entry
  */
-struct cache_entry
-{
-    char *key; /**<The key */
-    void *data; /**<Payload */
+struct cache_entry {
+    char *key;         /**<The key */
+    void *data;        /**<Payload */
     UT_hash_handle hh; /**<Hash Handle for uthash */
 };
 
 /**
  * A cache object
  */
-struct cache
-{
-    size_t max_entries; /**<Amount of entries this cache object can hold */
-    struct cache_entry *entries; /**<Head pointer for uthash */
-    void (*free_cb) (void *element);/**<Callback function to free cache entries */
+struct cache {
+    size_t max_entries;              /**<Amount of entries this cache object can hold */
+    struct cache_entry *entries;     /**<Head pointer for uthash */
+    void (*free_cb) (void *element); /**<Callback function to free cache entries */
 };
 
 

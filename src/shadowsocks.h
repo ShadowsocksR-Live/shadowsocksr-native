@@ -22,8 +22,7 @@
 #ifndef _SHADOWSOCKS_H
 #define _SHADOWSOCKS_H
 
-typedef struct
-{
+typedef struct {
     /*  Required  */
     char *remote_host;    // hostname or ip of remote server
     char *local_addr;     // local ip to bind
@@ -43,7 +42,7 @@ typedef struct
 
 /* An example profile
 
-const profile_t EXAMPLE_PROFILE = {
+   const profile_t EXAMPLE_PROFILE = {
     .remote_host = "example.com",
     .local_addr = "127.0.0.1",
     .method = "bf-cfb",
@@ -56,25 +55,25 @@ const profile_t EXAMPLE_PROFILE = {
     .fast_open = 0,
     .udp_relay = 0,
     .verbose = 0
-};
-*/
+   };
+ */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-    /*
-     * Create and start a shadowsocks local server.
-     *
-     * Calling this function will block the current thread forever if the server
-     * starts successfully.
-     *
-     * Make sure start the server in a seperate process to avoid any potential
-     * memory and socket leak.
-     *
-     * If failed, -1 is returned. Errors will output to the log file.
-    */
-    int start_ss_local_server(profile_t profile);
+/*
+ * Create and start a shadowsocks local server.
+ *
+ * Calling this function will block the current thread forever if the server
+ * starts successfully.
+ *
+ * Make sure start the server in a seperate process to avoid any potential
+ * memory and socket leak.
+ *
+ * If failed, -1 is returned. Errors will output to the log file.
+ */
+int start_ss_local_server(profile_t profile);
 
 #ifdef __cplusplus
 }

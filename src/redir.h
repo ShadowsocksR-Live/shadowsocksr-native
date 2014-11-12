@@ -27,8 +27,7 @@
 #include "encrypt.h"
 #include "jconf.h"
 
-struct listen_ctx
-{
+struct listen_ctx {
     ev_io io;
     ss_addr_t *remote_addr;
     int remote_num;
@@ -38,15 +37,13 @@ struct listen_ctx
     struct sockaddr sock;
 };
 
-struct server_ctx
-{
+struct server_ctx {
     ev_io io;
     int connected;
     struct server *server;
 };
 
-struct server
-{
+struct server {
     int fd;
     ssize_t buf_len;
     ssize_t buf_idx;
@@ -59,16 +56,14 @@ struct server
     struct remote *remote;
 };
 
-struct remote_ctx
-{
+struct remote_ctx {
     ev_io io;
     ev_timer watcher;
     int connected;
     struct remote *remote;
 };
 
-struct remote
-{
+struct remote {
     int fd;
     ssize_t buf_len;
     ssize_t buf_idx;

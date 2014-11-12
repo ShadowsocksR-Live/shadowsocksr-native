@@ -42,17 +42,19 @@
     The maximum number of elements this cache object can hold
 
     @return EINVAL if dst is NULL, ENOMEM if malloc fails, 0 otherwise
-*/
+ */
 int cache_create(struct cache **dst, const size_t capacity,
                  void (*free_cb) (void *element))
 {
     struct cache *new = NULL;
 
-    if (!dst)
+    if (!dst) {
         return EINVAL;
+    }
 
-    if ((new = malloc(sizeof(*new))) == NULL)
+    if ((new = malloc(sizeof(*new))) == NULL) {
         return ENOMEM;
+    }
 
     new->max_entries = capacity;
     new->entries = NULL;
@@ -71,25 +73,23 @@ int cache_create(struct cache **dst, const size_t capacity,
     Whether to free contained data or just delete references to it
 
     @return EINVAL if cache is NULL, 0 otherwise
-*/
+ */
 int cache_delete(struct cache *cache, int keep_data)
 {
     struct cache_entry *entry, *tmp;
 
-    if (!cache)
+    if (!cache) {
         return EINVAL;
-
-    if (keep_data)
-    {
-        HASH_CLEAR(hh, cache->entries);
     }
-    else
-    {
-        HASH_ITER(hh, cache->entries, entry, tmp)
-        {
+
+    if (keep_data) {
+        HASH_CLEAR(hh, cache->entries);
+    } else {
+        HASH_ITER(hh, cache->entries, entry, tmp){
             HASH_DEL(cache->entries, entry);
-            if (cache->free_cb)
+            if (cache->free_cb) {
                 cache->free_cb(entry->data);
+            }
             free(entry);
         }
     }
@@ -108,21 +108,22 @@ int cache_delete(struct cache *cache, int keep_data)
     The key of the entry to remove
 
     @return EINVAL if cache is NULL, 0 otherwise
-*/
+ */
 int cache_remove(struct cache *cache, char *key)
 {
     struct cache_entry *tmp;
 
-    if (!cache || !key)
+    if (!cache || !key) {
         return EINVAL;
+    }
 
     HASH_FIND_STR(cache->entries, key, tmp);
 
-    if (tmp)
-    {
+    if (tmp) {
         HASH_DEL(cache->entries, tmp);
-        if (cache->free_cb)
+        if (cache->free_cb) {
             cache->free_cb(tmp->data);
+        }
         free(tmp);
     }
 
@@ -145,25 +146,23 @@ int cache_remove(struct cache *cache, char *key)
     otherwise this will blow up in your face.
 
     @return EINVAL if cache is NULL, 0 otherwise
-*/
+ */
 int cache_lookup(struct cache *cache, char *key, void *result)
 {
     struct cache_entry *tmp = NULL;
     char **dirty_hack = result;
 
-    if (!cache || !key || !result)
+    if (!cache || !key || !result) {
         return EINVAL;
+    }
 
     HASH_FIND_STR(cache->entries, key, tmp);
-    if (tmp)
-    {
+    if (tmp) {
         size_t key_len = strnlen(tmp->key, KEY_MAX_LENGTH);
         HASH_DELETE(hh, cache->entries, tmp);
         HASH_ADD_KEYPTR(hh, cache->entries, tmp->key, key_len, tmp);
         *dirty_hack = tmp->data;
-    }
-    else
-    {
+    } else {
         *dirty_hack = result = NULL;
     }
 
@@ -182,33 +181,34 @@ int cache_lookup(struct cache *cache, char *key, void *result)
     Data associated with <key>
 
     @return EINVAL if cache is NULL, ENOMEM if malloc fails, 0 otherwise
-*/
+ */
 int cache_insert(struct cache *cache, char *key, void *data)
 {
     struct cache_entry *entry = NULL;
     struct cache_entry *tmp_entry = NULL;
     size_t key_len = 0;
 
-    if (!cache || !data)
+    if (!cache || !data) {
         return EINVAL;
+    }
 
-    if ((entry = malloc(sizeof(*entry))) == NULL)
+    if ((entry = malloc(sizeof(*entry))) == NULL) {
         return ENOMEM;
+    }
 
     entry->key = key;
     entry->data = data;
     key_len = strnlen(entry->key, KEY_MAX_LENGTH);
     HASH_ADD_KEYPTR(hh, cache->entries, entry->key, key_len, entry);
 
-    if (HASH_COUNT(cache->entries) >= cache->max_entries)
-    {
-        HASH_ITER(hh, cache->entries, entry, tmp_entry)
-        {
+    if (HASH_COUNT(cache->entries) >= cache->max_entries) {
+        HASH_ITER(hh, cache->entries, entry, tmp_entry){
             HASH_DELETE(hh, cache->entries, entry);
-            if (cache->free_cb)
+            if (cache->free_cb) {
                 cache->free_cb(entry->data);
-            else
+            } else {
                 free(entry->data);
+            }
             /* free(key->key) if data has been copied */
             free(entry);
             break;

@@ -1,3 +1,9 @@
+shadowsocks (1.5.2-1) unstable; urgency=low
+
+  * Handle SIGTERM and SIGKILL nicely.
+
+ -- Max Lv <max.c.lv@gmail.com>  Tue, 12 Nov 2014 13:11:29 +0800
+
 shadowsocks (1.5.1-1) unstable; urgency=low
 
   * Fix a bug of tcp fast open.
