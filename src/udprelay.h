@@ -62,6 +62,7 @@ struct server_ctx {
 struct resolve_ctx {
     ev_io io;
     asyncns_t *asyncns;
+    int asyncnsfd;
 };
 
 struct query_ctx {

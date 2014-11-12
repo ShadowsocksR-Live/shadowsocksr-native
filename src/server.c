@@ -37,6 +37,8 @@
 #include <unistd.h>
 #include <getopt.h>
 
+#include <libcork/core.h>
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -62,6 +64,7 @@
 #define BUF_SIZE 2048
 #endif
 
+static void signal_cb(EV_P_ ev_signal *w, int revents);
 static void accept_cb(EV_P_ ev_io *w, int revents);
 static void server_recv_cb(EV_P_ ev_io *w, int revents);
 static void server_send_cb(EV_P_ ev_io *w, int revents);
@@ -80,7 +83,6 @@ static void close_and_free_remote(EV_P_ struct remote *remote);
 static void free_server(struct server *server);
 static void close_and_free_server(EV_P_ struct server *server);
 
-
 int verbose = 0;
 int udprelay = 0;
 #ifdef TCP_FASTOPEN
@@ -91,6 +93,20 @@ static int nofile = 0;
 #endif
 static int remote_conn = 0;
 static int server_conn = 0;
+
+static struct cork_dllist connections;
+
+static void free_connections(struct ev_loop *loop)
+{
+    struct cork_dllist_item *curr;
+    for (curr = cork_dllist_start(&connections); !cork_dllist_is_end(&connections, curr);
+            curr = curr->next) {
+        struct server *server = cork_container_of(curr, struct server, entries);
+        struct remote *remote = server->remote;
+        close_and_free_server(loop, server);
+        close_and_free_remote(loop, remote);
+    }
+}
 
 int setnonblocking(int fd)
 {
@@ -743,17 +759,15 @@ static struct remote * new_remote(int fd)
 
 static void free_remote(struct remote *remote)
 {
-    if (remote != NULL) {
-        if (remote->server != NULL) {
-            remote->server->remote = NULL;
-        }
-        if (remote->buf != NULL) {
-            free(remote->buf);
-        }
-        free(remote->recv_ctx);
-        free(remote->send_ctx);
-        free(remote);
+    if (remote->server != NULL) {
+        remote->server->remote = NULL;
     }
+    if (remote->buf != NULL) {
+        free(remote->buf);
+    }
+    free(remote->recv_ctx);
+    free(remote->send_ctx);
+    free(remote);
 }
 
 static void close_and_free_remote(EV_P_ struct remote *remote)
@@ -805,30 +819,33 @@ static struct server * new_server(int fd, struct listen_ctx *listener)
     server->buf_len = 0;
     server->buf_idx = 0;
     server->remote = NULL;
+
+    cork_dllist_add(&connections, &server->entries);
+
     return server;
 }
 
 static void free_server(struct server *server)
 {
-    if (server != NULL) {
-        if (server->remote != NULL) {
-            server->remote->server = NULL;
-        }
-        if (server->e_ctx != NULL) {
-            cipher_context_release(&server->e_ctx->evp);
-            free(server->e_ctx);
-        }
-        if (server->d_ctx != NULL) {
-            cipher_context_release(&server->d_ctx->evp);
-            free(server->d_ctx);
-        }
-        if (server->buf != NULL) {
-            free(server->buf);
-        }
-        free(server->recv_ctx);
-        free(server->send_ctx);
-        free(server);
+    cork_dllist_remove(&server->entries);
+
+    if (server->remote != NULL) {
+        server->remote->server = NULL;
     }
+    if (server->e_ctx != NULL) {
+        cipher_context_release(&server->e_ctx->evp);
+        free(server->e_ctx);
+    }
+    if (server->d_ctx != NULL) {
+        cipher_context_release(&server->d_ctx->evp);
+        free(server->d_ctx);
+    }
+    if (server->buf != NULL) {
+        free(server->buf);
+    }
+    free(server->recv_ctx);
+    free(server->send_ctx);
+    free(server);
 }
 
 static void close_and_free_server(EV_P_ struct server *server)
@@ -846,6 +863,17 @@ static void close_and_free_server(EV_P_ struct server *server)
         if (verbose) {
             server_conn--;
             LOGD("current server connection: %d", server_conn);
+        }
+    }
+}
+
+static void signal_cb(EV_P_ ev_signal *w, int revents)
+{
+    if (revents & EV_SIGNAL) {
+        switch (w->signum) {
+        case SIGINT:
+        case SIGTERM:
+            ev_unloop(EV_A_ EVUNLOOP_ALL);
         }
     }
 }
@@ -1025,6 +1053,13 @@ int main(int argc, char **argv)
     signal(SIGCHLD, SIG_IGN);
     signal(SIGABRT, SIG_IGN);
 
+    struct ev_signal sigint_watcher;
+    struct ev_signal sigterm_watcher;
+    ev_signal_init(&sigint_watcher, signal_cb, SIGINT);
+    ev_signal_init(&sigterm_watcher, signal_cb, SIGTERM);
+    ev_signal_start(EV_DEFAULT, &sigint_watcher);
+    ev_signal_start(EV_DEFAULT, &sigterm_watcher);
+
     // setup asyncns
     asyncns_t *asyncns;
     if (!(asyncns = asyncns_new(dns_thread_num))) {
@@ -1094,8 +1129,37 @@ int main(int argc, char **argv)
         run_as(user);
     }
 
+    // Init connections
+    cork_dllist_init(&connections);
+
     // start ev loop
     ev_run(loop, 0);
+
+    if (verbose) {
+        LOGD("closed nicely.");
+    }
+
+    // Clean up
+    listen_ctx = &listen_ctx_list[0];
+    ev_io_stop(loop, &listen_ctx->io);
+    asyncns_free(listen_ctx->asyncns);
+    close(listen_ctx->fd);
+
+    for (int i = 1; i <= server_num; i++) {
+        listen_ctx = &listen_ctx_list[i];
+        ev_io_stop(loop, &listen_ctx->io);
+        close(listen_ctx->fd);
+    }
+
+    free_connections(loop);
+
+    if (udprelay) {
+        free_udprelay();
+    }
+
+    ev_signal_stop(EV_DEFAULT, &sigint_watcher);
+    ev_signal_stop(EV_DEFAULT, &sigterm_watcher);
+
     return 0;
 }
 

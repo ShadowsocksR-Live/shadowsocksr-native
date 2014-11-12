@@ -25,6 +25,7 @@
 
 #include <ev.h>
 #include <time.h>
+#include <libcork/ds.h>
 
 #include "encrypt.h"
 #include "jconf.h"
@@ -62,6 +63,8 @@ struct server {
     struct server_ctx *send_ctx;
     struct listen_ctx *listen_ctx;
     struct remote *remote;
+
+    struct cork_dllist_item entries;
 };
 
 struct remote_ctx {

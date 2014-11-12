@@ -698,20 +698,18 @@ static struct remote * new_remote(int fd, int timeout)
 
 static void free_remote(struct remote *remote)
 {
-    if (remote != NULL) {
-        if (remote->server != NULL) {
-            remote->server->remote = NULL;
-        }
-        if (remote->buf != NULL) {
-            free(remote->buf);
-        }
-        if (remote->addr_info != NULL) {
-            freeaddrinfo(remote->addr_info);
-        }
-        free(remote->recv_ctx);
-        free(remote->send_ctx);
-        free(remote);
+    if (remote->server != NULL) {
+        remote->server->remote = NULL;
     }
+    if (remote->buf != NULL) {
+        free(remote->buf);
+    }
+    if (remote->addr_info != NULL) {
+        freeaddrinfo(remote->addr_info);
+    }
+    free(remote->recv_ctx);
+    free(remote->send_ctx);
+    free(remote);
 }
 
 static void close_and_free_remote(EV_P_ struct remote *remote)
@@ -1133,6 +1131,9 @@ int main(int argc, char **argv)
     winsock_cleanup();
 #endif
 
+    ev_signal_stop(EV_DEFAULT, &sigint_watcher);
+    ev_signal_stop(EV_DEFAULT, &sigterm_watcher);
+
     return 0;
 }
 #else
@@ -1238,14 +1239,20 @@ int start_ss_local_server(profile_t profile)
 
     // Clean up
     free_connections(loop);
-    free_udprelay();
+    if (udprelay) {
+        free_udprelay();
+    }
 
     ev_io_stop(loop, &listen_ctx.io);
     free(listen_ctx.remote_addr);
+    close(listen_ctx.fd);
 
 #ifdef __MINGW32__
     winsock_cleanup();
 #endif
+
+    ev_signal_stop(EV_DEFAULT, &sigint_watcher);
+    ev_signal_stop(EV_DEFAULT, &sigterm_watcher);
 
     // cannot reach here
     return 0;

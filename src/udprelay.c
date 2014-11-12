@@ -880,11 +880,13 @@ int init_udprelay(const char *server_host, const char *server_port,
         FATAL("asyncns failed");
     }
     resolve_ctx = malloc(sizeof(struct resolve_ctx));
-    resolve_ctx->asyncns = asyncns;
 
     int asyncnsfd = asyncns_fd(asyncns);
     ev_io_init(&resolve_ctx->io, query_resolve_cb, asyncnsfd, EV_READ);
     ev_io_start(loop, &resolve_ctx->io);
+
+    resolve_ctx->asyncns = asyncns;
+    resolve_ctx->asyncnsfd = asyncnsfd;
 #endif
 
     // Bind to port
@@ -920,8 +922,10 @@ void free_udprelay()
     struct ev_loop *loop = EV_DEFAULT;
 #ifdef UDPRELAY_REMOTE
     if (resolve_ctx != NULL) {
-        asyncns_free(resolve_ctx->asyncns);
         ev_io_stop(loop, &resolve_ctx->io);
+        asyncns_free(resolve_ctx->asyncns);
+
+        close(resolve_ctx->asyncnsfd);
         free(resolve_ctx);
         resolve_ctx = NULL;
     }
