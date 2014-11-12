@@ -64,6 +64,21 @@
 #define IP6T_SO_ORIGINAL_DST 80
 #endif
 
+static void accept_cb (EV_P_ ev_io *w, int revents);
+static void server_recv_cb (EV_P_ ev_io *w, int revents);
+static void server_send_cb (EV_P_ ev_io *w, int revents);
+static void remote_recv_cb (EV_P_ ev_io *w, int revents);
+static void remote_send_cb (EV_P_ ev_io *w, int revents);
+
+static struct remote* new_remote(int fd, int timeout);
+static struct server* new_server(int fd, int method);
+
+static void free_remote(struct remote *remote);
+static void close_and_free_remote(EV_P_ struct remote *remote);
+static void free_server(struct server *server);
+static void close_and_free_server(EV_P_ struct server *server);
+
+
 int getdestaddr(int fd, struct sockaddr_storage *destaddr)
 {
     socklen_t socklen = sizeof(*destaddr);
@@ -510,7 +525,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
     }
 }
 
-struct remote* new_remote(int fd, int timeout)
+static struct remote* new_remote(int fd, int timeout)
 {
     struct remote *remote;
     remote = malloc(sizeof(struct remote));
@@ -530,7 +545,7 @@ struct remote* new_remote(int fd, int timeout)
     return remote;
 }
 
-void free_remote(struct remote *remote)
+static void free_remote(struct remote *remote)
 {
     if (remote != NULL)
     {
@@ -548,7 +563,7 @@ void free_remote(struct remote *remote)
     }
 }
 
-void close_and_free_remote(EV_P_ struct remote *remote)
+static void close_and_free_remote(EV_P_ struct remote *remote)
 {
     if (remote != NULL)
     {
@@ -560,7 +575,7 @@ void close_and_free_remote(EV_P_ struct remote *remote)
     }
 }
 
-struct server* new_server(int fd, int method)
+static struct server* new_server(int fd, int method)
 {
     struct server *server;
     server = malloc(sizeof(struct server));
@@ -591,7 +606,7 @@ struct server* new_server(int fd, int method)
     return server;
 }
 
-void free_server(struct server *server)
+static void free_server(struct server *server)
 {
     if (server != NULL)
     {
@@ -619,7 +634,7 @@ void free_server(struct server *server)
     }
 }
 
-void close_and_free_server(EV_P_ struct server *server)
+static void close_and_free_server(EV_P_ struct server *server)
 {
     if (server != NULL)
     {

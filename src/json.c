@@ -392,10 +392,10 @@ json_value * json_parse_ex (json_settings * settings,
                         else
                         {
                             top->u.object.values [top->u.object.length].name
-                                = (json_char *) top->_reserved.object_mem;
+                            = (json_char *) top->_reserved.object_mem;
 
                             top->u.object.values [top->u.object.length].name_length
-                                = string_length;
+                            = string_length;
 
                             (*(json_char **) &top->_reserved.object_mem) += string_length + 1;
                         }

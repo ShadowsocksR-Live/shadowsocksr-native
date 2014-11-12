@@ -62,6 +62,24 @@
 #define BUF_SIZE 2048
 #endif
 
+static void accept_cb (EV_P_ ev_io *w, int revents);
+static void server_recv_cb (EV_P_ ev_io *w, int revents);
+static void server_send_cb (EV_P_ ev_io *w, int revents);
+static void remote_recv_cb (EV_P_ ev_io *w, int revents);
+static void remote_send_cb (EV_P_ ev_io *w, int revents);
+static void server_resolve_cb(EV_P_ ev_io *w, int revents);
+static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents);
+
+static struct remote* new_remote(int fd);
+static struct server* new_server(int fd, struct listen_ctx *listener);
+static struct remote *connect_to_remote(struct addrinfo *res, struct server *server);
+
+static void free_remote(struct remote *remote);
+static void close_and_free_remote(EV_P_ struct remote *remote);
+static void free_server(struct server *server);
+static void close_and_free_server(EV_P_ struct server *server);
+
+
 int verbose = 0;
 int udprelay = 0;
 #ifdef TCP_FASTOPEN
@@ -165,7 +183,7 @@ int create_and_bind(const char *host, const char *port)
     return listen_sock;
 }
 
-struct remote *connect_to_remote(struct addrinfo *res, struct server *server)
+static struct remote *connect_to_remote(struct addrinfo *res, struct server *server)
 {
     int sockfd;
     int opt = 1;
@@ -196,30 +214,38 @@ struct remote *connect_to_remote(struct addrinfo *res, struct server *server)
 #endif
 
 #ifdef TCP_FASTOPEN
-    if (fast_open) {
+    if (fast_open)
+    {
         ssize_t s = sendto(sockfd, server->buf + server->buf_idx, server->buf_len, MSG_FASTOPEN, res->ai_addr, res->ai_addrlen);
-        if (s == -1) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        if (s == -1)
+        {
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            {
                 // The remote server doesn't support tfo or it's the first connection to the server.
                 // It will automatically fall back to conventional TCP.
             }
-            else if (errno == EOPNOTSUPP || errno == EPROTONOSUPPORT || errno == ENOPROTOOPT) {
+            else if (errno == EOPNOTSUPP || errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)
+            {
                 LOGE("fast open is not supported on this platform");
                 connect(sockfd, res->ai_addr, res->ai_addrlen);
             }
-            else {
+            else
+            {
                 ERROR("sendto");
             }
         }
-        else if (s < server->buf_len) {
+        else if (s < server->buf_len)
+        {
             server->buf_idx += s;
             server->buf_len -= s;
         }
-        else {
+        else
+        {
             server->buf_idx = 0;
             server->buf_len = 0;
         }
-    } else
+    }
+    else
 #endif
         connect(sockfd, res->ai_addr, res->ai_addrlen);
 
@@ -799,7 +825,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
     }
 }
 
-struct remote* new_remote(int fd)
+static struct remote* new_remote(int fd)
 {
     if (verbose) remote_conn++;
 
@@ -821,7 +847,7 @@ struct remote* new_remote(int fd)
     return remote;
 }
 
-void free_remote(struct remote *remote)
+static void free_remote(struct remote *remote)
 {
     if (remote != NULL)
     {
@@ -839,7 +865,7 @@ void free_remote(struct remote *remote)
     }
 }
 
-void close_and_free_remote(EV_P_ struct remote *remote)
+static void close_and_free_remote(EV_P_ struct remote *remote)
 {
     if (remote != NULL)
     {
@@ -855,7 +881,7 @@ void close_and_free_remote(EV_P_ struct remote *remote)
     }
 }
 
-struct server* new_server(int fd, struct listen_ctx *listener)
+static struct server* new_server(int fd, struct listen_ctx *listener)
 {
     if (verbose) server_conn++;
 
@@ -893,7 +919,7 @@ struct server* new_server(int fd, struct listen_ctx *listener)
     return server;
 }
 
-void free_server(struct server *server)
+static void free_server(struct server *server)
 {
     if (server != NULL)
     {
@@ -921,7 +947,7 @@ void free_server(struct server *server)
     }
 }
 
-void close_and_free_server(EV_P_ struct server *server)
+static void close_and_free_server(EV_P_ struct server *server)
 {
     if (server != NULL)
     {
@@ -1180,7 +1206,7 @@ int main (int argc, char **argv)
     if (udprelay)
     {
         LOGD("udprelay enabled.");
-        udprelay_init(server_host[0], server_port, dns_thread_num, m, listen_ctx->timeout, iface);
+        init_udprelay(server_host[0], server_port, dns_thread_num, m, listen_ctx->timeout, iface);
     }
 
     // setuid
