@@ -35,7 +35,7 @@
 
 #include "cache.h"
 
-#include "include.h"
+#include "common.h"
 
 #define MAX_UDP_PACKET_SIZE (64 * 1024)
 
@@ -47,7 +47,6 @@ struct server_ctx
     int timeout;
     const char *iface;
     struct cache *conn_cache;
-    char *buf; // server send from, remote recv into
 #ifdef UDPRELAY_REMOTE
     asyncns_t *asyncns;
 #endif

@@ -81,6 +81,9 @@
 
 extern int verbose;
 
+static struct server_ctx *server_ctx = NULL;
+struct resolve_ctx *resolve_ctx = NULL;
+
 #ifndef __MINGW32__
 static int setnonblocking(int fd)
 {
@@ -895,7 +898,7 @@ void free_cb(void *element)
     close_and_free_remote(EV_DEFAULT, remote_ctx);
 }
 
-int udprelay_init(const char *server_host, const char *server_port,
+int init_udprelay(const char *server_host, const char *server_port,
 #ifdef UDPRELAY_LOCAL
                   const char *remote_host, const char *remote_port,
 #ifdef UDPRELAY_TUNNEL
@@ -907,7 +910,6 @@ int udprelay_init(const char *server_host, const char *server_port,
 #endif
                   int method, int timeout, const char *iface)
 {
-
     // Inilitialize ev loop
     struct ev_loop *loop = EV_DEFAULT;
 
@@ -925,7 +927,7 @@ int udprelay_init(const char *server_host, const char *server_port,
     {
         FATAL("asyncns failed");
     }
-    struct resolve_ctx *resolve_ctx = malloc(sizeof(struct resolve_ctx));
+    resolve_ctx = malloc(sizeof(struct resolve_ctx));
     resolve_ctx->asyncns = asyncns;
 
     int asyncnsfd = asyncns_fd(asyncns);
@@ -941,7 +943,7 @@ int udprelay_init(const char *server_host, const char *server_port,
     }
     setnonblocking(serverfd);
 
-    struct server_ctx *server_ctx = new_server_ctx(serverfd);
+    server_ctx = new_server_ctx(serverfd);
     server_ctx->timeout = timeout;
     server_ctx->method = method;
     server_ctx->iface = iface;
@@ -962,3 +964,24 @@ int udprelay_init(const char *server_host, const char *server_port,
     return 0;
 }
 
+void free_udprelay()
+{
+    struct ev_loop *loop = EV_DEFAULT;
+#ifdef UDPRELAY_REMOTE
+    if (resolve_ctx != NULL)
+    {
+        asyncns_free(resolve_ctx->asyncns);
+        ev_io_stop(loop, &resolve_ctx->io);
+        free(resolve_ctx);
+        resolve_ctx = NULL;
+    }
+#endif
+    if (server_ctx != NULL)
+    {
+        ev_io_stop(loop, &server_ctx->io);
+        close(server_ctx->fd);
+        cache_delete(server_ctx->conn_cache, 0);
+        free(server_ctx);
+        server_ctx = NULL;
+    }
+}

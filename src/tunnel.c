@@ -67,6 +67,20 @@
 #define BUF_SIZE 2048
 #endif
 
+static void accept_cb (EV_P_ ev_io *w, int revents);
+static void server_recv_cb (EV_P_ ev_io *w, int revents);
+static void server_send_cb (EV_P_ ev_io *w, int revents);
+static void remote_recv_cb (EV_P_ ev_io *w, int revents);
+static void remote_send_cb (EV_P_ ev_io *w, int revents);
+
+static struct remote* new_remote(int fd, int timeout);
+static struct server* new_server(int fd, int method);
+
+static void free_remote(struct remote *remote);
+static void close_and_free_remote(EV_P_ struct remote *remote);
+static void free_server(struct server *server);
+static void close_and_free_server(EV_P_ struct server *server);
+
 int verbose = 0;
 int udprelay = 0;
 
@@ -508,7 +522,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
     }
 }
 
-struct remote* new_remote(int fd, int timeout)
+static struct remote* new_remote(int fd, int timeout)
 {
     struct remote *remote;
     remote = malloc(sizeof(struct remote));
@@ -558,7 +572,7 @@ static void close_and_free_remote(EV_P_ struct remote *remote)
     }
 }
 
-struct server* new_server(int fd, int method)
+static struct server* new_server(int fd, int method)
 {
     struct server *server;
     server = malloc(sizeof(struct server));
@@ -866,7 +880,7 @@ int main (int argc, char **argv)
     if (udprelay)
     {
         LOGD("udprelay enabled.");
-        udprelay_init(local_addr, local_port, remote_addr[0].host, remote_addr[0].port,
+        init_udprelay(local_addr, local_port, remote_addr[0].host, remote_addr[0].port,
                       tunnel_addr, m, listen_ctx.timeout, iface);
     }
 

@@ -85,6 +85,25 @@ static int nofile = 0;
 #endif
 #endif
 
+static void server_recv_cb (EV_P_ ev_io *w, int revents);
+static void server_send_cb (EV_P_ ev_io *w, int revents);
+static void remote_recv_cb (EV_P_ ev_io *w, int revents);
+static void remote_send_cb (EV_P_ ev_io *w, int revents);
+static void accept_cb (EV_P_ ev_io *w, int revents);
+static void signal_cb (EV_P_ ev_signal *w, int revents);
+
+static int create_and_bind (const char *addr, const char *port);
+static struct remote* connect_to_remote (struct listen_ctx *listener, const char *host, const char *port);
+static void free_remote (struct remote *remote);
+static void close_and_free_remote (EV_P_ struct remote *remote);
+static void free_server (struct server *server);
+static void close_and_free_server (EV_P_ struct server *server);
+
+static struct remote* new_remote (int fd, int timeout);
+static struct server* new_server (int fd, int method);
+
+static TAILQ_HEAD(connection_head, server) connections;
+
 #ifndef __MINGW32__
 int setnonblocking(int fd)
 {
@@ -159,6 +178,17 @@ int create_and_bind(const char *addr, const char *port)
     freeaddrinfo(result);
 
     return listen_sock;
+}
+
+static void free_connections(struct ev_loop *loop)
+{
+    struct server *iter;
+    while ((iter = TAILQ_FIRST(&connections)) != NULL)
+    {
+        struct remote *remote = iter->remote;
+        close_and_free_server(loop, iter);
+        close_and_free_remote(loop, remote);
+    }
 }
 
 static void server_recv_cb (EV_P_ ev_io *w, int revents)
@@ -730,7 +760,7 @@ static void remote_send_cb (EV_P_ ev_io *w, int revents)
     }
 }
 
-struct remote* new_remote(int fd, int timeout)
+static struct remote* new_remote(int fd, int timeout)
 {
     struct remote *remote;
     remote = malloc(sizeof(struct remote));
@@ -787,7 +817,7 @@ static void close_and_free_remote(EV_P_ struct remote *remote)
     }
 }
 
-struct server* new_server(int fd, int method)
+static struct server* new_server(int fd, int method)
 {
     struct server *server;
     server = malloc(sizeof(struct server));
@@ -816,35 +846,37 @@ struct server* new_server(int fd, int method)
         server->e_ctx = NULL;
         server->d_ctx = NULL;
     }
+
+    TAILQ_INSERT_HEAD(&connections, server, entries);
+
     return server;
 }
 
 static void free_server(struct server *server)
 {
-    if (server != NULL)
+    TAILQ_REMOVE(&connections, server, entries);
+
+    if (server->remote != NULL)
     {
-        if (server->remote != NULL)
-        {
-            server->remote->server = NULL;
-        }
-        if (server->e_ctx != NULL)
-        {
-            cipher_context_release(&server->e_ctx->evp);
-            free(server->e_ctx);
-        }
-        if (server->d_ctx != NULL)
-        {
-            cipher_context_release(&server->d_ctx->evp);
-            free(server->d_ctx);
-        }
-        if (server->buf != NULL)
-        {
-            free(server->buf);
-        }
-        free(server->recv_ctx);
-        free(server->send_ctx);
-        free(server);
+        server->remote->server = NULL;
     }
+    if (server->e_ctx != NULL)
+    {
+        cipher_context_release(&server->e_ctx->evp);
+        free(server->e_ctx);
+    }
+    if (server->d_ctx != NULL)
+    {
+        cipher_context_release(&server->d_ctx->evp);
+        free(server->d_ctx);
+    }
+    if (server->buf != NULL)
+    {
+        free(server->buf);
+    }
+    free(server->recv_ctx);
+    free(server->send_ctx);
+    free(server);
 }
 
 static void close_and_free_server(EV_P_ struct server *server)
@@ -917,6 +949,18 @@ static struct remote* connect_to_remote(struct listen_ctx *listener,
     return remote;
 }
 
+static void signal_cb (EV_P_ ev_signal *w, int revents)
+{
+    if (revents & EV_SIGNAL)
+    {
+        switch (w->signum)
+        {
+        case SIGINT:
+        case SIGTERM:
+            ev_unloop(EV_A_ EVUNLOOP_ALL);
+        }
+    }
+}
 
 void accept_cb (EV_P_ ev_io *w, int revents)
 {
@@ -1097,11 +1141,18 @@ int main (int argc, char **argv)
 
 #ifdef __MINGW32__
     winsock_init();
-#else
+#endif
+
     // ignore SIGPIPE
     signal(SIGPIPE, SIG_IGN);
     signal(SIGABRT, SIG_IGN);
-#endif
+
+    struct ev_signal sigint_watcher;
+    struct ev_signal sigterm_watcher;
+    ev_signal_init(&sigint_watcher, signal_cb, SIGINT);
+    ev_signal_init(&sigterm_watcher, signal_cb, SIGTERM);
+    ev_signal_start(EV_DEFAULT, &sigint_watcher);
+    ev_signal_start(EV_DEFAULT, &sigterm_watcher);
 
     // Setup keys
     LOGD("initialize ciphers... %s", method);
@@ -1136,7 +1187,7 @@ int main (int argc, char **argv)
     listen_ctx.iface = iface;
     listen_ctx.method = m;
 
-    struct ev_loop *loop = ev_default_loop(0);
+    struct ev_loop *loop = EV_DEFAULT;
     if (!loop)
     {
         FATAL("ev_loop error.");
@@ -1148,14 +1199,23 @@ int main (int argc, char **argv)
     if (udprelay)
     {
         LOGD("udprelay enabled.");
-        udprelay_init(local_addr, local_port, remote_addr[0].host, remote_addr[0].port, m, listen_ctx.timeout, iface);
+        init_udprelay(local_addr, local_port, remote_addr[0].host, remote_addr[0].port, m, listen_ctx.timeout, iface);
     }
 
     // setuid
     if (user != NULL)
         run_as(user);
 
+    // Init connections
+    TAILQ_INIT(&connections);
+
     ev_run (loop, 0);
+
+    free_connections(loop);
+    free_udprelay();
+
+    ev_io_stop(loop, &listen_ctx.io);
+    free(listen_ctx.remote_addr);
 
 #ifdef __MINGW32__
     winsock_cleanup();
@@ -1198,11 +1258,18 @@ int start_ss_local_server(profile_t profile)
 
 #ifdef __MINGW32__
     winsock_init();
-#else
+#endif
+
     // ignore SIGPIPE
     signal(SIGPIPE, SIG_IGN);
     signal(SIGABRT, SIG_IGN);
-#endif
+
+    struct ev_signal sigint_watcher;
+    struct ev_signal sigterm_watcher;
+    ev_signal_init(&sigint_watcher, signal_cb, SIGINT);
+    ev_signal_init(&sigterm_watcher, signal_cb, SIGTERM);
+    ev_signal_start(EV_DEFAULT, &sigint_watcher);
+    ev_signal_start(EV_DEFAULT, &sigterm_watcher);
 
     // Setup keys
     LOGD("initialize ciphers... %s", method);
@@ -1234,7 +1301,7 @@ int start_ss_local_server(profile_t profile)
     listen_ctx.method = m;
     listen_ctx.iface = NULL;
 
-    struct ev_loop *loop = ev_default_loop(0);
+    struct ev_loop *loop = EV_DEFAULT;
     if (!loop)
     {
         FATAL("ev_loop error.");
@@ -1246,10 +1313,19 @@ int start_ss_local_server(profile_t profile)
     if (udprelay)
     {
         LOGD("udprelay enabled.");
-        udprelay_init(local_addr, local_port_str, remote_host, remote_port_str, m, listen_ctx.timeout, NULL);
+        init_udprelay(local_addr, local_port_str, remote_host, remote_port_str, m, listen_ctx.timeout, NULL);
     }
 
+    // Init connections
+    TAILQ_INIT(&connections);
+
     ev_run (loop, 0);
+
+    free_connections(loop);
+    free_udprelay();
+
+    ev_io_stop(loop, &listen_ctx.io);
+    free(listen_ctx.remote_addr);
 
 #ifdef __MINGW32__
     winsock_cleanup();
