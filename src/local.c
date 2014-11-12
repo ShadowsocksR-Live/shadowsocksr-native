@@ -1209,8 +1209,15 @@ int main (int argc, char **argv)
     // Init connections
     TAILQ_INIT(&connections);
 
+    // Enter the loop
     ev_run (loop, 0);
 
+    if (verbose)
+    {
+        LOGD("closed nicely.");
+    }
+
+    // Clean up
     free_connections(loop);
     free_udprelay();
 
@@ -1319,8 +1326,15 @@ int start_ss_local_server(profile_t profile)
     // Init connections
     TAILQ_INIT(&connections);
 
+    // Enter the loop
     ev_run (loop, 0);
 
+    if (verbose)
+    {
+        LOGD("closed nicely.");
+    }
+
+    // Clean up
     free_connections(loop);
     free_udprelay();
 
