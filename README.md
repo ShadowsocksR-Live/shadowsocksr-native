@@ -4,7 +4,7 @@ shadowsocks-libev
 Intro
 -----
 
-[Shadowsocks-libev](http://shadowsocks.org) is a lightweight secured scoks5 
+[Shadowsocks-libev](http://shadowsocks.org) is a lightweight secured socks5 
 proxy for embedded devices and low end boxes.
 
 It is a port of [shadowsocks](https://github.com/clowwindy/shadowsocks) 
