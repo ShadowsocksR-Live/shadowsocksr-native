@@ -183,8 +183,9 @@ int create_and_bind(const char *addr, const char *port)
 static void free_connections(struct ev_loop *loop)
 {
     struct cork_dllist_item *curr;
-    for (curr = cork_dllist_start(&connections); !cork_dllist_is_end(&connections, curr);
-            curr = curr->next) {
+    for (curr = cork_dllist_start(&connections);
+         !cork_dllist_is_end(&connections, curr);
+         curr = curr->next) {
         struct server *server = cork_container_of(curr, struct server, entries);
         struct remote *remote = server->remote;
         close_and_free_server(loop, server);
@@ -904,11 +905,11 @@ int main(int argc, char **argv)
     int option_index = 0;
     static struct option long_options[] =
     {
-        { "fast-open", no_argument,       0,
+        { "fast-open", no_argument,             0,
           0 },
-        { "acl",       required_argument, 0,
+        { "acl",       required_argument,       0,
           0 },
-        { 0,           0,                 0,
+        { 0,           0,                       0,
           0 }
     };
 
@@ -1046,11 +1047,11 @@ int main(int argc, char **argv)
 
 #ifdef __MINGW32__
     winsock_init();
-#endif
-
+#else
     // ignore SIGPIPE
     signal(SIGPIPE, SIG_IGN);
     signal(SIGABRT, SIG_IGN);
+#endif
 
     struct ev_signal sigint_watcher;
     struct ev_signal sigterm_watcher;
@@ -1172,11 +1173,11 @@ int start_ss_local_server(profile_t profile)
 
 #ifdef __MINGW32__
     winsock_init();
-#endif
-
+#else
     // ignore SIGPIPE
     signal(SIGPIPE, SIG_IGN);
     signal(SIGABRT, SIG_IGN);
+#endif
 
     struct ev_signal sigint_watcher;
     struct ev_signal sigterm_watcher;

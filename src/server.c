@@ -99,8 +99,9 @@ static struct cork_dllist connections;
 static void free_connections(struct ev_loop *loop)
 {
     struct cork_dllist_item *curr;
-    for (curr = cork_dllist_start(&connections); !cork_dllist_is_end(&connections, curr);
-            curr = curr->next) {
+    for (curr = cork_dllist_start(&connections);
+         !cork_dllist_is_end(&connections, curr);
+         curr = curr->next) {
         struct server *server = cork_container_of(curr, struct server, entries);
         struct remote *remote = server->remote;
         close_and_free_server(loop, server);
@@ -925,8 +926,8 @@ int main(int argc, char **argv)
     int option_index = 0;
     static struct option long_options[] =
     {
-        { "fast-open", no_argument, 0, 0 },
-        { 0,           0,           0, 0 }
+        { "fast-open", no_argument, 0,           0 },
+        { 0,           0,           0,           0 }
     };
 
     opterr = 0;
