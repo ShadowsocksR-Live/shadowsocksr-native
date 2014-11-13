@@ -32,29 +32,25 @@
 
 #pragma pack(1)
 
-struct method_select_request
-{
+struct method_select_request {
     char ver;
     char nmethods;
     char methods[255];
 };
 
-struct method_select_response
-{
+struct method_select_response {
     char ver;
     char method;
 };
 
-struct socks5_request
-{
+struct socks5_request {
     char ver;
     char cmd;
     char rsv;
     char atyp;
 };
 
-struct socks5_response
-{
+struct socks5_response {
     char ver;
     char rep;
     char rsv;

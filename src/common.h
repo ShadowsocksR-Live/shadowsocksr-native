@@ -1,5 +1,5 @@
 /*
- * include.h - Provide global definitions
+ * common.h - Provide global definitions
  *
  * Copyright (C) 2013 - 2014, Max Lv <max.c.lv@gmail.com>
  *
@@ -37,7 +37,7 @@
 
 #endif
 
-int udprelay_init(const char *server_host, const char *server_port,
+int init_udprelay(const char *server_host, const char *server_port,
 #ifdef UDPRELAY_LOCAL
                   const char *remote_host, const char *remote_port,
 #ifdef UDPRELAY_TUNNEL
@@ -48,5 +48,7 @@ int udprelay_init(const char *server_host, const char *server_port,
                   int dns_thread_num,
 #endif
                   int method, int timeout, const char *iface);
+
+void free_udprelay(void);
 
 #endif // _INCLUDE_H

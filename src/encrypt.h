@@ -74,8 +74,7 @@ typedef md_info_t digest_type_t;
 #define kCCContextValid 0
 #define kCCContextInvalid -1
 
-typedef struct
-{
+typedef struct {
     CCCryptorRef cryptor;
     int valid;
     CCOperation encrypt;
@@ -90,8 +89,7 @@ typedef struct
 
 #endif
 
-typedef struct
-{
+typedef struct {
     cipher_evp_t evp;
 #ifdef USE_CRYPTO_APPLECC
     cipher_cc_t cc;
@@ -124,19 +122,20 @@ typedef struct
 #define RC2_CFB             13
 #define SEED_CFB            14
 
-#define min(a,b) (((a)<(b))?(a):(b))
-#define max(a,b) (((a)>(b))?(a):(b))
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+#define max(a, b) (((a) > (b)) ? (a) : (b))
 
-struct enc_ctx
-{
+struct enc_ctx {
     uint8_t init;
     cipher_ctx_t evp;
 };
 
-char* ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method);
-char* ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method);
-char* ss_encrypt(int buf_size, char *plaintext, ssize_t *len, struct enc_ctx *ctx);
-char* ss_decrypt(int buf_size, char *ciphertext, ssize_t *len, struct enc_ctx *ctx);
+char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method);
+char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method);
+char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
+                  struct enc_ctx *ctx);
+char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len,
+                  struct enc_ctx *ctx);
 void enc_ctx_init(int method, struct enc_ctx *ctx, int enc);
 int enc_init(const char *pass, const char *method);
 int enc_get_iv_len(void);

@@ -26,15 +26,13 @@
 #define MAX_CONF_SIZE 16 * 1024
 #define DNS_THREAD_NUM 4
 
-typedef struct
-{
+typedef struct {
     char *host;
     char *port;
 } ss_addr_t;
 
-typedef struct
-{
-    int  remote_num;
+typedef struct {
+    int remote_num;
     ss_addr_t remote_addr[MAX_REMOTE_NUM];
     char *remote_port;
     char *local_addr;
@@ -42,11 +40,11 @@ typedef struct
     char *password;
     char *method;
     char *timeout;
-    int  fast_open;
-    int  nofile;
+    int fast_open;
+    int nofile;
 } jconf_t;
 
-jconf_t *read_jconf(const char* file);
+jconf_t *read_jconf(const char * file);
 void parse_addr(const char *str, ss_addr_t *addr);
 void free_addr(ss_addr_t *addr);
 

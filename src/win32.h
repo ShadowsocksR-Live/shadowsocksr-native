@@ -49,7 +49,7 @@
 #define errno WSAGetLastError()
 #define close(fd) closesocket(fd)
 #define ERROR(s) ss_error(s)
-#define setsockopt(a, b, c, d, e) setsockopt(a, b, c, (char *) (d), e)
+#define setsockopt(a, b, c, d, e) setsockopt(a, b, c, (char *)(d), e)
 
 void winsock_init(void);
 void winsock_cleanup(void);

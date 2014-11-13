@@ -24,13 +24,14 @@
 #define _LOCAL_H
 
 #include <ev.h>
+#include <libcork/ds.h>
+
 #include "encrypt.h"
 #include "jconf.h"
 
-#include "include.h"
+#include "common.h"
 
-struct listen_ctx
-{
+struct listen_ctx {
     ev_io io;
     ss_addr_t *remote_addr;
     char *iface;
@@ -41,15 +42,13 @@ struct listen_ctx
     struct sockaddr sock;
 };
 
-struct server_ctx
-{
+struct server_ctx {
     ev_io io;
     int connected;
     struct server *server;
 };
 
-struct server
-{
+struct server {
     int fd;
     ssize_t buf_len;
     ssize_t buf_idx;
@@ -61,18 +60,18 @@ struct server
     struct server_ctx *send_ctx;
     struct listen_ctx *listener;
     struct remote *remote;
+
+    struct cork_dllist_item entries;
 };
 
-struct remote_ctx
-{
+struct remote_ctx {
     ev_io io;
     ev_timer watcher;
     int connected;
     struct remote *remote;
 };
 
-struct remote
-{
+struct remote {
     int fd;
     ssize_t buf_len;
     ssize_t buf_idx;
@@ -83,22 +82,5 @@ struct remote
     struct server *server;
     struct addrinfo *addr_info;
 };
-
-// exported for library use
-int create_and_bind(const char *addr, const char *port);
-void accept_cb (EV_P_ ev_io *w, int revents);
-
-static struct remote* connect_to_remote(struct listen_ctx *listener, const char *host, const char *port);
-static void server_recv_cb (EV_P_ ev_io *w, int revents);
-static void server_send_cb (EV_P_ ev_io *w, int revents);
-static void remote_recv_cb (EV_P_ ev_io *w, int revents);
-static void remote_send_cb (EV_P_ ev_io *w, int revents);
-static void free_remote(struct remote *remote);
-static void close_and_free_remote(EV_P_ struct remote *remote);
-static void free_server(struct server *server);
-static void close_and_free_server(EV_P_ struct server *server);
-
-struct remote* new_remote(int fd, int timeout);
-struct server* new_server(int fd, int method);
 
 #endif // _LOCAL_H

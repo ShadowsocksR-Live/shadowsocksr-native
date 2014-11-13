@@ -34,26 +34,20 @@ static void parse_addr_cidr(const char *str, char **host, int *cidr)
     char *pch;
 
     pch = strchr(str, '/');
-    while (pch != NULL)
-    {
+    while (pch != NULL) {
         n++;
         ret = pch - str;
         pch = strchr(pch + 1, '/');
     }
-    if (n > 1)
-    {
-        if (strcmp(str+ret, "]") != 0)
-        {
+    if (n > 1) {
+        if (strcmp(str + ret, "]") != 0) {
             ret = -1;
         }
     }
-    if (ret == -1)
-    {
+    if (ret == -1) {
         *host = strdup(str);
         *cidr = -1;
-    }
-    else
-    {
+    } else {
         *host = ss_strndup(str, ret);
         *cidr = atoi(strdup(str + ret + 1));
     }
@@ -75,14 +69,11 @@ int init_acl(const char *path)
     }
 
     char line[256];
-    while(!feof(f))
-    {
-        if (fgets(line, 256, f))
-        {
+    while (!feof(f)) {
+        if (fgets(line, 256, f)) {
             // Trim the newline
             int len = strlen(line);
-            if (len > 0 && line[len - 1] == '\n')
-            {
+            if (len > 0 && line[len - 1] == '\n') {
                 line[len - 1] = '\0';
             }
 
@@ -90,24 +81,23 @@ int init_acl(const char *path)
             int cidr;
             parse_addr_cidr(line, &host, &cidr);
 
-            if (cidr == -1)
-            {
+            if (cidr == -1) {
                 cork_string_array_append(&acl_domain_array, host);
-            }
-            else
-            {
+            } else {
                 struct cork_ipv4 addr;
                 int err = cork_ipv4_init(&addr, host);
-                if (!err)
-                {
-                    if (cidr >= 0)
+                if (!err) {
+                    if (cidr >= 0) {
                         ipset_ipv4_add_network(&acl_ip_set, &addr, cidr);
-                    else
+                    } else {
                         ipset_ipv4_add(&acl_ip_set, &addr);
+                    }
                 }
             }
 
-            if (host != NULL) free(host);
+            if (host != NULL) {
+                free(host);
+            }
         }
     }
 
@@ -121,39 +111,43 @@ void free_acl(void)
     ipset_done(&acl_ip_set);
 }
 
-int acl_contains_domain(const char* domain)
+int acl_contains_domain(const char * domain)
 {
     const char **list = acl_domain_array.items;
     const int size = acl_domain_array.size;
     const int domain_len = strlen(domain);
     int i, offset;
 
-    for (i = 0; i < size; i++)
-    {
+    for (i = 0; i < size; i++) {
         const char *acl_domain = list[i];
         const int acl_domain_len = strlen(acl_domain);
-        if (acl_domain_len > domain_len) continue;
+        if (acl_domain_len > domain_len) {
+            continue;
+        }
         int match = true;
-        for (offset = 1; offset <= acl_domain_len; offset++)
-        {
-            if (domain[domain_len - offset] != acl_domain[acl_domain_len - offset])
-            {
+        for (offset = 1; offset <= acl_domain_len; offset++) {
+            if (domain[domain_len - offset] !=
+                acl_domain[acl_domain_len - offset]) {
                 match = false;
                 break;
             }
         }
-        if (match) return 1;
+        if (match) {
+            return 1;
+        }
     }
 
 
     return 0;
 }
 
-int acl_contains_ip(const char* host)
+int acl_contains_ip(const char * host)
 {
     struct cork_ipv4 addr;
     int err = cork_ipv4_init(&addr, host);
-    if (err) return 0;
+    if (err) {
+        return 0;
+    }
 
     struct cork_ip ip;
     cork_ip_from_ipv4(&ip, &addr);

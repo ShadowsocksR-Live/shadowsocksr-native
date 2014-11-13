@@ -25,7 +25,7 @@
 typedef struct {
     /*  Required  */
     char *remote_host;    // hostname or ip of remote server
-    char *local_addr;     // local ip to bind 
+    char *local_addr;     // local ip to bind
     char *method;         // encryption method
     char *password;       // password of remote server
     int remote_port;      // port number of remote server
@@ -42,7 +42,7 @@ typedef struct {
 
 /* An example profile
 
-const profile_t EXAMPLE_PROFILE = {
+   const profile_t EXAMPLE_PROFILE = {
     .remote_host = "example.com",
     .local_addr = "127.0.0.1",
     .method = "bf-cfb",
@@ -55,11 +55,11 @@ const profile_t EXAMPLE_PROFILE = {
     .fast_open = 0,
     .udp_relay = 0,
     .verbose = 0
-};
-*/
+   };
+ */
 
 #ifdef __cplusplus
-extern "C"{
+extern "C" {
 #endif
 
 /*
@@ -72,7 +72,7 @@ extern "C"{
  * memory and socket leak.
  *
  * If failed, -1 is returned. Errors will output to the log file.
-*/
+ */
 int start_ss_local_server(profile_t profile);
 
 #ifdef __cplusplus
