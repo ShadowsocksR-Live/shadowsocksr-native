@@ -1,3 +1,9 @@
+shadowsocks (1.5.3-1) unstable; urgency=low
+
+  * Fix log on Win32.
+
+ -- Max Lv <max.c.lv@gmail.com>  Fri, 14 Nov 2014 09:10:06 +0800
+
 shadowsocks (1.5.2-1) unstable; urgency=low
 
   * Handle SIGTERM and SIGKILL nicely.

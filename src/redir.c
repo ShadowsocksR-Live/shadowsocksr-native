@@ -587,8 +587,8 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     }
 
     setnonblocking(clientfd);
-    int opt = 1;
 #ifdef SO_NOSIGPIPE
+    int opt = 1;
     setsockopt(clientfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
