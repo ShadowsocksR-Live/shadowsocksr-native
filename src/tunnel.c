@@ -131,7 +131,6 @@ int create_and_bind(const char *addr, const char *port)
 
         int opt = 1;
         setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-        setsockopt(listen_sock, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
         setsockopt(listen_sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
@@ -573,9 +572,8 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
         return;
     }
     setnonblocking(serverfd);
-    int opt = 1;
-    setsockopt(serverfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
+    int opt = 1;
     setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
@@ -603,7 +601,6 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
         return;
     }
 
-    setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
     setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
