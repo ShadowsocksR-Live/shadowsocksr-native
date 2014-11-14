@@ -154,7 +154,6 @@ int create_and_bind(const char *addr, const char *port)
 
         int opt = 1;
         setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-        setsockopt(listen_sock, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
         setsockopt(listen_sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
@@ -793,7 +792,6 @@ static void close_and_free_server(EV_P_ struct server *server)
 static struct remote * connect_to_remote(struct listen_ctx *listener,
                                          const char *host, const char *port)
 {
-    int opt = 1;
     int sockfd;
     struct addrinfo *remote_res;
 
@@ -829,8 +827,8 @@ static struct remote * connect_to_remote(struct listen_ctx *listener,
         return NULL;
     }
 
-    setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
+    int opt = 1;
     setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
@@ -868,9 +866,8 @@ void accept_cb(EV_P_ ev_io *w, int revents)
         return;
     }
     setnonblocking(serverfd);
-    int opt = 1;
-    setsockopt(serverfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
+    int opt = 1;
     setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
