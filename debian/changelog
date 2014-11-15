@@ -1,3 +1,9 @@
+shadowsocks-libev (1.5.3-2) unstable; urgency=low
+
+  * rename as shadowsocks-libev.
+
+ -- Symeon Huang <hzwhuang@gmail.com>  Sat, 15 Nov 2014 14:55:28 +0000
+
 shadowsocks (1.5.3-1) unstable; urgency=low
 
   * Fix log on Win32.
