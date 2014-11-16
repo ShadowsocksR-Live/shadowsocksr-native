@@ -1,4 +1,4 @@
-Source: shadowsocks
+Source: shadowsocks-libev
 Section: net
 Priority: extra
 Maintainer: Max Lv <max.c.lv@gmail.com>
@@ -8,8 +8,9 @@ Homepage: http://www.shadowsocks.org
 Vcs-Git: https://github.com/madeye/shadowsocks-libev.git
 Vcs-Browser: https://github.com/madeye/shadowsocks-libev
 
-Package: shadowsocks
+Package: shadowsocks-libev
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Conflicts: shadowsocks
 Description: A lightweight secured scoks5 proxy. 
     Shadowsocks-libev is a lightweight secured scoks5 proxy for embedded devices and low end boxes.

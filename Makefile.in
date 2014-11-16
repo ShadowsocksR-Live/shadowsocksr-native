@@ -37,7 +37,7 @@ host_triplet = @host@
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
-	$(srcdir)/shadowsocks.pc.in $(top_srcdir)/configure COPYING \
+	$(srcdir)/shadowsocks-libev.pc.in $(top_srcdir)/configure COPYING \
 	INSTALL auto/ar-lib auto/compile auto/config.guess \
 	auto/config.sub auto/depcomp auto/install-sh auto/ltmain.sh \
 	auto/missing
@@ -54,7 +54,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
-CONFIG_CLEAN_FILES = shadowsocks.pc
+CONFIG_CLEAN_FILES = shadowsocks-libev.pc
 CONFIG_CLEAN_VPATH_FILES =
 SOURCES =
 DIST_SOURCES =
@@ -267,9 +267,9 @@ top_srcdir = @top_srcdir@
 @BUILD_WINCOMPAT_FALSE@SUBDIRS = libcork libipset libasyncns libev src
 @BUILD_WINCOMPAT_TRUE@SUBDIRS = libcork libipset libev src
 ACLOCAL_AMFLAGS = -I m4
-man_MANS = shadowsocks.8
+man_MANS = shadowsocks-libev.8
 pkgconfiglibdir = $(libdir)/pkgconfig
-pkgconfiglib_DATA = shadowsocks.pc
+pkgconfiglib_DATA = shadowsocks-libev.pc
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
@@ -323,7 +323,7 @@ $(srcdir)/config.h.in:  $(am__configure_deps)
 
 distclean-hdr:
 	-rm -f config.h stamp-h1
-shadowsocks.pc: $(top_builddir)/config.status $(srcdir)/shadowsocks.pc.in
+shadowsocks-libev.pc: $(top_builddir)/config.status $(srcdir)/shadowsocks-libev.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:

@@ -3,7 +3,7 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: shadowsocks
+Name: shadowsocks-libev
 Description: a lightweight secured scoks5
 URL: http://shadowsocks.org
 Version: @VERSION@
