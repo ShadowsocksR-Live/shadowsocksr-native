@@ -53,7 +53,7 @@ Then,
 
 ``` bash
 sudo apt-get update
-sudo apt-get install shadowsocks
+sudo apt-get install shadowsocks-libev
 ```
 
 #### Build package from source
@@ -63,17 +63,17 @@ cd shadowsocks-libev
 sudo apt-get install build-essential autoconf libtool libssl-dev gawk debhelper
 sudo dpkg-buildpackage
 cd ..
-sudo dpkg -i shadowsocks*.deb
+sudo dpkg -i shadowsocks-libev*.deb
 ```
 
 #### Configure and start the service
 
 ```
 # Edit the configuration
-sudo vim /etc/shadowsocks/config.json
+sudo vim /etc/shadowsocks-libev/config.json
 
 # Start the service
-sudo /etc/init.d/shadowsocks start
+sudo /etc/init.d/shadowsocks-libev start
 ```
 
 ### CentOS
@@ -92,7 +92,7 @@ Compile and install,
 make install
 ```
 
-Then copy this [init script](rpm/SOURCES/etc/init.d/shadowsocks) to `/etc/init.d/`.
+Then copy this [init script](rpm/SOURCES/etc/init.d/shadowsocks-libev) to `/etc/init.d/`.
 
 ### Linux
 

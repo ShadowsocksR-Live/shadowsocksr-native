@@ -10,7 +10,7 @@
 START=yes
 
 # Configuration file
-CONFFILE="/etc/shadowsocks/config.json"
+CONFFILE="/etc/shadowsocks-libev/config.json"
 
 # Extra command line arguments
 DAEMON_ARGS=""
