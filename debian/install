@@ -1,1 +1,1 @@
-debian/config.json  /etc/shadowsocks
+debian/config.json  /etc/shadowsocks-libev
