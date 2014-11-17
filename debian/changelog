@@ -1,3 +1,9 @@
+shadowsocks-libev (1.6.0-1) unstable; urgency=low
+
+  * Solve conflicts with other shadowsocks portings.
+
+ -- Max Lv <max.c.lv@gmail.com>  Mon, 17 Nov 2014 14:10:21 +0800
+
 shadowsocks-libev (1.5.3-2) unstable; urgency=low
 
   * rename as shadowsocks-libev.

@@ -37,8 +37,8 @@ host_triplet = @host@
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
-	$(srcdir)/shadowsocks-libev.pc.in $(top_srcdir)/configure COPYING \
-	INSTALL auto/ar-lib auto/compile auto/config.guess \
+	$(srcdir)/shadowsocks-libev.pc.in $(top_srcdir)/configure \
+	COPYING INSTALL auto/ar-lib auto/compile auto/config.guess \
 	auto/config.sub auto/depcomp auto/install-sh auto/ltmain.sh \
 	auto/missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4

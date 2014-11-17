@@ -16,13 +16,13 @@ ss*
 stamp-h1
 .libs
 .pc
-debian/shadowsocks/
+debian/shadowsocks-libev/
 debian/patches/
 debian/files
-debian/shadowsocks.substvars
+debian/shadowsocks-libev.substvars
 debian/*.debhelper*
 .dirstamp
-shadowsocks.pc
+shadowsocks-libev.pc
 
 # Ignore garbage of OS X
 *.DS_Store
