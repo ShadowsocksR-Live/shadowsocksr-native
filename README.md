@@ -76,6 +76,35 @@ sudo vim /etc/shadowsocks-libev/config.json
 sudo /etc/init.d/shadowsocks-libev start
 ```
 
+### Fedora
+
+#### Install from repository
+
+Enable repo via `dnf`:
+
+```
+su -c 'dnf copr enable librehat/shadowsocks'
+```
+
+Or download yum repo on [Fedora Copr](https://copr.fedoraproject.org/coprs/librehat/shadowsocks/) and put it inside `/etc/yum.repos.d/`.
+
+Then, install `shadowsocks-libev` via `dnf`:
+
+```bash
+su -c 'dnf update'
+su -c 'dnf install shadowsocks-libev'
+```
+
+or `yum`:
+
+```bash
+su -c 'yum update'
+su -c 'yum install shadowsocks-libev'
+
+```
+
+#### 
+
 ### CentOS
 
 Install the dependencies,
