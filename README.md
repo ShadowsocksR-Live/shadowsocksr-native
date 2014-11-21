@@ -76,7 +76,11 @@ sudo vim /etc/shadowsocks-libev/config.json
 sudo /etc/init.d/shadowsocks-libev start
 ```
 
-### Fedora
+### Fedora & RHEL
+
+Supported distributions include
+- Fedora 19, 20, 21, rawhide
+- RHEL 6, 7 and derivatives (including CentOS, Scientific Linux)
 
 #### Install from repository
 
@@ -86,7 +90,7 @@ Enable repo via `dnf`:
 su -c 'dnf copr enable librehat/shadowsocks'
 ```
 
-Or download yum repo on [Fedora Copr](https://copr.fedoraproject.org/coprs/librehat/shadowsocks/) and put it inside `/etc/yum.repos.d/`.
+Or download yum repo on [Fedora Copr](https://copr.fedoraproject.org/coprs/librehat/shadowsocks/) and put it inside `/etc/yum.repos.d/`. The release `Epel` is for RHEL and its derivatives.
 
 Then, install `shadowsocks-libev` via `dnf`:
 
@@ -100,28 +104,7 @@ or `yum`:
 ```bash
 su -c 'yum update'
 su -c 'yum install shadowsocks-libev'
-
 ```
-
-#### 
-
-### CentOS
-
-Install the dependencies,
-
-```bash
-yum install -y gcc automake autoconf libtool make build-essential autoconf libtool 
-yum install -y curl curl-devel zlib-devel openssl-devel perl perl-devel cpio expat-devel gettext-devel
-```
-
-Compile and install,
-
-```bash
-./configure && make
-make install
-```
-
-Then copy this [init script](rpm/SOURCES/etc/init.d/shadowsocks-libev) to `/etc/init.d/`.
 
 ### Linux
 
