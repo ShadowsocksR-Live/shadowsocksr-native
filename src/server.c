@@ -230,11 +230,14 @@ static struct remote *connect_to_remote(struct addrinfo *res,
                            server->buf_len, MSG_FASTOPEN, res->ai_addr,
                            res->ai_addrlen);
         if (s == -1) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            if (errno == EINPROGRESS || errno == EAGAIN
+                    || errno == EWOULDBLOCK) {
                 // The remote server doesn't support tfo or it's the first connection to the server.
                 // It will automatically fall back to conventional TCP.
             } else if (errno == EOPNOTSUPP || errno == EPROTONOSUPPORT ||
                        errno == ENOPROTOOPT) {
+                // Disable fast open as it's not supported
+                fast_open = false;
                 LOGE("fast open is not supported on this platform");
                 connect(sockfd, res->ai_addr, res->ai_addrlen);
             } else {
