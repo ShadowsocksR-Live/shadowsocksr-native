@@ -161,7 +161,7 @@ static int parse_udprealy_header(const char * buf, const int buf_len,
     }
 
     if (offset == 1) {
-        LOGE("invalid header with addr type %d", atyp);
+        LOGE("[udp] invalid header with addr type %d", atyp);
         return 0;
     }
 
@@ -223,11 +223,11 @@ int create_remote_socket(int ipv6)
         addr.sin6_port = 0;
         remote_sock = socket(AF_INET6, SOCK_DGRAM, 0);
         if (remote_sock == -1) {
-            ERROR("Cannot create socket.");
+            ERROR("[udp] cannot create socket.");
             return -1;
         }
         if (bind(remote_sock, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
-            FATAL("Cannot bind remote.");
+            FATAL("[udp] cannot bind remote.");
             return -1;
         }
     } else {
@@ -239,12 +239,12 @@ int create_remote_socket(int ipv6)
         addr.sin_port = 0;
         remote_sock = socket(AF_INET, SOCK_DGRAM, 0);
         if (remote_sock == -1) {
-            ERROR("Cannot create socket.");
+            ERROR("[udp] cannot create socket.");
             return -1;
         }
 
         if (bind(remote_sock, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
-            FATAL("Cannot bind remote.");
+            FATAL("[udp] cannot bind remote.");
             return -1;
         }
     }
@@ -263,7 +263,7 @@ int create_server_socket(const char *host, const char *port)
 
     s = getaddrinfo(host, port, &hints, &result);
     if (s != 0) {
-        LOGE("getaddrinfo: %s", gai_strerror(s));
+        LOGE("[udp] getaddrinfo: %s", gai_strerror(s));
         return -1;
     }
 
@@ -284,14 +284,14 @@ int create_server_socket(const char *host, const char *port)
             /* We managed to bind successfully! */
             break;
         } else {
-            ERROR("bind");
+            ERROR("[udp] bind");
         }
 
         close(server_sock);
     }
 
     if (rp == NULL) {
-        LOGE("Could not bind");
+        LOGE("[udp] cannot bind");
         return -1;
     }
 
@@ -362,7 +362,7 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
                                                           - sizeof(ev_io));
 
     if (verbose) {
-        LOGD("UDP connection timeout");
+        LOGD("[udp] connection timeout");
     }
 
     char *key = hash_key(remote_ctx->addr_header,
@@ -384,7 +384,7 @@ static void query_resolve_cb(EV_P_ ev_io *w, int revents)
         return;
     } else if (err == ASYNCNS_HANDLE_ERROR) {
         // asyncns error
-        FATAL("asyncns exit unexpectedly.");
+        FATAL("[udp] asyncns exit unexpectedly.");
     }
 
     asyncns_query_t *query = asyncns_getnext(asyncns);
@@ -405,7 +405,7 @@ static void query_resolve_cb(EV_P_ ev_io *w, int revents)
     err = asyncns_getaddrinfo_done(asyncns, query, &result);
 
     if (err) {
-        ERROR("getaddrinfo");
+        ERROR("[udp] getaddrinfo");
     } else {
         // Use IPV4 address if possible
         for (rp = result; rp != NULL; rp = rp->ai_next) {
@@ -449,7 +449,7 @@ static void query_resolve_cb(EV_P_ ev_io *w, int revents)
                            addr_len);
 
             if (s == -1) {
-                ERROR("udprelay_sendto_remote");
+                ERROR("[udp] sendto_remote");
                 close_and_free_remote(EV_A_ remote_ctx);
             } else {
                 // Add to conn cache
@@ -463,7 +463,7 @@ static void query_resolve_cb(EV_P_ ev_io *w, int revents)
             }
 
         } else {
-            ERROR("udprelay bind() error..");
+            ERROR("[udp] bind() error..");
         }
     }
 
@@ -480,7 +480,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
 
     // server has been closed
     if (server_ctx == NULL) {
-        LOGE("invalid server.");
+        LOGE("[udp] invalid server.");
         close_and_free_remote(EV_A_ remote_ctx);
         return;
     }
@@ -504,7 +504,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         // error on recv
         // simply drop that packet
         if (verbose) {
-            ERROR("udprelay_server_recvfrom");
+            ERROR("[udp] server_recvfrom");
         }
         goto CLEAN_UP;
     }
@@ -513,14 +513,14 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
     if (buf == NULL) {
         if (verbose) {
-            ERROR("udprelay_server_ss_decrypt_all");
+            ERROR("[udp] server_ss_decrypt_all");
         }
         goto CLEAN_UP;
     }
 
     int len = parse_udprealy_header(buf, buf_len, NULL, NULL);
     if (len == 0) {
-        LOGD("[udp] Error in parse header");
+        LOGD("[udp] error in parse header");
         // error in parse header
         goto CLEAN_UP;
     }
@@ -565,7 +565,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
                    (struct sockaddr *)&remote_ctx->src_addr, addr_len);
 
     if (s == -1) {
-        ERROR("udprelay_sendto_local");
+        ERROR("[udp] sendto_local");
     }
 
  CLEAN_UP:
@@ -590,7 +590,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         // error on recv
         // simply drop that packet
         if (verbose) {
-            ERROR("udprelay_server_recvfrom");
+            ERROR("[udp] server_recvfrom");
         }
         goto CLEAN_UP;
     }
@@ -603,7 +603,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
     if (buf == NULL) {
         if (verbose) {
-            ERROR("udprelay_server_ss_decrypt_all");
+            ERROR("[udp] server_ss_decrypt_all");
         }
         goto CLEAN_UP;
     }
@@ -720,7 +720,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
 #ifndef UDPRELAY_TUNNEL
     if (frag) {
-        LOGE("drop a message since frag is not 0, but %d", frag);
+        LOGE("[udp] drop a message since frag is not 0, but %d", frag);
         goto CLEAN_UP;
     }
 #endif
@@ -736,14 +736,14 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         int s = getaddrinfo(server_ctx->remote_host, server_ctx->remote_port,
                             &hints, &result);
         if (s != 0 || result == NULL) {
-            LOGE("getaddrinfo: %s", gai_strerror(s));
+            LOGE("[udp] getaddrinfo: %s", gai_strerror(s));
             goto CLEAN_UP;
         }
 
         // Bind to any port
         int remotefd = create_remote_socket(result->ai_family == AF_INET6);
         if (remotefd < 0) {
-            ERROR("udprelay bind() error..");
+            ERROR("[udp] udprelay bind() error..");
             // remember to free addrinfo
             freeaddrinfo(result);
             goto CLEAN_UP;
@@ -792,7 +792,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                    (struct sockaddr *)&remote_ctx->dst_addr, addr_len);
 
     if (s == -1) {
-        ERROR("udprelay_sendto_remote");
+        ERROR("[udp] sendto_remote");
     }
 
 #else
@@ -808,7 +808,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                                     host, port, &hints);
 
         if (query == NULL) {
-            ERROR("udp_asyncns_getaddrinfo");
+            ERROR("[udp] asyncns_getaddrinfo");
             goto CLEAN_UP;
         }
 
@@ -830,7 +830,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                        (struct sockaddr *)&remote_ctx->dst_addr, addr_len);
 
         if (s == -1) {
-            ERROR("udprelay_sendto_remote");
+            ERROR("[udp] sendto_remote");
         }
     }
 #endif
@@ -845,7 +845,7 @@ void free_cb(void *element)
     struct remote_ctx *remote_ctx = (struct remote_ctx *)element;
 
     if (verbose) {
-        LOGD("free a remote ctx");
+        LOGD("[udp] free a remote context");
     }
 
     close_and_free_remote(EV_DEFAULT, remote_ctx);
@@ -877,7 +877,7 @@ int init_udprelay(const char *server_host, const char *server_port,
     // setup asyncns
     asyncns_t *asyncns;
     if (!(asyncns = asyncns_new(dns_thread_num))) {
-        FATAL("asyncns failed");
+        FATAL("[udp] asyncns failed");
     }
     resolve_ctx = malloc(sizeof(struct resolve_ctx));
 
@@ -892,7 +892,7 @@ int init_udprelay(const char *server_host, const char *server_port,
     // Bind to port
     int serverfd = create_server_socket(server_host, server_port);
     if (serverfd < 0) {
-        FATAL("udprelay bind() error..");
+        FATAL("[udp] bind() error..");
     }
     setnonblocking(serverfd);
 
