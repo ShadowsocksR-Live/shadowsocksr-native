@@ -107,6 +107,22 @@ static int setinterface(int socket_fd, const char * interface_name)
 }
 #endif
 
+#if defined(UDPRELAY_REMOTE) && defined(SO_BROADCAST)
+static int set_broadcast(int socket_fd)
+{
+    int opt = 1;
+    return setsockopt(socket_fd, SOL_SOCKET, SO_BROADCAST, &opt, sizeof(opt));
+}
+#endif
+
+#ifdef SO_NOSIGPIPE
+static int set_nosigpipe(int socket_fd)
+{
+    int opt = 1;
+    return setsockopt(socket_fd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+}
+#endif
+
 static char *hash_key(const char *header, const int header_len,
                       const struct sockaddr_storage *addr)
 {
@@ -276,7 +292,7 @@ int create_server_socket(const char *host, const char *port)
         int opt = 1;
         setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
-        setsockopt(server_sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+        set_nosigpipe(remotefd);
 #endif
 
         s = bind(server_sock, rp->ai_addr, rp->ai_addrlen);
@@ -421,9 +437,11 @@ static void query_resolve_cb(EV_P_ ev_io *w, int revents)
         int remotefd = create_remote_socket(rp->ai_family == AF_INET6);
         if (remotefd != -1) {
             setnonblocking(remotefd);
+#ifdef SO_BROADCAST
+            set_broadcast(remotefd);
+#endif
 #ifdef SO_NOSIGPIPE
-            int opt = 1;
-            setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+            set_nosigpipe(remotefd);
 #endif
 #ifdef SET_INTERFACE
             if (query_ctx->server_ctx->iface) {
@@ -751,8 +769,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         setnonblocking(remotefd);
 
 #ifdef SO_NOSIGPIPE
-        int opt = 1;
-        setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+        set_nosigpipe(remotefd);
 #endif
 #ifdef SET_INTERFACE
         if (server_ctx->iface) {
