@@ -440,15 +440,6 @@ static void query_resolve_cb(EV_P_ ev_io *w, int revents)
             memcpy(remote_ctx->addr_header, query_ctx->addr_header,
                    query_ctx->addr_header_len);
 
-            // Add to conn cache
-            char *key = hash_key(remote_ctx->addr_header,
-                                 remote_ctx->addr_header_len,
-                                 &remote_ctx->src_addr);
-            cache_insert(query_ctx->server_ctx->conn_cache, key,
-                         (void *)remote_ctx);
-
-            ev_io_start(EV_A_ & remote_ctx->io);
-
             size_t addr_len = sizeof(struct sockaddr_in);
             if (remote_ctx->dst_addr.ss_family == AF_INET6) {
                 addr_len = sizeof(struct sockaddr_in6);
@@ -460,6 +451,15 @@ static void query_resolve_cb(EV_P_ ev_io *w, int revents)
             if (s == -1) {
                 ERROR("udprelay_sendto_remote");
                 close_and_free_remote(EV_A_ remote_ctx);
+            } else {
+                // Add to conn cache
+                char *key = hash_key(remote_ctx->addr_header,
+                                     remote_ctx->addr_header_len,
+                                     &remote_ctx->src_addr);
+                cache_insert(query_ctx->server_ctx->conn_cache, key,
+                             (void *)remote_ctx);
+
+                ev_io_start(EV_A_ & remote_ctx->io);
             }
 
         } else {
