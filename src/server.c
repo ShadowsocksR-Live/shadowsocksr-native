@@ -89,9 +89,7 @@ static void close_and_free_server(EV_P_ struct server *server);
 
 int verbose = 0;
 int udprelay = 0;
-#ifdef TCP_FASTOPEN
 static int fast_open = 0;
-#endif
 #ifdef HAVE_SETRLIMIT
 static int nofile = 0;
 #endif
