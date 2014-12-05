@@ -941,12 +941,7 @@ int main(int argc, char **argv)
         switch (c) {
         case 0:
             if (option_index == 0) {
-#ifdef TCP_FASTOPEN
                 fast_open = 1;
-                LOGD("using tcp fast open");
-#else
-                LOGE("tcp fast open is not supported by this environment");
-#endif
             }
             break;
         case 's':
@@ -1051,6 +1046,14 @@ int main(int argc, char **argv)
     if (pid_flags) {
         USE_SYSLOG(argv[0]);
         daemonize(pid_path);
+    }
+
+    if (fast_open == 1) {
+#ifdef TCP_FASTOPEN
+        LOGD("using tcp fast open");
+#else
+        LOGE("tcp fast open is not supported by this environment");
+#endif
     }
 
     // ignore SIGPIPE
