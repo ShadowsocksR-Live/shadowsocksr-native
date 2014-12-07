@@ -421,7 +421,7 @@ static void query_resolve_cb(EV_P_ ev_io *w, int revents)
     err = asyncns_getaddrinfo_done(asyncns, query, &result);
 
     if (err) {
-        ERROR("[udp] getaddrinfo");
+        ERROR("[udp] asysncns_getaddrinfo");
     } else {
         // Use IPV4 address if possible
         for (rp = result; rp != NULL; rp = rp->ai_next) {
@@ -819,7 +819,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         asyncns_query_t *query;
         memset(&hints, 0, sizeof(hints));
         hints.ai_family = AF_UNSPEC;
-        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_socktype = SOCK_DGRAM;
 
         query = asyncns_getaddrinfo(server_ctx->asyncns,
                                     host, port, &hints);
