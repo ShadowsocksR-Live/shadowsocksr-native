@@ -104,7 +104,7 @@ typedef struct {
 
 #define BLOCK_SIZE 32
 
-#define CIPHER_NUM          15
+#define CIPHER_NUM          17
 #define NONE                -1
 #define TABLE               0
 #define RC4                 1
@@ -121,6 +121,8 @@ typedef struct {
 #define IDEA_CFB            12
 #define RC2_CFB             13
 #define SEED_CFB            14
+#define SALSA20             15
+#define CHACHA20            16
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))

@@ -89,7 +89,9 @@ static const char * supported_ciphers[CIPHER_NUM] =
     "des-cfb",
     "idea-cfb",
     "rc2-cfb",
-    "seed-cfb"
+    "seed-cfb",
+    "salsa20",
+    "chacha20"
 };
 
 #ifdef USE_CRYPTO_POLARSSL
@@ -109,7 +111,9 @@ static const char * supported_ciphers_polarssl[CIPHER_NUM] =
     CIPHER_UNSUPPORTED,
     CIPHER_UNSUPPORTED,
     CIPHER_UNSUPPORTED,
-    CIPHER_UNSUPPORTED
+    CIPHER_UNSUPPORTED,
+    "salsa20",
+    "chacha20"
 };
 #endif
 
@@ -130,21 +134,22 @@ static const CCAlgorithm supported_ciphers_applecc[CIPHER_NUM] =
     kCCAlgorithmDES,
     kCCAlgorithmInvalid,
     kCCAlgorithmRC2,
-    kCCAlgorithmInvalid
+    kCCAlgorithmInvalid,
+    "salsa20",
+    "chacha20"
 };
 
-#ifdef USE_CRYPTO_POLARSSL
+#endif
+
 static const int supported_ciphers_iv_size[CIPHER_NUM] =
 {
-    0, 0, 16, 16, 16, 16, 8, 16, 16, 16, 8, 8, 8, 8, 16
+    0,  0, 16, 16, 16, 16,  8, 16, 16, 16,  8, 8,  8,  8, 16,  8,  8
 };
 
 static const int supported_ciphers_key_size[CIPHER_NUM] =
 {
-    0, 16, 16, 16, 24, 32, 16, 16, 24, 32, 16, 8, 16, 16, 16
+    0, 16, 16, 16, 24, 32, 16, 16, 24, 32, 16, 8, 16, 16, 16, 32, 32
 };
-#endif
-#endif
 
 static int random_compare(const void *_x, const void *_y, uint32_t i,
                           uint64_t a)
@@ -466,6 +471,7 @@ const cipher_kt_t *get_cipher_type(int method)
         LOGE("get_cipher_type(): Illegal method");
         return NULL;
     }
+
     if (method == RC4_MD5) {
         method = RC4;
     }
@@ -890,7 +896,28 @@ void enc_key_init(int method, const char *pass)
 #endif
 
     uint8_t iv[MAX_IV_LENGTH];
-    const cipher_kt_t *cipher = get_cipher_type(method);
+
+    cipher_kt_t *cipher;
+
+    if (method == SALSA20 || method == CHACHA20) {
+        if (sodium_init() == -1) {
+            FATAL("Failed to initialize sodium");
+        }
+        // Fake cipher
+        cipher = (cipher_kt_t *) get_cipher_type(RC4);
+#if defined(USE_CRYPTO_OPENSSL)
+        cipher->key_len = supported_ciphers_key_size[method];
+        cipher->iv_len = supported_ciphers_iv_size[method];
+#endif
+#if defined(USE_CRYPTO_POLARSSL)
+        cipher->base = NULL;
+        cipher->key_length = supported_ciphers_key_size[method] * 8;
+        cipher->iv_size = supported_ciphers_iv_size[method];
+#endif
+    } else {
+        cipher = (cipher_kt_t *) get_cipher_type(method);
+    }
+
     if (cipher == NULL) {
         do {
 #if defined(USE_CRYPTO_POLARSSL) && defined(USE_CRYPTO_APPLECC)
@@ -907,6 +934,7 @@ void enc_key_init(int method, const char *pass)
             FATAL("Cannot initialize cipher");
         } while (0);
     }
+
     const digest_type_t *md = get_digest_type("MD5");
     if (md == NULL) {
         FATAL("MD5 Digest not found in crypto library");
