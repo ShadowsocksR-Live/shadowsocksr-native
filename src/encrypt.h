@@ -102,7 +102,7 @@ typedef struct {
 #include <inttypes.h>
 #endif
 
-#define BLOCK_SIZE 32
+#define SODIUM_BLOCK_SIZE   64
 
 #define CIPHER_NUM          17
 #define NONE                -1
@@ -129,6 +129,7 @@ typedef struct {
 
 struct enc_ctx {
     uint8_t init;
+    uint64_t counter;
     cipher_ctx_t evp;
 };
 

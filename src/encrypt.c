@@ -57,6 +57,7 @@
 static uint8_t *enc_table;
 static uint8_t *dec_table;
 static uint8_t enc_key[MAX_KEY_LENGTH];
+static uint8_t enc_iv[MAX_IV_LENGTH];
 static int enc_key_len;
 static int enc_iv_len;
 static int enc_method;
@@ -135,8 +136,8 @@ static const CCAlgorithm supported_ciphers_applecc[CIPHER_NUM] =
     kCCAlgorithmInvalid,
     kCCAlgorithmRC2,
     kCCAlgorithmInvalid,
-    "salsa20",
-    "chacha20"
+    kCCAlgorithmInvalid,
+    kCCAlgorithmInvalid
 };
 
 #endif
@@ -511,6 +512,11 @@ void cipher_context_init(cipher_ctx_t *ctx, int method, int enc)
         return;
     }
 
+    if (method >= SALSA20) {
+        enc_iv_len = supported_ciphers_iv_size[method];
+        return;
+    }
+
     const char *ciphername = supported_ciphers[method];
 #if defined(USE_CRYPTO_APPLECC)
     cipher_cc_t *cc = &ctx->cc;
@@ -566,13 +572,20 @@ void cipher_context_set_iv(cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len,
                            int enc)
 {
     const unsigned char *true_key;
+
     if (iv == NULL) {
         LOGE("cipher_context_set_iv(): IV is null");
         return;
     }
+
     if (enc) {
         rand_bytes(iv, iv_len);
     }
+
+    if (enc_method >= SALSA20) {
+        return;
+    }
+
     if (enc_method == RC4_MD5) {
         unsigned char key_iv[32];
         memcpy(key_iv, enc_key, 16);
@@ -682,7 +695,7 @@ static int cipher_context_update(cipher_ctx_t *ctx, uint8_t *output, int *olen,
     if (cc->valid == kCCContextValid) {
         CCCryptorStatus ret;
         ret = CCCryptorUpdate(cc->cryptor, input, ilen, output,
-                              ilen + BLOCK_SIZE, (size_t *)olen);
+                              ilen, (size_t *)olen);
         return (ret == kCCSuccess) ? 1 : 0;
     }
 #endif
@@ -702,7 +715,7 @@ char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method)
         cipher_ctx_t evp;
         cipher_context_init(&evp, method, 1);
 
-        int c_len = *len + BLOCK_SIZE;
+        int c_len = *len;
         int iv_len = enc_iv_len;
         int err = 0;
         char *ciphertext = malloc(max(iv_len + c_len, buf_size));
@@ -746,25 +759,45 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
                   struct enc_ctx *ctx)
 {
     if (ctx != NULL) {
-        int c_len = *len + BLOCK_SIZE;
         int iv_len = 0;
-        int err = 0;
-        char *ciphertext = malloc(max(iv_len + c_len, buf_size));
+        int c_len = *len;
+        if (!ctx->init) {
+            iv_len = enc_iv_len;
+        }
+
+        int buf_len = max(iv_len + c_len, buf_size);
+        char *ciphertext = malloc(buf_len);
 
         if (!ctx->init) {
             uint8_t iv[MAX_IV_LENGTH];
-            iv_len = enc_iv_len;
             cipher_context_set_iv(&ctx->evp, iv, iv_len, 1);
             memcpy(ciphertext, iv, iv_len);
+            memcpy(enc_iv, iv, iv_len);
+            ctx->counter = 0;
             ctx->init = 1;
         }
 
-        err = cipher_context_update(&ctx->evp, (uint8_t *)(ciphertext + iv_len),
-                                    &c_len, (const uint8_t *)plaintext, *len);
-        if (!err) {
-            free(ciphertext);
-            free(plaintext);
-            return NULL;
+        if (enc_method >= SALSA20) {
+            int padding = ctx->counter % SODIUM_BLOCK_SIZE;
+            if (buf_len < iv_len + padding + c_len) {
+                buf_len= max(iv_len + padding + c_len, buf_size);
+                ciphertext = realloc(buf_len);
+            }
+            if (padding) {
+                memset(ciphertext + iv_len, 0, padding);
+            }
+            crypto_stream_salsa20_xor_ic((uint8_t *)(ciphertext + iv_len), (const uint8_t *)plaintext,
+                    c_len, (const uint8_t *)enc_iv, ctx->counter, enc_key);
+            ctx->counter += *len;
+            memmove(ciphertext + iv_len, ciphertext + iv_len + padding, c_len);
+        } else {
+            int err = cipher_context_update(&ctx->evp, (uint8_t *)(ciphertext + iv_len),
+                    &c_len, (const uint8_t *)plaintext, *len);
+            if (!err) {
+                free(ciphertext);
+                free(plaintext);
+                return NULL;
+            }
         }
 
 #ifdef DEBUG
@@ -791,7 +824,7 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
         cipher_ctx_t evp;
         cipher_context_init(&evp, method, 0);
 
-        int p_len = *len + BLOCK_SIZE;
+        int p_len = *len;
         int iv_len = enc_iv_len;
         int err = 0;
         char *plaintext = malloc(max(p_len, buf_size));
@@ -833,7 +866,7 @@ char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len,
                   struct enc_ctx *ctx)
 {
     if (ctx != NULL) {
-        int p_len = *len + BLOCK_SIZE;
+        int p_len = *len;
         int iv_len = 0;
         int err = 0;
         char *plaintext = malloc(max(p_len, buf_size));
