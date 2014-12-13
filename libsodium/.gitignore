@@ -27,16 +27,13 @@ autom4te.cache
 build
 compile
 confdefs.h
-config.*
 configure
 coverage.info
 depcomp
 android-toolchain
-install-sh
 libtool
 libsodium.pc
 libsodium-*
-ltmain.sh
 m4/argz.m4
 m4/libtool.m4
 m4/ltoptions.m4
@@ -45,7 +42,6 @@ m4/ltversion.m4
 m4/lt~obsolete.m4
 man/*.html
 man/Makefile.in
-missing
 src/curvecp/curvecpclient
 src/curvecp/curvecpmakekey
 src/curvecp/curvecpmessage

@@ -5,6 +5,7 @@ AM_CFLAGS += -I$(top_srcdir)/libev
 AM_CFLAGS += -I$(top_srcdir)/libasyncns
 AM_CFLAGS += -I$(top_srcdir)/libipset/include
 AM_CFLAGS += -I$(top_srcdir)/libcork/include
+AM_CFLAGS += -I$(top_srcdir)/libsodium/src/libsodium/include
 
 AM_LDFLAGS = -static
 
