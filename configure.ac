@@ -19,8 +19,8 @@ LT_INIT([dlopen])
 dnl Checks for libsodium
 LIBSODIUM_SEARCH_HEADERS=
 LIBSODIUM_SEARCH_LIBS=
-AC_ARG_WITH(libsodium-headers,
-    AC_HELP_STRING([--with-libsodium-headers=DIR],
+AC_ARG_WITH(libsodium-include,
+    AC_HELP_STRING([--with-libsodium-include=DIR],
                    [search for libsodium header files in DIR]),
     [
         LIBSODIUM_SEARCH_HEADERS="$withval"
@@ -28,8 +28,8 @@ AC_ARG_WITH(libsodium-headers,
     ]
 )
 
-AC_ARG_WITH(libsodium-libs,
-    AC_HELP_STRING([--with-libsodium-libs=DIR],
+AC_ARG_WITH(libsodium-lib,
+    AC_HELP_STRING([--with-libsodium-lib=DIR],
                    [search for libsodium libraries in DIR]),
     [
         LIBSODIUM_SEARCH_LIBS="$withval"
