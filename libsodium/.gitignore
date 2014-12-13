@@ -27,7 +27,6 @@ build
 compile
 confdefs.h
 coverage.info
-depcomp
 android-toolchain
 libtool
 libsodium.pc
