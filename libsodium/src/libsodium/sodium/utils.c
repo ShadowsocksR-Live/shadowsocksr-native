@@ -19,6 +19,11 @@
 #ifdef _WIN32
 # include <windows.h>
 # include <wincrypt.h>
+#ifdef __MINGW32__
+#ifndef SecureZeroMemory
+#define SecureZeroMemory(p,s) RtlFillMemory((p),(s),0)
+#endif
+#endif
 #else
 # include <unistd.h>
 #endif
