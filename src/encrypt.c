@@ -173,12 +173,12 @@ static int crypto_stream_xor_ic(uint8_t *c, const uint8_t *m, uint64_t mlen,
 {
     switch (method) {
         case SALSA20:
-            crypto_stream_salsa20_xor_ic(c, m, mlen, n, ic, k);
-            break;
+            return crypto_stream_salsa20_xor_ic(c, m, mlen, n, ic, k);
         case CHACHA20:
-            crypto_stream_chacha20_xor_ic(c, m, mlen, n, ic, k);
-            break;
+            return crypto_stream_chacha20_xor_ic(c, m, mlen, n, ic, k);
     }
+    // always return 0
+    return 0;
 }
 #endif
 
@@ -758,7 +758,7 @@ char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method)
 
         int p_len = *len, c_len = *len;
         int iv_len = enc_iv_len;
-        int err = 0;
+        int err = 1;
         char *ciphertext = malloc(max(iv_len + c_len, buf_size));
 
         uint8_t iv[MAX_IV_LENGTH];
@@ -767,8 +767,8 @@ char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method)
 
 #ifdef HAVE_SODIUM_H
         if (method >= SALSA20) {
-            err = crypto_stream_xor_ic((uint8_t *)(ciphertext + iv_len),
-                    (const uint8_t *)plaintext, (uint64_t)p_len, (const uint8_t *)iv,
+            crypto_stream_xor_ic((uint8_t *)(ciphertext + iv_len),
+                    (const uint8_t *)plaintext, (uint64_t)(p_len), (const uint8_t *)iv,
                     0, enc_key, method);
         } else {
 #endif
@@ -792,7 +792,11 @@ char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method)
 
         *len = iv_len + c_len;
         free(plaintext);
-        cipher_context_release(&evp);
+
+#ifdef HAVE_SODIUM_H
+        if (method < SALSA20)
+#endif
+            cipher_context_release(&evp);
 
         return ciphertext;
 
@@ -810,6 +814,7 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
                   struct enc_ctx *ctx)
 {
     if (ctx != NULL) {
+        int err = 1;
         int iv_len = 0;
         int p_len = *len, c_len = *len;
         if (!ctx->init) {
@@ -834,23 +839,23 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
             int padding = ctx->counter % SODIUM_BLOCK_SIZE;
             if (buf_len < iv_len + padding + c_len) {
                 buf_len= max(iv_len + (padding + c_len) * 2, buf_size);
-                ciphertext = realloc(buf_len);
+                ciphertext = realloc(ciphertext, buf_len);
             }
             if (padding) {
-                plaintext = realloc(p_len + padding);
+                plaintext = realloc(plaintext, p_len + padding);
                 memmove(plaintext + padding, plaintext, p_len);
                 memset(plaintext, 0, padding);
             }
-            err = crypto_stream_xor_ic((uint8_t *)(ciphertext + iv_len),
-                    (const uint8_t *)plaintext, (uint64_t)p_len, (const uint8_t *)ctx->evp->iv,
-                    ctx->counter / SODIUM_BLOCK_SIZE, enc_key, method);
+            crypto_stream_xor_ic((uint8_t *)(ciphertext + iv_len),
+                    (const uint8_t *)plaintext, (uint64_t)(p_len + padding), (const uint8_t *)ctx->evp.iv,
+                    ctx->counter / SODIUM_BLOCK_SIZE, enc_key, enc_method);
             ctx->counter += p_len;
             if (padding) {
                 memmove(ciphertext + iv_len, ciphertext + iv_len + padding, c_len);
             }
         } else {
 #endif
-            int err = cipher_context_update(&ctx->evp, (uint8_t *)(ciphertext + iv_len),
+            err = cipher_context_update(&ctx->evp, (uint8_t *)(ciphertext + iv_len),
                     &c_len, (const uint8_t *)plaintext, p_len);
             if (!err) {
                 free(ciphertext);
@@ -887,7 +892,7 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
 
         int c_len = *len, p_len = *len;
         int iv_len = enc_iv_len;
-        int err = 0;
+        int err = 1;
         char *plaintext = malloc(max(p_len, buf_size));
 
         uint8_t iv[MAX_IV_LENGTH];
@@ -896,7 +901,7 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
 
 #ifdef HAVE_SODIUM_H
         if (method >= SALSA20) {
-            err = crypto_stream_xor_ic((uint8_t *)plaintext,
+            crypto_stream_xor_ic((uint8_t *)plaintext,
                     (const uint8_t *)(ciphertext + iv_len), (uint64_t)(c_len - iv_len),
                     (const uint8_t *)iv, 0, enc_key, method);
         } else {
@@ -922,7 +927,12 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
 
         *len = p_len;
         free(ciphertext);
-        cipher_context_release(&evp);
+
+#ifdef HAVE_SODIUM_H
+        if (method < SALSA20)
+#endif
+            cipher_context_release(&evp);
+
         return plaintext;
     } else {
         char *begin = ciphertext;
@@ -940,7 +950,7 @@ char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len,
     if (ctx != NULL) {
         int c_len = *len, p_len = *len;
         int iv_len = 0;
-        int err = 0;
+        int err = 1;
         int buf_len = max(p_len, buf_size);
         char *plaintext = malloc(buf_len);
 
@@ -960,16 +970,17 @@ char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len,
         if (enc_method >= SALSA20) {
             int padding = ctx->counter % SODIUM_BLOCK_SIZE;
             if (buf_len < p_len + padding) {
-                buf_len= max((p_len + padding) * 2, buf_size);
-                plaintext = realloc(buf_len);
+                buf_len = max((p_len + padding) * 2, buf_size);
+                plaintext = realloc(plaintext, buf_len);
             }
             if (padding) {
-                ciphertext = realloc(max(c_len + padding, buf_size));
+                ciphertext = realloc(ciphertext, max(c_len + padding, buf_size));
+                memmove(ciphertext + iv_len + padding, ciphertext + iv_len, c_len - iv_len);
                 memset(ciphertext + iv_len, 0, padding);
             }
-            err = crypto_stream_xor_ic((uint8_t *)plaintext,
-                    (const uint8_t *)(ciphertext + iv_len), (uint64_t)(c_len - iv_len),
-                    (const uint8_t *)ctx->evp->iv, ctx->counter / SODIUM_BLOCK_SIZE, enc_key, method);
+            crypto_stream_xor_ic((uint8_t *)plaintext,
+                    (const uint8_t *)(ciphertext + iv_len), (uint64_t)(c_len - iv_len + padding),
+                    (const uint8_t *)ctx->evp.iv, ctx->counter / SODIUM_BLOCK_SIZE, enc_key, enc_method);
             ctx->counter += c_len - iv_len;
             if (padding) {
                 memmove(plaintext, plaintext + padding, p_len);
