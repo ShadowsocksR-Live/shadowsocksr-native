@@ -40,6 +40,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #if defined(USE_CRYPTO_OPENSSL)
 
