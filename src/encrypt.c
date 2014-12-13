@@ -990,20 +990,17 @@ void enc_key_init(int method, const char *pass)
     OpenSSL_add_all_algorithms();
 #endif
 
-#if defined(USE_CRYPTO_POLARSSL) && defined(USE_CRYPTO_APPLECC)
-    cipher_kt_t cipher_info;
-#endif
-
     uint8_t iv[MAX_IV_LENGTH];
 
     cipher_kt_t *cipher;
+    cipher_kt_t cipher_info;
 
     if (method == SALSA20 || method == CHACHA20) {
         if (sodium_init() == -1) {
             FATAL("Failed to initialize sodium");
         }
         // Fake cipher
-        cipher = (cipher_kt_t *) get_cipher_type(RC4);
+        cipher = (cipher_kt_t *)&cipher_info;
 #if defined(USE_CRYPTO_OPENSSL)
         cipher->key_len = supported_ciphers_key_size[method];
         cipher->iv_len = supported_ciphers_iv_size[method];
@@ -1024,7 +1021,7 @@ void enc_key_init(int method, const char *pass)
                 cipher_info.base = NULL;
                 cipher_info.key_length = supported_ciphers_key_size[method] * 8;
                 cipher_info.iv_size = supported_ciphers_iv_size[method];
-                cipher = (const cipher_kt_t *)&cipher_info;
+                cipher = (cipher_kt_t *)&cipher_info;
                 break;
             }
 #endif
