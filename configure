@@ -15108,6 +15108,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 subdirs="$subdirs libsodium"
 
+
 ac_config_files="$ac_config_files shadowsocks-libev.pc Makefile libcork/Makefile libipset/Makefile libasyncns/Makefile libev/Makefile src/Makefile"
 
 cat >confcache <<\_ACEOF

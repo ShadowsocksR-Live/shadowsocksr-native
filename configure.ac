@@ -217,6 +217,7 @@ AC_CHECK_FUNCS([malloc memset socket])
 ACX_PTHREAD
 
 AC_CONFIG_SUBDIRS([libsodium])
+
 AC_CONFIG_FILES([ shadowsocks-libev.pc
                  Makefile
                  libcork/Makefile
