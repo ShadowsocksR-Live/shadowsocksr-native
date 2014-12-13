@@ -26,6 +26,10 @@
 #include "config.h"
 #endif
 
+#ifndef HAVE_SODIUM_H
+#define HAVE_SODIUM_H
+#endif
+
 #if defined(USE_CRYPTO_OPENSSL)
 
 #include <openssl/md5.h>
@@ -709,6 +713,11 @@ void cipher_context_set_iv(cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len,
 
 void cipher_context_release(cipher_ctx_t *ctx)
 {
+#ifdef HAVE_SODIUM_H
+    if (enc_method >= SALSA20)
+        return;
+#endif
+
 #ifdef USE_CRYPTO_APPLECC
     cipher_cc_t *cc = &ctx->cc;
     if (cc->cryptor != NULL) {
@@ -793,10 +802,7 @@ char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method)
         *len = iv_len + c_len;
         free(plaintext);
 
-#ifdef HAVE_SODIUM_H
-        if (method < SALSA20)
-#endif
-            cipher_context_release(&evp);
+        cipher_context_release(&evp);
 
         return ciphertext;
 
@@ -928,10 +934,7 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
         *len = p_len;
         free(ciphertext);
 
-#ifdef HAVE_SODIUM_H
-        if (method < SALSA20)
-#endif
-            cipher_context_release(&evp);
+        cipher_context_release(&evp);
 
         return plaintext;
     } else {

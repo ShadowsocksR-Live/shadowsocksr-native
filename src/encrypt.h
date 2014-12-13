@@ -92,7 +92,7 @@ typedef struct {
 #ifdef USE_CRYPTO_APPLECC
     cipher_cc_t cc;
 #endif
-#if HAVE_SODIUM_H
+#ifdef HAVE_SODIUM_H
     uint8_t iv[MAX_IV_LENGTH];
 #endif
 } cipher_ctx_t;
@@ -103,7 +103,7 @@ typedef struct {
 #include <inttypes.h>
 #endif
 
-#if HAVE_SODIUM_H
+#ifdef HAVE_SODIUM_H
 #define SODIUM_BLOCK_SIZE   64
 #define CIPHER_NUM          17
 #else
@@ -136,7 +136,7 @@ typedef struct {
 
 struct enc_ctx {
     uint8_t init;
-#if HAVE_SODIUM_H
+#ifdef HAVE_SODIUM_H
     uint64_t counter;
 #endif
     cipher_ctx_t evp;
