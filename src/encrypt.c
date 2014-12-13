@@ -20,11 +20,11 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#include <stdint.h>
 
 #if defined(USE_CRYPTO_OPENSSL)
 
@@ -49,6 +49,10 @@
 
 #endif
 
+#ifdef HAVE_SODIUM_H
+#include <sodium.h>
+#endif
+
 #include "encrypt.h"
 #include "utils.h"
 
@@ -57,7 +61,6 @@
 static uint8_t *enc_table;
 static uint8_t *dec_table;
 static uint8_t enc_key[MAX_KEY_LENGTH];
-static uint8_t enc_iv[MAX_IV_LENGTH];
 static int enc_key_len;
 static int enc_iv_len;
 static int enc_method;
@@ -90,9 +93,11 @@ static const char * supported_ciphers[CIPHER_NUM] =
     "des-cfb",
     "idea-cfb",
     "rc2-cfb",
-    "seed-cfb",
-    "salsa20",
-    "chacha20"
+    "seed-cfb"
+#ifdef HAVE_SODIUM_H
+    ,"salsa20"
+    ,"chacha20"
+#endif
 };
 
 #ifdef USE_CRYPTO_POLARSSL
@@ -112,9 +117,11 @@ static const char * supported_ciphers_polarssl[CIPHER_NUM] =
     CIPHER_UNSUPPORTED,
     CIPHER_UNSUPPORTED,
     CIPHER_UNSUPPORTED,
-    CIPHER_UNSUPPORTED,
-    "salsa20",
-    "chacha20"
+    CIPHER_UNSUPPORTED
+#ifdef HAVE_SODIUM_H
+    ,"salsa20"
+    ,"chacha20"
+#endif
 };
 #endif
 
@@ -142,15 +149,38 @@ static const CCAlgorithm supported_ciphers_applecc[CIPHER_NUM] =
 
 #endif
 
+#if defined(HAVE_SODIUM_H) || (defined(USE_CRYPTO_POLARSSL) && defined(USE_CRYPTO_APPLECC))
 static const int supported_ciphers_iv_size[CIPHER_NUM] =
 {
-    0,  0, 16, 16, 16, 16,  8, 16, 16, 16,  8, 8,  8,  8, 16,  8,  8
+    0,  0, 16, 16, 16, 16,  8, 16, 16, 16,  8, 8,  8,  8, 16
+#ifdef HAVE_SODIUM_H
+        ,  8,  8
+#endif
 };
 
 static const int supported_ciphers_key_size[CIPHER_NUM] =
 {
-    0, 16, 16, 16, 24, 32, 16, 16, 24, 32, 16, 8, 16, 16, 16, 32, 32
+    0, 16, 16, 16, 24, 32, 16, 16, 24, 32, 16, 8, 16, 16, 16
+#ifdef HAVE_SODIUM_H
+        , 32, 32
+#endif
 };
+#endif
+
+#ifdef HAVE_SODIUM_H
+static int crypto_stream_xor_ic(uint8_t *c, const uint8_t *m, uint64_t mlen,
+        const uint8_t *n, uint64_t ic, const uint8_t *k, int method)
+{
+    switch (method) {
+        case SALSA20:
+            crypto_stream_salsa20_xor_ic(c, m, mlen, n, ic, k);
+            break;
+        case CHACHA20:
+            crypto_stream_chacha20_xor_ic(c, m, mlen, n, ic, k);
+            break;
+    }
+}
+#endif
 
 static int random_compare(const void *_x, const void *_y, uint32_t i,
                           uint64_t a)
@@ -477,6 +507,12 @@ const cipher_kt_t *get_cipher_type(int method)
         method = RC4;
     }
 
+#ifdef HAVE_SODIUM_H
+    if (method >= SALSA20) {
+        return NULL;
+    }
+#endif
+
     const char *ciphername = supported_ciphers[method];
 #if defined(USE_CRYPTO_OPENSSL)
     return EVP_get_cipherbyname(ciphername);
@@ -512,10 +548,12 @@ void cipher_context_init(cipher_ctx_t *ctx, int method, int enc)
         return;
     }
 
+#ifdef HAVE_SODIUM_H
     if (method >= SALSA20) {
         enc_iv_len = supported_ciphers_iv_size[method];
         return;
     }
+#endif
 
     const char *ciphername = supported_ciphers[method];
 #if defined(USE_CRYPTO_APPLECC)
@@ -582,9 +620,12 @@ void cipher_context_set_iv(cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len,
         rand_bytes(iv, iv_len);
     }
 
+#ifdef HAVE_SODIUM_H
     if (enc_method >= SALSA20) {
+        memcpy(ctx->iv, iv, iv_len);
         return;
     }
+#endif
 
     if (enc_method == RC4_MD5) {
         unsigned char key_iv[32];
@@ -715,7 +756,7 @@ char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method)
         cipher_ctx_t evp;
         cipher_context_init(&evp, method, 1);
 
-        int c_len = *len;
+        int p_len = *len, c_len = *len;
         int iv_len = enc_iv_len;
         int err = 0;
         char *ciphertext = malloc(max(iv_len + c_len, buf_size));
@@ -724,8 +765,18 @@ char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method)
         cipher_context_set_iv(&evp, iv, iv_len, 1);
         memcpy(ciphertext, iv, iv_len);
 
-        err = cipher_context_update(&evp, (uint8_t *)(ciphertext + iv_len),
-                                    &c_len, (const uint8_t *)plaintext, *len);
+#ifdef HAVE_SODIUM_H
+        if (method >= SALSA20) {
+            err = crypto_stream_xor_ic((uint8_t *)(ciphertext + iv_len),
+                    (const uint8_t *)plaintext, (uint64_t)p_len, (const uint8_t *)iv,
+                    0, enc_key, method);
+        } else {
+#endif
+            err = cipher_context_update(&evp, (uint8_t *)(ciphertext + iv_len),
+                    &c_len, (const uint8_t *)plaintext, p_len);
+#ifdef HAVE_SODIUM_H
+        }
+#endif
 
         if (!err) {
             free(ciphertext);
@@ -760,7 +811,7 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
 {
     if (ctx != NULL) {
         int iv_len = 0;
-        int c_len = *len;
+        int p_len = *len, c_len = *len;
         if (!ctx->init) {
             iv_len = enc_iv_len;
         }
@@ -772,36 +823,46 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
             uint8_t iv[MAX_IV_LENGTH];
             cipher_context_set_iv(&ctx->evp, iv, iv_len, 1);
             memcpy(ciphertext, iv, iv_len);
-            memcpy(enc_iv, iv, iv_len);
+#ifdef HAVE_SODIUM_H
             ctx->counter = 0;
+#endif
             ctx->init = 1;
         }
 
+#ifdef HAVE_SODIUM_H
         if (enc_method >= SALSA20) {
             int padding = ctx->counter % SODIUM_BLOCK_SIZE;
             if (buf_len < iv_len + padding + c_len) {
-                buf_len= max(iv_len + padding + c_len, buf_size);
+                buf_len= max(iv_len + (padding + c_len) * 2, buf_size);
                 ciphertext = realloc(buf_len);
             }
             if (padding) {
-                memset(ciphertext + iv_len, 0, padding);
+                plaintext = realloc(p_len + padding);
+                memmove(plaintext + padding, plaintext, p_len);
+                memset(plaintext, 0, padding);
             }
-            crypto_stream_salsa20_xor_ic((uint8_t *)(ciphertext + iv_len), (const uint8_t *)plaintext,
-                    c_len, (const uint8_t *)enc_iv, ctx->counter, enc_key);
-            ctx->counter += *len;
-            memmove(ciphertext + iv_len, ciphertext + iv_len + padding, c_len);
+            err = crypto_stream_xor_ic((uint8_t *)(ciphertext + iv_len),
+                    (const uint8_t *)plaintext, (uint64_t)p_len, (const uint8_t *)ctx->evp->iv,
+                    ctx->counter / SODIUM_BLOCK_SIZE, enc_key, method);
+            ctx->counter += p_len;
+            if (padding) {
+                memmove(ciphertext + iv_len, ciphertext + iv_len + padding, c_len);
+            }
         } else {
+#endif
             int err = cipher_context_update(&ctx->evp, (uint8_t *)(ciphertext + iv_len),
-                    &c_len, (const uint8_t *)plaintext, *len);
+                    &c_len, (const uint8_t *)plaintext, p_len);
             if (!err) {
                 free(ciphertext);
                 free(plaintext);
                 return NULL;
             }
+#ifdef HAVE_SODIUM_H
         }
+#endif
 
 #ifdef DEBUG
-        dump("PLAIN", plaintext, *len);
+        dump("PLAIN", plaintext, p_len);
         dump("CIPHER", ciphertext + iv_len, c_len);
 #endif
 
@@ -824,7 +885,7 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
         cipher_ctx_t evp;
         cipher_context_init(&evp, method, 0);
 
-        int p_len = *len;
+        int c_len = *len, p_len = *len;
         int iv_len = enc_iv_len;
         int err = 0;
         char *plaintext = malloc(max(p_len, buf_size));
@@ -833,9 +894,20 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
         memcpy(iv, ciphertext, iv_len);
         cipher_context_set_iv(&evp, iv, iv_len, 0);
 
-        err = cipher_context_update(&evp, (uint8_t *)plaintext, &p_len,
-                                    (const uint8_t *)(ciphertext + iv_len),
-                                    *len - iv_len);
+#ifdef HAVE_SODIUM_H
+        if (method >= SALSA20) {
+            err = crypto_stream_xor_ic((uint8_t *)plaintext,
+                    (const uint8_t *)(ciphertext + iv_len), (uint64_t)(c_len - iv_len),
+                    (const uint8_t *)iv, 0, enc_key, method);
+        } else {
+#endif
+            err = cipher_context_update(&evp, (uint8_t *)plaintext, &p_len,
+                    (const uint8_t *)(ciphertext + iv_len),
+                    c_len - iv_len);
+#ifdef HAVE_SODIUM_H
+        }
+#endif
+
         if (!err) {
             free(ciphertext);
             free(plaintext);
@@ -845,7 +917,7 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
 
 #ifdef DEBUG
         dump("PLAIN", plaintext, p_len);
-        dump("CIPHER", ciphertext + iv_len, *len - iv_len);
+        dump("CIPHER", ciphertext + iv_len, c_len - iv_len);
 #endif
 
         *len = p_len;
@@ -866,22 +938,50 @@ char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len,
                   struct enc_ctx *ctx)
 {
     if (ctx != NULL) {
-        int p_len = *len;
+        int c_len = *len, p_len = *len;
         int iv_len = 0;
         int err = 0;
-        char *plaintext = malloc(max(p_len, buf_size));
+        int buf_len = max(p_len, buf_size);
+        char *plaintext = malloc(buf_len);
 
         if (!ctx->init) {
             uint8_t iv[MAX_IV_LENGTH];
             iv_len = enc_iv_len;
+            p_len -= iv_len;
             memcpy(iv, ciphertext, iv_len);
             cipher_context_set_iv(&ctx->evp, iv, iv_len, 0);
+#ifdef HAVE_SODIUM_H
+            ctx->counter = 0;
+#endif
             ctx->init = 1;
         }
 
-        err = cipher_context_update(&ctx->evp, (uint8_t *)plaintext, &p_len,
-                                    (const uint8_t *)(ciphertext + iv_len),
-                                    *len - iv_len);
+#ifdef HAVE_SODIUM_H
+        if (enc_method >= SALSA20) {
+            int padding = ctx->counter % SODIUM_BLOCK_SIZE;
+            if (buf_len < p_len + padding) {
+                buf_len= max((p_len + padding) * 2, buf_size);
+                plaintext = realloc(buf_len);
+            }
+            if (padding) {
+                ciphertext = realloc(max(c_len + padding, buf_size));
+                memset(ciphertext + iv_len, 0, padding);
+            }
+            err = crypto_stream_xor_ic((uint8_t *)plaintext,
+                    (const uint8_t *)(ciphertext + iv_len), (uint64_t)(c_len - iv_len),
+                    (const uint8_t *)ctx->evp->iv, ctx->counter / SODIUM_BLOCK_SIZE, enc_key, method);
+            ctx->counter += c_len - iv_len;
+            if (padding) {
+                memmove(plaintext, plaintext + padding, p_len);
+            }
+        } else {
+#endif
+            err = cipher_context_update(&ctx->evp, (uint8_t *)plaintext, &p_len,
+                    (const uint8_t *)(ciphertext + iv_len),
+                    c_len - iv_len);
+#ifdef HAVE_SODIUM_H
+        }
+#endif
 
         if (!err) {
             free(ciphertext);
@@ -891,7 +991,7 @@ char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len,
 
 #ifdef DEBUG
         dump("PLAIN", plaintext, p_len);
-        dump("CIPHER", ciphertext + iv_len, *len - iv_len);
+        dump("CIPHER", ciphertext + iv_len, c_len - iv_len);
 #endif
 
         *len = p_len;
@@ -932,6 +1032,7 @@ void enc_key_init(int method, const char *pass)
 
     cipher_kt_t *cipher;
 
+#ifdef HAVE_SODIUM_H
     if (method == SALSA20 || method == CHACHA20) {
         if (sodium_init() == -1) {
             FATAL("Failed to initialize sodium");
@@ -948,8 +1049,11 @@ void enc_key_init(int method, const char *pass)
         cipher->iv_size = supported_ciphers_iv_size[method];
 #endif
     } else {
+#endif
         cipher = (cipher_kt_t *) get_cipher_type(method);
+#ifdef HAVE_SODIUM_H
     }
+#endif
 
     if (cipher == NULL) {
         do {

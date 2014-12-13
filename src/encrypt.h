@@ -23,8 +23,6 @@
 #ifndef _ENCRYPT_H
 #define _ENCRYPT_H
 
-#include "config.h"
-
 #ifndef __MINGW32__
 #include <sys/socket.h>
 #else
@@ -94,6 +92,9 @@ typedef struct {
 #ifdef USE_CRYPTO_APPLECC
     cipher_cc_t cc;
 #endif
+#if HAVE_SODIUM_H
+    uint8_t iv[MAX_IV_LENGTH];
+#endif
 } cipher_ctx_t;
 
 #ifdef HAVE_STDINT_H
@@ -102,9 +103,13 @@ typedef struct {
 #include <inttypes.h>
 #endif
 
+#if HAVE_SODIUM_H
 #define SODIUM_BLOCK_SIZE   64
-
 #define CIPHER_NUM          17
+#else
+#define CIPHER_NUM          15
+#endif
+
 #define NONE                -1
 #define TABLE               0
 #define RC4                 1
@@ -121,15 +126,19 @@ typedef struct {
 #define IDEA_CFB            12
 #define RC2_CFB             13
 #define SEED_CFB            14
+#ifdef HAVE_SODIUM_H
 #define SALSA20             15
 #define CHACHA20            16
+#endif
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 
 struct enc_ctx {
     uint8_t init;
+#if HAVE_SODIUM_H
     uint64_t counter;
+#endif
     cipher_ctx_t evp;
 };
 
