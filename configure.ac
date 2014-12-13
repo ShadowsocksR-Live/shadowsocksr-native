@@ -16,6 +16,68 @@ AC_DISABLE_STATIC
 AC_DISABLE_SHARED
 LT_INIT([dlopen])
 
+dnl Checks for libsodium
+LIBSODIUM_SEARCH_HEADERS=
+LIBSODIUM_SEARCH_LIBS=
+AC_ARG_WITH(libsodium-headers,
+    AC_HELP_STRING([--with-libsodium-headers=DIR],
+                   [search for libsodium header files in DIR]),
+    [
+        LIBSODIUM_SEARCH_HEADERS="$withval"
+        AC_MSG_NOTICE([will search for libsodium header files in $withval])
+    ]
+)
+
+AC_ARG_WITH(libsodium-libs,
+    AC_HELP_STRING([--with-libsodium-libs=DIR],
+                   [search for libsodium libraries in DIR]),
+    [
+        LIBSODIUM_SEARCH_LIBS="$withval"
+        AC_MSG_NOTICE([will search for libsodium libraries in $withval])
+    ]
+)
+
+LIBSODIUM_LIBS=
+LIBSODIUM_LDFLAGS=
+LDFLAGS_SAVE="$LDFLAGS"
+if test -n "$LIBSODIUM_SEARCH_LIBS"; then
+    LDFLAGS="-L$LIBSODIUM_SEARCH_LIBS $LDFLAGS"
+    AC_CHECK_LIB(sodium, crypto_stream_salsa20_xor_ic,
+        [
+            LIBSODIUM_LDFLAGS="-L$LIBSODIUM_SEARCH_LIBS"
+            LIBSODIUM_LIBS="-lsodium"
+        ],
+        [
+            AC_MSG_ERROR([required library libsodium was not found in requested location $LIBSODIUM_SEARCH_LIBS or library version is too old])
+        ]
+    )
+else
+    AC_CHECK_LIB(sodium, crypto_stream_salsa20_xor_ic)
+fi
+
+LIBSODIUM_CFLAGS=
+CFLAGS_SAVE="$CFLAGS"
+if test -n "$LIBSODIUM_SEARCH_HEADERS"; then
+    CFLAGS="-I$LIBSODIUM_SEARCH_HEADERS $CFLAGS"
+    AC_CHECK_HEADER(sodium.h,
+        [
+            LIBSODIUM_CFLAGS="-I$LIBSODIUM_SEARCH_HEADERS"
+        ],
+        [
+            AC_MSG_ERROR([header files for required library libsodium were not found in requested location $LIBSODIUM_SEARCH_HEADERS])
+        ]
+    )
+else
+    AC_CHECK_HEADERS([sodium.h])
+fi
+
+CFLAGS="$CFLAGS_SAVE"
+AC_SUBST(LIBSODIUM_CFLAGS)
+
+LDFLAGS="$LDFLAGS_SAVE"
+AC_SUBST(LIBSODIUM_LIBS)
+AC_SUBST(LIBSODIUM_LDFLAGS)
+
 dnl Checks for crypto library
 AC_ARG_WITH(
   [crypto-library],
