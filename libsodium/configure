@@ -3126,7 +3126,7 @@ fi
 
 else
 
-  enable_minimal="no"
+  enable_minimal="yes"
 
 fi
 
@@ -14752,7 +14752,7 @@ if test "x$PKG_CONFIG" != "x"; then :
 
 
 fi
-ac_config_files="$ac_config_files Makefile dist-build/Makefile msvc-scripts/Makefile src/Makefile src/libsodium/Makefile src/libsodium/include/Makefile src/libsodium/include/sodium/version.h test/default/Makefile test/Makefile"
+ac_config_files="$ac_config_files Makefile dist-build/Makefile msvc-scripts/Makefile src/Makefile src/libsodium/Makefile src/libsodium/include/Makefile src/libsodium/include/sodium/version.h"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -15801,8 +15801,6 @@ do
     "src/libsodium/Makefile") CONFIG_FILES="$CONFIG_FILES src/libsodium/Makefile" ;;
     "src/libsodium/include/Makefile") CONFIG_FILES="$CONFIG_FILES src/libsodium/include/Makefile" ;;
     "src/libsodium/include/sodium/version.h") CONFIG_FILES="$CONFIG_FILES src/libsodium/include/sodium/version.h" ;;
-    "test/default/Makefile") CONFIG_FILES="$CONFIG_FILES test/default/Makefile" ;;
-    "test/Makefile") CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

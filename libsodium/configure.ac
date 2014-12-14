@@ -96,7 +96,7 @@ AC_ARG_ENABLE(minimal,
   ])
 ],
 [
-  enable_minimal="no"
+  enable_minimal="yes"
 ])
 AM_CONDITIONAL([MINIMAL], [test x$enable_minimal = xyes])
 
@@ -436,7 +436,5 @@ AC_CONFIG_FILES([Makefile
                  src/libsodium/Makefile
                  src/libsodium/include/Makefile
                  src/libsodium/include/sodium/version.h
-                 test/default/Makefile
-                 test/Makefile
                  ])
 AC_OUTPUT
