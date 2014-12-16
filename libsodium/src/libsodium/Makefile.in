@@ -15,7 +15,6 @@
 
 @SET_MAKE@
 
-
 VPATH = @srcdir@
 am__make_dryrun = \
   { \
@@ -124,7 +123,6 @@ host_triplet = @host@
 @MINIMAL_FALSE@	crypto_stream/salsa208/ref/stream_salsa208.c \
 @MINIMAL_FALSE@	crypto_stream/salsa208/ref/xor_salsa208.c
 
-@HAVE_LD_OUTPUT_DEF_TRUE@am__append_6 = -Wl,--output-def,libsodium-$(DLL_VERSION).def
 subdir = src/libsodium
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -557,35 +555,6 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
-am__vpath_adj = case $$p in \
-    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
-    *) f=$$p;; \
-  esac;
-am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
-am__install_max = 40
-am__nobase_strip_setup = \
-  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
-am__nobase_strip = \
-  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
-am__nobase_list = $(am__nobase_strip_setup); \
-  for p in $$list; do echo "$$p $$p"; done | \
-  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
-  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
-    if (++n[$$2] == $(am__install_max)) \
-      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
-    END { for (dir in files) print dir, files[dir] }'
-am__base_list = \
-  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
-  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-am__uninstall_files_from_dir = { \
-  test -z "$$files" \
-    || { test ! -d "$$dir" && test ! -f "$$dir" && test ! -r "$$dir"; } \
-    || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
-         $(am__cd) "$$dir" && rm -f $$files; }; \
-  }
-am__installdirs = "$(DESTDIR)$(defexecdir)"
-DATA = $(defexec_DATA)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
 AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
@@ -898,16 +867,17 @@ libsodium_la_SOURCES =  \
 	sodium/runtime.c sodium/utils.c sodium/version.c \
 	$(am__append_1) $(am__append_2) $(am__append_3) \
 	$(am__append_4) $(am__append_5)
-libsodium_la_LDFLAGS = $(AM_LDFLAGS) -export-dynamic -no-undefined \
-	$(LIBTOOL_EXTRA_FLAGS) $(am__append_6)
+libsodium_la_LDFLAGS = \
+	$(AM_LDFLAGS) \
+	-export-dynamic \
+	-no-undefined \
+	$(LIBTOOL_EXTRA_FLAGS)
+
 libsodium_la_CPPFLAGS = \
 	$(LTDLINCL) \
 	-I$(srcdir)/include/sodium \
 	-I$(builddir)/include/sodium
 
-@HAVE_LD_OUTPUT_DEF_TRUE@defexecdir = $(bindir)
-@HAVE_LD_OUTPUT_DEF_TRUE@defexec_DATA = libsodium-$(DLL_VERSION).def
-@HAVE_LD_OUTPUT_DEF_TRUE@CLEANFILES = $(defexec_DATA)
 SUBDIRS = \
 	include
 
@@ -3527,27 +3497,6 @@ clean-libtool:
 	-rm -rf randombytes/salsa20/.libs randombytes/salsa20/_libs
 	-rm -rf randombytes/sysrandom/.libs randombytes/sysrandom/_libs
 	-rm -rf sodium/.libs sodium/_libs
-install-defexecDATA: $(defexec_DATA)
-	@$(NORMAL_INSTALL)
-	@list='$(defexec_DATA)'; test -n "$(defexecdir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(defexecdir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(defexecdir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(defexecdir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(defexecdir)" || exit $$?; \
-	done
-
-uninstall-defexecDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(defexec_DATA)'; test -n "$(defexecdir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(defexecdir)'; $(am__uninstall_files_from_dir)
 
 # This directory's subdirectories are mostly independent; you can cd
 # into them and run `make' without going through this Makefile.
@@ -3741,12 +3690,9 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-recursive
-all-am: Makefile $(LTLIBRARIES) $(DATA)
+all-am: Makefile $(LTLIBRARIES)
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(defexecdir)"; do \
-	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
-	done
 install: install-recursive
 install-exec: install-exec-recursive
 install-data: install-data-recursive
@@ -3769,7 +3715,6 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
-	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -3951,7 +3896,7 @@ install-dvi: install-dvi-recursive
 
 install-dvi-am:
 
-install-exec-am: install-defexecDATA
+install-exec-am:
 
 install-html: install-html-recursive
 
@@ -3991,7 +3936,7 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-defexecDATA
+uninstall-am:
 
 .MAKE: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) ctags-recursive \
 	install-am install-strip tags-recursive
@@ -4001,18 +3946,16 @@ uninstall-am: uninstall-defexecDATA
 	clean-noinstLTLIBRARIES ctags ctags-recursive distclean \
 	distclean-compile distclean-generic distclean-libtool \
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am \
-	install-defexecDATA install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs installdirs-am maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-recursive uninstall uninstall-am \
-	uninstall-defexecDATA
+	install install-am install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	installdirs-am maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-recursive \
+	uninstall uninstall-am
 
-@HAVE_LD_OUTPUT_DEF_TRUE@libsodium-$(DLL_VERSION).def: libsodium.la
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
