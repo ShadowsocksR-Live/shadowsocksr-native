@@ -914,7 +914,7 @@ int init_udprelay(const char *server_host, const char *server_port,
     setnonblocking(serverfd);
 
     server_ctx = new_server_ctx(serverfd);
-    server_ctx->timeout = min(timeout, 5);
+    server_ctx->timeout = min(timeout, MAX_CONNECT_TIMEOUT);
     server_ctx->method = method;
     server_ctx->iface = iface;
     server_ctx->conn_cache = conn_cache;

@@ -688,9 +688,9 @@ static struct remote * new_remote(int fd, int timeout)
     remote->fd = fd;
     ev_io_init(&remote->recv_ctx->io, remote_recv_cb, fd, EV_READ);
     ev_io_init(&remote->send_ctx->io, remote_send_cb, fd, EV_WRITE);
-    ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb, min(5,
+    ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb, min(MAX_CONNECT_TIMEOUT,
                 timeout), 0);
-    ev_timer_init(&remote->recv_ctx->watcher, remote_timeout_cb, min(10,
+    ev_timer_init(&remote->recv_ctx->watcher, remote_timeout_cb, min(MAX_CONNECT_TIMEOUT,
                 timeout), timeout);
     remote->recv_ctx->remote = remote;
     remote->send_ctx->remote = remote;
