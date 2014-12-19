@@ -74,16 +74,18 @@ void parse_addr(const char *str, ss_addr_t *addr)
         }
     }
     if (ret == -1) {
-        if (ipv6)
+        if (ipv6) {
             addr->host = ss_strndup(str + 1, strlen(str) - 2);
-        else
+        } else {
             addr->host = strdup(str);
+        }
         addr->port = NULL;
     } else {
-        if (ipv6)
+        if (ipv6) {
             addr->host = ss_strndup(str + 1, ret - 2);
-        else
+        } else {
             addr->host = ss_strndup(str, ret);
+        }
         addr->port = strdup(str + ret + 1);
     }
 }

@@ -93,22 +93,22 @@ extern FILE * logfile;
 
 #define USE_SYSLOG(ident)
 
-#define LOGD(format, ...)                                                     \
-    do {                                                                      \
-        time_t now = time(NULL);                                              \
-        char timestr[20];                                                     \
-        strftime(timestr, 20, TIME_FORMAT, localtime(&now));                  \
-        fprintf(stderr, " %s INFO: " format "\n", timestr, ## __VA_ARGS__);   \
-        fflush(stderr); }                                                     \
+#define LOGD(format, ...)                                                   \
+    do {                                                                    \
+        time_t now = time(NULL);                                            \
+        char timestr[20];                                                   \
+        strftime(timestr, 20, TIME_FORMAT, localtime(&now));                \
+        fprintf(stderr, " %s INFO: " format "\n", timestr, ## __VA_ARGS__); \
+        fflush(stderr); }                                                   \
     while (0)
 
-#define LOGE(format, ...)                                                      \
-    do {                                                                       \
-        time_t now = time(NULL);                                               \
-        char timestr[20];                                                      \
-        strftime(timestr, 20, TIME_FORMAT, localtime(&now));                   \
-        fprintf(stderr, " %s ERROR: " format "\n", timestr, ## __VA_ARGS__);   \
-        fflush(stderr); }                                                      \
+#define LOGE(format, ...)                                                    \
+    do {                                                                     \
+        time_t now = time(NULL);                                             \
+        char timestr[20];                                                    \
+        strftime(timestr, 20, TIME_FORMAT, localtime(&now));                 \
+        fprintf(stderr, " %s ERROR: " format "\n", timestr, ## __VA_ARGS__); \
+        fflush(stderr); }                                                    \
     while (0)
 
 #else

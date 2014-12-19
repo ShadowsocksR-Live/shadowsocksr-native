@@ -233,7 +233,7 @@ static struct remote *connect_to_remote(struct addrinfo *res,
                            res->ai_addrlen);
         if (s == -1) {
             if (errno == EINPROGRESS || errno == EAGAIN
-                    || errno == EWOULDBLOCK) {
+                || errno == EWOULDBLOCK) {
                 // The remote server doesn't support tfo or it's the first connection to the server.
                 // It will automatically fall back to conventional TCP.
             } else if (errno == EOPNOTSUPP || errno == EPROTONOSUPPORT ||
@@ -803,7 +803,8 @@ static struct server * new_server(int fd, struct listen_ctx *listener)
     ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
     ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
     ev_timer_init(&server->recv_ctx->watcher, server_timeout_cb,
-                  min(MAX_CONNECT_TIMEOUT, listener->timeout), listener->timeout);
+                  min(MAX_CONNECT_TIMEOUT,
+                      listener->timeout), listener->timeout);
     server->recv_ctx->server = server;
     server->recv_ctx->connected = 0;
     server->send_ctx->server = server;
