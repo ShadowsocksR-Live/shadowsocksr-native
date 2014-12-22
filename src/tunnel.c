@@ -275,7 +275,9 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
     struct remote *remote = remote_ctx->remote;
     struct server *server = remote->server;
 
-    LOGD("remote timeout");
+    if (verbose) {
+        LOGD("TCP connection timeout");
+    }
 
     ev_timer_stop(EV_A_ watcher);
 
