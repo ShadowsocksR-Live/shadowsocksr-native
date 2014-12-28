@@ -7,11 +7,11 @@ Intro
 [Shadowsocks-libev](http://shadowsocks.org) is a lightweight secured socks5 
 proxy for embedded devices and low end boxes.
 
-It is a port of [shadowsocks](https://github.com/clowwindy/shadowsocks) 
+It is a port of [shadowsocks](https://github.com/shadowsocks/shadowsocks) 
 created by [@clowwindy](https://github.com/clowwindy) maintained by 
 [@madeye](https://github.com/madeye) and [@linusyang](https://github.com/linusyang).
 
-Current version: 1.6.1 | [![Build Status](https://travis-ci.org/madeye/shadowsocks-libev.png?branch=master)](https://travis-ci.org/madeye/shadowsocks-libev) | [Changelog](Changes)
+Current version: 1.6.1 | [![Build Status](https://travis-ci.org/shadowsocks/shadowsocks-libev.png?branch=master)](https://travis-ci.org/shadowsocks/shadowsocks-libev) | [Changelog](Changes)
 
 Features
 --------
@@ -144,7 +144,7 @@ service shadowsocks_libev start
 ```bash
 # At OpenWRT build root
 pushd package
-git clone https://github.com/madeye/shadowsocks-libev.git
+git clone https://github.com/shadowsocks/shadowsocks-libev.git
 popd
 
 # Enable shadowsocks-libev in network category 
