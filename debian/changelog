@@ -1,3 +1,9 @@
+shadowsocks-libev (1.6.3-1) unstable; urgency=low
+
+  * Refine ss-redir.
+
+ -- Max Lv <max.c.lv@gmail.com>  Sun, 04 Jan 2015 19:23:52 +0900
+
 shadowsocks-libev (1.6.2-1) unstable; urgency=low
 
   * Fix some build issues.
