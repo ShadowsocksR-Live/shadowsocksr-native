@@ -158,11 +158,6 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     struct server *server = server_recv_ctx->server;
     struct remote *remote = server->remote;
 
-    if (remote == NULL) {
-        close_and_free_server(EV_A_ server);
-        return;
-    }
-
     ssize_t r = recv(server->fd, remote->buf, BUF_SIZE, 0);
 
     if (r == 0) {
@@ -251,13 +246,7 @@ static void server_send_cb(EV_P_ ev_io *w, int revents)
             server->buf_len = 0;
             server->buf_idx = 0;
             ev_io_stop(EV_A_ & server_send_ctx->io);
-            if (remote != NULL) {
-                ev_io_start(EV_A_ & remote->recv_ctx->io);
-            } else {
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
+            ev_io_start(EV_A_ & remote->recv_ctx->io);
         }
     }
 
@@ -272,10 +261,6 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 
     ev_timer_stop(EV_A_ watcher);
 
-    if (server == NULL) {
-        close_and_free_remote(EV_A_ remote);
-        return;
-    }
     close_and_free_remote(EV_A_ remote);
     close_and_free_server(EV_A_ server);
 }
@@ -285,10 +270,6 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     struct remote_ctx *remote_recv_ctx = (struct remote_ctx *)w;
     struct remote *remote = remote_recv_ctx->remote;
     struct server *server = remote->server;
-    if (server == NULL) {
-        close_and_free_remote(EV_A_ remote);
-        return;
-    }
 
     ssize_t r = recv(remote->fd, server->buf, BUF_SIZE, 0);
 
@@ -297,9 +278,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         server->buf_len = 0;
         server->buf_idx = 0;
         close_and_free_remote(EV_A_ remote);
-        if (server != NULL) {
-            ev_io_start(EV_A_ & server->send_ctx->io);
-        }
+        close_and_free_server(EV_A_ server);
         return;
     } else if (r < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
