@@ -217,8 +217,8 @@ usage:
           [-m <encrypt_method>]      encrypt method: table, rc4, rc4-md5
                                      aes-128-cfb, aes-192-cfb, aes-256-cfb,
                                      bf-cfb, camellia-128-cfb, camellia-192-cfb,
-                                     camellia-256-cfb, cast5-cfb, des-cfb,
-                                     idea-cfb, rc2-cfb and seed-cfb
+                                     camellia-256-cfb, cast5-cfb, des-cfb, idea-cfb,
+                                     rc2-cfb, seed-cfb, salsa20 and chacha20
           [-f <pid_file>]            file to store the pid
           [-t <timeout>]             socket timeout in seconds
           [-c <config_file>]         config file in json

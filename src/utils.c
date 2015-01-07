@@ -214,9 +214,9 @@ void usage()
     printf(
         "                                     bf-cfb, camellia-128-cfb, camellia-192-cfb,\n");
     printf(
-        "                                     camellia-256-cfb, cast5-cfb, des-cfb,\n");
+        "                                     camellia-256-cfb, cast5-cfb, des-cfb, idea-cfb,\n");
     printf(
-        "                                     idea-cfb, rc2-cfb and seed-cfb\n");
+        "                                     rc2-cfb, seed-cfb, salsa20 and chacha20\n");
     printf("          [-f <pid_file>]            file to store the pid\n");
     printf("          [-t <timeout>]             socket timeout in seconds\n");
     printf("          [-c <config_file>]         config file in json\n");
