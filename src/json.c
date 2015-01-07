@@ -211,7 +211,7 @@ case ' ': case '\t': case '\r'
 
 #define string_add(b)                                         \
     do { if (!state.first_pass) { string [string_length] = b; \
-         } ++string_length; } while (0);
+         } ++string_length; } while (0)
 
 static const long
     flag_next = 1 << 0,
