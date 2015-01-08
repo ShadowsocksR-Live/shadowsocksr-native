@@ -16,7 +16,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with pdnsd; see the file COPYING. If not, see
+ * along with shadowsocks-libev; see the file COPYING. If not, see
  * <http://www.gnu.org/licenses/>.
  */
 
@@ -51,6 +51,8 @@
 #ifdef __MINGW32__
 #include "win32.h"
 #endif
+
+#include <libcork/core.h>
 
 #include "utils.h"
 #include "tunnel.h"
@@ -119,7 +121,7 @@ int create_and_bind(const char *addr, const char *port)
 
     s = getaddrinfo(addr, port, &hints, &result);
     if (s != 0) {
-        LOGD("getaddrinfo: %s", gai_strerror(s));
+        LOGI("getaddrinfo: %s", gai_strerror(s));
         return -1;
     }
 
@@ -276,7 +278,7 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
     struct server *server = remote->server;
 
     if (verbose) {
-        LOGD("TCP connection timeout");
+        LOGI("TCP connection timeout");
     }
 
     ev_timer_stop(EV_A_ watcher);
@@ -364,27 +366,56 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
     struct server *server = remote->server;
 
     if (!remote_send_ctx->connected) {
-
         struct sockaddr_storage addr;
         socklen_t len = sizeof addr;
+
         int r = getpeername(remote->fd, (struct sockaddr *)&addr, &len);
         if (r == 0) {
             remote_send_ctx->connected = 1;
             ev_io_stop(EV_A_ & remote_send_ctx->io);
             ev_timer_stop(EV_A_ & remote_send_ctx->watcher);
-
-            // send destaddr
             char *ss_addr_to_send = malloc(BUF_SIZE);
             ssize_t addr_len = 0;
-            ss_addr_t *sa = &server->destaddr;
-            int host_len = strlen(sa->host);
-            uint16_t port = htons(atoi(sa->port));
 
-            // treat as domain
-            ss_addr_to_send[addr_len++] = 3;
-            ss_addr_to_send[addr_len++] = host_len;
-            memcpy(ss_addr_to_send + addr_len, sa->host, host_len);
-            addr_len += host_len;
+            ss_addr_t *sa = &server->destaddr;
+            struct cork_ip ip;
+            if (cork_ip_init(&ip, sa->host) != -1) {
+                if (ip.version == 4) {
+                    // send as IPv4
+                    struct in_addr host;
+                    int host_len = sizeof(struct in_addr);
+
+                    if (inet_pton(AF_INET, sa->host, &host) == -1) {
+                        FATAL("IP parser error.");
+                    }
+                    ss_addr_to_send[addr_len++] = 1;
+                    memcpy(ss_addr_to_send + addr_len, &host, host_len);
+                    addr_len += host_len;
+                } else if (ip.version == 6) {
+                    // send as IPv6
+                    struct in6_addr host;
+                    int host_len = sizeof(struct in6_addr);
+
+                    if (inet_pton(AF_INET6, sa->host, &host) == -1) {
+                        FATAL("IP parser error.");
+                    }
+                    ss_addr_to_send[addr_len++] = 4;
+                    memcpy(ss_addr_to_send + addr_len, &host, host_len);
+                    addr_len += host_len;
+                } else {
+                    FATAL("IP parser error.");
+                }
+            } else {
+                // send as domain
+                int host_len = strlen(sa->host);
+
+                ss_addr_to_send[addr_len++] = 3;
+                ss_addr_to_send[addr_len++] = host_len;
+                memcpy(ss_addr_to_send + addr_len, sa->host, host_len);
+                addr_len += host_len;
+            }
+
+            uint16_t port = htons(atoi(sa->port));
             memcpy(ss_addr_to_send + addr_len, &port, 2);
             addr_len += 2;
 
@@ -589,7 +620,7 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     hints.ai_socktype = SOCK_STREAM;
     int index = rand() % listener->remote_num;
     if (verbose) {
-        LOGD("connect to %s:%s", listener->remote_addr[index].host,
+        LOGI("connect to %s:%s", listener->remote_addr[index].host,
              listener->remote_addr[index].port);
     }
     int err = getaddrinfo(listener->remote_addr[index].host,
@@ -771,7 +802,7 @@ int main(int argc, char **argv)
 #endif
 
     // Setup keys
-    LOGD("initialize ciphers... %s", method);
+    LOGI("initialize ciphers... %s", method);
     int m = enc_init(password, method);
 
     // Setup socket
@@ -784,7 +815,7 @@ int main(int argc, char **argv)
         FATAL("listen() error.");
     }
     setnonblocking(listenfd);
-    LOGD("server listening at port %s.", local_port);
+    LOGI("server listening at port %s.", local_port);
 
     // Setup proxy context
     struct listen_ctx listen_ctx;
@@ -812,7 +843,7 @@ int main(int argc, char **argv)
 
     // Setup UDP
     if (udprelay) {
-        LOGD("udprelay enabled.");
+        LOGI("udprelay enabled");
         init_udprelay(local_addr, local_port, remote_addr[0].host,
                       remote_addr[0].port,
                       tunnel_addr, m, listen_ctx.timeout, iface);

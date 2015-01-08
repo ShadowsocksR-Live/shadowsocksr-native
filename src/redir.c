@@ -17,7 +17,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with pdnsd; see the file COPYING. If not, see
+ * along with shadowsocks-libev; see the file COPYING. If not, see
  * <http://www.gnu.org/licenses/>.
  */
 
@@ -115,7 +115,7 @@ int create_and_bind(const char *addr, const char *port)
 
     s = getaddrinfo(addr, port, &hints, &result);
     if (s != 0) {
-        LOGD("getaddrinfo: %s", gai_strerror(s));
+        LOGI("getaddrinfo: %s", gai_strerror(s));
         return -1;
     }
 
@@ -379,7 +379,7 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
             free(ss_addr_to_send);
 
             if (s < addr_len) {
-                LOGE("failed to send remote addr.");
+                LOGE("failed to send remote addr");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
             }
@@ -717,7 +717,7 @@ int main(int argc, char **argv)
     signal(SIGABRT, SIG_IGN);
 
     // Setup keys
-    LOGD("initialize ciphers... %s", method);
+    LOGI("initialize ciphers... %s", method);
     int m = enc_init(password, method);
 
     // Setup socket
@@ -730,7 +730,7 @@ int main(int argc, char **argv)
         FATAL("listen() error.");
     }
     setnonblocking(listenfd);
-    LOGD("server listening at port %s.", local_port);
+    LOGI("server listening at port %s", local_port);
 
     // Setup proxy context
     struct listen_ctx listen_ctx;
@@ -749,7 +749,7 @@ int main(int argc, char **argv)
 
     struct ev_loop *loop = ev_default_loop(0);
     if (!loop) {
-        FATAL("ev_loop error.");
+        FATAL("ev_loop error");
     }
     ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
     ev_io_start(loop, &listen_ctx.io);

@@ -15,7 +15,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with pdnsd; see the file COPYING. If not, see
+ * along with shadowsocks-libev; see the file COPYING. If not, see
  * <http://www.gnu.org/licenses/>.
  */
 
@@ -24,7 +24,7 @@
 
 #define MAX_REMOTE_NUM 10
 #define MAX_CONF_SIZE 16 * 1024
-#define DNS_THREAD_NUM 4
+#define MAX_DNS_NUM 4
 #define MAX_CONNECT_TIMEOUT 10
 
 typedef struct {

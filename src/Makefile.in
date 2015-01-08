@@ -155,10 +155,11 @@ ss_redir_OBJECTS = $(am_ss_redir_OBJECTS)
 am_ss_server_OBJECTS = ss_server-utils.$(OBJEXT) \
 	ss_server-jconf.$(OBJEXT) ss_server-json.$(OBJEXT) \
 	ss_server-encrypt.$(OBJEXT) ss_server-udprelay.$(OBJEXT) \
-	ss_server-cache.$(OBJEXT) ss_server-server.$(OBJEXT)
+	ss_server-cache.$(OBJEXT) ss_server-resolv.$(OBJEXT) \
+	ss_server-server.$(OBJEXT)
 ss_server_OBJECTS = $(am_ss_server_OBJECTS)
 ss_server_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(top_builddir)/libasyncns/libasyncns.la
+	$(top_builddir)/libudns/libudns.la
 ss_server_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(ss_server_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -339,7 +340,7 @@ top_srcdir = @top_srcdir@
 VERSION_INFO = 1:0:0
 AM_CFLAGS = -g -O2 -Wall -Werror -Wno-deprecated-declarations \
 	-fno-strict-aliasing -std=gnu99 -D_GNU_SOURCE \
-	-I$(top_srcdir)/libev -I$(top_srcdir)/libasyncns \
+	-I$(top_srcdir)/libev -I$(top_srcdir)/libudns \
 	-I$(top_srcdir)/libipset/include \
 	-I$(top_srcdir)/libcork/include \
 	-I$(top_srcdir)/libsodium/src/libsodium/include
@@ -360,12 +361,12 @@ ss_server_SOURCES = utils.c \
                     encrypt.c \
 					udprelay.c \
 					cache.c \
+					resolv.c \
                     server.c
 
 ss_local_LDADD = $(SS_COMMON_LIBS)
 ss_tunnel_LDADD = $(SS_COMMON_LIBS)
-ss_server_LDADD = $(SS_COMMON_LIBS) \
-	$(top_builddir)/libasyncns/libasyncns.la
+ss_server_LDADD = $(SS_COMMON_LIBS) $(top_builddir)/libudns/libudns.la
 ss_local_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_LOCAL
 ss_tunnel_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_LOCAL -DUDPRELAY_TUNNEL
 ss_server_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_REMOTE
@@ -541,6 +542,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ss_server-encrypt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ss_server-jconf.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ss_server-json.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ss_server-resolv.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ss_server-server.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ss_server-udprelay.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ss_server-utils.Po@am__quote@
@@ -850,6 +852,20 @@ ss_server-cache.obj: cache.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='cache.c' object='ss_server-cache.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ss_server_CFLAGS) $(CFLAGS) -c -o ss_server-cache.obj `if test -f 'cache.c'; then $(CYGPATH_W) 'cache.c'; else $(CYGPATH_W) '$(srcdir)/cache.c'; fi`
+
+ss_server-resolv.o: resolv.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ss_server_CFLAGS) $(CFLAGS) -MT ss_server-resolv.o -MD -MP -MF $(DEPDIR)/ss_server-resolv.Tpo -c -o ss_server-resolv.o `test -f 'resolv.c' || echo '$(srcdir)/'`resolv.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ss_server-resolv.Tpo $(DEPDIR)/ss_server-resolv.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='resolv.c' object='ss_server-resolv.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ss_server_CFLAGS) $(CFLAGS) -c -o ss_server-resolv.o `test -f 'resolv.c' || echo '$(srcdir)/'`resolv.c
+
+ss_server-resolv.obj: resolv.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ss_server_CFLAGS) $(CFLAGS) -MT ss_server-resolv.obj -MD -MP -MF $(DEPDIR)/ss_server-resolv.Tpo -c -o ss_server-resolv.obj `if test -f 'resolv.c'; then $(CYGPATH_W) 'resolv.c'; else $(CYGPATH_W) '$(srcdir)/resolv.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ss_server-resolv.Tpo $(DEPDIR)/ss_server-resolv.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='resolv.c' object='ss_server-resolv.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ss_server_CFLAGS) $(CFLAGS) -c -o ss_server-resolv.obj `if test -f 'resolv.c'; then $(CYGPATH_W) 'resolv.c'; else $(CYGPATH_W) '$(srcdir)/resolv.c'; fi`
 
 ss_server-server.o: server.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ss_server_CFLAGS) $(CFLAGS) -MT ss_server-server.o -MD -MP -MF $(DEPDIR)/ss_server-server.Tpo -c -o ss_server-server.o `test -f 'server.c' || echo '$(srcdir)/'`server.c

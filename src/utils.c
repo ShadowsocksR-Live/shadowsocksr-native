@@ -16,7 +16,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with pdnsd; see the file COPYING. If not, see
+ * along with shadowsocks-libev; see the file COPYING. If not, see
  * <http://www.gnu.org/licenses/>.
  */
 
@@ -217,25 +217,40 @@ void usage()
         "                                     camellia-256-cfb, cast5-cfb, des-cfb, idea-cfb,\n");
     printf(
         "                                     rc2-cfb, seed-cfb, salsa20 and chacha20\n");
-    printf("          [-f <pid_file>]            file to store the pid\n");
-    printf("          [-t <timeout>]             socket timeout in seconds\n");
-    printf("          [-c <config_file>]         config file in json\n");
+    printf(
+        "          [-f <pid_file>]            file to store the pid\n");
+    printf(
+        "          [-t <timeout>]             socket timeout in seconds\n");
+    printf(
+        "          [-c <config_file>]         config file in json\n");
     printf("\n");
     printf("\n");
-    printf("          [-i <interface>]           network interface to bind,\n");
-    printf("                                     not available in redir mode\n");
-    printf("          [-b <local_address>]       local address to bind,\n");
-    printf("                                     not available in server mode\n");
-    printf("          [-u]                       enable udprelay mode\n");
-    printf("                                     not available in redir mode\n");
+    printf(
+        "          [-i <interface>]           network interface to bind,\n");
+    printf(
+        "                                     not available in redir mode\n");
+    printf(
+        "          [-b <local_address>]       local address to bind,\n");
+    printf(
+        "                                     not available in server mode\n");
+    printf(
+        "          [-u]                       enable udprelay mode\n");
+    printf(
+        "                                     not available in redir mode\n");
     printf(
         "          [-L <addr>:<port>]         setup a local port forwarding tunnel,\n");
     printf(
         "                                     only available in tunnel mode\n");
-    printf("          [-v]                       verbose mode\n");
+    printf(
+        "          [-d <addr>]                setup the name servers for libudns,\n");
+    printf(
+        "                                     only available in server mode\n");
+    printf(
+        "          [-v]                       verbose mode\n");
     printf("\n");
     printf("\n");
-    printf("          [--fast-open]              enable TCP fast open,\n");
+    printf(
+        "          [--fast-open]              enable TCP fast open,\n");
     printf(
         "                                     only available on Linux kernel > 3.7.0\n");
     printf(
