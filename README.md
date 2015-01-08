@@ -79,7 +79,7 @@ sudo /etc/init.d/shadowsocks-libev start
 ### Fedora & RHEL
 
 Supported distributions include
-- Fedora 19, 20, 21, rawhide
+- Fedora 20, 21, rawhide
 - RHEL 6, 7 and derivatives (including CentOS, Scientific Linux)
 
 #### Install from repository
