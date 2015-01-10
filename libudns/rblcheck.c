@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef WINDOWS
+#ifdef __MINGW32__
 # include <winsock2.h>
 #else
 # include <unistd.h>

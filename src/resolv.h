@@ -26,7 +26,17 @@
 #ifndef RESOLV_H
 #define RESOLV_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdint.h>
+
+#ifdef __MINGW32__
+#include "win32.h"
+#else
 #include <sys/socket.h>
+#endif
 
 struct ResolvQuery;
 

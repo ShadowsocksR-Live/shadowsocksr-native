@@ -20,16 +20,14 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <arpa/inet.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <locale.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <pthread.h>
 #include <signal.h>
 #include <string.h>
 #include <strings.h>
@@ -37,10 +35,21 @@
 #include <unistd.h>
 #include <getopt.h>
 
-#include <libcork/core.h>
+#ifndef __MINGW32__
+#include <netdb.h>
+#include <errno.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <pthread.h>
+#endif
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <libcork/core.h>
+#include <udns.h>
+
+#ifdef __MINGW32__
+#include "win32.h"
 #endif
 
 #if defined(HAVE_SYS_IOCTL_H) && defined(HAVE_NET_IF_H) && defined(__linux__)
@@ -112,6 +121,7 @@ static void free_connections(struct ev_loop *loop)
     }
 }
 
+#ifndef __MINGW32__
 int setnonblocking(int fd)
 {
     int flags;
@@ -120,6 +130,7 @@ int setnonblocking(int fd)
     }
     return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
+#endif
 
 #ifdef SET_INTERFACE
 int setinterface(int socket_fd, const char * interface_name)
@@ -306,7 +317,11 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         if (r <= enc_get_iv_len()) {
             // wait for more
             if (verbose) {
+#ifdef __MINGW32__
+                LOGI("imcomplete header: %u", r);
+#else
                 LOGI("imcomplete header: %zu", r);
+#endif
             }
             server->buf_len = r;
             return;
@@ -366,7 +381,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         uint16_t port = 0;
         struct addrinfo info;
         struct sockaddr_storage storage;
-        bzero(&storage, sizeof(struct sockaddr_storage));
+        memset(&info, 0, sizeof(struct addrinfo));
+        memset(&storage, 0, sizeof(struct sockaddr_storage));
 
         // get remote addr and port
         if (atyp == 1) {
@@ -376,7 +392,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             addr->sin_family = AF_INET;
             if (r > in_addr_len) {
                 addr->sin_addr = *(struct in_addr *)(server->buf + offset);
-                inet_ntop(AF_INET, (const void *)(server->buf + offset),
+                dns_ntop(AF_INET, (const void *)(server->buf + offset),
                           host, INET_ADDRSTRLEN);
                 offset += in_addr_len;
             } else {
@@ -403,7 +419,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 info.ai_protocol = IPPROTO_TCP;
                 if (ip.version == 4) {
                     struct sockaddr_in *addr = (struct sockaddr_in *)&storage;
-                    inet_pton(AF_INET, host, &(addr->sin_addr));
+                    dns_pton(AF_INET, host, &(addr->sin_addr));
                     addr->sin_port = *(uint16_t *)(server->buf + offset);
                     addr->sin_family = AF_INET;
                     info.ai_family = AF_INET;
@@ -411,7 +427,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     info.ai_addr = (struct sockaddr *)addr;
                 } else if (ip.version == 6) {
                     struct sockaddr_in6 *addr = (struct sockaddr_in6 *)&storage;
-                    inet_pton(AF_INET6, host, &(addr->sin6_addr));
+                    dns_pton(AF_INET6, host, &(addr->sin6_addr));
                     addr->sin6_port = *(uint16_t *)(server->buf + offset);
                     addr->sin6_family = AF_INET6;
                     info.ai_family = AF_INET6;
@@ -428,7 +444,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             addr->sin6_family = AF_INET6;
             if (r > in6_addr_len) {
                 addr->sin6_addr = *(struct in6_addr *)(server->buf + offset);
-                inet_ntop(AF_INET6, (const void *)(server->buf + offset),
+                dns_ntop(AF_INET6, (const void *)(server->buf + offset),
                           host, INET6_ADDRSTRLEN);
                 offset += in6_addr_len;
             } else {
@@ -590,6 +606,7 @@ static void server_resolve_cb(struct sockaddr *addr, void *data)
         close_and_free_server(EV_A_ server);
     } else {
         struct addrinfo info;
+        memset(&info, 0, sizeof(struct addrinfo));
         info.ai_socktype = SOCK_STREAM;
         info.ai_protocol = IPPROTO_TCP;
         info.ai_addr = addr;
@@ -1104,10 +1121,14 @@ int main(int argc, char **argv)
 #endif
     }
 
+#ifdef __MINGW32__
+    winsock_init();
+#else
     // ignore SIGPIPE
     signal(SIGPIPE, SIG_IGN);
     signal(SIGCHLD, SIG_IGN);
     signal(SIGABRT, SIG_IGN);
+#endif
 
     struct ev_signal sigint_watcher;
     struct ev_signal sigterm_watcher;
@@ -1202,6 +1223,10 @@ int main(int argc, char **argv)
     }
 
     resolv_shutdown(loop);
+
+#ifdef __MINGW32__
+    winsock_cleanup();
+#endif
 
     ev_signal_stop(EV_DEFAULT, &sigint_watcher);
     ev_signal_stop(EV_DEFAULT, &sigterm_watcher);

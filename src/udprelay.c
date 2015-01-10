@@ -54,6 +54,7 @@
 #endif
 
 #include <libcork/core.h>
+#include <udns.h>
 
 #include "utils.h"
 #include "udprelay.h"
@@ -169,7 +170,7 @@ static int parse_udprealy_header(const char * buf, const int buf_len,
                 addr->sin_port = *(uint16_t *)(buf + offset + in_addr_len);
             }
             if (host != NULL) {
-                inet_ntop(AF_INET, (const void *)(buf + offset),
+                dns_ntop(AF_INET, (const void *)(buf + offset),
                           host, INET_ADDRSTRLEN);
             }
             offset += in_addr_len;
@@ -188,12 +189,12 @@ static int parse_udprealy_header(const char * buf, const int buf_len,
             if (cork_ip_init(&ip, host) != -1) {
                 if (ip.version == 4) {
                     struct sockaddr_in *addr = (struct sockaddr_in *)storage;
-                    inet_pton(AF_INET, host, &(addr->sin_addr));
+                    dns_pton(AF_INET, host, &(addr->sin_addr));
                     addr->sin_port = *(uint16_t *)(buf + offset);
                     addr->sin_family = AF_INET;
                 } else if (ip.version == 6) {
                     struct sockaddr_in6 *addr = (struct sockaddr_in6 *)storage;
-                    inet_pton(AF_INET, host, &(addr->sin6_addr));
+                    dns_pton(AF_INET, host, &(addr->sin6_addr));
                     addr->sin6_port = *(uint16_t *)(buf + offset);
                     addr->sin6_family = AF_INET6;
                 }
@@ -210,7 +211,7 @@ static int parse_udprealy_header(const char * buf, const int buf_len,
                 addr->sin6_port = *(uint16_t *)(buf + offset + in6_addr_len);
             }
             if (host != NULL) {
-                inet_ntop(AF_INET6, (const void *)(buf + offset),
+                dns_ntop(AF_INET6, (const void *)(buf + offset),
                           host, INET6_ADDRSTRLEN);
             }
             offset += in6_addr_len;
@@ -240,14 +241,14 @@ static char *get_addr_str(const struct sockaddr *sa)
 
     switch (sa->sa_family) {
     case AF_INET:
-        inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr),
+        dns_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr),
                   addr, INET_ADDRSTRLEN);
         p = ntohs(((struct sockaddr_in *)sa)->sin_port);
         sprintf(port, "%d", p);
         break;
 
     case AF_INET6:
-        inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr),
+        dns_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr),
                   addr, INET6_ADDRSTRLEN);
         p = ntohs(((struct sockaddr_in *)sa)->sin_port);
         sprintf(port, "%d", p);
@@ -606,7 +607,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 {
     struct server_ctx *server_ctx = (struct server_ctx *)w;
     struct sockaddr_storage src_addr;
-    bzero(&src_addr, sizeof(struct sockaddr_storage));
+    memset(&src_addr, 0, sizeof(struct sockaddr_storage));
     char *buf = malloc(BUF_SIZE);
 
     socklen_t src_addr_len = sizeof(struct sockaddr_storage);
@@ -700,7 +701,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             struct in_addr host_addr;
             int host_len = sizeof(struct in_addr);
 
-            if (inet_pton(AF_INET, host, &host_addr) == -1) {
+            if (dns_pton(AF_INET, host, &host_addr) == -1) {
                 FATAL("IP parser error");
             }
             addr_header[addr_header_len++] = 1;
@@ -711,7 +712,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             struct in6_addr host_addr;
             int host_len = sizeof(struct in6_addr);
 
-            if (inet_pton(AF_INET6, host, &host_addr) == -1) {
+            if (dns_pton(AF_INET6, host, &host_addr) == -1) {
                 FATAL("IP parser error");
             }
             addr_header[addr_header_len++] = 4;
@@ -741,7 +742,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     char host[256] = { 0 };
     char port[64] = { 0 };
     struct sockaddr_storage storage;
-    bzero(&storage, sizeof(struct sockaddr_storage));
+    memset(&storage, 0, sizeof(struct sockaddr_storage));
 
     int addr_header_len = parse_udprealy_header(buf + offset,
                                                 buf_len - offset, host, port,

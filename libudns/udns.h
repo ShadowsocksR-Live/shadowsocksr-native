@@ -25,7 +25,7 @@
 
 #define UDNS_VERSION "0.4"
 
-#ifdef WINDOWS
+#ifdef __MINGW32__
 # ifdef UDNS_DYNAMIC_LIBRARY
 #  ifdef DNS_LIBRARY_BUILD
 #   define UDNS_API __declspec(dllexport)

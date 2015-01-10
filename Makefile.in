@@ -133,7 +133,7 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir dist dist-all distcheck
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = libsodium libcork libipset libudns libev src
+DIST_SUBDIRS = $(SUBDIRS)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -295,8 +295,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-@BUILD_WINCOMPAT_FALSE@SUBDIRS = libsodium libcork libipset libudns libev src
-@BUILD_WINCOMPAT_TRUE@SUBDIRS = libsodium libcork libipset libev src
+SUBDIRS = libsodium libcork libipset libudns libev src
 ACLOCAL_AMFLAGS = -I m4
 man_MANS = shadowsocks-libev.8
 pkgconfiglibdir = $(libdir)/pkgconfig

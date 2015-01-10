@@ -111,7 +111,8 @@ am__DEPENDENCIES_2 = $(top_builddir)/libev/libev.la \
 	$(top_builddir)/libcork/libcork.la \
 	$(top_builddir)/libsodium/src/libsodium/libsodium.la \
 	$(am__DEPENDENCIES_1)
-am__DEPENDENCIES_3 = $(am__DEPENDENCIES_2)
+am__DEPENDENCIES_3 = $(am__DEPENDENCIES_2) \
+	$(top_builddir)/libudns/libudns.la
 libshadowsocks_la_DEPENDENCIES = $(am__DEPENDENCIES_3)
 am__libshadowsocks_la_SOURCES_DIST = utils.c jconf.c json.c encrypt.c \
 	udprelay.c cache.c acl.c local.c win32.c
@@ -142,7 +143,8 @@ am_ss_local_OBJECTS = ss_local-utils.$(OBJEXT) \
 	ss_local-cache.$(OBJEXT) ss_local-acl.$(OBJEXT) \
 	ss_local-local.$(OBJEXT) $(am__objects_3)
 ss_local_OBJECTS = $(am_ss_local_OBJECTS)
-ss_local_DEPENDENCIES = $(am__DEPENDENCIES_2)
+ss_local_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(top_builddir)/libudns/libudns.la
 ss_local_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(ss_local_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -172,7 +174,8 @@ am_ss_tunnel_OBJECTS = ss_tunnel-utils.$(OBJEXT) \
 	ss_tunnel-cache.$(OBJEXT) ss_tunnel-tunnel.$(OBJEXT) \
 	$(am__objects_4)
 ss_tunnel_OBJECTS = $(am_ss_tunnel_OBJECTS)
-ss_tunnel_DEPENDENCIES = $(am__DEPENDENCIES_2)
+ss_tunnel_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(top_builddir)/libudns/libudns.la
 ss_tunnel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(ss_tunnel_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -364,8 +367,8 @@ ss_server_SOURCES = utils.c \
 					resolv.c \
                     server.c
 
-ss_local_LDADD = $(SS_COMMON_LIBS)
-ss_tunnel_LDADD = $(SS_COMMON_LIBS)
+ss_local_LDADD = $(SS_COMMON_LIBS) $(top_builddir)/libudns/libudns.la
+ss_tunnel_LDADD = $(SS_COMMON_LIBS) $(top_builddir)/libudns/libudns.la
 ss_server_LDADD = $(SS_COMMON_LIBS) $(top_builddir)/libudns/libudns.la
 ss_local_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_LOCAL
 ss_tunnel_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_LOCAL -DUDPRELAY_TUNNEL

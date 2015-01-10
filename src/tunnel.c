@@ -53,6 +53,7 @@
 #endif
 
 #include <libcork/core.h>
+#include <udns.h>
 
 #include "utils.h"
 #include "tunnel.h"
@@ -385,7 +386,7 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
                     struct in_addr host;
                     int host_len = sizeof(struct in_addr);
 
-                    if (inet_pton(AF_INET, sa->host, &host) == -1) {
+                    if (dns_pton(AF_INET, sa->host, &host) == -1) {
                         FATAL("IP parser error.");
                     }
                     ss_addr_to_send[addr_len++] = 1;
@@ -396,7 +397,7 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
                     struct in6_addr host;
                     int host_len = sizeof(struct in6_addr);
 
-                    if (inet_pton(AF_INET6, sa->host, &host) == -1) {
+                    if (dns_pton(AF_INET6, sa->host, &host) == -1) {
                         FATAL("IP parser error.");
                     }
                     ss_addr_to_send[addr_len++] = 4;
