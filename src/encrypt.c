@@ -785,7 +785,7 @@ char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method)
         cipher_context_release(&evp);
 
         if (*len < iv_len + c_len) {
-            plaintext = realloc(plaintext, iv_len + c_len);
+            plaintext = realloc(plaintext, max(iv_len + c_len, buf_size));
         }
         *len = iv_len + c_len;
         memcpy(plaintext, ciphertext, *len);
@@ -839,7 +839,7 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
                 tmp_buf = ciphertext;
             }
             if (padding) {
-                plaintext = realloc(plaintext, p_len + padding);
+                plaintext = realloc(plaintext, max(p_len + padding, buf_size));
                 memmove(plaintext + padding, plaintext, p_len);
                 memset(plaintext, 0, padding);
             }
@@ -872,7 +872,7 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
 #endif
 
         if (*len < iv_len + c_len) {
-            plaintext = realloc(plaintext, iv_len + c_len);
+            plaintext = realloc(plaintext, max(iv_len + c_len, buf_size));
         }
         *len = iv_len + c_len;
         memcpy(plaintext, ciphertext, *len);
@@ -935,7 +935,7 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
         cipher_context_release(&evp);
 
         if (*len < p_len) {
-            ciphertext = realloc(ciphertext, p_len);
+            ciphertext = realloc(ciphertext, max(p_len, buf_size));
         }
         *len = p_len;
         memcpy(ciphertext, plaintext, *len);
@@ -981,7 +981,7 @@ char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len,
 
         if (enc_method >= SALSA20) {
             int padding = ctx->counter % SODIUM_BLOCK_SIZE;
-            if (buf_len < p_len + padding) {
+            if (buf_len < (p_len + padding) * 2) {
                 buf_len = max((p_len + padding) * 2, buf_size);
                 plaintext = realloc(plaintext, buf_len);
                 tmp_len = buf_len;
@@ -1021,7 +1021,7 @@ char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len,
 #endif
 
         if (*len < p_len) {
-            ciphertext = realloc(ciphertext, p_len);
+            ciphertext = realloc(ciphertext, max(p_len, buf_size));
         }
         *len = p_len;
         memcpy(ciphertext, plaintext, *len);
