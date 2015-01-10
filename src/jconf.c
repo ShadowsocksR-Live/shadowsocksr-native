@@ -168,6 +168,8 @@ jconf_t *read_jconf(const char * file)
                 conf.fast_open = value->u.boolean;
             } else if (strcmp(name, "nofile") == 0) {
                 conf.nofile = value->u.integer;
+            } else if (strcmp(name, "nameserver") == 0) {
+                conf.nameserver = to_string(value);
             }
         }
     } else {

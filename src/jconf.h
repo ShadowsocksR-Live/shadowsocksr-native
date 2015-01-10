@@ -43,6 +43,7 @@ typedef struct {
     char *timeout;
     int fast_open;
     int nofile;
+    char *nameserver;
 } jconf_t;
 
 jconf_t *read_jconf(const char * file);
