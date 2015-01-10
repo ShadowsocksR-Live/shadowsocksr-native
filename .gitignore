@@ -3,7 +3,7 @@ build/
 /Makefile
 src/Makefile
 libev/Makefile
-libasyncns/Makefile
+libudns/Makefile
 libcork/Makefile
 libipset/Makefile
 autom4te.cache/

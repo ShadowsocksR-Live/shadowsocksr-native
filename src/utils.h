@@ -16,7 +16,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with pdnsd; see the file COPYING. If not, see
+ * along with shadowsocks-libev; see the file COPYING. If not, see
  * <http://www.gnu.org/licenses/>.
  */
 
@@ -34,7 +34,7 @@
 #include <android/log.h>
 
 #define USE_SYSLOG(ident)
-#define LOGD(...)                                                \
+#define LOGI(...)                                                \
     ((void)__android_log_print(ANDROID_LOG_DEBUG, "shadowsocks", \
                                __VA_ARGS__))
 #define LOGE(...)                                                \
@@ -64,7 +64,7 @@ extern FILE * logfile;
         if (logfile != NULL) { fclose(logfile); } } \
     while (0)
 
-#define LOGD(format, ...)                                                        \
+#define LOGI(format, ...)                                                        \
     do {                                                                         \
         if (logfile != NULL) {                                                   \
             time_t now = time(NULL);                                             \
@@ -93,7 +93,7 @@ extern FILE * logfile;
 
 #define USE_SYSLOG(ident)
 
-#define LOGD(format, ...)                                                   \
+#define LOGI(format, ...)                                                   \
     do {                                                                    \
         time_t now = time(NULL);                                            \
         char timestr[20];                                                   \
@@ -126,7 +126,7 @@ extern int use_syslog;
         openlog((ident), LOG_CONS | LOG_PID, 0); } \
     while (0)
 
-#define LOGD(format, ...)                                                    \
+#define LOGI(format, ...)                                                    \
     do {                                                                     \
         if (use_syslog) {                                                    \
             syslog(LOG_INFO, format, ## __VA_ARGS__);                        \

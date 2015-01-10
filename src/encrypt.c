@@ -16,7 +16,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with pdnsd; see the file COPYING. If not, see
+ * along with shadowsocks-libev; see the file COPYING. If not, see
  * <http://www.gnu.org/licenses/>.
  */
 
@@ -746,7 +746,15 @@ char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method)
         int p_len = *len, c_len = *len;
         int iv_len = enc_iv_len;
         int err = 1;
-        char *ciphertext = malloc(max(iv_len + c_len, buf_size));
+
+        static int tmp_len = 0;
+        static char *tmp_buf = NULL;
+        int buf_len = max(iv_len + c_len, buf_size);
+        if (tmp_len < buf_len) {
+            tmp_len = buf_len;
+            tmp_buf = realloc(tmp_buf, buf_len);
+        }
+        char *ciphertext = tmp_buf;
 
         uint8_t iv[MAX_IV_LENGTH];
         cipher_context_set_iv(&evp, iv, iv_len, 1);
@@ -764,7 +772,6 @@ char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method)
         }
 
         if (!err) {
-            free(ciphertext);
             free(plaintext);
             cipher_context_release(&evp);
             return NULL;
@@ -775,13 +782,15 @@ char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method)
         dump("CIPHER", ciphertext + iv_len, c_len);
 #endif
 
-        *len = iv_len + c_len;
-        free(plaintext);
-
         cipher_context_release(&evp);
 
-        return ciphertext;
+        if (*len < iv_len + c_len) {
+            plaintext = realloc(plaintext, iv_len + c_len);
+        }
+        *len = iv_len + c_len;
+        memcpy(plaintext, ciphertext, *len);
 
+        return plaintext;
     } else {
         char *begin = plaintext;
         while (plaintext < begin + *len) {
@@ -796,6 +805,9 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
                   struct enc_ctx *ctx)
 {
     if (ctx != NULL) {
+        static int tmp_len = 0;
+        static char *tmp_buf = NULL;
+
         int err = 1;
         int iv_len = 0;
         int p_len = *len, c_len = *len;
@@ -804,7 +816,11 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
         }
 
         int buf_len = max(iv_len + c_len, buf_size);
-        char *ciphertext = malloc(buf_len);
+        if (tmp_len < buf_len) {
+            tmp_len = buf_len;
+            tmp_buf = realloc(tmp_buf, buf_len);
+        }
+        char *ciphertext = tmp_buf;
 
         if (!ctx->init) {
             uint8_t iv[MAX_IV_LENGTH];
@@ -819,6 +835,8 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
             if (buf_len < iv_len + padding + c_len) {
                 buf_len = max(iv_len + (padding + c_len) * 2, buf_size);
                 ciphertext = realloc(ciphertext, buf_len);
+                tmp_len = buf_len;
+                tmp_buf = ciphertext;
             }
             if (padding) {
                 plaintext = realloc(plaintext, p_len + padding);
@@ -843,7 +861,6 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
                                       &c_len, (const uint8_t *)plaintext,
                                       p_len);
             if (!err) {
-                free(ciphertext);
                 free(plaintext);
                 return NULL;
             }
@@ -854,9 +871,13 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
         dump("CIPHER", ciphertext + iv_len, c_len);
 #endif
 
+        if (*len < iv_len + c_len) {
+            plaintext = realloc(plaintext, iv_len + c_len);
+        }
         *len = iv_len + c_len;
-        free(plaintext);
-        return ciphertext;
+        memcpy(plaintext, ciphertext, *len);
+
+        return plaintext;
     } else {
         char *begin = plaintext;
         while (plaintext < begin + *len) {
@@ -872,11 +893,18 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
     if (method > TABLE) {
         cipher_ctx_t evp;
         cipher_context_init(&evp, method, 0);
-
         int c_len = *len, p_len = *len;
         int iv_len = enc_iv_len;
         int err = 1;
-        char *plaintext = malloc(max(p_len, buf_size));
+
+        static int tmp_len = 0;
+        static char *tmp_buf = NULL;
+        int buf_len = max(p_len, buf_size);
+        if (tmp_len < buf_len) {
+            tmp_len = buf_len;
+            tmp_buf = realloc(tmp_buf, buf_len);
+        }
+        char *plaintext = tmp_buf;
 
         uint8_t iv[MAX_IV_LENGTH];
         memcpy(iv, ciphertext, iv_len);
@@ -895,7 +923,6 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
 
         if (!err) {
             free(ciphertext);
-            free(plaintext);
             cipher_context_release(&evp);
             return NULL;
         }
@@ -905,12 +932,15 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
         dump("CIPHER", ciphertext + iv_len, c_len - iv_len);
 #endif
 
-        *len = p_len;
-        free(ciphertext);
-
         cipher_context_release(&evp);
 
-        return plaintext;
+        if (*len < p_len) {
+            ciphertext = realloc(ciphertext, p_len);
+        }
+        *len = p_len;
+        memcpy(ciphertext, plaintext, *len);
+
+        return ciphertext;
     } else {
         char *begin = ciphertext;
         while (ciphertext < begin + *len) {
@@ -925,11 +955,19 @@ char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len,
                   struct enc_ctx *ctx)
 {
     if (ctx != NULL) {
+        static int tmp_len = 0;
+        static char *tmp_buf = NULL;
+
         int c_len = *len, p_len = *len;
         int iv_len = 0;
         int err = 1;
         int buf_len = max(p_len, buf_size);
-        char *plaintext = malloc(buf_len);
+
+        if (tmp_len < buf_len) {
+            tmp_len = buf_len;
+            tmp_buf = realloc(tmp_buf, buf_len);
+        }
+        char *plaintext = tmp_buf;
 
         if (!ctx->init) {
             uint8_t iv[MAX_IV_LENGTH];
@@ -946,6 +984,8 @@ char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len,
             if (buf_len < p_len + padding) {
                 buf_len = max((p_len + padding) * 2, buf_size);
                 plaintext = realloc(plaintext, buf_len);
+                tmp_len = buf_len;
+                tmp_buf = plaintext;
             }
             if (padding) {
                 ciphertext =
@@ -972,7 +1012,6 @@ char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len,
 
         if (!err) {
             free(ciphertext);
-            free(plaintext);
             return NULL;
         }
 
@@ -981,9 +1020,13 @@ char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len,
         dump("CIPHER", ciphertext + iv_len, c_len - iv_len);
 #endif
 
+        if (*len < p_len) {
+            ciphertext = realloc(ciphertext, p_len);
+        }
         *len = p_len;
-        free(ciphertext);
-        return plaintext;
+        memcpy(ciphertext, plaintext, *len);
+
+        return ciphertext;
     } else {
         char *begin = ciphertext;
         while (ciphertext < begin + *len) {

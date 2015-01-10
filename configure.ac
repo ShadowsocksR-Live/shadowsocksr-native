@@ -2,7 +2,7 @@ dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.67])
-AC_INIT([shadowsocks-libev], [1.6.4], [max.c.lv@gmail.com])
+AC_INIT([shadowsocks-libev], [2.0.1], [max.c.lv@gmail.com])
 AC_CONFIG_SRCDIR([src/encrypt.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(auto)
@@ -225,7 +225,7 @@ AC_CONFIG_FILES([ shadowsocks-libev.pc
                  Makefile
                  libcork/Makefile
                  libipset/Makefile
-                 libasyncns/Makefile
+                 libudns/Makefile
                  libev/Makefile
                  src/Makefile])
 AC_OUTPUT

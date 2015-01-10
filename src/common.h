@@ -15,7 +15,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with pdnsd; see the file COPYING. If not, see
+ * along with shadowsocks-libev; see the file COPYING. If not, see
  * <http://www.gnu.org/licenses/>.
  */
 
@@ -43,9 +43,6 @@ int init_udprelay(const char *server_host, const char *server_port,
 #ifdef UDPRELAY_TUNNEL
                   const ss_addr_t tunnel_addr,
 #endif
-#endif
-#ifdef UDPRELAY_REMOTE
-                  int dns_thread_num,
 #endif
                   int method, int timeout, const char *iface);
 

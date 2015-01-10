@@ -2,7 +2,7 @@ VERSION_INFO = 1:0:0
 
 AM_CFLAGS = -g -O2 -Wall -Werror -Wno-deprecated-declarations -fno-strict-aliasing -std=gnu99 -D_GNU_SOURCE
 AM_CFLAGS += -I$(top_srcdir)/libev
-AM_CFLAGS += -I$(top_srcdir)/libasyncns
+AM_CFLAGS += -I$(top_srcdir)/libudns
 AM_CFLAGS += -I$(top_srcdir)/libipset/include
 AM_CFLAGS += -I$(top_srcdir)/libcork/include
 AM_CFLAGS += -I$(top_srcdir)/libsodium/src/libsodium/include
@@ -44,12 +44,13 @@ ss_server_SOURCES = utils.c \
                     encrypt.c \
 					udprelay.c \
 					cache.c \
+					resolv.c \
                     server.c
 
 ss_local_LDADD = $(SS_COMMON_LIBS)
 ss_tunnel_LDADD = $(SS_COMMON_LIBS)
 ss_server_LDADD = $(SS_COMMON_LIBS)
-ss_server_LDADD += $(top_builddir)/libasyncns/libasyncns.la
+ss_server_LDADD += $(top_builddir)/libudns/libudns.la
 
 ss_local_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_LOCAL
 ss_tunnel_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_LOCAL -DUDPRELAY_TUNNEL

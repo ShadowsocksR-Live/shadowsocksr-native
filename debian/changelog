@@ -1,3 +1,9 @@
+shadowsocks-libev (2.0.1-1) unstable; urgency=low
+
+  * Implement a real asynchronous DNS resolver.
+
+ -- Max Lv <max.c.lv@gmail.com>  Sat, 10 Jan 2015 10:04:28 +0800
+
 shadowsocks-libev (1.6.4-1) unstable; urgency=low
 
   * Update documents.

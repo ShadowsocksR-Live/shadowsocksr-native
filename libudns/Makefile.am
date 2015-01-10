@@ -16,10 +16,10 @@
 # License along with libasyncns. If not, see
 # <http://www.gnu.org/licenses/>.
 
-AM_CFLAGS=-D__EXTENSIONS__ $(PTHREAD_CFLAGS)
-
-noinst_LTLIBRARIES=libasyncns.la
-libasyncns_la_CC=$(PTHREAD_CC)
-libasyncns_la_SOURCES=asyncns.c asyncns.h
-libasyncns_la_LDFLAGS= -static
-libasyncns_la_LIBADD=$(PTHREAD_LIBS)
+SRCS   = udns_dn.c udns_dntosp.c udns_parse.c udns_resolver.c udns_init.c \
+	udns_misc.c udns_XtoX.c \
+	udns_rr_a.c udns_rr_ptr.c udns_rr_mx.c udns_rr_txt.c udns_bl.c \
+	udns_rr_srv.c udns_rr_naptr.c udns_codes.c udns_jran.c
+noinst_LTLIBRARIES=libudns.la
+libudns_la_SOURCES= ${SRCS}
+libudns_la_LDFLAGS= -static
