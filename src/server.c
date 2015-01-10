@@ -971,8 +971,7 @@ int main(int argc, char **argv)
     const char *server_port = NULL;
 
     char * nameservers[MAX_DNS_NUM + 1];
-    int nameserver_num = 1;
-    nameservers[0] = "8.8.8.8";
+    int nameserver_num = 0;
 
     int option_index = 0;
     static struct option long_options[] =
@@ -1078,6 +1077,9 @@ int main(int argc, char **argv)
             set_nofile(nofile);
         }
 #endif
+        if (conf->nameserver != NULL) {
+            nameservers[nameserver_num++] = conf->nameserver;
+        }
     }
 
     if (server_num == 0 || server_port == NULL || password == NULL) {
@@ -1122,6 +1124,9 @@ int main(int argc, char **argv)
     struct ev_loop *loop = EV_DEFAULT;
 
     // setup udns
+    if (nameserver_num == 0) {
+        nameservers[nameserver_num++] = "8.8.8.8";
+    }
     resolv_init(loop, nameservers, nameserver_num);
 
     // inilitialize listen context
@@ -1143,6 +1148,10 @@ int main(int argc, char **argv)
         }
         setnonblocking(listenfd);
         LOGI("server listening at port %s", server_port);
+
+        for (int i = 0; i < nameserver_num; i++) {
+            LOGI("using nameserver: %s", nameservers[i]);
+        }
 
         struct listen_ctx *listen_ctx = &listen_ctx_list[index];
 
