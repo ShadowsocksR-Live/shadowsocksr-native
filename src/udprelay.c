@@ -171,7 +171,7 @@ static int parse_udprealy_header(const char * buf, const int buf_len,
             }
             if (host != NULL) {
                 dns_ntop(AF_INET, (const void *)(buf + offset),
-                          host, INET_ADDRSTRLEN);
+                         host, INET_ADDRSTRLEN);
             }
             offset += in_addr_len;
         }
@@ -212,7 +212,7 @@ static int parse_udprealy_header(const char * buf, const int buf_len,
             }
             if (host != NULL) {
                 dns_ntop(AF_INET6, (const void *)(buf + offset),
-                          host, INET6_ADDRSTRLEN);
+                         host, INET6_ADDRSTRLEN);
             }
             offset += in6_addr_len;
         }
@@ -242,14 +242,14 @@ static char *get_addr_str(const struct sockaddr *sa)
     switch (sa->sa_family) {
     case AF_INET:
         dns_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr),
-                  addr, INET_ADDRSTRLEN);
+                 addr, INET_ADDRSTRLEN);
         p = ntohs(((struct sockaddr_in *)sa)->sin_port);
         sprintf(port, "%d", p);
         break;
 
     case AF_INET6:
         dns_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr),
-                  addr, INET6_ADDRSTRLEN);
+                 addr, INET6_ADDRSTRLEN);
         p = ntohs(((struct sockaddr_in *)sa)->sin_port);
         sprintf(port, "%d", p);
         break;

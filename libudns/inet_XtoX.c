@@ -54,7 +54,7 @@ struct in_addr;
 # define inet_XtoX_prefix inet_
 #endif
 #ifndef inet_XtoX_decl
-# define inet_XtoX_decl __declspec(dllexport)
+# define inet_XtoX_decl /* empty */
 #endif
 
 #define cc2_(x,y) cc2__(x,y)

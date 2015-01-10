@@ -393,7 +393,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             if (r > in_addr_len) {
                 addr->sin_addr = *(struct in_addr *)(server->buf + offset);
                 dns_ntop(AF_INET, (const void *)(server->buf + offset),
-                          host, INET_ADDRSTRLEN);
+                         host, INET_ADDRSTRLEN);
                 offset += in_addr_len;
             } else {
                 LOGE("invalid header with addr type %d", atyp);
@@ -445,7 +445,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             if (r > in6_addr_len) {
                 addr->sin6_addr = *(struct in6_addr *)(server->buf + offset);
                 dns_ntop(AF_INET6, (const void *)(server->buf + offset),
-                          host, INET6_ADDRSTRLEN);
+                         host, INET6_ADDRSTRLEN);
                 offset += in6_addr_len;
             } else {
                 LOGE("invalid header with addr type %d", atyp);
@@ -993,8 +993,8 @@ int main(int argc, char **argv)
     int option_index = 0;
     static struct option long_options[] =
     {
-        { "fast-open", no_argument, 0,           0 },
-        { 0,           0,           0,           0 }
+        { "fast-open", no_argument, 0, 0 },
+        { 0,           0,           0, 0 }
     };
 
     opterr = 0;
