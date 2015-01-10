@@ -24,7 +24,7 @@
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
-#ifdef WINDOWS
+#ifdef __MINGW32__
 #include <windows.h>
 #include <winsock2.h>
 #else
@@ -301,7 +301,7 @@ printrr(const struct dns_parse *p, struct dns_rr *rr) {
       if (verbose > 0) putchar('"');
       c = printtxt(c);
       if (verbose > 0) putchar('"');
-    } 
+    }
     printf(" %s.", dns_dntosp(dn));
     break;
 

@@ -28,11 +28,12 @@
 #endif
 #include "udns.h"
 
+#if HAVE_DECL_INET_NTOP == 1
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-#ifdef HAVE_DECL_INET_NTOP
 const char *dns_ntop(int af, const void *src, char *dst, int size) {
   return inet_ntop(af, src, dst, size);
 }
@@ -40,9 +41,17 @@ const char *dns_ntop(int af, const void *src, char *dst, int size) {
 int dns_pton(int af, const char *src, void *dst) {
   return inet_pton(af, src, dst);
 }
+
 #else
 
-#define inet_XtoX_prefix udns_
+#include <winsock2.h>          /* includes <windows.h> */
+#include <ws2tcpip.h>          /* needed for struct in6_addr */
+
+#ifndef EAFNOSUPPORT
+#define EAFNOSUPPORT    WSAEAFNOSUPPORT
+#endif
+
+#define inet_XtoX_prefix dns_
 #include "inet_XtoX.c"
 
 #endif

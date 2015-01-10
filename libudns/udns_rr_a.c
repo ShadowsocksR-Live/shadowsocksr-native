@@ -24,7 +24,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-#ifndef WINDOWS
+#ifndef __MINGW32__
 # include <sys/types.h>
 # include <netinet/in.h>
 #endif

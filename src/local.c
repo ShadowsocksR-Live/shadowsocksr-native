@@ -55,6 +55,7 @@
 #endif
 
 #include <libcork/core.h>
+#include <udns.h>
 
 #ifdef __MINGW32__
 #include "win32.h"
@@ -380,8 +381,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     if (acl || verbose) {
                         uint16_t p =
                             ntohs(*(uint16_t *)(buf + 4 + in_addr_len));
-                        inet_ntop(AF_INET, (const void *)(buf + 4),
-                                  host, INET_ADDRSTRLEN);
+                        dns_ntop(AF_INET, (const void *)(buf + 4),
+                                 host, INET_ADDRSTRLEN);
                         sprintf(port, "%d", p);
                     }
                 } else if (request->atyp == 3) {
@@ -409,8 +410,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     if (acl || verbose) {
                         uint16_t p =
                             ntohs(*(uint16_t *)(buf + 4 + in6_addr_len));
-                        inet_ntop(AF_INET6, (const void *)(buf + 4),
-                                  host, INET6_ADDRSTRLEN);
+                        dns_ntop(AF_INET6, (const void *)(buf + 4),
+                                 host, INET6_ADDRSTRLEN);
                         sprintf(port, "%d", p);
                     }
                 } else {

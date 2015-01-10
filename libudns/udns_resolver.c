@@ -24,7 +24,7 @@
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
-#ifdef WINDOWS
+#ifdef __MINGW32__
 # include <winsock2.h>          /* includes <windows.h> */
 # include <ws2tcpip.h>          /* needed for struct in6_addr */
 #else
@@ -45,7 +45,7 @@
 #  include <sys/times.h>
 # endif
 # define closesocket(sock) close(sock)
-#endif	/* !WINDOWS */
+#endif	/* !__MINGW32__ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -392,7 +392,7 @@ dns_set_tmcbck(struct dns_ctx *ctx, dns_utm_fn *fn, void *data) {
 }
 
 static unsigned dns_nonrandom_32(void) {
-#ifdef WINDOWS
+#ifdef __MINGW32__
   FILETIME ft;
   GetSystemTimeAsFileTime(&ft);
   return ft.dwLowDateTime;
@@ -551,7 +551,7 @@ int dns_open(struct dns_ctx *ctx) {
     ctx->dnsc_qstatus = DNS_E_TEMPFAIL;
     return -1;
   }
-#ifdef WINDOWS
+#ifdef __MINGW32__
   { unsigned long on = 1;
     if (ioctlsocket(sock, FIONBIO, &on) == SOCKET_ERROR) {
       closesocket(sock);
@@ -559,14 +559,14 @@ int dns_open(struct dns_ctx *ctx) {
       return -1;
     }
   }
-#else	/* !WINDOWS */
+#else	/* !__MINGW32__ */
   if (fcntl(sock, F_SETFL, fcntl(sock, F_GETFL) | O_NONBLOCK) < 0 ||
       fcntl(sock, F_SETFD, FD_CLOEXEC) < 0) {
     closesocket(sock);
     ctx->dnsc_qstatus = DNS_E_TEMPFAIL;
     return -1;
   }
-#endif	/* WINDOWS */
+#endif	/* __MINGW32__ */
   /* allocate the packet buffer */
   if ((ctx->dnsc_pbuf = malloc(ctx->dnsc_udpbuf)) == NULL) {
     closesocket(sock);
@@ -991,7 +991,7 @@ again: /* receive the reply */
      * or remote.  On local errors, we should stop, while
      * remote errors should be ignored (for now anyway).
      */
-#ifdef WINDOWS
+#ifdef __MINGW32__
     if (WSAGetLastError() == WSAEWOULDBLOCK)
 #else
     if (errno == EAGAIN)
