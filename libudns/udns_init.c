@@ -55,6 +55,8 @@ static void dns_set_srch_internal(struct dns_ctx *ctx, char *srch) {
 
 #ifdef __MINGW32__
 
+#define NO_IPHLPAPI
+
 #ifndef NO_IPHLPAPI
 /* Apparently, some systems does not have proper headers for IPHLPAIP to work.
  * The best is to upgrade headers, but here's another, ugly workaround for
