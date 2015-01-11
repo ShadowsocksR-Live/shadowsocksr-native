@@ -1,3 +1,9 @@
+shadowsocks-libev (2.0.4-1) unstable; urgency=low
+
+  * Fix building issues with MinGW32.
+
+ -- Max Lv <max.c.lv@gmail.com>  Sun, 11 Jan 2015 13:33:31 +0900
+
 shadowsocks-libev (2.0.3-1) unstable; urgency=high
 
   * Fix some issues.

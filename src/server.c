@@ -1146,9 +1146,15 @@ int main(int argc, char **argv)
 
     // setup udns
     if (nameserver_num == 0) {
+#ifdef __MINGW32__
         nameservers[nameserver_num++] = "8.8.8.8";
+        resolv_init(loop, nameservers, nameserver_num);
+#else
+        resolv_init(loop, NULL, 0);
+#endif
+    } else {
+        resolv_init(loop, nameservers, nameserver_num);
     }
-    resolv_init(loop, nameservers, nameserver_num);
 
     // inilitialize listen context
     struct listen_ctx listen_ctx_list[server_num];
