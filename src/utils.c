@@ -242,7 +242,7 @@ void usage()
     printf(
         "                                     only available in tunnel mode\n");
     printf(
-        "          [-d <addr>]                setup the name servers for libudns,\n");
+        "          [-d <addr>]                setup name servers for internal DNS resolver,\n");
     printf(
         "                                     only available in server mode\n");
     printf(
