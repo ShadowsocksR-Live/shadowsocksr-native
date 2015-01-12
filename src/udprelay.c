@@ -789,26 +789,13 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 #endif
 
     if (remote_ctx == NULL) {
-        struct addrinfo hints;
-        struct addrinfo *result;
-
-        memset(&hints, 0, sizeof(struct addrinfo));
-        hints.ai_family = AF_UNSPEC;    /* Return IPv4 and IPv6 choices */
-        hints.ai_socktype = SOCK_DGRAM; /* We want a UDP socket */
-
-        int s = getaddrinfo(server_ctx->remote_host, server_ctx->remote_port,
-                            &hints, &result);
-        if (s != 0 || result == NULL) {
-            LOGE("[udp] getaddrinfo: %s", gai_strerror(s));
-            goto CLEAN_UP;
-        }
+        const struct sockaddr *remote_addr = server_ctx->remote_addr;
+        const int remote_addr_len = server_ctx->remote_addr_len;
 
         // Bind to any port
-        int remotefd = create_remote_socket(result->ai_family == AF_INET6);
+        int remotefd = create_remote_socket(remote_addr->sa_family == AF_INET6);
         if (remotefd < 0) {
             ERROR("[udp] udprelay bind() error");
-            // remember to free addrinfo
-            freeaddrinfo(result);
             goto CLEAN_UP;
         }
         setnonblocking(remotefd);
@@ -825,13 +812,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         // Init remote_ctx
         remote_ctx = new_remote(remotefd, server_ctx);
         remote_ctx->src_addr = src_addr;
-        if (result->ai_addr->sa_family == AF_INET) {
-            memcpy(&(remote_ctx->dst_addr), result->ai_addr,
-                   sizeof(struct sockaddr_in));
-        } else if (result->ai_addr->sa_family == AF_INET6) {
-            memcpy(&(remote_ctx->dst_addr), result->ai_addr,
-                   sizeof(struct sockaddr_in6));
-        }
+        memcpy(&(remote_ctx->dst_addr), remote_addr, remote_addr_len);
         remote_ctx->addr_header_len = addr_header_len;
         memcpy(remote_ctx->addr_header, addr_header, addr_header_len);
 
@@ -840,9 +821,6 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
         // Start remote io
         ev_io_start(EV_A_ & remote_ctx->io);
-
-        // clean up
-        freeaddrinfo(result);
     }
 
     if (offset > 0) {
@@ -971,7 +949,7 @@ void free_cb(void *element)
 
 int init_udprelay(const char *server_host, const char *server_port,
 #ifdef UDPRELAY_LOCAL
-                  const char *remote_host, const char *remote_port,
+                  const struct sockaddr *remote_addr, const int remote_addr_len,
 #ifdef UDPRELAY_TUNNEL
                   const ss_addr_t tunnel_addr,
 #endif
@@ -1004,8 +982,8 @@ int init_udprelay(const char *server_host, const char *server_port,
     server_ctx->iface = iface;
     server_ctx->conn_cache = conn_cache;
 #ifdef UDPRELAY_LOCAL
-    server_ctx->remote_host = remote_host;
-    server_ctx->remote_port = remote_port;
+    server_ctx->remote_addr = remote_addr;
+    server_ctx->remote_addr_len = remote_addr_len;
 #ifdef UDPRELAY_TUNNEL
     server_ctx->tunnel_addr = tunnel_addr;
 #endif

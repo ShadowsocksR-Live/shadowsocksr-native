@@ -31,11 +31,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "utils.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include "utils.h"
 
 #ifdef HAVE_SETRLIMIT
 #include <sys/time.h>

@@ -33,13 +33,12 @@
 
 struct listen_ctx {
     ev_io io;
-    ss_addr_t *remote_addr;
     char *iface;
     int remote_num;
     int method;
     int timeout;
     int fd;
-    struct sockaddr sock;
+    struct sockaddr **remote_addr;
 };
 
 struct server_ctx {
@@ -80,7 +79,8 @@ struct remote {
     struct remote_ctx *recv_ctx;
     struct remote_ctx *send_ctx;
     struct server *server;
-    struct addrinfo *addr_info;
+    struct sockaddr_storage addr;
+    int addr_len;
 };
 
 #endif // _LOCAL_H

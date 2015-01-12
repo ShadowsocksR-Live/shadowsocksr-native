@@ -32,13 +32,12 @@
 struct listen_ctx {
     ev_io io;
     ss_addr_t tunnel_addr;
-    ss_addr_t *remote_addr;
     char *iface;
     int remote_num;
     int method;
     int timeout;
     int fd;
-    struct sockaddr sock;
+    struct sockaddr **remote_addr;
 };
 
 struct server_ctx {

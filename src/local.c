@@ -20,6 +20,10 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -37,10 +41,6 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <pthread.h>
-#endif
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
 #endif
 
 #ifdef LIB_ONLY
@@ -61,6 +61,7 @@
 #include "win32.h"
 #endif
 
+#include "netutils.h"
 #include "utils.h"
 #include "local.h"
 #include "socks5.h"
@@ -96,8 +97,7 @@ static void accept_cb(EV_P_ ev_io *w, int revents);
 static void signal_cb(EV_P_ ev_signal *w, int revents);
 
 static int create_and_bind(const char *addr, const char *port);
-static struct remote * connect_to_remote(struct listen_ctx *listener,
-                                         const char *host, const char *port);
+static struct remote * connect_to_remote(struct listen_ctx *listener, struct sockaddr *addr);
 static void free_remote(struct remote *remote);
 static void close_and_free_remote(EV_P_ struct remote *remote);
 static void free_server(struct server *server);
@@ -254,8 +254,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 if (!fast_open || remote->direct) {
                     // connecting, wait until connected
-                    connect(remote->fd, remote->addr_info->ai_addr,
-                            remote->addr_info->ai_addrlen);
+                    connect(remote->fd, (struct sockaddr *)&(remote->addr), remote->addr_len);
 
                     // wait on remote connected event
                     ev_io_stop(EV_A_ & server_recv_ctx->io);
@@ -264,8 +263,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 } else {
 #ifdef TCP_FASTOPEN
                     int s = sendto(remote->fd, remote->buf, r, MSG_FASTOPEN,
-                                   remote->addr_info->ai_addr,
-                                   remote->addr_info->ai_addrlen);
+                                   (struct sockaddr *)&(remote->addr), remote->addr_len);
                     if (s == -1) {
                         if (errno == EINPROGRESS) {
                             // in progress, wait until connected
@@ -430,16 +428,18 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     LOGI("connect to %s:%s", host, port);
                 }
 
-                if ((acl && request->atyp == 1 && acl_contains_ip(host))
-                    || (acl && request->atyp == 3 &&
-                        acl_contains_domain(host))) {
-                    remote = connect_to_remote(server->listener, host, port);
-                    remote->direct = 1;
+                if ((acl && request->atyp == 1 && acl_contains_ip(host))) {
                     if (verbose) {
                         LOGI("bypass %s:%s", host, port);
                     }
+                    struct sockaddr_storage storage;
+                    memset(&storage, 0, sizeof(struct sockaddr_storage));
+                    if (get_sockaddr(host, port, &storage) != -1) {
+                        remote = connect_to_remote(server->listener, (struct sockaddr *)&storage);
+                        remote->direct = 1;
+                    }
                 } else {
-                    remote = connect_to_remote(server->listener, NULL, NULL);
+                    remote = connect_to_remote(server->listener, NULL);
                 }
 
                 if (remote == NULL) {
@@ -712,9 +712,6 @@ static void free_remote(struct remote *remote)
     if (remote->buf != NULL) {
         free(remote->buf);
     }
-    if (remote->addr_info != NULL) {
-        freeaddrinfo(remote->addr_info);
-    }
     free(remote->recv_ctx);
     free(remote->send_ctx);
     free(remote);
@@ -798,40 +795,21 @@ static void close_and_free_server(EV_P_ struct server *server)
 }
 
 static struct remote * connect_to_remote(struct listen_ctx *listener,
-                                         const char *host, const char *port)
+                                        struct sockaddr *addr)
 {
-    int sockfd;
-    struct addrinfo *remote_res;
+    struct sockaddr *remote_addr;
 
-    struct addrinfo hints;
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
     int index = rand() % listener->remote_num;
-    int err;
-    if (host == NULL || port == NULL) {
-        if (verbose) {
-            LOGI("connect to server: %s:%s", listener->remote_addr[index].host,
-                 listener->remote_addr[index].port);
-        }
-        err = getaddrinfo(listener->remote_addr[index].host,
-                          listener->remote_addr[index].port, &hints,
-                          &remote_res);
+    if (addr == NULL) {
+        remote_addr = listener->remote_addr[index];
     } else {
-        err = getaddrinfo(host, port, &hints, &remote_res);
+        remote_addr = addr;
     }
 
-    if (err) {
-        ERROR("getaddrinfo");
-        return NULL;
-    }
-
-    sockfd = socket(remote_res->ai_family, remote_res->ai_socktype,
-                    remote_res->ai_protocol);
+    int sockfd = socket(remote_addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
 
     if (sockfd < 0) {
         ERROR("socket");
-        freeaddrinfo(remote_res);
         return NULL;
     }
 
@@ -849,7 +827,8 @@ static struct remote * connect_to_remote(struct listen_ctx *listener,
 #endif
 
     struct remote *remote = new_remote(sockfd, listener->timeout);
-    remote->addr_info = remote_res;
+    remote->addr_len = get_sockaddr_len(remote_addr);
+    memcpy(&(remote->addr), remote_addr, remote->addr_len);
 
     return remote;
 }
@@ -1084,13 +1063,17 @@ int main(int argc, char **argv)
     // Setup proxy context
     struct listen_ctx listen_ctx;
     listen_ctx.remote_num = remote_num;
-    listen_ctx.remote_addr = malloc(sizeof(ss_addr_t) * remote_num);
-    while (remote_num > 0) {
-        int index = --remote_num;
-        if (remote_addr[index].port == NULL) {
-            remote_addr[index].port = remote_port;
+    listen_ctx.remote_addr = malloc(sizeof(struct sockaddr *) * remote_num);
+    for (int i = 0; i < remote_num; i++) {
+        char *host = remote_addr[i].host;
+        char *port = remote_addr[i].port == NULL ? remote_port :
+            remote_addr[i].port;
+        struct sockaddr_storage *storage = malloc(sizeof(struct sockaddr_storage));
+        memset(storage, 0, sizeof(struct sockaddr_storage));
+        if (get_sockaddr(host, port, storage) == -1) {
+            FATAL("failed to resolve the provided hostname");
         }
-        listen_ctx.remote_addr[index] = remote_addr[index];
+        listen_ctx.remote_addr[i] = (struct sockaddr *)storage;
     }
     listen_ctx.timeout = atoi(timeout);
     listen_ctx.fd = listenfd;
@@ -1098,17 +1081,14 @@ int main(int argc, char **argv)
     listen_ctx.method = m;
 
     struct ev_loop *loop = EV_DEFAULT;
-    if (!loop) {
-        FATAL("ev_loop error");
-    }
     ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
     ev_io_start(loop, &listen_ctx.io);
 
     // Setup UDP
     if (udprelay) {
         LOGI("udprelay enabled");
-        init_udprelay(local_addr, local_port, remote_addr[0].host,
-                      remote_addr[0].port, m, listen_ctx.timeout, iface);
+        init_udprelay(local_addr, local_port, listen_ctx.remote_addr[0],
+                get_sockaddr_len(listen_ctx.remote_addr[0]), m, listen_ctx.timeout, iface);
     }
 
     // setuid
@@ -1131,6 +1111,9 @@ int main(int argc, char **argv)
     free_udprelay();
 
     ev_io_stop(loop, &listen_ctx.io);
+    for (int i = 0; i < remote_num; i++) {
+        free(listen_ctx.remote_addr[i]);
+    }
     free(listen_ctx.remote_addr);
 
 #ifdef __MINGW32__
@@ -1142,6 +1125,7 @@ int main(int argc, char **argv)
 
     return 0;
 }
+
 #else
 
 int start_ss_local_server(profile_t profile)
@@ -1199,10 +1183,12 @@ int start_ss_local_server(profile_t profile)
     int listenfd;
     listenfd = create_and_bind(local_addr, local_port_str);
     if (listenfd < 0) {
-        FATAL("bind()");
+        ERROR("bind()");
+        return -1;
     }
     if (listen(listenfd, SOMAXCONN) == -1) {
-        FATAL("listen()");
+        ERROR("listen()");
+        return -1;
     }
     setnonblocking(listenfd);
     LOGI("server listening at port %s", local_port_str);
@@ -1211,26 +1197,28 @@ int start_ss_local_server(profile_t profile)
     struct listen_ctx listen_ctx;
 
     listen_ctx.remote_num = 1;
-    listen_ctx.remote_addr = malloc(sizeof(ss_addr_t));
-    listen_ctx.remote_addr[0].host = remote_host;
-    listen_ctx.remote_addr[0].port = remote_port_str;
+    listen_ctx.remote_addr = malloc(sizeof(struct sockaddr *));
+    struct sockaddr_storage *storage = malloc(sizeof(struct sockaddr_storage));
+    memset(storage, 0, sizeof(struct sockaddr_storage));
+    if (get_sockaddr(remote_host, remote_port_str, storage) == -1) {
+        return -1;
+    }
+    listen_ctx.remote_addr[0] = (struct sockaddr *)storage;
     listen_ctx.timeout = timeout;
     listen_ctx.fd = listenfd;
     listen_ctx.method = m;
     listen_ctx.iface = NULL;
 
     struct ev_loop *loop = EV_DEFAULT;
-    if (!loop) {
-        FATAL("ev_loop error");
-    }
     ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
     ev_io_start(loop, &listen_ctx.io);
 
     // Setup UDP
     if (udprelay) {
         LOGI("udprelay enabled");
-        init_udprelay(local_addr, local_port_str, remote_host, remote_port_str,
-                      m, listen_ctx.timeout, NULL);
+        init_udprelay(local_addr, local_port_str, listen_ctx.remote_addr[0],
+                get_sockaddr_len(listen_ctx.remote_addr[0]), m,
+                listen_ctx.timeout, NULL);
     }
 
     // Init connections

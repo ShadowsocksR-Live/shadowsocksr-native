@@ -1,3 +1,9 @@
+shadowsocks-libev (2.0.5-1) unstable; urgency=low
+
+  * Refine local, tunnel, and redir modes.
+
+ -- Max Lv <max.c.lv@gmail.com>  Mon, 12 Jan 2015 12:39:05 +0800
+
 shadowsocks-libev (2.0.4-1) unstable; urgency=low
 
   * Fix building issues with MinGW32.

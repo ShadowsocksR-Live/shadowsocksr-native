@@ -27,6 +27,7 @@ ss_local_SOURCES = utils.c \
 				   udprelay.c \
 				   cache.c \
 				   acl.c \
+				   netutils.c \
 				   local.c
 
 ss_tunnel_SOURCES = utils.c \
@@ -35,6 +36,7 @@ ss_tunnel_SOURCES = utils.c \
 					encrypt.c \
 					udprelay.c \
 					cache.c \
+					netutils.c \
 					tunnel.c
 
 ss_server_SOURCES = utils.c \
@@ -68,8 +70,10 @@ ss_redir_SOURCES = utils.c \
                    jconf.c \
                    json.c \
                    encrypt.c \
+				   netutils.c \
                    redir.c
 ss_redir_LDADD = $(SS_COMMON_LIBS)
+ss_redir_LDADD += $(top_builddir)/libudns/libudns.la
 endif
 
 lib_LTLIBRARIES = libshadowsocks.la
