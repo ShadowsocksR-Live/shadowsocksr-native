@@ -47,8 +47,8 @@ struct server_ctx {
     const char *iface;
     struct cache *conn_cache;
 #ifdef UDPRELAY_LOCAL
-    const char *remote_host;
-    const char *remote_port;
+    const struct sockaddr *remote_addr;
+    int remote_addr_len;
 #ifdef UDPRELAY_TUNNEL
     ss_addr_t tunnel_addr;
 #endif

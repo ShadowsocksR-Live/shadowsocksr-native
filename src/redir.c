@@ -45,6 +45,7 @@
 #include "config.h"
 #endif
 
+#include "netutils.h"
 #include "utils.h"
 #include "redir.h"
 
@@ -562,24 +563,12 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     setsockopt(clientfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
-    struct addrinfo hints, *res;
-    int sockfd;
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
     int index = rand() % listener->remote_num;
-    err =
-        getaddrinfo(listener->remote_addr[index].host,
-                    listener->remote_addr[index].port, &hints, &res);
-    if (err) {
-        ERROR("getaddrinfo");
-        return;
-    }
+    struct sockaddr *remote_addr = listener->remote_addr[index];
 
-    sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    int sockfd = socket(remote_addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
     if (sockfd < 0) {
         ERROR("socket");
-        freeaddrinfo(res);
         return;
     }
 
@@ -596,8 +585,7 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     remote->server = server;
     server->destaddr = destaddr;
 
-    connect(sockfd, res->ai_addr, res->ai_addrlen);
-    freeaddrinfo(res);
+    connect(sockfd, remote_addr, get_sockaddr_len(remote_addr));
     // listen to remote connected event
     ev_io_start(EV_A_ & remote->send_ctx->io);
     ev_timer_start(EV_A_ & remote->send_ctx->watcher);
@@ -735,22 +723,23 @@ int main(int argc, char **argv)
     // Setup proxy context
     struct listen_ctx listen_ctx;
     listen_ctx.remote_num = remote_num;
-    listen_ctx.remote_addr = malloc(sizeof(ss_addr_t) * remote_num);
-    while (remote_num > 0) {
-        int index = --remote_num;
-        if (remote_addr[index].port == NULL) {
-            remote_addr[index].port = remote_port;
+    listen_ctx.remote_addr = malloc(sizeof(struct sockaddr *) * remote_num);
+    for (int i = 0; i < remote_num; i++) {
+        char *host = remote_addr[i].host;
+        char *port = remote_addr[i].port == NULL ? remote_port :
+            remote_addr[i].port;
+        struct sockaddr_storage *storage = malloc(sizeof(struct sockaddr_storage));
+        memset(storage, 0, sizeof(struct sockaddr_storage));
+        if (get_sockaddr(host, port, storage) == -1) {
+            FATAL("failed to resolve the provided hostname");
         }
-        listen_ctx.remote_addr[index] = remote_addr[index];
+        listen_ctx.remote_addr[i] = (struct sockaddr *)storage;
     }
     listen_ctx.timeout = atoi(timeout);
     listen_ctx.fd = listenfd;
     listen_ctx.method = m;
 
-    struct ev_loop *loop = ev_default_loop(0);
-    if (!loop) {
-        FATAL("ev_loop error");
-    }
+    struct ev_loop *loop = EV_DEFAULT;
     ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
     ev_io_start(loop, &listen_ctx.io);
 

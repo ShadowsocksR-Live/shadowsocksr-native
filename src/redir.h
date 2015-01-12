@@ -29,12 +29,11 @@
 
 struct listen_ctx {
     ev_io io;
-    ss_addr_t *remote_addr;
     int remote_num;
     int timeout;
     int fd;
     int method;
-    struct sockaddr sock;
+    struct sockaddr **remote_addr;
 };
 
 struct server_ctx {

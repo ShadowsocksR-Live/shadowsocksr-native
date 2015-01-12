@@ -31,11 +31,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "utils.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include "utils.h"
 
 #ifdef HAVE_SETRLIMIT
 #include <sys/time.h>
@@ -242,7 +242,7 @@ void usage()
     printf(
         "                                     only available in tunnel mode\n");
     printf(
-        "          [-d <addr>]                setup the name servers for libudns,\n");
+        "          [-d <addr>]                setup name servers for internal DNS resolver,\n");
     printf(
         "                                     only available in server mode\n");
     printf(
