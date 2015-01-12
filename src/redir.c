@@ -380,9 +380,10 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
             free(ss_addr_to_send);
 
             if (s < addr_len) {
-                LOGE("failed to send remote addr");
+                LOGE("failed to send addr");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
+                return;
             }
 
             ev_io_start(EV_A_ & server->recv_ctx->io);
