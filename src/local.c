@@ -1064,7 +1064,7 @@ int main(int argc, char **argv)
     struct listen_ctx listen_ctx;
     listen_ctx.remote_num = remote_num;
     listen_ctx.remote_addr = malloc(sizeof(struct sockaddr *) * remote_num);
-    for (int i = 0; i < remote_num; i++) {
+    for (i = 0; i < remote_num; i++) {
         char *host = remote_addr[i].host;
         char *port = remote_addr[i].port == NULL ? remote_port :
             remote_addr[i].port;
@@ -1111,7 +1111,7 @@ int main(int argc, char **argv)
     free_udprelay();
 
     ev_io_stop(loop, &listen_ctx.io);
-    for (int i = 0; i < remote_num; i++) {
+    for (i = 0; i < remote_num; i++) {
         free(listen_ctx.remote_addr[i]);
     }
     free(listen_ctx.remote_addr);

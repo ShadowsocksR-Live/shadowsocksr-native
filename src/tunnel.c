@@ -808,7 +808,7 @@ int main(int argc, char **argv)
     listen_ctx.tunnel_addr = tunnel_addr;
     listen_ctx.remote_num = remote_num;
     listen_ctx.remote_addr = malloc(sizeof(struct sockaddr *) * remote_num);
-    for (int i = 0; i < remote_num; i++) {
+    for (i = 0; i < remote_num; i++) {
         char *host = remote_addr[i].host;
         char *port = remote_addr[i].port == NULL ? remote_port :
             remote_addr[i].port;
