@@ -57,8 +57,8 @@
 #include <udns.h>
 
 #include "utils.h"
-#include "udprelay.h"
 #include "cache.h"
+#include "udprelay.h"
 
 #ifdef UDPRELAY_REMOTE
 #define MAX_UDP_CONN_NUM 1024

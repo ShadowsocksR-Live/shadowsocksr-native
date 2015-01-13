@@ -63,9 +63,9 @@
 
 #include "netutils.h"
 #include "utils.h"
-#include "local.h"
 #include "socks5.h"
 #include "acl.h"
+#include "local.h"
 
 #ifndef EAGAIN
 #define EAGAIN EWOULDBLOCK
