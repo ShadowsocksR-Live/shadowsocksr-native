@@ -223,8 +223,9 @@ static struct remote *connect_to_remote(struct addrinfo *res,
         return NULL;
     }
 
-#ifdef SO_NOSIGPIPE
     int opt = 1;
+    setsockopt(sockfd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
+#ifdef SO_NOSIGPIPE
     setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
@@ -956,8 +957,9 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     }
     setnonblocking(serverfd);
 
-#ifdef SO_NOSIGPIPE
     int opt = 1;
+    setsockopt(serverfd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
+#ifdef SO_NOSIGPIPE
     setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 

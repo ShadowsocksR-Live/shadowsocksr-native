@@ -806,27 +806,28 @@ static struct remote * connect_to_remote(struct listen_ctx *listener,
         remote_addr = addr;
     }
 
-    int sockfd = socket(remote_addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
+    int remotefd = socket(remote_addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
 
-    if (sockfd < 0) {
+    if (remotefd < 0) {
         ERROR("socket");
         return NULL;
     }
 
-#ifdef SO_NOSIGPIPE
     int opt = 1;
-    setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+    setsockopt(remotefd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
+#ifdef SO_NOSIGPIPE
+    setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
     // Setup
-    setnonblocking(sockfd);
+    setnonblocking(remotefd);
 #ifdef SET_INTERFACE
     if (listener->iface) {
-        setinterface(sockfd, listener->iface);
+        setinterface(remotefd, listener->iface);
     }
 #endif
 
-    struct remote *remote = new_remote(sockfd, listener->timeout);
+    struct remote *remote = new_remote(remotefd, listener->timeout);
     remote->addr_len = get_sockaddr_len(remote_addr);
     memcpy(&(remote->addr), remote_addr, remote->addr_len);
 
@@ -853,8 +854,9 @@ void accept_cb(EV_P_ ev_io *w, int revents)
         return;
     }
     setnonblocking(serverfd);
-#ifdef SO_NOSIGPIPE
     int opt = 1;
+    setsockopt(serverfd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
+#ifdef SO_NOSIGPIPE
     setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 

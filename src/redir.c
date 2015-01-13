@@ -546,47 +546,49 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     struct sockaddr_storage destaddr;
     int err;
 
-    int clientfd = accept(listener->fd, NULL, NULL);
-    if (clientfd == -1) {
+    int serverfd = accept(listener->fd, NULL, NULL);
+    if (serverfd == -1) {
         ERROR("accept");
         return;
     }
 
-    err = getdestaddr(clientfd, &destaddr);
+    err = getdestaddr(serverfd, &destaddr);
     if (err) {
         ERROR("getdestaddr");
         return;
     }
 
-    setnonblocking(clientfd);
-#ifdef SO_NOSIGPIPE
+    setnonblocking(serverfd);
     int opt = 1;
-    setsockopt(clientfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+    setsockopt(serverfd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
+#ifdef SO_NOSIGPIPE
+    setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
     int index = rand() % listener->remote_num;
     struct sockaddr *remote_addr = listener->remote_addr[index];
 
-    int sockfd = socket(remote_addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
-    if (sockfd < 0) {
+    int remotefd = socket(remote_addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
+    if (remotefd < 0) {
         ERROR("socket");
         return;
     }
 
+    setsockopt(remotefd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
-    setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
+    setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
     // Setup
-    setnonblocking(sockfd);
+    setnonblocking(remotefd);
 
-    struct server *server = new_server(clientfd, listener->method);
-    struct remote *remote = new_remote(sockfd, listener->timeout);
+    struct server *server = new_server(serverfd, listener->method);
+    struct remote *remote = new_remote(remotefd, listener->timeout);
     server->remote = remote;
     remote->server = server;
     server->destaddr = destaddr;
 
-    connect(sockfd, remote_addr, get_sockaddr_len(remote_addr));
+    connect(remotefd, remote_addr, get_sockaddr_len(remote_addr));
     // listen to remote connected event
     ev_io_start(EV_A_ & remote->send_ctx->io);
     ev_timer_start(EV_A_ & remote->send_ctx->watcher);
