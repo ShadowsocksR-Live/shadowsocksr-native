@@ -13,5 +13,5 @@ Replaces: shadowsocks (<< 1.5.3-2)
 Breaks: shadowsocks (<< 1.5.3-2)
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: A lightweight secured scoks5 proxy. 
-    Shadowsocks-libev is a lightweight secured scoks5 proxy for embedded devices and low end boxes.
+Description: A lightweight and secure socks5 proxy.
+    Shadowsocks-libev is a lightweight and secure socks5 proxy for embedded devices and low end boxes.
