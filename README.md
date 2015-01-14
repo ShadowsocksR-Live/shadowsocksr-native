@@ -39,6 +39,13 @@ CAST5-CFB, DES-CFB, IDEA-CFB, RC2-CFB and SEED-CFB.
 ### Debian & Ubuntu
 
 #### Install from repository
+
+Add GPG public key
+
+```bash
+wget -O- http://shadowsocks.org/debian/1D27208A.gpg | sudo apt-key add -
+```
+
 Add either of the following lines to your /etc/apt/sources.list
 
 ```
