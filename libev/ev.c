@@ -2537,9 +2537,11 @@ ev_recommended_backends (void) EV_THROW
   unsigned int flags = ev_supported_backends ();
 
 #ifndef __NetBSD__
+#ifndef __FreeBSD__
   /* kqueue is borked on everything but netbsd apparently */
   /* it usually doesn't work correctly on anything but sockets and pipes */
   flags &= ~EVBACKEND_KQUEUE;
+#endif
 #endif
 #ifdef __APPLE__
   /* only select works correctly on that "unix-certified" platform */
