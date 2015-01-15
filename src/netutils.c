@@ -61,7 +61,7 @@ int get_sockaddr(char *host, char *port, struct sockaddr_storage *storage)
         } else if (ip.version == 6) {
             struct sockaddr_in6 *addr = (struct sockaddr_in6 *)storage;
             addr->sin6_family = AF_INET6;
-            dns_pton(AF_INET, host, &(addr->sin6_addr));
+            dns_pton(AF_INET6, host, &(addr->sin6_addr));
             if (port != NULL) {
                 addr->sin6_port = htons(atoi(port));
             }
