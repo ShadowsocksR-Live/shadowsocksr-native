@@ -1214,7 +1214,7 @@ int main(int argc, char **argv)
     ev_run(loop, 0);
 
     if (verbose) {
-        LOGI("closed nicely");
+        LOGI("closed gracefully");
     }
 
     // Clean up

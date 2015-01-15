@@ -1105,7 +1105,7 @@ int main(int argc, char **argv)
     ev_run(loop, 0);
 
     if (verbose) {
-        LOGI("closed nicely");
+        LOGI("closed gracefully");
     }
 
     // Clean up
@@ -1230,7 +1230,7 @@ int start_ss_local_server(profile_t profile)
     ev_run(loop, 0);
 
     if (verbose) {
-        LOGI("closed nicely");
+        LOGI("closed gracefully");
     }
 
     // Clean up
