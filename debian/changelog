@@ -1,3 +1,9 @@
+shadowsocks-libev (2.0.8-1) unstable; urgency=low
+
+  * Fix a bug of IPv6.
+
+ -- Max Lv <max.c.lv@gmail.com>  Fri, 16 Jan 2015 10:58:12 +0900
+
 shadowsocks-libev (2.0.7-1) unstable; urgency=low
 
   * Fix some performance issue.
