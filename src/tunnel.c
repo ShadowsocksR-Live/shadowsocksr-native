@@ -175,12 +175,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     if (r == 0) {
         // connection closed
-        remote->buf_len = 0;
-        remote->buf_idx = 0;
+        close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
-        if (remote != NULL) {
-            ev_io_start(EV_A_ & remote->send_ctx->io);
-        }
         return;
     } else if (r < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -285,10 +281,6 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 
     ev_timer_stop(EV_A_ watcher);
 
-    if (server == NULL) {
-        close_and_free_remote(EV_A_ remote);
-        return;
-    }
     close_and_free_remote(EV_A_ remote);
     close_and_free_server(EV_A_ server);
 }
@@ -298,21 +290,13 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     struct remote_ctx *remote_recv_ctx = (struct remote_ctx *)w;
     struct remote *remote = remote_recv_ctx->remote;
     struct server *server = remote->server;
-    if (server == NULL) {
-        close_and_free_remote(EV_A_ remote);
-        return;
-    }
 
     ssize_t r = recv(remote->fd, server->buf, BUF_SIZE, 0);
 
     if (r == 0) {
         // connection closed
-        server->buf_len = 0;
-        server->buf_idx = 0;
         close_and_free_remote(EV_A_ remote);
-        if (server != NULL) {
-            ev_io_start(EV_A_ & server->send_ctx->io);
-        }
+        close_and_free_server(EV_A_ server);
         return;
     } else if (r < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -388,7 +372,7 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
                     int host_len = sizeof(struct in_addr);
 
                     if (dns_pton(AF_INET, sa->host, &host) == -1) {
-                        FATAL("IP parser error.");
+                        FATAL("IP parser error");
                     }
                     ss_addr_to_send[addr_len++] = 1;
                     memcpy(ss_addr_to_send + addr_len, &host, host_len);
@@ -399,13 +383,13 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
                     int host_len = sizeof(struct in6_addr);
 
                     if (dns_pton(AF_INET6, sa->host, &host) == -1) {
-                        FATAL("IP parser error.");
+                        FATAL("IP parser error");
                     }
                     ss_addr_to_send[addr_len++] = 4;
                     memcpy(ss_addr_to_send + addr_len, &host, host_len);
                     addr_len += host_len;
                 } else {
-                    FATAL("IP parser error.");
+                    FATAL("IP parser error");
                 }
             } else {
                 // send as domain
@@ -434,9 +418,10 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
             free(ss_addr_to_send);
 
             if (s < addr_len) {
-                LOGE("failed to send remote addr.");
+                LOGE("failed to send addr");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
+                return;
             }
 
             ev_io_start(EV_A_ & remote->recv_ctx->io);
@@ -478,13 +463,7 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
                 remote->buf_len = 0;
                 remote->buf_idx = 0;
                 ev_io_stop(EV_A_ & remote_send_ctx->io);
-                if (server != NULL) {
-                    ev_io_start(EV_A_ & server->recv_ctx->io);
-                } else {
-                    close_and_free_remote(EV_A_ remote);
-                    close_and_free_server(EV_A_ server);
-                    return;
-                }
+                ev_io_start(EV_A_ & server->recv_ctx->io);
             }
         }
 
@@ -778,7 +757,7 @@ int main(int argc, char **argv)
     parse_addr(tunnel_addr_str, &tunnel_addr);
 
     if (tunnel_addr.port == NULL) {
-        FATAL("tunnel port is not defined.");
+        FATAL("tunnel port is not defined");
     }
 
 #ifdef __MINGW32__
@@ -797,13 +776,13 @@ int main(int argc, char **argv)
     int listenfd;
     listenfd = create_and_bind(local_addr, local_port);
     if (listenfd < 0) {
-        FATAL("bind() error..");
+        FATAL("bind() error:");
     }
     if (listen(listenfd, SOMAXCONN) == -1) {
-        FATAL("listen() error.");
+        FATAL("listen() error:");
     }
     setnonblocking(listenfd);
-    LOGI("server listening at port %s.", local_port);
+    LOGI("server listening at port %s", local_port);
 
     // Setup proxy context
     struct listen_ctx listen_ctx;

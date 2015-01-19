@@ -163,8 +163,6 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     if (r == 0) {
         // connection closed
-        remote->buf_len = 0;
-        remote->buf_idx = 0;
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
@@ -274,8 +272,6 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
 
     if (r == 0) {
         // connection closed
-        server->buf_len = 0;
-        server->buf_idx = 0;
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
@@ -715,10 +711,10 @@ int main(int argc, char **argv)
     int listenfd;
     listenfd = create_and_bind(local_addr, local_port);
     if (listenfd < 0) {
-        FATAL("bind() error..");
+        FATAL("bind() error");
     }
     if (listen(listenfd, SOMAXCONN) == -1) {
-        FATAL("listen() error.");
+        FATAL("listen() error");
     }
     setnonblocking(listenfd);
     LOGI("server listening at port %s", local_port);
