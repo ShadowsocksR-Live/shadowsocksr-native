@@ -1,3 +1,9 @@
+shadowsocks-libev (2.1.0-1) unstable; urgency=low
+
+  * Fix a bug of tunnel mode.
+
+ -- Max Lv <max.c.lv@gmail.com>  Mon, 19 Jan 2015 09:59:52 +0900
+
 shadowsocks-libev (2.0.8-1) unstable; urgency=low
 
   * Fix a bug of IPv6.
