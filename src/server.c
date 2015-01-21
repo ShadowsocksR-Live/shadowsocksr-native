@@ -147,12 +147,14 @@ int setinterface(int socket_fd, const char * interface_name)
 int create_and_bind(const char *host, const char *port)
 {
     struct addrinfo hints;
-    struct addrinfo *result, *rp;
+    struct addrinfo *result, *rp, *ipv4v6bindall;
     int s, listen_sock;
 
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_UNSPEC;     /* Return IPv4 and IPv6 choices */
     hints.ai_socktype = SOCK_STREAM; /* We want a TCP socket */
+    hints.ai_flags = AI_ALL|AI_V4MAPPED|AI_PASSIVE|AI_ADDRCONFIG;    /* For wildcard IP address */
+    hints.ai_protocol = IPPROTO_TCP;
 
     s = getaddrinfo(host, port, &hints, &result);
     if (s != 0) {
@@ -160,7 +162,29 @@ int create_and_bind(const char *host, const char *port)
         return -1;
     }
 
-    for (rp = result; rp != NULL; rp = rp->ai_next) {
+    rp = result;
+
+    /*
+    On Linux, with net.ipv6.bindv6only = 0 (the default), getaddrinfo(NULL) with
+    AI_PASSIVE returns 0.0.0.0 and :: (in this order). AI_PASSIVE was meant to
+    return a list of addresses to listen on, but it is impossible to listen on
+    0.0.0.0 and :: at the same time, if :: implies dualstack mode.
+    */
+    if (!host) {
+        ipv4v6bindall = result;
+ 
+        /* Loop over all address infos found until a IPV6 address is found. */
+        while (ipv4v6bindall) {
+            if (ipv4v6bindall->ai_family == AF_INET6) {
+               rp = ipv4v6bindall; /* Take first IPV6 address available */
+               break;
+            }
+
+            ipv4v6bindall= ipv4v6bindall->ai_next; /* Get next address info, if any */
+       }
+   }
+
+    for (/*rp = result*/; rp != NULL; rp = rp->ai_next) {
         listen_sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
         if (listen_sock == -1) {
             continue;
@@ -168,7 +192,11 @@ int create_and_bind(const char *host, const char *port)
 
         int opt = 1;
 
-        setsockopt(listen_sock, IPPROTO_IPV6, IPV6_V6ONLY, &opt, sizeof(opt));
+        if (rp->ai_family == AF_INET6) {
+            int ipv6only = 0;
+            if (host) ipv6only = 1;
+            setsockopt(listen_sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, sizeof(ipv6only));
+        }
         
         setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
@@ -1104,6 +1132,10 @@ int main(int argc, char **argv)
         }
     }
 
+   if (server_num == 0) { 
+       server_host[server_num++]=NULL;
+   }
+
     if (server_num == 0 || server_port == NULL || password == NULL) {
         usage();
         exit(EXIT_FAILURE);
@@ -1244,4 +1276,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-
