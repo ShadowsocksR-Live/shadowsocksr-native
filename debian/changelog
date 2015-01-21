@@ -1,3 +1,9 @@
+shadowsocks-libev (2.1.1-1) unstable; urgency=low
+
+  * Fix a memory leak.
+
+ -- Max Lv <max.c.lv@gmail.com>  Wed, 21 Jan 2015 21:40:58 +0900
+
 shadowsocks-libev (2.1.0-1) unstable; urgency=low
 
   * Fix a bug of tunnel mode.
