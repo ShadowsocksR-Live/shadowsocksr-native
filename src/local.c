@@ -363,10 +363,11 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 close_and_free_server(EV_A_ server);
                 return;
             } else {
-                char *ss_addr_to_send = malloc(BUF_SIZE);
+                char host[256], port[16];
+                char ss_addr_to_send[320];
+
                 ssize_t addr_len = 0;
                 ss_addr_to_send[addr_len++] = request->atyp;
-                char host[256], port[16];
 
                 // get remote addr and port
                 if (request->atyp == 1) {
