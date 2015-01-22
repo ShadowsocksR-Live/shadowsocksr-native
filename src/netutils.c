@@ -38,7 +38,8 @@
 #include "netutils.h"
 #include "utils.h"
 
-int get_sockaddr_len(struct sockaddr *addr) {
+int get_sockaddr_len(struct sockaddr *addr)
+{
     if (addr->sa_family == AF_INET) {
         return sizeof(struct sockaddr_in);
     } else if (addr->sa_family == AF_INET6) {

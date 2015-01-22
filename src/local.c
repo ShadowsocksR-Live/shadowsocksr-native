@@ -796,7 +796,7 @@ static void close_and_free_server(EV_P_ struct server *server)
 }
 
 static struct remote * connect_to_remote(struct listen_ctx *listener,
-                                        struct sockaddr *addr)
+                                         struct sockaddr *addr)
 {
     struct sockaddr *remote_addr;
 
@@ -1070,7 +1070,7 @@ int main(int argc, char **argv)
     for (i = 0; i < remote_num; i++) {
         char *host = remote_addr[i].host;
         char *port = remote_addr[i].port == NULL ? remote_port :
-            remote_addr[i].port;
+                     remote_addr[i].port;
         struct sockaddr_storage *storage = malloc(sizeof(struct sockaddr_storage));
         memset(storage, 0, sizeof(struct sockaddr_storage));
         if (get_sockaddr(host, port, storage) == -1) {
@@ -1091,7 +1091,7 @@ int main(int argc, char **argv)
     if (udprelay) {
         LOGI("udprelay enabled");
         init_udprelay(local_addr, local_port, listen_ctx.remote_addr[0],
-                get_sockaddr_len(listen_ctx.remote_addr[0]), m, listen_ctx.timeout, iface);
+                      get_sockaddr_len(listen_ctx.remote_addr[0]), m, listen_ctx.timeout, iface);
     }
 
     // setuid
@@ -1220,8 +1220,8 @@ int start_ss_local_server(profile_t profile)
     if (udprelay) {
         LOGI("udprelay enabled");
         init_udprelay(local_addr, local_port_str, listen_ctx.remote_addr[0],
-                get_sockaddr_len(listen_ctx.remote_addr[0]), m,
-                listen_ctx.timeout, NULL);
+                      get_sockaddr_len(listen_ctx.remote_addr[0]), m,
+                      listen_ctx.timeout, NULL);
     }
 
     // Init connections

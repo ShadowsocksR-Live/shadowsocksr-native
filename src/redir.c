@@ -726,7 +726,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < remote_num; i++) {
         char *host = remote_addr[i].host;
         char *port = remote_addr[i].port == NULL ? remote_port :
-            remote_addr[i].port;
+                     remote_addr[i].port;
         struct sockaddr_storage *storage = malloc(sizeof(struct sockaddr_storage));
         memset(storage, 0, sizeof(struct sockaddr_storage));
         if (get_sockaddr(host, port, storage) == -1) {
