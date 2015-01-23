@@ -198,63 +198,74 @@ void usage()
     printf("    ss-[local|redir|server|tunnel]\n");
     printf("\n");
     printf(
-        "          -s <server_host>           host name or ip address of your remote server\n");
-    printf(
-        "          -p <server_port>           port number of your remote server\n");
-    printf(
-        "          -l <local_port>            port number of your local server\n");
-    printf(
-        "          -k <password>              password of your remote server\n");
-    printf("\n");
+        "       -s <server_host>           host name or ip address of your remote server\n");
     printf("\n");
     printf(
-        "          [-m <encrypt_method>]      encrypt method: table, rc4, rc4-md5,\n");
-    printf(
-        "                                     aes-128-cfb, aes-192-cfb, aes-256-cfb,\n");
-    printf(
-        "                                     bf-cfb, camellia-128-cfb, camellia-192-cfb,\n");
-    printf(
-        "                                     camellia-256-cfb, cast5-cfb, des-cfb, idea-cfb,\n");
-    printf(
-        "                                     rc2-cfb, seed-cfb, salsa20 and chacha20\n");
-    printf(
-        "          [-f <pid_file>]            file to store the pid\n");
-    printf(
-        "          [-t <timeout>]             socket timeout in seconds\n");
-    printf(
-        "          [-c <config_file>]         config file in json\n");
-    printf("\n");
+        "       -p <server_port>           port number of your remote server\n");
     printf("\n");
     printf(
-        "          [-i <interface>]           network interface to bind,\n");
-    printf(
-        "                                     not available in redir mode\n");
-    printf(
-        "          [-b <local_address>]       local address to bind,\n");
-    printf(
-        "                                     not available in server mode\n");
-    printf(
-        "          [-u]                       enable udprelay mode\n");
-    printf(
-        "                                     not available in redir mode\n");
-    printf(
-        "          [-L <addr>:<port>]         setup a local port forwarding tunnel,\n");
-    printf(
-        "                                     only available in tunnel mode\n");
-    printf(
-        "          [-d <addr>]                setup name servers for internal DNS resolver,\n");
-    printf(
-        "                                     only available in server mode\n");
-    printf(
-        "          [-v]                       verbose mode\n");
-    printf("\n");
+        "       -l <local_port>            port number of your local server\n");
     printf("\n");
     printf(
-        "          [--fast-open]              enable TCP fast open,\n");
+        "       -k <password>              password of your remote server\n");
+    printf("\n");
     printf(
-        "                                     only available on Linux kernel > 3.7.0\n");
+        "       [-m <encrypt_method>]      encrypt method: table, rc4, rc4-md5,\n");
     printf(
-        "          [--acl <acl_file>]         config file of ACL (Access Control List)\n");
+        "                                  aes-128-cfb, aes-192-cfb, aes-256-cfb,\n");
+    printf(
+        "                                  bf-cfb, camellia-128-cfb, camellia-192-cfb,\n");
+    printf(
+        "                                  camellia-256-cfb, cast5-cfb, des-cfb, idea-cfb,\n");
+    printf(
+        "                                  rc2-cfb, seed-cfb, salsa20 and chacha20\n");
+    printf("\n");
+    printf(
+        "       [-f <pid_file>]            the file path to store pid\n");
+    printf("\n");
+    printf(
+        "       [-t <timeout>]             socket timeout in seconds\n");
+    printf("\n");
+    printf(
+        "       [-c <config_file>]         the path to config file\n");
+    printf("\n");
+    printf(
+        "       [-i <interface>]           network interface to bind,\n");
+    printf(
+        "                                  not available in redir mode\n");
+    printf("\n");
+    printf(
+        "       [-b <local_address>]       local address to bind,\n");
+    printf(
+        "                                  not available in server mode\n");
+    printf("\n");
+    printf(
+        "       [-u]                       enable udprelay mode,\n");
+    printf(
+        "                                  not available in redir mode\n");
+    printf("\n");
+    printf(
+        "       [-L <addr>:<port>]         specify destination server address and port\n");
+    printf(
+        "                                  for local port forwarding,\n");
+    printf(
+        "                                  only available in tunnel mode\n");
+    printf("\n");
+    printf(
+        "       [-d <addr>]                setup name servers for internal DNS resolver,\n");
+    printf(
+        "                                  only available in server mode\n");
+    printf("\n");
+    printf(
+        "       [--fast-open]              enable TCP fast open,\n");
+    printf(
+        "                                  only available on Linux kernel > 3.7.0\n");
+    printf("\n");
+    printf(
+        "       [--acl <acl_file>]         config file of ACL (Access Control List)\n");
+    printf("\n");
+    printf(
+        "       [-v]                       verbose mode\n");
     printf("\n");
 }
 
