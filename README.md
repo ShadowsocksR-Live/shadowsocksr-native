@@ -211,42 +211,50 @@ Usage
 -----
 
 ```
-usage:
-
     ss-[local|redir|server|tunnel]
 
-          -s <server_host>           host name or ip address of your remote server
-          -p <server_port>           port number of your remote server
-          -l <local_port>            port number of your local server
-          -k <password>              password of your remote server
+       -s <server_host>           host name or ip address of your remote server
 
+       -p <server_port>           port number of your remote server
 
-          [-m <encrypt_method>]      encrypt method: table, rc4, rc4-md5
-                                     aes-128-cfb, aes-192-cfb, aes-256-cfb,
-                                     bf-cfb, camellia-128-cfb, camellia-192-cfb,
-                                     camellia-256-cfb, cast5-cfb, des-cfb, idea-cfb,
-                                     rc2-cfb, seed-cfb, salsa20 and chacha20
-          [-f <pid_file>]            file to store the pid
-          [-t <timeout>]             socket timeout in seconds
-          [-c <config_file>]         config file in json
+       -l <local_port>            port number of your local server
 
+       -k <password>              password of your remote server
 
-          [-i <interface>]           network interface to bind,
-                                     not available in redir mode
-          [-b <local_address>]       local address to bind,
-                                     not available in server mode
-          [-u]                       enable udprelay mode
-                                     not available in redir mode
-          [-L <addr>:<port>]         setup a local port forwarding tunnel,
-                                     only available in tunnel mode
-          [-d <addr>]                setup name servers for internal DNS resolver,
-                                     only available in server mode
-          [-v]                       verbose mode
+       [-m <encrypt_method>]      encrypt method: table, rc4, rc4-md5,
+                                  aes-128-cfb, aes-192-cfb, aes-256-cfb,
+                                  bf-cfb, camellia-128-cfb, camellia-192-cfb,
+                                  camellia-256-cfb, cast5-cfb, des-cfb, idea-cfb,
+                                  rc2-cfb, seed-cfb, salsa20 and chacha20
 
+       [-f <pid_file>]            the file path to store pid
 
-          [--fast-open]              enable TCP fast open,
-                                     only available on Linux kernel > 3.7.0
-          [--acl <acl_file>]         config file of ACL (Access Control List)
+       [-t <timeout>]             socket timeout in seconds
+
+       [-c <config_file>]         the path to config file
+
+       [-i <interface>]           network interface to bind,
+                                  not available in redir mode
+
+       [-b <local_address>]       local address to bind,
+                                  not available in server mode
+
+       [-u]                       enable udprelay mode,
+                                  not available in redir mode
+
+       [-L <addr>:<port>]         specify destination server address and port
+                                  for local port forwarding,
+                                  only available in tunnel mode
+
+       [-d <addr>]                setup name servers for internal DNS resolver,
+                                  only available in server mode
+
+       [--fast-open]              enable TCP fast open,
+                                  only available on Linux kernel > 3.7.0
+
+       [--acl <acl_file>]         config file of ACL (Access Control List)
+
+       [-v]                       verbose mode
 
 notes:
 
