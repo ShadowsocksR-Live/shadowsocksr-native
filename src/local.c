@@ -911,8 +911,10 @@ int main(int argc, char **argv)
             }
             break;
         case 's':
-            remote_addr[remote_num].host = optarg;
-            remote_addr[remote_num++].port = NULL;
+            if (remote_num < MAX_REMOTE_NUM) {
+                remote_addr[remote_num].host = optarg;
+                remote_addr[remote_num++].port = NULL;
+            }
             break;
         case 'p':
             remote_port = optarg;

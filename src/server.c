@@ -1043,7 +1043,9 @@ int main(int argc, char **argv)
             }
             break;
         case 's':
-            server_host[server_num++] = optarg;
+            if (server_num < MAX_REMOTE_NUM) {
+                server_host[server_num++] = optarg;
+            }
             break;
         case 'p':
             server_port = optarg;
