@@ -95,7 +95,8 @@ static struct remote_ctx * new_remote(int fd, struct server_ctx * server_ctx);
 
 extern int verbose;
 
-static struct server_ctx *server_ctx = NULL;
+static int server_num = 0;
+static struct server_ctx *server_ctx_list[MAX_REMOTE_NUM] = { NULL };
 
 #ifndef __MINGW32__
 static int setnonblocking(int fd)
@@ -973,7 +974,7 @@ int init_udprelay(const char *server_host, const char *server_port,
     }
     setnonblocking(serverfd);
 
-    server_ctx = new_server_ctx(serverfd);
+    struct server_ctx *server_ctx = new_server_ctx(serverfd);
 #ifdef UDPRELAY_REMOTE
     server_ctx->loop = loop;
 #endif
@@ -991,17 +992,20 @@ int init_udprelay(const char *server_host, const char *server_port,
 
     ev_io_start(loop, &server_ctx->io);
 
+    server_ctx_list[server_num++] = server_ctx;
+
     return 0;
 }
 
 void free_udprelay()
 {
     struct ev_loop *loop = EV_DEFAULT;
-    if (server_ctx != NULL) {
+    while (server_num-- > 0) {
+        struct server_ctx *server_ctx = server_ctx_list[server_num];
         ev_io_stop(loop, &server_ctx->io);
         close(server_ctx->fd);
         cache_delete(server_ctx->conn_cache, 0);
         free(server_ctx);
-        server_ctx = NULL;
+        server_ctx_list[server_num] = NULL;
     }
 }

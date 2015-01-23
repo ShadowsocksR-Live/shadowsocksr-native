@@ -1197,6 +1197,10 @@ int main(int argc, char **argv)
         resolv_init(loop, nameservers, nameserver_num);
     }
 
+    for (int i = 0; i < nameserver_num; i++) {
+        LOGI("using nameserver: %s", nameservers[i]);
+    }
+
     // inilitialize listen context
     struct listen_ctx listen_ctx_list[server_num];
 
@@ -1215,11 +1219,7 @@ int main(int argc, char **argv)
             FATAL("listen() error");
         }
         setnonblocking(listenfd);
-        LOGI("server listening at port %s", server_port);
-
-        for (int i = 0; i < nameserver_num; i++) {
-            LOGI("using nameserver: %s", nameservers[i]);
-        }
+        LOGI("listening at %s:%s", host, server_port);
 
         struct listen_ctx *listen_ctx = &listen_ctx_list[index];
 
@@ -1232,13 +1232,17 @@ int main(int argc, char **argv)
 
         ev_io_init(&listen_ctx->io, accept_cb, listenfd, EV_READ);
         ev_io_start(loop, &listen_ctx->io);
+
+        // Setup UDP
+        if (udprelay) {
+            init_udprelay(server_host[index], server_port, m, atoi(timeout),
+                    iface);
+        }
+
     }
 
-    // Setup UDP
     if (udprelay) {
         LOGI("udprelay enabled");
-        init_udprelay(server_host[0], server_port, m, atoi(timeout),
-                      iface);
     }
 
     // setuid

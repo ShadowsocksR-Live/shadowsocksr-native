@@ -1063,7 +1063,7 @@ int main(int argc, char **argv)
         FATAL("listen() error");
     }
     setnonblocking(listenfd);
-    LOGI("server listening at port %s", local_port);
+    LOGI("listening at %s:%s", local_addr, local_port);
 
     // Setup proxy context
     struct listen_ctx listen_ctx;
@@ -1196,7 +1196,7 @@ int start_ss_local_server(profile_t profile)
         return -1;
     }
     setnonblocking(listenfd);
-    LOGI("server listening at port %s", local_port_str);
+    LOGI("listening at %s:%s", local_addr, local_port_str);
 
     // Setup proxy context
     struct listen_ctx listen_ctx;

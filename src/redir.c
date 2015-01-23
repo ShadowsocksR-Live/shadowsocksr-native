@@ -719,7 +719,7 @@ int main(int argc, char **argv)
         FATAL("listen() error");
     }
     setnonblocking(listenfd);
-    LOGI("server listening at port %s", local_port);
+    LOGI("listening at %s:%s", local_addr, local_port);
 
     // Setup proxy context
     struct listen_ctx listen_ctx;
