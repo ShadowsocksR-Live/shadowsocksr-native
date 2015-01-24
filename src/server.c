@@ -121,6 +121,24 @@ static void free_connections(struct ev_loop *loop)
     }
 }
 
+static void report_addr(int fd) {
+    struct sockaddr_storage addr;
+    socklen_t len = sizeof addr;
+    memset(&addr, 0, len);
+    int err = getpeername(fd, (struct sockaddr *)&addr, &len);
+    if (err == 0) {
+        char peer_name[INET6_ADDRSTRLEN] = {0};
+        if (addr.ss_family == AF_INET) {
+            struct sockaddr_in *s = (struct sockaddr_in *)&addr;
+            dns_ntop(AF_INET, &s->sin_addr, peer_name, INET_ADDRSTRLEN);
+        } else if (addr.ss_family == AF_INET6) {
+            struct sockaddr_in6 *s = (struct sockaddr_in6 *)&addr;
+            dns_ntop(AF_INET6, &s->sin6_addr, peer_name, INET6_ADDRSTRLEN);
+        }
+        LOGE("failed to handshake with %s", peer_name);
+    }
+}
+
 #ifndef __MINGW32__
 int setnonblocking(int fd)
 {
@@ -368,6 +386,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     if (*buf == NULL) {
         LOGE("invalid password or cipher");
+        report_addr(server->fd);
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
@@ -431,6 +450,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 offset += in_addr_len;
             } else {
                 LOGE("invalid header with addr type %d", atyp);
+                report_addr(server->fd);
                 close_and_free_server(EV_A_ server);
                 return;
             }
@@ -483,6 +503,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 offset += in6_addr_len;
             } else {
                 LOGE("invalid header with addr type %d", atyp);
+                report_addr(server->fd);
                 close_and_free_server(EV_A_ server);
                 return;
             }
@@ -496,6 +517,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
         if (offset == 1) {
             LOGE("invalid header with addr type %d", atyp);
+            report_addr(server->fd);
             close_and_free_server(EV_A_ server);
             return;
         }
@@ -764,6 +786,7 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
 
         struct sockaddr_storage addr;
         socklen_t len = sizeof addr;
+        memset(&addr, 0, len);
         int r = getpeername(remote->fd, (struct sockaddr *)&addr, &len);
         if (r == 0) {
             if (verbose) {
