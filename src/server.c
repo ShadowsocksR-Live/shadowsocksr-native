@@ -1145,7 +1145,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    if (method == 0) {
+    if (method == NULL) {
         method = "table";
     }
     
@@ -1223,7 +1223,7 @@ int main(int argc, char **argv)
             FATAL("listen() error");
         }
         setnonblocking(listenfd);
-        LOGI("listening at %s:%s", host?host:"", server_port);
+        LOGI("listening at %s:%s", host?host:"*", server_port);
 
         struct listen_ctx *listen_ctx = &listen_ctx_list[index];
 
