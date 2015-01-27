@@ -345,7 +345,6 @@ int create_server_socket(const char *host, const char *port)
                 rp = ipv4v6bindall; /* Take first IPV6 address available */
                 break;
             }
-
             ipv4v6bindall = ipv4v6bindall->ai_next; /* Get next address info, if any */
         }
     }
@@ -356,16 +355,12 @@ int create_server_socket(const char *host, const char *port)
             continue;
         }
 
-        int opt = 1;
-
         if (rp->ai_family == AF_INET6) {
-            int ipv6only = 0;
-            if (host) {
-                ipv6only = 1;
-            }
+            int ipv6only = host ? 1 : 0;
             setsockopt(server_sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, sizeof(ipv6only));
         }
 
+        int opt = 1;
         setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
         set_nosigpipe(server_sock);
