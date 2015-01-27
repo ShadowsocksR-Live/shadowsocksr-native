@@ -319,9 +319,9 @@ int create_server_socket(const char *host, const char *port)
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_UNSPEC;    /* Return IPv4 and IPv6 choices */
     hints.ai_socktype = SOCK_DGRAM; /* We want a UDP socket */
-    hints.ai_flags = AI_ALL | AI_V4MAPPED | AI_PASSIVE | AI_ADDRCONFIG; /* For wildcard IP address */
+    hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG; /* For wildcard IP address */
     hints.ai_protocol = IPPROTO_UDP;
-	
+
     s = getaddrinfo(host, port, &hints, &result);
     if (s != 0) {
         LOGE("[udp] getaddrinfo: %s", gai_strerror(s));
@@ -349,7 +349,7 @@ int create_server_socket(const char *host, const char *port)
             ipv4v6bindall = ipv4v6bindall->ai_next; /* Get next address info, if any */
         }
     }
-	
+
     for (/*rp = result*/; rp != NULL; rp = rp->ai_next) {
         server_sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
         if (server_sock == -1) {
@@ -357,7 +357,7 @@ int create_server_socket(const char *host, const char *port)
         }
 
         int opt = 1;
-		
+
         if (rp->ai_family == AF_INET6) {
             int ipv6only = 0;
             if (host) {
@@ -365,7 +365,7 @@ int create_server_socket(const char *host, const char *port)
             }
             setsockopt(server_sock, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, sizeof(ipv6only));
         }
-		
+
         setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
         set_nosigpipe(server_sock);

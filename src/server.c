@@ -171,7 +171,7 @@ int create_and_bind(const char *host, const char *port)
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_UNSPEC;                                        /* Return IPv4 and IPv6 choices */
     hints.ai_socktype = SOCK_STREAM;                                    /* We want a TCP socket */
-    hints.ai_flags = AI_ALL | AI_V4MAPPED | AI_PASSIVE | AI_ADDRCONFIG; /* For wildcard IP address */
+    hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG; /* For wildcard IP address */
     hints.ai_protocol = IPPROTO_TCP;
 
     s = getaddrinfo(host, port, &hints, &result);
