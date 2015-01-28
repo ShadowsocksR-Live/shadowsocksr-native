@@ -49,7 +49,7 @@ typedef struct {
     .password = "barfoo!",
     .remote_port = 8338,
     .local_port = 1080,
-
+    .timeout = 600;
     .acl = NULL,
     .log = NULL,
     .fast_open = 0,
