@@ -1018,7 +1018,7 @@ int main(int argc, char **argv)
     }
 
     if (local_addr == NULL) {
-        local_addr = "0.0.0.0";
+        local_addr = "127.0.0.1";
     }
 
     if (pid_flags) {
@@ -1162,7 +1162,7 @@ int start_ss_local_server(profile_t profile)
     }
 
     if (local_addr == NULL) {
-        local_addr = "0.0.0.0";
+        local_addr = "127.0.0.1";
     }
 
 #ifdef __MINGW32__

@@ -747,7 +747,7 @@ int main(int argc, char **argv)
     }
 
     if (local_addr == NULL) {
-        local_addr = "0.0.0.0";
+        local_addr = "127.0.0.1";
     }
 
     if (pid_flags) {
