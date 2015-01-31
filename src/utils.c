@@ -263,6 +263,8 @@ void usage()
     printf("\n");
     printf(
         "       [--acl <acl_file>]         config file of ACL (Access Control List)\n");
+    printf(
+        "                                  only available in local mode\n");
     printf("\n");
     printf(
         "       [-v]                       verbose mode\n");

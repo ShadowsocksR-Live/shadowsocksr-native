@@ -255,6 +255,7 @@ Usage
                                   only available on Linux kernel > 3.7.0
 
        [--acl <acl_file>]         config file of ACL (Access Control List)
+                                  only available in local mode
 
        [-v]                       verbose mode
 
