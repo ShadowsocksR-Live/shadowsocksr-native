@@ -8,7 +8,7 @@ SERVICE_WRITE_PID=1
 SERVICE_DAEMONIZE=1
 
 start() {
-    service_start /usr/bin/ss-local -c /etc/shadowsocks.json
+    service_start /usr/bin/ss-local -b 0.0.0.0 -c /etc/shadowsocks.json
 }
 
 stop() {
