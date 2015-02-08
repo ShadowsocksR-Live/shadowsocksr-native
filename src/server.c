@@ -519,7 +519,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             return;
         }
 
-        if (acl && (atyp == 1 || atyp == 4) && acl_contains_ip(host)) {
+        if (acl && !need_query && acl_contains_ip(host)) {
             if (verbose) {
                 LOGI("Access denied to %s", host);
             }
