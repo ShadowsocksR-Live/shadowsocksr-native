@@ -11,7 +11,7 @@ It is a port of [shadowsocks](https://github.com/shadowsocks/shadowsocks)
 created by [@clowwindy](https://github.com/clowwindy) maintained by 
 [@madeye](https://github.com/madeye) and [@linusyang](https://github.com/linusyang).
 
-Current version: 2.1.2 | [Changelog](Changes)
+Current version: 2.1.3 | [Changelog](Changes)
 
 Travis CI: [![Travis CI](https://travis-ci.org/shadowsocks/shadowsocks-libev.png?branch=master)](https://travis-ci.org/shadowsocks/shadowsocks-libev) | Jenkins Matrix: [![Jenkins](https://jenkins.shadowvpn.org/buildStatus/icon?job=Shadowsocks-libev)](https://jenkins.shadowvpn.org/job/Shadowsocks-libev/)
 
@@ -255,7 +255,7 @@ Usage
                                   only available on Linux kernel > 3.7.0
 
        [--acl <acl_file>]         config file of ACL (Access Control List)
-                                  only available in local mode
+                                  only available in local and server mode
 
        [-v]                       verbose mode
 

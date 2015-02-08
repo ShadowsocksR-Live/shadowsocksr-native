@@ -429,7 +429,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     LOGI("connect to %s:%s", host, port);
                 }
 
-                if ((acl && request->atyp == 1 && acl_contains_ip(host))) {
+                if ((acl && (request->atyp == 1 || request->atyp == 3) && acl_contains_ip(host))) {
                     if (verbose) {
                         LOGI("bypass %s:%s", host, port);
                     }
