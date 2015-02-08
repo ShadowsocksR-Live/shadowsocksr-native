@@ -45,6 +45,7 @@ ss_server_SOURCES = utils.c \
                     encrypt.c \
 					udprelay.c \
 					cache.c \
+					acl.c \
 					resolv.c \
                     server.c
 

@@ -59,6 +59,7 @@
 #endif
 
 #include "utils.h"
+#include "acl.h"
 #include "server.h"
 
 #ifndef EAGAIN
@@ -97,6 +98,7 @@ static void close_and_free_server(EV_P_ struct server *server);
 
 static void server_resolve_cb(struct sockaddr *addr, void *data);
 
+int acl = 0;
 int verbose = 0;
 int udprelay = 0;
 static int fast_open = 0;
@@ -517,6 +519,14 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             return;
         }
 
+        if (acl && (atyp == 1 || atyp == 4) && acl_contains_ip(host)) {
+            if (verbose) {
+                LOGI("Access denied to %s", host);
+            }
+            close_and_free_server(EV_A_ server);
+            return;
+        }
+
         port = (*(uint16_t *)(server->buf + offset));
 
         offset += 2;
@@ -650,6 +660,25 @@ static void server_resolve_cb(struct sockaddr *addr, void *data)
 
     if (verbose) {
         LOGI("udns resolved");
+    }
+
+    if (acl) {
+        char host[INET6_ADDRSTRLEN] = {0};
+        if (addr->sa_family == AF_INET) {
+            struct sockaddr_in *s = (struct sockaddr_in *)&addr;
+            dns_ntop(AF_INET, &s->sin_addr, host, INET_ADDRSTRLEN);
+        } else if (addr->sa_family == AF_INET6) {
+            struct sockaddr_in6 *s = (struct sockaddr_in6 *)&addr;
+            dns_ntop(AF_INET6, &s->sin6_addr, host, INET6_ADDRSTRLEN);
+        }
+
+        if (acl_contains_ip(host)) {
+            if (verbose) {
+                LOGI("Access denied to %s", host);
+            }
+            close_and_free_server(EV_A_ server);
+            return;
+        }
     }
 
     if (addr == NULL) {
@@ -1047,6 +1076,7 @@ int main(int argc, char **argv)
     static struct option long_options[] =
     {
         { "fast-open", no_argument, 0, 0 },
+        { "acl",       required_argument, 0, 0 },
         { 0,           0,           0, 0 }
     };
 
@@ -1058,6 +1088,9 @@ int main(int argc, char **argv)
         case 0:
             if (option_index == 0) {
                 fast_open = 1;
+            } else if (option_index == 1) {
+                LOGI("initialize acl...");
+                acl = !init_acl(optarg);
             }
             break;
         case 's':
