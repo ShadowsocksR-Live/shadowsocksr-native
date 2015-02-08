@@ -658,33 +658,33 @@ static void server_resolve_cb(struct sockaddr *addr, void *data)
 
     server->query = NULL;
 
-    if (verbose) {
-        LOGI("udns resolved");
-    }
-
-    if (acl) {
-        char host[INET6_ADDRSTRLEN] = {0};
-        if (addr->sa_family == AF_INET) {
-            struct sockaddr_in *s = (struct sockaddr_in *)&addr;
-            dns_ntop(AF_INET, &s->sin_addr, host, INET_ADDRSTRLEN);
-        } else if (addr->sa_family == AF_INET6) {
-            struct sockaddr_in6 *s = (struct sockaddr_in6 *)&addr;
-            dns_ntop(AF_INET6, &s->sin6_addr, host, INET6_ADDRSTRLEN);
-        }
-
-        if (acl_contains_ip(host)) {
-            if (verbose) {
-                LOGI("Access denied to %s", host);
-            }
-            close_and_free_server(EV_A_ server);
-            return;
-        }
-    }
-
     if (addr == NULL) {
         LOGE("unable to resolve");
         close_and_free_server(EV_A_ server);
     } else {
+        if (verbose) {
+            LOGI("udns resolved");
+        }
+
+        if (acl) {
+            char host[INET6_ADDRSTRLEN] = {0};
+            if (addr->sa_family == AF_INET) {
+                struct sockaddr_in *s = (struct sockaddr_in *)addr;
+                dns_ntop(AF_INET, &s->sin_addr, host, INET_ADDRSTRLEN);
+            } else if (addr->sa_family == AF_INET6) {
+                struct sockaddr_in6 *s = (struct sockaddr_in6 *)addr;
+                dns_ntop(AF_INET6, &s->sin6_addr, host, INET6_ADDRSTRLEN);
+            }
+
+            if (acl_contains_ip(host)) {
+                if (verbose) {
+                    LOGI("Access denied to %s", host);
+                }
+                close_and_free_server(EV_A_ server);
+                return;
+            }
+        }
+
         struct addrinfo info;
         memset(&info, 0, sizeof(struct addrinfo));
         info.ai_socktype = SOCK_STREAM;
