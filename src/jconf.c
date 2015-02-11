@@ -165,7 +165,7 @@ jconf_t *read_jconf(const char * file)
                 }
             } else if (strcmp(name, "server_port") == 0) {
                 conf.remote_port = to_string(value);
-            } else if (strcmp(name, "local") == 0) {
+            } else if (strcmp(name, "local_address") == 0) {
                 conf.local_addr = to_string(value);
             } else if (strcmp(name, "local_port") == 0) {
                 conf.local_port = to_string(value);
