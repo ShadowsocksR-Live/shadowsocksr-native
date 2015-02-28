@@ -61,11 +61,7 @@ void ERROR(const char *s)
 }
 #endif
 
-#ifdef __MINGW32__
 char *ss_itoa(int i)
-#else
-char *itoa(int i)
-#endif
 {
     /* Room for INT_DIGITS digits, - and '\0' */
     static char buf[INT_DIGITS + 2];

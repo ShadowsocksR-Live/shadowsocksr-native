@@ -37,11 +37,7 @@ static char *to_string(const json_value *value)
     if (value->type == json_string) {
         return ss_strndup(value->u.string.ptr, value->u.string.length);
     } else if (value->type == json_integer) {
-#ifdef __MINGW32__
         return strdup(ss_itoa(value->u.integer));
-#else
-        return strdup(itoa(value->u.integer));
-#endif
     } else if (value->type == json_null) {
         return "null";
     } else {

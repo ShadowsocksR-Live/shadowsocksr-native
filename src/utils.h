@@ -164,15 +164,13 @@ extern int use_syslog;
 #endif
 #define ERROR(s) ss_error(s)
 
-char *ss_itoa(int i);
-
 #else
 
 void ERROR(const char *s);
-char *itoa(int i);
 
 #endif
 
+char *ss_itoa(int i);
 int run_as(const char *user);
 void FATAL(const char *msg);
 void usage(void);
