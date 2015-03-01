@@ -252,7 +252,8 @@ Usage
                                   only available in server mode
 
        [--fast-open]              enable TCP fast open,
-                                  only available on Linux kernel > 3.7.0
+                                  only available in local and server mode,
+                                  with Linux kernel > 3.7.0
 
        [--acl <acl_file>]         config file of ACL (Access Control List)
                                   only available in local and server mode

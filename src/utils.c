@@ -255,7 +255,9 @@ void usage()
     printf(
         "       [--fast-open]              enable TCP fast open,\n");
     printf(
-        "                                  only available on Linux kernel > 3.7.0\n");
+        "                                  only available in local and server mode,\n");
+    printf(
+        "                                  with Linux kernel > 3.7.0\n");
     printf("\n");
     printf(
         "       [--acl <acl_file>]         config file of ACL (Access Control List)\n");
