@@ -124,13 +124,14 @@ static void free_connections(struct ev_loop *loop)
     }
 }
 
-static void report_addr(int fd) {
+static void report_addr(int fd)
+{
     struct sockaddr_storage addr;
     socklen_t len = sizeof addr;
     memset(&addr, 0, len);
     int err = getpeername(fd, (struct sockaddr *)&addr, &len);
     if (err == 0) {
-        char peer_name[INET6_ADDRSTRLEN] = {0};
+        char peer_name[INET6_ADDRSTRLEN] = { 0 };
         if (addr.ss_family == AF_INET) {
             struct sockaddr_in *s = (struct sockaddr_in *)&addr;
             dns_ntop(AF_INET, &s->sin_addr, peer_name, INET_ADDRSTRLEN);
@@ -172,19 +173,19 @@ int create_and_bind(const char *host, const char *port)
     int s, listen_sock;
 
     memset(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family = AF_UNSPEC;                                        /* Return IPv4 and IPv6 choices */
-    hints.ai_socktype = SOCK_STREAM;                                    /* We want a TCP socket */
+    hints.ai_family = AF_UNSPEC;                 /* Return IPv4 and IPv6 choices */
+    hints.ai_socktype = SOCK_STREAM;             /* We want a TCP socket */
     hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG; /* For wildcard IP address */
     hints.ai_protocol = IPPROTO_TCP;
 
     for (int i = 1; i < 8; i++) {
         s = getaddrinfo(host, port, &hints, &result);
-        if (s == 0) break;
-        else {
+        if (s == 0) {
+            break;
+        } else {
             sleep(pow(2, i));
             LOGE("failed to resolve server name, wait %.0f seconds", pow(2, i));
         }
-
     }
 
     if (s != 0) {
@@ -677,7 +678,7 @@ static void server_resolve_cb(struct sockaddr *addr, void *data)
         }
 
         if (acl) {
-            char host[INET6_ADDRSTRLEN] = {0};
+            char host[INET6_ADDRSTRLEN] = { 0 };
             if (addr->sa_family == AF_INET) {
                 struct sockaddr_in *s = (struct sockaddr_in *)addr;
                 dns_ntop(AF_INET, &s->sin_addr, host, INET_ADDRSTRLEN);
@@ -1085,9 +1086,9 @@ int main(int argc, char **argv)
     int option_index = 0;
     static struct option long_options[] =
     {
-        { "fast-open", no_argument, 0, 0 },
+        { "fast-open", no_argument,       0, 0 },
         { "acl",       required_argument, 0, 0 },
-        { 0,           0,           0, 0 }
+        { 0,           0,                 0, 0 }
     };
 
     opterr = 0;
@@ -1297,7 +1298,7 @@ int main(int argc, char **argv)
         // Setup UDP
         if (udprelay) {
             init_udprelay(server_host[index], server_port, m, atoi(timeout),
-                    iface);
+                          iface);
         }
 
     }

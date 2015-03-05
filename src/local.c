@@ -435,7 +435,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     }
                     struct sockaddr_storage storage;
                     memset(&storage, 0, sizeof(struct sockaddr_storage));
-                    if (get_sockaddr(host, port, &storage) != -1) {
+                    if (get_sockaddr(host, port, &storage, 0) != -1) {
                         remote = connect_to_remote(server->listener, (struct sockaddr *)&storage);
                         remote->direct = 1;
                     }
@@ -1075,7 +1075,7 @@ int main(int argc, char **argv)
                      remote_addr[i].port;
         struct sockaddr_storage *storage = malloc(sizeof(struct sockaddr_storage));
         memset(storage, 0, sizeof(struct sockaddr_storage));
-        if (get_sockaddr(host, port, storage) == -1) {
+        if (get_sockaddr(host, port, storage, 1) == -1) {
             FATAL("failed to resolve the provided hostname");
         }
         listen_ctx.remote_addr[i] = (struct sockaddr *)storage;
@@ -1205,7 +1205,7 @@ int start_ss_local_server(profile_t profile)
     listen_ctx.remote_addr = malloc(sizeof(struct sockaddr *));
     struct sockaddr_storage *storage = malloc(sizeof(struct sockaddr_storage));
     memset(storage, 0, sizeof(struct sockaddr_storage));
-    if (get_sockaddr(remote_host, remote_port_str, storage) == -1) {
+    if (get_sockaddr(remote_host, remote_port_str, storage, 1) == -1) {
         return -1;
     }
     listen_ctx.remote_addr[0] = (struct sockaddr *)storage;

@@ -21,4 +21,4 @@
  */
 
 int get_sockaddr_len(struct sockaddr *addr);
-int get_sockaddr(char *host, char *port, struct sockaddr_storage *storage);
+int get_sockaddr(char *host, char *port, struct sockaddr_storage *storage, int block);

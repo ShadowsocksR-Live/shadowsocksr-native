@@ -20,6 +20,9 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
+#include <unistd.h>
+
 #include <libcork/core.h>
 #include <udns.h>
 
@@ -48,7 +51,7 @@ int get_sockaddr_len(struct sockaddr *addr)
     return 0;
 }
 
-int get_sockaddr(char *host, char *port, struct sockaddr_storage *storage)
+int get_sockaddr(char *host, char *port, struct sockaddr_storage *storage, int block)
 {
     struct cork_ip ip;
     if (cork_ip_init(&ip, host) != -1) {
@@ -76,7 +79,18 @@ int get_sockaddr(char *host, char *port, struct sockaddr_storage *storage)
         hints.ai_family = AF_UNSPEC;     /* Return IPv4 and IPv6 choices */
         hints.ai_socktype = SOCK_STREAM; /* We want a TCP socket */
 
-        int err = getaddrinfo(host, port, &hints, &result);
+        int err;
+
+        for (int i = 1; i < 8; i++) {
+            err = getaddrinfo(host, port, &hints, &result);
+            if (!block || !err) {
+                break;
+            } else {
+                sleep(pow(2, i));
+                LOGE("failed to resolve server name, wait %.0f seconds", pow(2, i));
+            }
+        }
+
         if (err != 0) {
             LOGE("getaddrinfo: %s", gai_strerror(err));
             return -1;
