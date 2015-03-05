@@ -652,6 +652,8 @@ int main(int argc, char **argv)
 
     opterr = 0;
 
+    USE_TTY();
+
     while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:uv")) != -1) {
         switch (c) {
         case 's':
