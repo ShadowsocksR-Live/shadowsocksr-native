@@ -24,6 +24,7 @@
 #define _UTILS_H
 
 #include <stdio.h>
+#include <unistd.h>
 #include <time.h>
 
 #define PORTSTRLEN 16
@@ -33,6 +34,7 @@
 
 #include <android/log.h>
 
+#define USE_TTY()
 #define USE_SYSLOG(ident)
 #define LOGI(...)                                                \
     ((void)__android_log_print(ANDROID_LOG_DEBUG, "shadowsocks", \
@@ -51,6 +53,8 @@
 extern FILE * logfile;
 
 #define TIME_FORMAT "%Y-%m-%d %H:%M:%S"
+
+#define USE_TTY()
 
 #define USE_SYSLOG(ident)
 
@@ -91,6 +95,8 @@ extern FILE * logfile;
 
 #define TIME_FORMAT "%Y-%m-%d %H:%M:%S"
 
+#define USE_TTY()
+
 #define USE_SYSLOG(ident)
 
 #define LOGI(format, ...)                                                   \
@@ -115,6 +121,12 @@ extern FILE * logfile;
 
 #include <syslog.h>
 
+extern int use_tty;
+#define USE_TTY()					\
+	do {						\
+		use_tty = isatty(STDERR_FILENO);	\
+	} while (0)					\
+
 #define HAS_SYSLOG
 extern int use_syslog;
 
@@ -126,30 +138,41 @@ extern int use_syslog;
         openlog((ident), LOG_CONS | LOG_PID, 0); } \
     while (0)
 
-#define LOGI(format, ...)                                                    \
-    do {                                                                     \
-        if (use_syslog) {                                                    \
-            syslog(LOG_INFO, format, ## __VA_ARGS__);                        \
-        } else {                                                             \
-            time_t now = time(NULL);                                         \
-            char timestr[20];                                                \
-            strftime(timestr, 20, TIME_FORMAT, localtime(&now));             \
-            fprintf(stderr, "\e[01;32m %s INFO: \e[0m" format "\n", timestr, \
-                    ## __VA_ARGS__);                                         \
-        } }                                                                  \
+#define LOGI(format, ...)                                                        \
+    do {                                                                         \
+        if (use_syslog) {                                                        \
+            syslog(LOG_INFO, format, ## __VA_ARGS__);                            \
+        } else {                                                                 \
+            time_t now = time(NULL);                                             \
+            char timestr[20];                                                    \
+            strftime(timestr, 20, TIME_FORMAT, localtime(&now));                 \
+            if(use_tty) {                                                        \
+                fprintf(stderr, "\e[01;32m %s INFO: \e[0m" format "\n", timestr, \
+                        ## __VA_ARGS__);                                         \
+	    } else {                                                             \
+		    fprintf(stderr, "%s INFO: " format "\n", timestr,            \
+                        ## __VA_ARGS__);                                         \
+	    }                                                                    \
+	}                                                                        \
+    }                                                                            \
     while (0)
 
-#define LOGE(format, ...)                                                     \
-    do {                                                                      \
-        if (use_syslog) {                                                     \
-            syslog(LOG_ERR, format, ## __VA_ARGS__);                          \
-        } else {                                                              \
-            time_t now = time(NULL);                                          \
-            char timestr[20];                                                 \
-            strftime(timestr, 20, TIME_FORMAT, localtime(&now));              \
-            fprintf(stderr, "\e[01;35m %s ERROR: \e[0m" format "\n", timestr, \
-                    ## __VA_ARGS__);                                          \
-        } }                                                                   \
+#define LOGE(format, ...)                                                         \
+    do {                                                                          \
+        if (use_syslog) {                                                         \
+            syslog(LOG_ERR, format, ## __VA_ARGS__);                              \
+        } else {                                                                  \
+            time_t now = time(NULL);                                              \
+            char timestr[20];                                                     \
+            strftime(timestr, 20, TIME_FORMAT, localtime(&now));                  \
+            if(use_tty) {                                                         \
+                fprintf(stderr, "\e[01;35m %s ERROR: \e[0m" format "\n", timestr, \
+                        ## __VA_ARGS__);                                          \
+            } else {                                                              \
+                fprintf(stderr, " %s ERROR: " format "\n", timestr,               \
+                        ## __VA_ARGS__);                                          \
+	    }                                                                     \
+        } }                                                                       \
     while (0)
 
 #endif

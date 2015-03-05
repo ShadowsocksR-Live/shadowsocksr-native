@@ -61,6 +61,8 @@ void ERROR(const char *s)
 }
 #endif
 
+int use_tty = 1;
+
 char *ss_itoa(int i)
 {
     /* Room for INT_DIGITS digits, - and '\0' */
