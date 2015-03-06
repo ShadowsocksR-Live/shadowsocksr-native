@@ -21,7 +21,6 @@
  */
 
 #include <math.h>
-#include <unistd.h>
 
 #include <libcork/core.h>
 #include <udns.h>
@@ -32,10 +31,12 @@
 
 #ifdef __MINGW32__
 #include "win32.h"
+#define sleep(n) Sleep(1000 * (n))
 #else
 #include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <unistd.h>
 #endif
 
 #include "netutils.h"

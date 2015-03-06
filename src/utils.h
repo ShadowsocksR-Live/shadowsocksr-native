@@ -24,7 +24,6 @@
 #define _UTILS_H
 
 #include <stdio.h>
-#include <unistd.h>
 #include <time.h>
 
 #define PORTSTRLEN 16
