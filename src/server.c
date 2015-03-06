@@ -1154,7 +1154,13 @@ int main(int argc, char **argv)
         usage();
         exit(EXIT_FAILURE);
     }
-
+    
+    if(argc == 1) {
+        if(conf_path == NULL) {
+			conf_path = DEFAULT_CONF_PATH;
+        }
+    }
+    
     if (conf_path != NULL) {
         jconf_t *conf = read_jconf(conf_path);
         if (server_num == 0) {
