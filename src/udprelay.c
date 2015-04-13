@@ -791,7 +791,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     if (remote_ctx != NULL) {
         if (memcmp(&src_addr, &remote_ctx->src_addr, sizeof(src_addr))
-            || strcmp(addr_header, remote_ctx->addr_header) != 0) {
+            || remote_ctx->addr_header_len != addr_header_len
+            || memcmp(addr_header, remote_ctx->addr_header, addr_header_len) != 0) {
             remote_ctx = NULL;
         }
     }
