@@ -240,7 +240,7 @@ void usage()
     printf(
         "       [-u]                       enable udprelay mode,\n");
     printf(
-        "                                  not available in redir mode\n");
+        "                                  TPROXY is required in redir mode\n");
     printf("\n");
     printf(
         "       [-L <addr>:<port>]         specify destination server address and port\n");

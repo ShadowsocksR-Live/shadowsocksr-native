@@ -42,7 +42,7 @@
 #include "netutils.h"
 #include "utils.h"
 
-int get_sockaddr_len(struct sockaddr *addr)
+size_t get_sockaddr_len(struct sockaddr *addr)
 {
     if (addr->sa_family == AF_INET) {
         return sizeof(struct sockaddr_in);
@@ -52,7 +52,7 @@ int get_sockaddr_len(struct sockaddr *addr)
     return 0;
 }
 
-int get_sockaddr(char *host, char *port, struct sockaddr_storage *storage, int block)
+size_t get_sockaddr(char *host, char *port, struct sockaddr_storage *storage, int block)
 {
     struct cork_ip ip;
     if (cork_ip_init(&ip, host) != -1) {

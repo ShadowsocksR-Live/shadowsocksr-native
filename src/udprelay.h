@@ -74,6 +74,7 @@ struct remote_ctx {
     ev_io io;
     ev_timer watcher;
     int fd;
+    int src_fd;
     int addr_header_len;
     char addr_header[384];
     struct sockaddr_storage src_addr;

@@ -40,6 +40,7 @@ ss_tunnel_SOURCES = utils.c \
 					tunnel.c
 
 ss_server_SOURCES = utils.c \
+					netutils.c \
                     jconf.c \
                     json.c \
                     encrypt.c \
@@ -72,7 +73,10 @@ ss_redir_SOURCES = utils.c \
                    json.c \
                    encrypt.c \
 				   netutils.c \
+				   cache.c \
+				   udprelay.c \
                    redir.c
+ss_redir_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_REDIR -DUDPRELAY_LOCAL
 ss_redir_LDADD = $(SS_COMMON_LIBS)
 ss_redir_LDADD += $(top_builddir)/libudns/libudns.la
 endif
