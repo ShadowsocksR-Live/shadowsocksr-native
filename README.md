@@ -11,7 +11,7 @@ It is a port of [shadowsocks](https://github.com/shadowsocks/shadowsocks)
 created by [@clowwindy](https://github.com/clowwindy) maintained by 
 [@madeye](https://github.com/madeye) and [@linusyang](https://github.com/linusyang).
 
-Current version: 2.1.4 | [Changelog](Changes)
+Current version: 2.2.0 | [Changelog](Changes)
 
 Travis CI: [![Travis CI](https://travis-ci.org/shadowsocks/shadowsocks-libev.png?branch=master)](https://travis-ci.org/shadowsocks/shadowsocks-libev) | Jenkins Matrix: [![Jenkins](https://jenkins.shadowvpn.org/buildStatus/icon?job=Shadowsocks-libev)](https://jenkins.shadowvpn.org/job/Shadowsocks-libev/)
 
@@ -273,6 +273,7 @@ The latest shadowsocks-libev has provided a *redir* mode. You can configure your
 
     # Create new chain
     root@Wrt:~# iptables -t nat -N SHADOWSOCKS
+    root@Wrt:~# iptables -t mangle -N SHADOWSOCKS
     
     # Ignore your shadowsocks server's addresses
     # It's very IMPORTANT, just be careful.
@@ -292,12 +293,18 @@ The latest shadowsocks-libev has provided a *redir* mode. You can configure your
 
     # Anything else should be redirected to shadowsocks's local port
     root@Wrt:~# iptables -t nat -A SHADOWSOCKS -p tcp -j REDIRECT --to-ports 12345
+
+    # Add any UDP rules
+    root@Wrt:~# ip rule add fwmark 0x01/0x01 table 100
+    root@Wrt:~# ip route add local 0.0.0.0/0 dev lo table 100
+    root@Wrt:~# iptables -t mangle -A SHADOWSOCKS -p udp --dport 53 -j TPROXY --on-port 12345 --tproxy-mark 0x01/0x01
     
     # Apply the rules
-    root@Wrt:~# iptables -t nat -A OUTPUT -p tcp -j SHADOWSOCKS
-    
+    root@Wrt:~# iptables -t nat -A PREROUTING -p tcp -j SHADOWSOCKS
+    root@Wrt:~# iptables -t mangle -A PREROUTING -j SHADOWSOCKS
+
     # Start the shadowsocks-redir
-    root@Wrt:~# ss-redir -c /etc/config/shadowsocks.json -f /var/run/shadowsocks.pid
+    root@Wrt:~# ss-redir -u -c /etc/config/shadowsocks.json -f /var/run/shadowsocks.pid
 
 ## Security Tips
 

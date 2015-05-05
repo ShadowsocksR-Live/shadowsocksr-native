@@ -1,3 +1,9 @@
+shadowsocks-libev (2.2.0-1) unstable; urgency=low
+
+  * Add TPROXY support in redir mode.
+
+ -- Max Lv <max.c.lv@gmail.com>  Mon, 04 May 2015 02:44:17 -0300
+
 shadowsocks-libev (2.1.4-1) unstable; urgency=low
 
   * Fix a bug of server mode ACL.

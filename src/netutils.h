@@ -20,5 +20,5 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-int get_sockaddr_len(struct sockaddr *addr);
-int get_sockaddr(char *host, char *port, struct sockaddr_storage *storage, int block);
+size_t get_sockaddr_len(struct sockaddr *addr);
+size_t get_sockaddr(char *host, char *port, struct sockaddr_storage *storage, int block);

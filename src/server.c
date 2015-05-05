@@ -1154,13 +1154,13 @@ int main(int argc, char **argv)
         usage();
         exit(EXIT_FAILURE);
     }
-    
-    if(argc == 1) {
-        if(conf_path == NULL) {
-			conf_path = DEFAULT_CONF_PATH;
+
+    if (argc == 1) {
+        if (conf_path == NULL) {
+            conf_path = DEFAULT_CONF_PATH;
         }
     }
-    
+
     if (conf_path != NULL) {
         jconf_t *conf = read_jconf(conf_path);
         if (server_num == 0) {
@@ -1218,7 +1218,7 @@ int main(int argc, char **argv)
     if (method == NULL) {
         method = "table";
     }
-    
+
     if (timeout == NULL) {
         timeout = "60";
     }
@@ -1293,7 +1293,7 @@ int main(int argc, char **argv)
             FATAL("listen() error");
         }
         setnonblocking(listenfd);
-        LOGI("listening at %s:%s", host?host:"*", server_port);
+        LOGI("listening at %s:%s", host ? host : "*", server_port);
 
         struct listen_ctx *listen_ctx = &listen_ctx_list[index];
 

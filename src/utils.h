@@ -121,10 +121,10 @@ extern FILE * logfile;
 #include <syslog.h>
 
 extern int use_tty;
-#define USE_TTY()					\
-	do {						\
-		use_tty = isatty(STDERR_FILENO);	\
-	} while (0)					\
+#define USE_TTY()                        \
+    do {                                 \
+        use_tty = isatty(STDERR_FILENO); \
+    } while (0)                          \
 
 #define HAS_SYSLOG
 extern int use_syslog;
@@ -145,14 +145,14 @@ extern int use_syslog;
             time_t now = time(NULL);                                             \
             char timestr[20];                                                    \
             strftime(timestr, 20, TIME_FORMAT, localtime(&now));                 \
-            if(use_tty) {                                                        \
+            if (use_tty) {                                                       \
                 fprintf(stderr, "\e[01;32m %s INFO: \e[0m" format "\n", timestr, \
                         ## __VA_ARGS__);                                         \
-	    } else {                                                             \
-		    fprintf(stderr, "%s INFO: " format "\n", timestr,            \
+            } else {                                                             \
+                fprintf(stderr, "%s INFO: " format "\n", timestr,                \
                         ## __VA_ARGS__);                                         \
-	    }                                                                    \
-	}                                                                        \
+            }                                                                    \
+        }                                                                        \
     }                                                                            \
     while (0)
 
@@ -164,13 +164,13 @@ extern int use_syslog;
             time_t now = time(NULL);                                              \
             char timestr[20];                                                     \
             strftime(timestr, 20, TIME_FORMAT, localtime(&now));                  \
-            if(use_tty) {                                                         \
+            if (use_tty) {                                                        \
                 fprintf(stderr, "\e[01;35m %s ERROR: \e[0m" format "\n", timestr, \
                         ## __VA_ARGS__);                                          \
             } else {                                                              \
                 fprintf(stderr, " %s ERROR: " format "\n", timestr,               \
                         ## __VA_ARGS__);                                          \
-	    }                                                                     \
+            }                                                                     \
         } }                                                                       \
     while (0)
 

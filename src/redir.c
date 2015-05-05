@@ -80,6 +80,8 @@ static void close_and_free_remote(EV_P_ struct remote *remote);
 static void free_server(struct server *server);
 static void close_and_free_server(EV_P_ struct server *server);
 
+int verbose = 0;
+int udprelay = 0;
 
 int getdestaddr(int fd, struct sockaddr_storage *destaddr)
 {
@@ -611,7 +613,7 @@ int main(int argc, char **argv)
 
     opterr = 0;
 
-    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:c:b:a:")) != -1) {
+    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:c:b:a:vu")) != -1) {
         switch (c) {
         case 's':
             if (remote_num < MAX_REMOTE_NUM) {
@@ -647,6 +649,12 @@ int main(int argc, char **argv)
         case 'a':
             user = optarg;
             break;
+        case 'u':
+            udprelay = 1;
+            break;
+        case 'v':
+            verbose = 1;
+            break;
         }
     }
 
@@ -654,13 +662,13 @@ int main(int argc, char **argv)
         usage();
         exit(EXIT_FAILURE);
     }
-    
-    if(argc == 1) {
-        if(conf_path == NULL) {
-			conf_path = DEFAULT_CONF_PATH;
+
+    if (argc == 1) {
+        if (conf_path == NULL) {
+            conf_path = DEFAULT_CONF_PATH;
         }
     }
-    
+
     if (conf_path != NULL) {
         jconf_t *conf = read_jconf(conf_path);
         if (remote_num == 0) {
@@ -750,6 +758,13 @@ int main(int argc, char **argv)
     struct ev_loop *loop = EV_DEFAULT;
     ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
     ev_io_start(loop, &listen_ctx.io);
+
+    // Setup UDP
+    if (udprelay) {
+        LOGI("udprelay enabled");
+        init_udprelay(local_addr, local_port, listen_ctx.remote_addr[0],
+                      get_sockaddr_len(listen_ctx.remote_addr[0]), m, listen_ctx.timeout, NULL);
+    }
 
     // setuid
     if (user != NULL) {
