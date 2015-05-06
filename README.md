@@ -242,7 +242,7 @@ Usage
                                   not available in server mode
 
        [-u]                       enable udprelay mode,
-                                  not available in redir mode
+                                  TPROXY is required in redir mode
 
        [-L <addr>:<port>]         specify destination server address and port
                                   for local port forwarding,
