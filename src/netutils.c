@@ -80,9 +80,9 @@ size_t get_sockaddr(char *host, char *port, struct sockaddr_storage *storage, in
         hints.ai_family = AF_UNSPEC;     /* Return IPv4 and IPv6 choices */
         hints.ai_socktype = SOCK_STREAM; /* We want a TCP socket */
 
-        int err;
+        int err, i;
 
-        for (int i = 1; i < 8; i++) {
+        for (i = 1; i < 8; i++) {
             err = getaddrinfo(host, port, &hints, &result);
             if (!block || !err) {
                 break;
