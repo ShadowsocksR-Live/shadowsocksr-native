@@ -893,8 +893,8 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
     if (method > TABLE) {
         cipher_ctx_t evp;
         cipher_context_init(&evp, method, 0);
-        int c_len = *len, p_len = *len;
         int iv_len = enc_iv_len;
+        int c_len = *len, p_len = *len - iv_len;
         int err = 1;
 
         static int tmp_len = 0;
