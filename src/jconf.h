@@ -26,7 +26,7 @@
 #define MAX_CONF_SIZE 16 * 1024
 #define MAX_DNS_NUM 4
 #define MAX_CONNECT_TIMEOUT 10
-#define MAX_UDP_TIMEOUT 120
+#define MAX_UDP_TIMEOUT 10
 
 typedef struct {
     char *host;
