@@ -166,6 +166,20 @@ make -j
 make V=99 package/shadowsocks-libev/openwrt/compile
 ```
 
+### OS X
+For OS X , use [homebrew](http://brew.sh) to install or build.
+
+Install homebrew
+
+```bash
+ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+```
+Install shadowsocks-libev
+
+```bash
+brew install shadowsocks-libev
+```
+
 ### Windows
 
 For Windows, use either MinGW (msys) or Cygwin to build.
