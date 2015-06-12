@@ -474,6 +474,11 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             if (name_len < r && name_len < 255 && name_len > 0) {
                 memcpy(host, server->buf + offset + 1, name_len);
                 offset += name_len + 1;
+            } else {
+                LOGE("invalid name length: %d", name_len);
+                report_addr(server->fd);
+                close_and_free_server(EV_A_ server);
+                return;
             }
             struct cork_ip ip;
             if (cork_ip_init(&ip, host) != -1) {
