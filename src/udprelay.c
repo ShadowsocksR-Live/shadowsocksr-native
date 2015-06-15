@@ -565,6 +565,7 @@ static void query_resolve_cb(struct sockaddr *addr, void *data)
                              (void *)remote_ctx);
 
                 ev_io_start(EV_A_ & remote_ctx->io);
+                ev_timer_start(EV_A_ & remote_ctx->watcher);
             }
 
         } else {
@@ -592,9 +593,6 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     if (verbose) {
         LOGI("[udp] remote receive a packet");
     }
-
-    // triger the timer
-    ev_timer_again(EV_A_ & remote_ctx->watcher);
 
     struct sockaddr src_addr;
     socklen_t src_addr_len = sizeof(src_addr);
@@ -690,14 +688,20 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
             (struct sockaddr *)&remote_ctx->src_addr, remote_src_addr_len);
     if (s == -1) {
         ERROR("[udp] remote_recv_sendto");
+        goto CLEAN_UP;
     }
 #else
     int s = sendto(server_ctx->fd, buf, buf_len, 0,
                    (struct sockaddr *)&remote_ctx->src_addr, remote_src_addr_len);
     if (s == -1) {
         ERROR("[udp] remote_recv_sendto");
+        goto CLEAN_UP;
     }
 #endif
+
+    // handle the UDP packet sucessfully,
+    // triger the timer
+    ev_timer_again(EV_A_ & remote_ctx->watcher);
 
  CLEAN_UP:
     free(buf);
@@ -1004,6 +1008,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
         // Start remote io
         ev_io_start(EV_A_ & remote_ctx->io);
+        ev_timer_start(EV_A_ & remote_ctx->watcher);
     }
 
     if (offset > 0) {
@@ -1062,6 +1067,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                                  (void *)remote_ctx);
 
                     ev_io_start(EV_A_ & remote_ctx->io);
+                    ev_timer_start(EV_A_ & remote_ctx->watcher);
                 }
             } else {
                 ERROR("[udp] bind() error");
