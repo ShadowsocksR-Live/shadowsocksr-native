@@ -1,3 +1,10 @@
+shadowsocks-libev (2.2.2-1) unstable; urgency=low
+
+  * Fix the timer of UDP relay.
+  * Check name_len in the header.
+
+ -- Max Lv <max.c.lv@gmail.com>  Mon, 15 Jun 2015 10:26:40 +0900
+
 shadowsocks-libev (2.2.1-1) unstable; urgency=low
 
   * Fix an issue of UDP relay.
