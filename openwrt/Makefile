@@ -15,6 +15,9 @@ PKG_FIXUP:=autoreconf
 PKG_USE_MIPS16:=0
 PKG_BUILD_PARALLEL:=1
 
+# enable SSP
+TARGET_CFLAGS += -fstack-protector
+
 include $(INCLUDE_DIR)/package.mk
 
 define Package/shadowsocks-libev/Default
