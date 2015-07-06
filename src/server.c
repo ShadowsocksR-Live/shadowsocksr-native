@@ -1328,7 +1328,11 @@ int main(int argc, char **argv)
     }
 
     if (mode != TCP_ONLY) {
-        LOGI("udprelay enabled");
+        LOGI("UDP relay enabled");
+    }
+
+    if (mode == UDP_ONLY) {
+        LOGI("TCP relay disabled");
     }
 
     // setuid

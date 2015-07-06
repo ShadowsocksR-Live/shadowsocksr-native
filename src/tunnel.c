@@ -827,10 +827,14 @@ int main(int argc, char **argv)
 
     // Setup UDP
     if (mode != TCP_ONLY) {
-        LOGI("udprelay enabled");
+        LOGI("UDP relay enabled");
         init_udprelay(local_addr, local_port, listen_ctx.remote_addr[0],
                       get_sockaddr_len(listen_ctx.remote_addr[0]),
                       tunnel_addr, m, listen_ctx.timeout, iface);
+    }
+
+    if (mode == UDP_ONLY) {
+        LOGI("TCP relay disabled");
     }
 
     LOGI("listening at %s:%s", local_addr, local_port);
