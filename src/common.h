@@ -43,6 +43,10 @@
 #define SOL_TCP IPPROTO_TCP
 #endif
 
+#define TCP_ONLY     0
+#define TCP_AND_UDP  1
+#define UDP_ONLY     3
+
 int init_udprelay(const char *server_host, const char *server_port,
 #ifdef UDPRELAY_LOCAL
                   const struct sockaddr *remote_addr, const int remote_addr_len,

@@ -79,9 +79,11 @@
 #define BUF_SIZE 2048
 #endif
 
-int acl = 0;
 int verbose = 0;
-int udprelay = 0;
+
+static int acl = 0;
+static int mode = TCP_ONLY;
+
 static int fast_open = 0;
 #ifdef HAVE_SETRLIMIT
 #ifndef LIB_ONLY
@@ -342,7 +344,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
             int udp_assc = 0;
 
-            if (udprelay && request->cmd == 3) {
+            if (mode != TCP_ONLY && request->cmd == 3) {
                 udp_assc = 1;
                 socklen_t addr_len = sizeof(sock_addr);
                 getsockname(server->fd, (struct sockaddr *)&sock_addr,
@@ -429,7 +431,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     LOGI("connect to %s:%s", host, port);
                 }
 
-                if ((acl && (request->atyp == 1 || request->atyp == 3) && acl_contains_ip(host))) {
+                if ((acl && (request->atyp == 1 || request->atyp == 4) && acl_contains_ip(host))) {
                     if (verbose) {
                         LOGI("bypass %s:%s", host, port);
                     }
@@ -901,7 +903,7 @@ int main(int argc, char **argv)
 
     USE_TTY();
 
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:uv",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:uUv",
                             long_options, &option_index)) != -1) {
         switch (c) {
         case 0:
@@ -950,7 +952,10 @@ int main(int argc, char **argv)
             user = optarg;
             break;
         case 'u':
-            udprelay = 1;
+            mode = TCP_AND_UDP;
+            break;
+        case 'U':
+            mode = UDP_ONLY;
             break;
         case 'v':
             verbose = 1;
@@ -1060,18 +1065,6 @@ int main(int argc, char **argv)
     LOGI("initialize ciphers... %s", method);
     int m = enc_init(password, method);
 
-    // Setup socket
-    int listenfd;
-    listenfd = create_and_bind(local_addr, local_port);
-    if (listenfd < 0) {
-        FATAL("bind() error");
-    }
-    if (listen(listenfd, SOMAXCONN) == -1) {
-        FATAL("listen() error");
-    }
-    setnonblocking(listenfd);
-    LOGI("listening at %s:%s", local_addr, local_port);
-
     // Setup proxy context
     struct listen_ctx listen_ctx;
     listen_ctx.remote_num = remote_num;
@@ -1079,7 +1072,7 @@ int main(int argc, char **argv)
     for (i = 0; i < remote_num; i++) {
         char *host = remote_addr[i].host;
         char *port = remote_addr[i].port == NULL ? remote_port :
-                     remote_addr[i].port;
+            remote_addr[i].port;
         struct sockaddr_storage *storage = malloc(sizeof(struct sockaddr_storage));
         memset(storage, 0, sizeof(struct sockaddr_storage));
         if (get_sockaddr(host, port, storage, 1) == -1) {
@@ -1088,20 +1081,37 @@ int main(int argc, char **argv)
         listen_ctx.remote_addr[i] = (struct sockaddr *)storage;
     }
     listen_ctx.timeout = atoi(timeout);
-    listen_ctx.fd = listenfd;
     listen_ctx.iface = iface;
     listen_ctx.method = m;
 
     struct ev_loop *loop = EV_DEFAULT;
-    ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
-    ev_io_start(loop, &listen_ctx.io);
+
+    if (mode != UDP_ONLY) {
+        // Setup socket
+        int listenfd;
+        listenfd = create_and_bind(local_addr, local_port);
+        if (listenfd < 0) {
+            FATAL("bind() error");
+        }
+        if (listen(listenfd, SOMAXCONN) == -1) {
+            FATAL("listen() error");
+        }
+        setnonblocking(listenfd);
+
+        listen_ctx.fd = listenfd;
+
+        ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
+        ev_io_start(loop, &listen_ctx.io);
+    }
 
     // Setup UDP
-    if (udprelay) {
+    if (mode != TCP_ONLY) {
         LOGI("udprelay enabled");
         init_udprelay(local_addr, local_port, listen_ctx.remote_addr[0],
                       get_sockaddr_len(listen_ctx.remote_addr[0]), m, listen_ctx.timeout, iface);
     }
+
+    LOGI("listening at %s:%s", local_addr, local_port);
 
     // setuid
     if (user != NULL) {
@@ -1119,10 +1129,15 @@ int main(int argc, char **argv)
     }
 
     // Clean up
-    free_connections(loop);
-    free_udprelay();
+    if (mode != UDP_ONLY) {
+        ev_io_stop(loop, &listen_ctx.io);
+        free_connections(loop);
+    }
 
-    ev_io_stop(loop, &listen_ctx.io);
+    if (mode != TCP_ONLY) {
+        free_udprelay();
+    }
+
     for (i = 0; i < remote_num; i++) {
         free(listen_ctx.remote_addr[i]);
     }
@@ -1153,7 +1168,7 @@ int start_ss_local_server(profile_t profile)
     int local_port = profile.local_port;
     int timeout = profile.timeout;
 
-    udprelay = profile.udp_relay;
+    mode = profile.mode;
     fast_open = profile.fast_open;
     verbose = profile.verbose;
 
@@ -1191,50 +1206,57 @@ int start_ss_local_server(profile_t profile)
     LOGI("initialize ciphers... %s", method);
     int m = enc_init(password, method);
 
-    // Setup socket
-    int listenfd;
-    listenfd = create_and_bind(local_addr, local_port_str);
-    if (listenfd < 0) {
-        ERROR("bind()");
-        return -1;
-    }
-    if (listen(listenfd, SOMAXCONN) == -1) {
-        ERROR("listen()");
-        return -1;
-    }
-    setnonblocking(listenfd);
-    LOGI("listening at %s:%s", local_addr, local_port_str);
-
-    // Setup proxy context
-    struct listen_ctx listen_ctx;
-
-    listen_ctx.remote_num = 1;
-    listen_ctx.remote_addr = malloc(sizeof(struct sockaddr *));
     struct sockaddr_storage *storage = malloc(sizeof(struct sockaddr_storage));
     memset(storage, 0, sizeof(struct sockaddr_storage));
     if (get_sockaddr(remote_host, remote_port_str, storage, 1) == -1) {
         return -1;
     }
+
+    // Setup proxy context
+    struct ev_loop *loop = EV_DEFAULT;
+    struct listen_ctx listen_ctx;
+
+    listen_ctx.remote_num = 1;
+    listen_ctx.remote_addr = malloc(sizeof(struct sockaddr *));
     listen_ctx.remote_addr[0] = (struct sockaddr *)storage;
     listen_ctx.timeout = timeout;
-    listen_ctx.fd = listenfd;
     listen_ctx.method = m;
     listen_ctx.iface = NULL;
 
-    struct ev_loop *loop = EV_DEFAULT;
-    ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
-    ev_io_start(loop, &listen_ctx.io);
+    if (mode != UDP_ONLY) {
+        // Setup socket
+        int listenfd;
+        listenfd = create_and_bind(local_addr, local_port_str);
+        if (listenfd < 0) {
+            ERROR("bind()");
+            return -1;
+        }
+        if (listen(listenfd, SOMAXCONN) == -1) {
+            ERROR("listen()");
+            return -1;
+        }
+        setnonblocking(listenfd);
 
-    // Setup UDP
-    if (udprelay) {
-        LOGI("udprelay enabled");
-        init_udprelay(local_addr, local_port_str, listen_ctx.remote_addr[0],
-                      get_sockaddr_len(listen_ctx.remote_addr[0]), m,
-                      listen_ctx.timeout, NULL);
+        listen_ctx.fd = listenfd;
+
+        ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
+        ev_io_start(loop, &listen_ctx.io);
     }
 
-    // Init connections
-    cork_dllist_init(&connections);
+    // Setup UDP
+    if (mode != TCP_ONLY) {
+        LOGI("udprelay enabled");
+        struct sockaddr *addr = (struct sockaddr *)storage;
+        init_udprelay(local_addr, local_port_str, addr,
+                      get_sockaddr_len(addr), m, timeout, NULL);
+    }
+
+    LOGI("listening at %s:%s", local_addr, local_port_str);
+
+    if (mode != UDP_ONLY) {
+        // Init connections
+        cork_dllist_init(&connections);
+    }
 
     // Enter the loop
     ev_run(loop, 0);
@@ -1244,14 +1266,17 @@ int start_ss_local_server(profile_t profile)
     }
 
     // Clean up
-    free_connections(loop);
-    if (udprelay) {
+    if (mode != TCP_ONLY) {
         free_udprelay();
     }
 
-    ev_io_stop(loop, &listen_ctx.io);
+    if (mode != UDP_ONLY) {
+        ev_io_stop(loop, &listen_ctx.io);
+        free_connections(loop);
+        close(listen_ctx.fd);
+    }
+
     free(listen_ctx.remote_addr);
-    close(listen_ctx.fd);
 
 #ifdef __MINGW32__
     winsock_cleanup();

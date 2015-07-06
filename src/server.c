@@ -99,9 +99,11 @@ static void close_and_free_server(EV_P_ struct server *server);
 
 static void server_resolve_cb(struct sockaddr *addr, void *data);
 
-int acl = 0;
 int verbose = 0;
-int udprelay = 0;
+
+static int acl = 0;
+static int mode = TCP_ONLY;
+
 static int fast_open = 0;
 #ifdef HAVE_SETRLIMIT
 static int nofile = 0;
@@ -1100,7 +1102,7 @@ int main(int argc, char **argv)
 
     USE_TTY();
 
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:c:i:d:a:uv",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:c:i:d:a:uUv",
                             long_options, &option_index)) != -1) {
         switch (c) {
         case 0:
@@ -1147,7 +1149,10 @@ int main(int argc, char **argv)
             user = optarg;
             break;
         case 'u':
-            udprelay = 1;
+            mode = TCP_AND_UDP;
+            break;
+        case 'U':
+            mode = UDP_ONLY;
             break;
         case 'v':
             verbose = 1;
@@ -1288,39 +1293,41 @@ int main(int argc, char **argv)
         int index = --server_num;
         const char * host = server_host[index];
 
-        // Bind to port
-        int listenfd;
-        listenfd = create_and_bind(host, server_port);
-        if (listenfd < 0) {
-            FATAL("bind() error");
+        if (mode != UDP_ONLY) {
+            // Bind to port
+            int listenfd;
+            listenfd = create_and_bind(host, server_port);
+            if (listenfd < 0) {
+                FATAL("bind() error");
+            }
+            if (listen(listenfd, SSMAXCONN) == -1) {
+                FATAL("listen() error");
+            }
+            setnonblocking(listenfd);
+            struct listen_ctx *listen_ctx = &listen_ctx_list[index];
+
+            // Setup proxy context
+            listen_ctx->timeout = atoi(timeout);
+            listen_ctx->fd = listenfd;
+            listen_ctx->method = m;
+            listen_ctx->iface = iface;
+            listen_ctx->loop = loop;
+
+            ev_io_init(&listen_ctx->io, accept_cb, listenfd, EV_READ);
+            ev_io_start(loop, &listen_ctx->io);
         }
-        if (listen(listenfd, SSMAXCONN) == -1) {
-            FATAL("listen() error");
-        }
-        setnonblocking(listenfd);
-        LOGI("listening at %s:%s", host ? host : "*", server_port);
-
-        struct listen_ctx *listen_ctx = &listen_ctx_list[index];
-
-        // Setup proxy context
-        listen_ctx->timeout = atoi(timeout);
-        listen_ctx->fd = listenfd;
-        listen_ctx->method = m;
-        listen_ctx->iface = iface;
-        listen_ctx->loop = loop;
-
-        ev_io_init(&listen_ctx->io, accept_cb, listenfd, EV_READ);
-        ev_io_start(loop, &listen_ctx->io);
 
         // Setup UDP
-        if (udprelay) {
+        if (mode != TCP_ONLY) {
             init_udprelay(server_host[index], server_port, m, atoi(timeout),
                           iface);
         }
 
+        LOGI("listening at %s:%s", host ? host : "*", server_port);
+
     }
 
-    if (udprelay) {
+    if (mode != TCP_ONLY) {
         LOGI("udprelay enabled");
     }
 
@@ -1342,13 +1349,17 @@ int main(int argc, char **argv)
     // Clean up
     for (int i = 0; i <= server_num; i++) {
         struct listen_ctx *listen_ctx = &listen_ctx_list[i];
-        ev_io_stop(loop, &listen_ctx->io);
-        close(listen_ctx->fd);
+        if (mode != UDP_ONLY) {
+            ev_io_stop(loop, &listen_ctx->io);
+            close(listen_ctx->fd);
+        }
     }
 
-    free_connections(loop);
+    if (mode != UDP_ONLY) {
+        free_connections(loop);
+    }
 
-    if (udprelay) {
+    if (mode != TCP_ONLY) {
         free_udprelay();
     }
 

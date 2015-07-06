@@ -238,7 +238,12 @@ void usage()
         "                                  not available in server mode\n");
     printf("\n");
     printf(
-        "       [-u]                       enable udprelay mode,\n");
+        "       [-u]                       enable UDP relay,\n");
+    printf(
+        "                                  TPROXY is required in redir mode\n");
+    printf("\n");
+    printf(
+        "       [-U]                       enable UDP relay and disable TCP relay,\n");
     printf(
         "                                  TPROXY is required in redir mode\n");
     printf("\n");

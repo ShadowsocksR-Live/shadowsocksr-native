@@ -86,7 +86,7 @@ static void free_server(struct server *server);
 static void close_and_free_server(EV_P_ struct server *server);
 
 int verbose = 0;
-int udprelay = 0;
+static int mode = TCP_ONLY;
 
 #ifndef __MINGW32__
 static int setnonblocking(int fd)
@@ -654,7 +654,7 @@ int main(int argc, char **argv)
 
     USE_TTY();
 
-    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:uv")) != -1) {
+    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:uUv")) != -1) {
         switch (c) {
         case 's':
             if (remote_num < MAX_REMOTE_NUM) {
@@ -691,7 +691,10 @@ int main(int argc, char **argv)
             local_addr = optarg;
             break;
         case 'u':
-            udprelay = 1;
+            mode = TCP_AND_UDP;
+            break;
+        case 'U':
+            mode = UDP_ONLY;
             break;
         case 'L':
             tunnel_addr_str = optarg;
@@ -782,18 +785,6 @@ int main(int argc, char **argv)
     LOGI("initialize ciphers... %s", method);
     int m = enc_init(password, method);
 
-    // Setup socket
-    int listenfd;
-    listenfd = create_and_bind(local_addr, local_port);
-    if (listenfd < 0) {
-        FATAL("bind() error:");
-    }
-    if (listen(listenfd, SOMAXCONN) == -1) {
-        FATAL("listen() error:");
-    }
-    setnonblocking(listenfd);
-    LOGI("listening at %s:%s", local_addr, local_port);
-
     // Setup proxy context
     struct listen_ctx listen_ctx;
     listen_ctx.tunnel_addr = tunnel_addr;
@@ -811,21 +802,38 @@ int main(int argc, char **argv)
         listen_ctx.remote_addr[i] = (struct sockaddr *)storage;
     }
     listen_ctx.timeout = atoi(timeout);
-    listen_ctx.fd = listenfd;
     listen_ctx.iface = iface;
     listen_ctx.method = m;
 
     struct ev_loop *loop = EV_DEFAULT;
-    ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
-    ev_io_start(loop, &listen_ctx.io);
+
+    if (mode != UDP_ONLY) {
+        // Setup socket
+        int listenfd;
+        listenfd = create_and_bind(local_addr, local_port);
+        if (listenfd < 0) {
+            FATAL("bind() error:");
+        }
+        if (listen(listenfd, SOMAXCONN) == -1) {
+            FATAL("listen() error:");
+        }
+        setnonblocking(listenfd);
+
+        listen_ctx.fd = listenfd;
+
+        ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
+        ev_io_start(loop, &listen_ctx.io);
+    }
 
     // Setup UDP
-    if (udprelay) {
+    if (mode != TCP_ONLY) {
         LOGI("udprelay enabled");
         init_udprelay(local_addr, local_port, listen_ctx.remote_addr[0],
                       get_sockaddr_len(listen_ctx.remote_addr[0]),
                       tunnel_addr, m, listen_ctx.timeout, iface);
     }
+
+    LOGI("listening at %s:%s", local_addr, local_port);
 
     // setuid
     if (user != NULL) {

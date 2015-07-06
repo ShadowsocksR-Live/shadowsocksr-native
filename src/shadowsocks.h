@@ -36,7 +36,7 @@ typedef struct {
     char *acl;            // file path to acl
     char *log;            // file path to log
     int fast_open;        // enable tcp fast open
-    int udp_relay;        // enable udp relay
+    int mode;        // enable udp relay
     int verbose;          // verbose mode
 } profile_t;
 
@@ -53,7 +53,7 @@ typedef struct {
     .acl = NULL,
     .log = NULL,
     .fast_open = 0,
-    .udp_relay = 0,
+    .mode = 0,
     .verbose = 0
    };
  */
