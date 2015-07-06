@@ -903,7 +903,7 @@ int main(int argc, char **argv)
 
     USE_TTY();
 
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:uUv",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:uv",
                             long_options, &option_index)) != -1) {
         switch (c) {
         case 0:
@@ -953,9 +953,6 @@ int main(int argc, char **argv)
             break;
         case 'u':
             mode = TCP_AND_UDP;
-            break;
-        case 'U':
-            mode = UDP_ONLY;
             break;
         case 'v':
             verbose = 1;
@@ -1086,23 +1083,21 @@ int main(int argc, char **argv)
 
     struct ev_loop *loop = EV_DEFAULT;
 
-    if (mode != UDP_ONLY) {
-        // Setup socket
-        int listenfd;
-        listenfd = create_and_bind(local_addr, local_port);
-        if (listenfd < 0) {
-            FATAL("bind() error");
-        }
-        if (listen(listenfd, SOMAXCONN) == -1) {
-            FATAL("listen() error");
-        }
-        setnonblocking(listenfd);
-
-        listen_ctx.fd = listenfd;
-
-        ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
-        ev_io_start(loop, &listen_ctx.io);
+    // Setup socket
+    int listenfd;
+    listenfd = create_and_bind(local_addr, local_port);
+    if (listenfd < 0) {
+        FATAL("bind() error");
     }
+    if (listen(listenfd, SOMAXCONN) == -1) {
+        FATAL("listen() error");
+    }
+    setnonblocking(listenfd);
+
+    listen_ctx.fd = listenfd;
+
+    ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
+    ev_io_start(loop, &listen_ctx.io);
 
     // Setup UDP
     if (mode != TCP_ONLY) {
@@ -1129,10 +1124,8 @@ int main(int argc, char **argv)
     }
 
     // Clean up
-    if (mode != UDP_ONLY) {
-        ev_io_stop(loop, &listen_ctx.io);
-        free_connections(loop);
-    }
+    ev_io_stop(loop, &listen_ctx.io);
+    free_connections(loop);
 
     if (mode != TCP_ONLY) {
         free_udprelay();
@@ -1223,25 +1216,23 @@ int start_ss_local_server(profile_t profile)
     listen_ctx.method = m;
     listen_ctx.iface = NULL;
 
-    if (mode != UDP_ONLY) {
-        // Setup socket
-        int listenfd;
-        listenfd = create_and_bind(local_addr, local_port_str);
-        if (listenfd < 0) {
-            ERROR("bind()");
-            return -1;
-        }
-        if (listen(listenfd, SOMAXCONN) == -1) {
-            ERROR("listen()");
-            return -1;
-        }
-        setnonblocking(listenfd);
-
-        listen_ctx.fd = listenfd;
-
-        ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
-        ev_io_start(loop, &listen_ctx.io);
+    // Setup socket
+    int listenfd;
+    listenfd = create_and_bind(local_addr, local_port_str);
+    if (listenfd < 0) {
+        ERROR("bind()");
+        return -1;
     }
+    if (listen(listenfd, SOMAXCONN) == -1) {
+        ERROR("listen()");
+        return -1;
+    }
+    setnonblocking(listenfd);
+
+    listen_ctx.fd = listenfd;
+
+    ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
+    ev_io_start(loop, &listen_ctx.io);
 
     // Setup UDP
     if (mode != TCP_ONLY) {
@@ -1253,10 +1244,8 @@ int start_ss_local_server(profile_t profile)
 
     LOGI("listening at %s:%s", local_addr, local_port_str);
 
-    if (mode != UDP_ONLY) {
-        // Init connections
-        cork_dllist_init(&connections);
-    }
+    // Init connections
+    cork_dllist_init(&connections);
 
     // Enter the loop
     ev_run(loop, 0);
@@ -1270,11 +1259,9 @@ int start_ss_local_server(profile_t profile)
         free_udprelay();
     }
 
-    if (mode != UDP_ONLY) {
-        ev_io_stop(loop, &listen_ctx.io);
-        free_connections(loop);
-        close(listen_ctx.fd);
-    }
+    ev_io_stop(loop, &listen_ctx.io);
+    free_connections(loop);
+    close(listen_ctx.fd);
 
     free(listen_ctx.remote_addr);
 

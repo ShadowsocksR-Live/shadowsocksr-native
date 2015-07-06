@@ -245,7 +245,7 @@ void usage()
     printf(
         "       [-U]                       enable UDP relay and disable TCP relay,\n");
     printf(
-        "                                  TPROXY is required in redir mode\n");
+        "                                  not available in local mode\n");
     printf("\n");
     printf(
         "       [-L <addr>:<port>]         specify destination server address and port\n");
