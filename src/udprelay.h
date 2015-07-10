@@ -67,12 +67,14 @@ struct query_ctx {
     int addr_header_len;
     char addr_header[384];
     struct server_ctx *server_ctx;
+    struct remote_ctx *remote_ctx;
 };
 #endif
 
 struct remote_ctx {
     ev_io io;
     ev_timer watcher;
+    int af;
     int fd;
     int src_fd;
     int addr_header_len;
