@@ -666,7 +666,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     memset(&dst_addr, 0, sizeof(struct sockaddr_storage));
     int len = parse_udprealy_header(buf, buf_len, NULL, NULL, &dst_addr);
 
-    if (len != 0) {
+    if (dst_addr.ss_family == AF_INET || dst_addr.ss_family == AF_INET6) {
         memcpy(&(remote_ctx->dst_addr), &dst_addr, get_sockaddr_len((struct sockaddr *)&dst_addr));
     }
 #else
