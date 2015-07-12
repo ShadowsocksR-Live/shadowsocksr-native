@@ -632,12 +632,24 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         goto CLEAN_UP;
     }
 
+#ifdef UDPRELAY_REDIR
+    struct sockaddr_storage dst_addr;
+    memset(&dst_addr, 0, sizeof(struct sockaddr_storage));
+    int len = parse_udprealy_header(buf, buf_len, NULL, NULL, &dst_addr);
+
+    if (len != 0) {
+        memcpy(&(remote_ctx->dst_addr), &dst_addr, get_sockaddr_len((struct sockaddr *)&dst_addr));
+    }
+#else
     int len = parse_udprealy_header(buf, buf_len, NULL, NULL, NULL);
+#endif
+
     if (len == 0) {
         LOGI("[udp] error in parse header");
         // error in parse header
         goto CLEAN_UP;
     }
+
     // server may return using a different address type other than the type we
     // have used during sending
 
@@ -1017,9 +1029,6 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         // Init remote_ctx
         remote_ctx = new_remote(remotefd, server_ctx);
         remote_ctx->src_addr = src_addr;
-#ifdef UDPRELAY_REDIR
-        memcpy(&(remote_ctx->dst_addr), &dst_addr, get_sockaddr_len((struct sockaddr *)&dst_addr));
-#endif
         remote_ctx->af = remote_addr->sa_family;
         remote_ctx->addr_header_len = addr_header_len;
         memcpy(remote_ctx->addr_header, addr_header, addr_header_len);
@@ -1031,6 +1040,10 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         ev_io_start(EV_A_ & remote_ctx->io);
         ev_timer_start(EV_A_ & remote_ctx->watcher);
     }
+
+#ifdef UDPRELAY_REDIR
+    memcpy(&(remote_ctx->dst_addr), &dst_addr, get_sockaddr_len((struct sockaddr *)&dst_addr));
+#endif
 
     if (offset > 0) {
         buf_len -= offset;
