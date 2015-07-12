@@ -521,7 +521,7 @@ static void query_resolve_cb(struct sockaddr *addr, void *data)
         // Lookup in the conn cache
         if (remote_ctx == NULL) {
             char *key = hash_key(0, &query_ctx->src_addr);
-            cache_lookup(conn_cache, key, (void *)&remote_ctx);
+            cache_lookup(query_ctx->server_ctx->conn_cache, key, (void *)&remote_ctx);
         }
 
         if (remote_ctx == NULL) {
