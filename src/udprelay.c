@@ -181,6 +181,34 @@ static char *hash_key(const int af, const struct sockaddr_storage *addr)
     return (char *)enc_md5((const uint8_t *)key, key_len, NULL);
 }
 
+#if defined(UDPRELAY_REDIR) || defined(UDPRELAY_REMOTE)
+static int construct_udprealy_header(const struct sockaddr_storage *in_addr,
+        char *addr_header) {
+
+    int addr_header_len = 0;
+    if (in_addr->ss_family == AF_INET) {
+        struct sockaddr_in *addr = (struct sockaddr_in *)in_addr;
+        size_t addr_len = sizeof(struct in_addr);
+        addr_header[addr_header_len++] = 1;
+        memcpy(addr_header + addr_header_len, &addr->sin_addr, addr_len);
+        addr_header_len += addr_len;
+        memcpy(addr_header + addr_header_len, &addr->sin_port, 2);
+        addr_header_len += 2;
+    } else if (in_addr->ss_family == AF_INET6) {
+        struct sockaddr_in6 *addr = (struct sockaddr_in6 *)in_addr;
+        size_t addr_len = sizeof(struct in6_addr);
+        addr_header[addr_header_len++] = 4;
+        memcpy(addr_header + addr_header_len, &addr->sin6_addr, addr_len);
+        addr_header_len += addr_len;
+        memcpy(addr_header + addr_header_len, &addr->sin6_port, 2);
+        addr_header_len += 2;
+    } else {
+        return 0;
+    }
+    return addr_header_len;
+}
+#endif
+
 static int parse_udprealy_header(const char * buf, const int buf_len,
                                  char *host, char *port,
                                  struct sockaddr_storage *storage)
@@ -607,12 +635,13 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         LOGI("[udp] remote receive a packet");
     }
 
-    struct sockaddr src_addr;
+    struct sockaddr_storage src_addr;
     socklen_t src_addr_len = sizeof(src_addr);
+    memset(&src_addr, 0, src_addr_len);
     char *buf = malloc(BUF_SIZE);
 
     // recv
-    ssize_t buf_len = recvfrom(remote_ctx->fd, buf, BUF_SIZE, 0, &src_addr, &src_addr_len);
+    ssize_t buf_len = recvfrom(remote_ctx->fd, buf, BUF_SIZE, 0, (struct sockaddr *)&src_addr, &src_addr_len);
 
     if (buf_len == -1) {
         // error on recv
@@ -668,12 +697,19 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
 
 #ifdef UDPRELAY_REMOTE
 
-    unsigned int addr_header_len = remote_ctx->addr_header_len;
+    char addr_header_buf[256];
+    char *addr_header = remote_ctx->addr_header;
+    int addr_header_len = remote_ctx->addr_header_len;
+
+    if (remote_ctx->af == AF_INET || remote_ctx->af == AF_INET6) {
+        addr_header_len = construct_udprealy_header(&src_addr, addr_header_buf);
+        addr_header = addr_header_buf;
+    }
 
     // Construct packet
     buf = realloc(buf, buf_len + addr_header_len);
     memmove(buf + addr_header_len, buf, buf_len);
-    memcpy(buf, remote_ctx->addr_header, addr_header_len);
+    memcpy(buf, addr_header, addr_header_len);
     buf_len += addr_header_len;
 
     buf = ss_encrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
@@ -846,25 +882,9 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
 #ifdef UDPRELAY_REDIR
     char addr_header[256] = { 0 };
-    int addr_header_len = 0;
+    int addr_header_len = construct_udprealy_header(&dst_addr, addr_header);
 
-    if (dst_addr.ss_family == AF_INET) {
-        struct sockaddr_in *addr = (struct sockaddr_in *)&dst_addr;
-        size_t addr_len = sizeof(struct in_addr);
-        addr_header[addr_header_len++] = 1;
-        memcpy(addr_header + addr_header_len, &addr->sin_addr, addr_len);
-        addr_header_len += addr_len;
-        memcpy(addr_header + addr_header_len, &addr->sin_port, 2);
-        addr_header_len += 2;
-    } else if (dst_addr.ss_family == AF_INET6) {
-        struct sockaddr_in6 *addr = (struct sockaddr_in6 *)&dst_addr;
-        size_t addr_len = sizeof(struct in6_addr);
-        addr_header[addr_header_len++] = 4;
-        memcpy(addr_header + addr_header_len, &addr->sin6_addr, addr_len);
-        addr_header_len += addr_len;
-        memcpy(addr_header + addr_header_len, &addr->sin6_port, 2);
-        addr_header_len += 2;
-    } else {
+    if (addr_header_len == 0) {
         LOGE("[udp] failed to parse tproxy addr");
         goto CLEAN_UP;
     }
