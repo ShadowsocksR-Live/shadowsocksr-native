@@ -518,6 +518,12 @@ static void query_resolve_cb(struct sockaddr *addr, void *data)
         struct remote_ctx *remote_ctx = query_ctx->remote_ctx;
         int cache_hit = 0;
 
+        // Lookup in the conn cache
+        if (remote_ctx == NULL) {
+            char *key = hash_key(0, &query_ctx->src_addr);
+            cache_lookup(conn_cache, key, (void *)&remote_ctx);
+        }
+
         if (remote_ctx == NULL) {
             int remotefd = create_remote_socket(addr->sa_family == AF_INET6);
             if (remotefd != -1) {
@@ -567,8 +573,8 @@ static void query_resolve_cb(struct sockaddr *addr, void *data)
                     close_and_free_remote(EV_A_ remote_ctx);
                 }
             } else {
-                // Add to conn cache
                 if (!cache_hit) {
+                    // Add to conn cache
                     char *key = hash_key(0, &remote_ctx->src_addr);
                     cache_insert(query_ctx->server_ctx->conn_cache, key,
                             (void *)remote_ctx);
@@ -943,6 +949,11 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         if (memcmp(&src_addr, &remote_ctx->src_addr, sizeof(src_addr))) {
             remote_ctx = NULL;
         }
+    }
+
+    // reset the timer
+    if (remote_ctx != NULL) {
+        ev_timer_again(EV_A_ & remote_ctx->watcher);
     }
 
     if (remote_ctx == NULL) {
