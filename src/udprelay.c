@@ -507,9 +507,6 @@ void close_and_free_remote(EV_P_ struct remote_ctx *ctx)
     if (ctx != NULL) {
         ev_timer_stop(EV_A_ & ctx->watcher);
         ev_io_stop(EV_A_ & ctx->io);
-        if (ctx->src_fd != 0) {
-            close(ctx->src_fd);
-        }
         close(ctx->fd);
         free(ctx);
     }
@@ -711,36 +708,37 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
 #ifdef UDPRELAY_REDIR
     size_t remote_dst_addr_len = get_sockaddr_len((struct sockaddr *)&dst_addr);
 
-    if (remote_ctx->src_fd == 0) {
-        int src_sock = socket(remote_ctx->src_addr.ss_family, SOCK_DGRAM, 0);
-        if (src_sock < 0) {
-            ERROR("[udp] remote_recv_socket");
-        }
-        int opt = 1;
-        if (setsockopt(src_sock, SOL_IP, IP_TRANSPARENT, &opt, sizeof(opt))) {
-            ERROR("[udp] remote_recv_setsockopt");
-            close(src_sock);
-            goto CLEAN_UP;
-        }
-        if (setsockopt(src_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
-            ERROR("[udp] remote_recv_setsockopt");
-            close(src_sock);
-            goto CLEAN_UP;
-        }
-        if (bind(src_sock, (struct sockaddr *)&dst_addr, remote_dst_addr_len) != 0) {
-            ERROR("[udp] remote_recv_bind");
-            close(src_sock);
-            goto CLEAN_UP;
-        }
-        remote_ctx->src_fd = src_sock;
+    int src_fd = socket(remote_ctx->src_addr.ss_family, SOCK_DGRAM, 0);
+    if (src_fd < 0) {
+        ERROR("[udp] remote_recv_socket");
+        goto CLEAN_UP;
+    }
+    int opt = 1;
+    if (setsockopt(src_fd, SOL_IP, IP_TRANSPARENT, &opt, sizeof(opt))) {
+        ERROR("[udp] remote_recv_setsockopt");
+        close(src_fd);
+        goto CLEAN_UP;
+    }
+    if (setsockopt(src_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+        ERROR("[udp] remote_recv_setsockopt");
+        close(src_fd);
+        goto CLEAN_UP;
+    }
+    if (bind(src_fd, (struct sockaddr *)&dst_addr, remote_dst_addr_len) != 0) {
+        ERROR("[udp] remote_recv_bind");
+        close(src_fd);
+        goto CLEAN_UP;
     }
 
-    int s = sendto(remote_ctx->src_fd, buf, buf_len, 0,
+    int s = sendto(src_fd, buf, buf_len, 0,
             (struct sockaddr *)&remote_ctx->src_addr, remote_src_addr_len);
     if (s == -1) {
         ERROR("[udp] remote_recv_sendto");
+        close(src_fd);
         goto CLEAN_UP;
     }
+    close(src_fd);
+
 #else
     int s = sendto(server_ctx->fd, buf, buf_len, 0,
                    (struct sockaddr *)&remote_ctx->src_addr, remote_src_addr_len);
@@ -755,6 +753,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     ev_timer_again(EV_A_ & remote_ctx->watcher);
 
  CLEAN_UP:
+
     free(buf);
 
 }
