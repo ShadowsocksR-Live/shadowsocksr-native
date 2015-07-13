@@ -80,7 +80,6 @@ struct remote_ctx {
     int addr_header_len;
     char addr_header[384];
     struct sockaddr_storage src_addr;
-    struct sockaddr_storage dst_addr;
     struct server_ctx *server_ctx;
 };
 
