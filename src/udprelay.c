@@ -1204,7 +1204,7 @@ int init_udprelay(const char *server_host, const char *server_port,
 #ifdef UDPRELAY_REMOTE
     server_ctx->loop = loop;
 #endif
-    server_ctx->timeout = min(timeout, MAX_UDP_TIMEOUT);
+    server_ctx->timeout = max(timeout, MIN_UDP_TIMEOUT);
     server_ctx->method = method;
     server_ctx->iface = iface;
     server_ctx->conn_cache = conn_cache;
