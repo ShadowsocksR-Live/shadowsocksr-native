@@ -708,7 +708,7 @@ int main(int argc, char **argv)
     }
 
     if (timeout == NULL) {
-        timeout = "10";
+        timeout = "60";
     }
 
     if (local_addr == NULL) {
