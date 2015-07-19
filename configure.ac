@@ -53,6 +53,9 @@ case $host in
     ;;
 esac
 
+dnl Checks for TLS
+AX_TLS([:], [:])
+
 dnl Checks for crypto library
 case "${with_crypto_library}" in
   openssl)

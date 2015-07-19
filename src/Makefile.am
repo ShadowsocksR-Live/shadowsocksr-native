@@ -1,6 +1,7 @@
 VERSION_INFO = 1:0:0
 
 AM_CFLAGS = -g -O2 -Wall -Werror -Wno-deprecated-declarations -fno-strict-aliasing -std=gnu99 -D_GNU_SOURCE
+AM_CFLAGS += $(PTHREAD_CFLAGS)
 AM_CFLAGS += -I$(top_srcdir)/libev
 AM_CFLAGS += -I$(top_srcdir)/libudns
 AM_CFLAGS += -I$(top_srcdir)/libipset/include
@@ -9,7 +10,8 @@ AM_CFLAGS += -I$(top_srcdir)/libsodium/src/libsodium/include
 
 AM_LDFLAGS = -static
 
-SS_COMMON_LIBS = $(top_builddir)/libev/libev.la \
+SS_COMMON_LIBS = $(PTHREAD_LIBS) \
+				 $(top_builddir)/libev/libev.la \
 				 $(top_builddir)/libipset/libipset.la \
 				 $(top_builddir)/libcork/libcork.la \
 				 $(top_builddir)/libsodium/src/libsodium/libsodium.la \

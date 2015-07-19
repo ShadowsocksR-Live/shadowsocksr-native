@@ -64,11 +64,12 @@ DIST_COMMON = $(include_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acx_pthread.m4 \
-	$(top_srcdir)/m4/inet_ntop.m4 $(top_srcdir)/m4/libtool.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/m4/openssl.m4 $(top_srcdir)/m4/polarssl.m4 \
-	$(top_srcdir)/libev/libev.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/ax_tls.m4 $(top_srcdir)/m4/inet_ntop.m4 \
+	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/m4/openssl.m4 \
+	$(top_srcdir)/m4/polarssl.m4 $(top_srcdir)/libev/libev.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -106,7 +107,8 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" \
 	"$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(top_builddir)/libev/libev.la \
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/libev/libev.la \
 	$(top_builddir)/libipset/libipset.la \
 	$(top_builddir)/libcork/libcork.la \
 	$(top_builddir)/libsodium/src/libsodium/libsodium.la \
@@ -355,12 +357,13 @@ top_srcdir = @top_srcdir@
 VERSION_INFO = 1:0:0
 AM_CFLAGS = -g -O2 -Wall -Werror -Wno-deprecated-declarations \
 	-fno-strict-aliasing -std=gnu99 -D_GNU_SOURCE \
-	-I$(top_srcdir)/libev -I$(top_srcdir)/libudns \
-	-I$(top_srcdir)/libipset/include \
+	$(PTHREAD_CFLAGS) -I$(top_srcdir)/libev \
+	-I$(top_srcdir)/libudns -I$(top_srcdir)/libipset/include \
 	-I$(top_srcdir)/libcork/include \
 	-I$(top_srcdir)/libsodium/src/libsodium/include
 AM_LDFLAGS = -static
-SS_COMMON_LIBS = $(top_builddir)/libev/libev.la \
+SS_COMMON_LIBS = $(PTHREAD_LIBS) \
+				 $(top_builddir)/libev/libev.la \
 				 $(top_builddir)/libipset/libipset.la \
 				 $(top_builddir)/libcork/libcork.la \
 				 $(top_builddir)/libsodium/src/libsodium/libsodium.la \

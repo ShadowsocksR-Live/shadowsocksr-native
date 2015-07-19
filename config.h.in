@@ -298,6 +298,9 @@
 /* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
 #undef TIME_WITH_SYS_TIME
 
+/* If the compiler supports a TLS storage class define it to that here */
+#undef TLS
+
 /* Use Apple CommonCrypto library */
 #undef USE_CRYPTO_APPLECC
 
