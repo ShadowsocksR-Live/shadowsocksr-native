@@ -99,7 +99,7 @@ static void accept_cb(EV_P_ ev_io *w, int revents);
 static void signal_cb(EV_P_ ev_signal *w, int revents);
 
 static int create_and_bind(const char *addr, const char *port);
-static struct remote * connect_to_remote(struct listen_ctx *listener, struct sockaddr *addr);
+static struct remote * create_remote(struct listen_ctx *listener, struct sockaddr *addr);
 static void free_remote(struct remote *remote);
 static void close_and_free_remote(EV_P_ struct remote *remote);
 static void free_server(struct server *server);
@@ -438,11 +438,11 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     struct sockaddr_storage storage;
                     memset(&storage, 0, sizeof(struct sockaddr_storage));
                     if (get_sockaddr(host, port, &storage, 0) != -1) {
-                        remote = connect_to_remote(server->listener, (struct sockaddr *)&storage);
+                        remote = create_remote(server->listener, (struct sockaddr *)&storage);
                         remote->direct = 1;
                     }
                 } else {
-                    remote = connect_to_remote(server->listener, NULL);
+                    remote = create_remote(server->listener, NULL);
                 }
 
                 if (remote == NULL) {
@@ -797,7 +797,7 @@ static void close_and_free_server(EV_P_ struct server *server)
     }
 }
 
-static struct remote * connect_to_remote(struct listen_ctx *listener,
+static struct remote * create_remote(struct listen_ctx *listener,
                                          struct sockaddr *addr)
 {
     struct sockaddr *remote_addr;
