@@ -46,7 +46,7 @@
 #include "utils.h"
 
 int protect_socket(int fd) {
-    int sock, recvfd;
+    int sock;
     struct sockaddr_un addr;
 
     if ( (sock = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
@@ -56,8 +56,8 @@ int protect_socket(int fd) {
 
     // Set timeout to 100us
     struct timeval tv;
-    tv.tv_sec = 0;  /*  30 Secs Timeout */
-    tv.tv_usec = 1000;  // Not init'ing this can cause strange errors
+    tv.tv_sec = 1;  /*  0 Secs Timeout */
+    tv.tv_usec = 0;  // Not init'ing this can cause strange errors
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval));
     setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv, sizeof(struct timeval));
 

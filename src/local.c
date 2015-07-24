@@ -80,6 +80,9 @@
 #endif
 
 int verbose = 0;
+#ifdef ANDROID
+int vpn = 0;
+#endif
 
 static int acl = 0;
 static int mode = TCP_ONLY;
@@ -255,11 +258,13 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             if (!remote->send_ctx->connected) {
 
 #ifdef ANDROID
-                if (protect_socket(remote->fd) == -1) {
-                    ERROR("protect_socket");
-                    close_and_free_remote(EV_A_ remote);
-                    close_and_free_server(EV_A_ server);
-                    return;
+                if (vpn) {
+                    if (protect_socket(remote->fd) == -1) {
+                        ERROR("protect_socket");
+                        close_and_free_remote(EV_A_ remote);
+                        close_and_free_server(EV_A_ server);
+                        return;
+                    }
                 }
 #endif
 
@@ -915,8 +920,13 @@ int main(int argc, char **argv)
 
     USE_TTY();
 
+#ifdef ANDROID
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:uvV",
+                            long_options, &option_index)) != -1) {
+#else
     while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:uv",
                             long_options, &option_index)) != -1) {
+#endif
         switch (c) {
         case 0:
             if (option_index == 0) {
@@ -969,6 +979,11 @@ int main(int argc, char **argv)
         case 'v':
             verbose = 1;
             break;
+#ifdef ANDROID
+        case 'V':
+            vpn = 1;
+            break;
+#endif
         }
     }
 
