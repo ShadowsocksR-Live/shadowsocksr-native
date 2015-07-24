@@ -98,8 +98,6 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents);
 static void accept_cb(EV_P_ ev_io *w, int revents);
 static void signal_cb(EV_P_ ev_signal *w, int revents);
 
-static void protect_cb(int ret, void *data);
-
 static int create_and_bind(const char *addr, const char *port);
 static struct remote * create_remote(struct listen_ctx *listener, struct sockaddr *addr);
 static void free_remote(struct remote *remote);
@@ -197,26 +195,6 @@ static void free_connections(struct ev_loop *loop)
     }
 }
 
-#ifdef ANDROID
-static void protect_cb(int ret, void *data) {
-    struct remote_ctx *remote_ctx = (struct remote_ctx *)data;
-    struct remote *remote = remote_ctx->remote;
-    struct server *server = remote->server;
-
-    if (verbose) {
-        LOGI("[android] one connection protected");
-    }
-
-    if (ret == -1) {
-        close_and_free_remote(EV_DEFAULT, remote);
-        close_and_free_server(EV_DEFAULT, server);
-        return;
-    }
-
-    server_recv_cb(EV_DEFAULT, &server->recv_ctx->io, EV_CUSTOM);
-}
-#endif
-
 static void server_recv_cb(EV_P_ ev_io *w, int revents)
 {
     struct server_ctx *server_recv_ctx = (struct server_ctx *)w;
@@ -232,25 +210,23 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     ssize_t r;
 
-    if (revents != EV_CUSTOM) {
-        r = recv(server->fd, buf, BUF_SIZE, 0);
+    r = recv(server->fd, buf, BUF_SIZE, 0);
 
-        if (r == 0) {
-            // connection closed
+    if (r == 0) {
+        // connection closed
+        close_and_free_remote(EV_A_ remote);
+        close_and_free_server(EV_A_ server);
+        return;
+    } else if (r < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            // no data
+            // continue to wait for recv
+            return;
+        } else {
+            ERROR("server_recv_cb_recv");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
-        } else if (r < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                // no data
-                // continue to wait for recv
-                return;
-            } else {
-                ERROR("server_recv_cb_recv");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
         }
     }
 
@@ -262,14 +238,6 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 close_and_free_server(EV_A_ server);
                 return;
             }
-
-#ifdef ANDROID
-            if (revents != EV_CUSTOM) {
-                ev_io_stop(EV_A_ & server_recv_ctx->io);
-                protect_socket(protect_cb, (void*)remote, remote->fd);
-                return;
-            }
-#endif
 
             // insert shadowsocks header
             if (!remote->direct) {
@@ -285,6 +253,16 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             }
 
             if (!remote->send_ctx->connected) {
+
+#ifdef ANDROID
+                if (protect_socket(remote->fd) == -1) {
+                    ERROR("protect_socket");
+                    close_and_free_remote(EV_A_ remote);
+                    close_and_free_server(EV_A_ server);
+                    return;
+                }
+#endif
+
                 remote->buf_idx = 0;
                 remote->buf_len = r;
 

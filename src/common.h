@@ -59,7 +59,7 @@ int init_udprelay(const char *server_host, const char *server_port,
 void free_udprelay(void);
 
 #ifdef ANDROID
-int protect_socket(void (*protect_cb)(int ret, void *data), void *data, int fd);
+int protect_socket(int fd);
 #endif
 
 #endif // _COMMON_H

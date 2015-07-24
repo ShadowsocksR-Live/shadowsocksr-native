@@ -602,6 +602,15 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
         return;
     }
 
+#ifdef ANDROID
+    if (protect_socket(remotefd) == -1) {
+        ERROR("protect_socket");
+        close(remotefd);
+        return;
+    }
+#endif
+
+
     setsockopt(remotefd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
     setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
@@ -620,6 +629,7 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     server->destaddr = listener->tunnel_addr;
     server->remote = remote;
     remote->server = server;
+
     connect(remotefd, remote_addr, get_sockaddr_len(remote_addr));
     // listen to remote connected event
     ev_io_start(EV_A_ & remote->send_ctx->io);
