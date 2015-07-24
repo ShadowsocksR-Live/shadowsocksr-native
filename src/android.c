@@ -29,6 +29,15 @@
 #include <strings.h>
 #include <unistd.h>
 
+#include <errno.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+
+#include <sys/un.h>
+#include <ancillary.h>
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -53,7 +62,7 @@ static struct remote * new_remote(int fd, int timeout);
 static void free_remote(struct remote *remote);
 static void close_and_free_remote(EV_P_ struct remote *remote);
 
-int verbose = 0;
+extern int verbose;
 
 static int setnonblocking(int fd)
 {
@@ -94,13 +103,16 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     remote->protect_cb(ret, remote->data);
-    close_and_free_remote(remote);
+    close_and_free_remote(EV_A_ remote);
 }
 
 static void remote_send_cb(EV_P_ ev_io *w, int revents)
 {
     struct remote_ctx *remote_send_ctx = (struct remote_ctx *)w;
     struct remote *remote = remote_send_ctx->remote;
+
+    struct sockaddr_storage addr;
+    socklen_t len = sizeof addr;
 
     int r = getpeername(remote->fd, (struct sockaddr *)&addr, &len);
 
@@ -191,7 +203,7 @@ int protect_socket(void (*protect_cb)(int ret, void *data), void *data, int fd) 
     if (connect(remotefd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
         LOGE("[android] connect() failed: %s (fd = %d)\n", strerror(errno), remotefd);
         close(remotefd);
-        return -1
+        return -1;
     }
 
     // listen to remote connected event

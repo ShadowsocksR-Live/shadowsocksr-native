@@ -67,10 +67,6 @@
 #include "acl.h"
 #include "local.h"
 
-#ifdef ANDROID
-#include "android.h"
-#endif
-
 #ifndef EAGAIN
 #define EAGAIN EWOULDBLOCK
 #endif
