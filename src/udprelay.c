@@ -86,6 +86,7 @@
 static void server_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents);
+
 static char *hash_key(const int af, const struct sockaddr_storage *addr);
 #ifdef UDPRELAY_REMOTE
 static void query_resolve_cb(struct sockaddr *addr, void *data);
@@ -94,6 +95,7 @@ static void close_and_free_remote(EV_P_ struct remote_ctx *ctx);
 static struct remote_ctx * new_remote(int fd, struct server_ctx * server_ctx);
 
 extern int verbose;
+extern int vpn;
 
 static int server_num = 0;
 static struct server_ctx *server_ctx_list[MAX_REMOTE_NUM] = { NULL };
@@ -1058,6 +1060,15 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     buf = ss_encrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
 
+#ifdef ANDROID
+    if (vpn) {
+        if (protect_socket(remote_ctx->fd) == -1) {
+            ERROR("protect_socket");
+            close_and_free_remote(EV_A_ remote_ctx);
+            goto CLEAN_UP;
+        }
+    }
+#endif
     int s = sendto(remote_ctx->fd, buf, buf_len, 0, remote_addr, remote_addr_len);
 
     if (s == -1) {

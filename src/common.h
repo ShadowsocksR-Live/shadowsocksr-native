@@ -19,8 +19,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _INCLUDE_H
-#define _INCLUDE_H
+#ifndef _COMMON_H
+#define _COMMON_H
 
 // only enable TCP_FASTOPEN on linux
 #if __linux
@@ -58,4 +58,8 @@ int init_udprelay(const char *server_host, const char *server_port,
 
 void free_udprelay(void);
 
-#endif // _INCLUDE_H
+#ifdef ANDROID
+int protect_socket(int fd);
+#endif
+
+#endif // _COMMON_H

@@ -85,7 +85,11 @@ static void close_and_free_remote(EV_P_ struct remote *remote);
 static void free_server(struct server *server);
 static void close_and_free_server(EV_P_ struct server *server);
 
+#ifdef ANDROID
+int vpn = 0;
+#endif
 int verbose = 0;
+
 static int mode = TCP_ONLY;
 
 #ifndef __MINGW32__
@@ -602,6 +606,17 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
         return;
     }
 
+#ifdef ANDROID
+    if (vpn) {
+        if (protect_socket(remotefd) == -1) {
+            ERROR("protect_socket");
+            close(remotefd);
+            return;
+        }
+    }
+#endif
+
+
     setsockopt(remotefd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
     setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
@@ -620,6 +635,7 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     server->destaddr = listener->tunnel_addr;
     server->remote = remote;
     remote->server = server;
+
     connect(remotefd, remote_addr, get_sockaddr_len(remote_addr));
     // listen to remote connected event
     ev_io_start(EV_A_ & remote->send_ctx->io);
@@ -652,7 +668,11 @@ int main(int argc, char **argv)
 
     USE_TTY();
 
+#ifdef ANDROID
+    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:uUvV")) != -1) {
+#else
     while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:uUv")) != -1) {
+#endif
         switch (c) {
         case 's':
             if (remote_num < MAX_REMOTE_NUM) {
@@ -703,6 +723,11 @@ int main(int argc, char **argv)
         case 'v':
             verbose = 1;
             break;
+#ifdef ANDROID
+        case 'V':
+            vpn = 1;
+            break;
+#endif
         }
     }
 
