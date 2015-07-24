@@ -86,7 +86,10 @@
 static void server_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents);
+
+#if defined(ANDROID) && !defined(UDPRELAY_TUNNEL)
 static void protect_cb(int ret, void *data);
+#endif
 
 static char *hash_key(const int af, const struct sockaddr_storage *addr);
 #ifdef UDPRELAY_REMOTE
@@ -100,9 +103,9 @@ extern int verbose;
 static int server_num = 0;
 static struct server_ctx *server_ctx_list[MAX_REMOTE_NUM] = { NULL };
 
-#ifdef ANDROID
+#if defined(ANDROID) && !defined(UDPRELAY_TUNNEL)
 static struct protect_ctx *new_protect_ctx(char *buf, int buf_len,
-        struct sockaddr *addr, int addr_len) {
+        const struct sockaddr *addr, int addr_len) {
     struct protect_ctx *protect_ctx = (struct protect_ctx *)malloc(sizeof(struct protect_ctx));
     memset(protect_ctx, 0, sizeof(struct protect_ctx));
 
@@ -127,7 +130,7 @@ static void protect_cb(int ret, void *data) {
     struct protect_ctx *protect_ctx = (struct protect_ctx*)data;
     if (ret != -1) {
         int s = sendto(protect_ctx->remote_ctx->fd, protect_ctx->buf,
-                protect_ctx->buf_len, 0, &protect_ctx->addr, protect_ctx->addr_len);
+                protect_ctx->buf_len, 0, (const struct sockaddr *)&protect_ctx->addr, protect_ctx->addr_len);
         if (s == -1) {
             ERROR("[udp] sendto_remote");
         }
@@ -1096,8 +1099,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     buf = ss_encrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
 
-#ifdef ANDROID
-    struct protect_ctx *protect_ctx = new_protect_ctx(buf, buf_len, &remote_addr, remote_addr_len);
+#if defined(ANDROID) && !defined(UDPRELAY_TUNNEL)
+    struct protect_ctx *protect_ctx = new_protect_ctx(buf, buf_len, remote_addr, remote_addr_len);
     protect_ctx->remote_ctx = remote_ctx;
     protect_socket(protect_cb, (void*)protect_ctx, remote_ctx->fd);
 #else

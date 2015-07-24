@@ -190,21 +190,19 @@ int protect_socket(void (*protect_cb)(int ret, void *data), void *data, int fd) 
     // Setup
     setnonblocking(remotefd);
 
+    const char path[] = "/data/data/com.github.shadowsocks/protect_path";
+
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, "/data/data/com.github.shadowsocks/protect_path", sizeof(addr.sun_path)-1);
+    strncpy(addr.sun_path, path, sizeof(addr.sun_path)-1);
 
-    struct remote *remote = new_remote(remotefd, 100);
+    struct remote *remote = new_remote(remotefd, 1);
 
     remote->protect_fd = fd;
     remote->protect_cb = protect_cb;
     remote->data = data;
 
-    if (connect(remotefd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
-        LOGE("[android] connect() failed: %s (fd = %d)\n", strerror(errno), remotefd);
-        close(remotefd);
-        return -1;
-    }
+    connect(remotefd, (struct sockaddr*)&addr, sizeof(addr));
 
     // listen to remote connected event
     ev_io_start(EV_A_ & remote->send_ctx->io);
