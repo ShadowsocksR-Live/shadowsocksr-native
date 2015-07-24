@@ -209,11 +209,11 @@ static void protect_cb(int ret, void *data) {
 
     if (ret == -1) {
         close_and_free_remote(EV_DEFAULT, remote);
-        close_and_free_remote(EV_DEFAULT, server);
+        close_and_free_server(EV_DEFAULT, server);
         return;
     }
 
-    server_recv_cb(EV_DEFAULT, server->recv_ctx, EV_CUSTOM);
+    server_recv_cb(EV_DEFAULT, &server->recv_ctx->io, EV_CUSTOM);
 }
 #endif
 

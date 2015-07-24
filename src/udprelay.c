@@ -127,7 +127,7 @@ static void protect_cb(int ret, void *data) {
     struct protect_ctx *protect_ctx = (struct protect_ctx*)data;
     if (ret != -1) {
         int s = sendto(protect_ctx->remote_ctx->fd, protect_ctx->buf,
-                protect_ctx->buf_len, 0, protect_ctx->addr, protect_ctx->addr_len);
+                protect_ctx->buf_len, 0, &protect_ctx->addr, protect_ctx->addr_len);
         if (s == -1) {
             ERROR("[udp] sendto_remote");
         }

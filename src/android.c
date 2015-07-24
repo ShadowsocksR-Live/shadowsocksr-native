@@ -182,13 +182,13 @@ int protect_socket(void (*protect_cb)(int ret, void *data), void *data, int fd) 
     int remotefd;
     struct sockaddr_un addr;
 
-    // Setup
-    setnonblocking(remotefd);
-
     if ( (remotefd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
         LOGE("[android] socket() failed: %s (socket fd = %d)\n", strerror(errno), remotefd);
         return -1;
     }
+
+    // Setup
+    setnonblocking(remotefd);
 
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;

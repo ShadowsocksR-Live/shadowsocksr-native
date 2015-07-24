@@ -89,7 +89,7 @@ struct protect_ctx {
     struct sockaddr_storage addr;
     int addr_len;
     struct remote_ctx *remote_ctx;
-}
+};
 #endif
 
 #endif // _UDPRELAY_H
