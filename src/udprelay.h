@@ -82,4 +82,14 @@ struct remote_ctx {
     struct server_ctx *server_ctx;
 };
 
+#ifdef ANDROID
+struct protect_ctx {
+    int buf_len;
+    char *buf;
+    struct sockaddr_storage addr;
+    int addr_len;
+    struct remote_ctx *remote_ctx;
+}
+#endif
+
 #endif // _UDPRELAY_H
