@@ -3902,7 +3902,7 @@ files, F<my_ev.h> and F<my_ev.c> that include the respective libev files:
 
    // my_ev.h
    #define EV_CB_DECLARE(type)   struct my_coro *cb;
-   #define EV_CB_INVOKE(watcher) switch_to ((watcher)->cb);
+   #define EV_CB_INVOKE(watcher) switch_to ((watcher)->cb)
    #include "../libev/ev.h"
 
    // my_ev.c

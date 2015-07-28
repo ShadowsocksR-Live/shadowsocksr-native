@@ -133,7 +133,7 @@
 .\" ========================================================================
 .\"
 .IX Title "LIBEV 3"
-.TH LIBEV 3 "2014-09-05" "libev-4.15" "libev - high performance full featured event loop"
+.TH LIBEV 3 "2015-05-01" "libev-4.19" "libev - high performance full featured event loop"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -4054,7 +4054,7 @@ files, \fImy_ev.h\fR and \fImy_ev.c\fR that include the respective libev files:
 .Vb 4
 \&   // my_ev.h
 \&   #define EV_CB_DECLARE(type)   struct my_coro *cb;
-\&   #define EV_CB_INVOKE(watcher) switch_to ((watcher)\->cb);
+\&   #define EV_CB_INVOKE(watcher) switch_to ((watcher)\->cb)
 \&   #include "../libev/ev.h"
 \&
 \&   // my_ev.c
