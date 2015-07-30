@@ -23,7 +23,7 @@
 #define _COMMON_H
 
 // only enable TCP_FASTOPEN on linux
-#if __linux
+#if defined(__linux__)
 
 /*  conditional define for TCP_FASTOPEN */
 #ifndef TCP_FASTOPEN
