@@ -35,6 +35,12 @@
 #define MSG_FASTOPEN   0x20000000
 #endif
 
+#else
+
+#ifdef TCP_FASTOPEN
+#undef TCP_FASTOPEN
+#endif
+
 #endif
 
 #define DEFAULT_CONF_PATH "/etc/shadowsocks/config.json"
