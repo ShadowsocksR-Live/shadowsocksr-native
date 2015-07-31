@@ -635,18 +635,20 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     if (buf_len == -1) {
         // error on recv
         // simply drop that packet
-        if (verbose) {
-            ERROR("[udp] server_recvfrom");
-        }
+        ERROR("[udp] remote_recvfrom");
+        goto CLEAN_UP;
+    }
+
+    // Drop large packets > default MTU
+    if (buf_len > MTU) {
+        LOGE("[udp] drop large packets, size: %ld", buf_len);
         goto CLEAN_UP;
     }
 
 #ifdef UDPRELAY_LOCAL
     buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
     if (buf == NULL) {
-        if (verbose) {
-            ERROR("[udp] server_ss_decrypt_all");
-        }
+        ERROR("[udp] server_ss_decrypt_all");
         goto CLEAN_UP;
     }
 
@@ -797,6 +799,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         LOGE("[udp] unable to get dest addr");
         goto CLEAN_UP;
     }
+
+    src_addr_len = msg.msg_namelen;
 #else
     ssize_t buf_len =
         recvfrom(server_ctx->fd, buf, BUF_SIZE, 0, (struct sockaddr *)&src_addr,
@@ -805,9 +809,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     if (buf_len == -1) {
         // error on recv
         // simply drop that packet
-        if (verbose) {
-            ERROR("[udp] server_recvfrom");
-        }
+        ERROR("[udp] server_recvfrom");
         goto CLEAN_UP;
     }
 #endif
@@ -819,9 +821,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 #ifdef UDPRELAY_REMOTE
     buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
     if (buf == NULL) {
-        if (verbose) {
-            ERROR("[udp] server_ss_decrypt_all");
-        }
+        ERROR("[udp] server_ss_decrypt_all");
         goto CLEAN_UP;
     }
 #endif
@@ -832,6 +832,12 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     offset += 3;
 #endif
 #endif
+
+    // Drop large packets > default MTU
+    if (buf_len > MTU) {
+        LOGE("[udp] drop large packets, size: %ld", buf_len);
+        goto CLEAN_UP;
+    }
 
     /*
      *
