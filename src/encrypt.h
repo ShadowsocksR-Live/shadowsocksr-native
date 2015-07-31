@@ -63,6 +63,22 @@ typedef md_info_t digest_type_t;
 #define MAX_IV_LENGTH POLARSSL_MAX_IV_LENGTH
 #define MAX_MD_SIZE POLARSSL_MD_MAX_SIZE
 
+#elif defined(USE_CRYPTO_MBEDTLS)
+
+#include <mbedtls/cipher.h>
+#include <mbedtls/md.h>
+typedef mbedtls_cipher_info_t cipher_kt_t;
+typedef mbedtls_cipher_context_t cipher_evp_t;
+typedef mbedtls_md_info_t digest_type_t;
+#define MAX_KEY_LENGTH 64
+#define MAX_IV_LENGTH MBEDTLS_MAX_IV_LENGTH
+#define MAX_MD_SIZE MBEDTLS_MD_MAX_SIZE
+
+/* we must have MBEDTLS_CIPHER_MODE_CFB defined */
+#if !defined(MBEDTLS_CIPHER_MODE_CFB)
+#error Cipher Feedback mode a.k.a CFB not supported by your mbed TLS.
+#endif
+
 #endif
 
 #ifdef USE_CRYPTO_APPLECC

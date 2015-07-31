@@ -22,10 +22,10 @@ LT_INIT([dlopen])
 dnl Checks for crypto library
 AC_ARG_WITH(
   [crypto-library],
-  [AS_HELP_STRING([--with-crypto-library=library], [build with the given crypto library, TYPE=openssl|polarssl @<:@default=openssl@:>@])],
+  [AS_HELP_STRING([--with-crypto-library=library], [build with the given crypto library, TYPE=openssl|polarssl|mbedtls @<:@default=openssl@:>@])],
   [
     case "${withval}" in
-      openssl|polarssl) ;;
+      openssl|polarssl|mbedtls) ;;
       *) AC_MSG_ERROR([bad value ${withval} for --with-crypto-library]) ;;
     esac
   ],
@@ -65,6 +65,10 @@ case "${with_crypto_library}" in
   polarssl)
     ss_POLARSSL
     AC_DEFINE([USE_CRYPTO_POLARSSL], [1], [Use PolarSSL library])
+    ;;
+  mbedtls)
+    ss_MBEDTLS
+    AC_DEFINE([USE_CRYPTO_MBEDTLS], [1], [Use mbed TLS library])
     ;;
 esac
 

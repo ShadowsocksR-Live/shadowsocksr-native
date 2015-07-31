@@ -783,6 +783,9 @@ with_openssl_lib
 with_polarssl
 with_polarssl_include
 with_polarssl_lib
+with_mbedtls
+with_mbedtls_include
+with_mbedtls_lib
 enable_applecc
 enable_assert
 enable_largefile
@@ -1440,7 +1443,7 @@ Optional Packages:
                         (or the compiler's sysroot if not specified).
   --with-crypto-library=library
                           build with the given crypto library,
-                          TYPE=openssl|polarssl [default=openssl]
+                          TYPE=openssl|polarssl|mbedtls [default=openssl]
   --with-openssl=DIR      OpenSSL base directory, or:
   --with-openssl-include=DIR
                           OpenSSL headers directory (without trailing
@@ -1451,6 +1454,11 @@ Optional Packages:
                           PolarSSL headers directory (without trailing
                           /polarssl)
   --with-polarssl-lib=DIR PolarSSL library directory
+  --with-mbedtls=DIR      mbed TLS base directory, or:
+  --with-mbedtls-include=DIR
+                          mbed TLS headers directory (without trailing
+                          /mbedtls)
+  --with-mbedtls-lib=DIR  mbed TLS library directory
 
 Some influential environment variables:
   CC          C compiler command
@@ -11724,7 +11732,7 @@ CC="$lt_save_CC"
 if test "${with_crypto_library+set}" = set; then :
   withval=$with_crypto_library;
     case "${withval}" in
-      openssl|polarssl) ;;
+      openssl|polarssl|mbedtls) ;;
       *) as_fn_error $? "bad value ${withval} for --with-crypto-library" "$LINENO" 5 ;;
     esac
 
@@ -13133,6 +13141,114 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
 $as_echo "#define USE_CRYPTO_POLARSSL 1" >>confdefs.h
+
+    ;;
+  mbedtls)
+
+
+
+# Check whether --with-mbedtls was given.
+if test "${with_mbedtls+set}" = set; then :
+  withval=$with_mbedtls; mbedtls="$withval"
+     CFLAGS="$CFLAGS -I$withval/include"
+     LDFLAGS="$LDFLAGS -L$withval/lib"
+
+fi
+
+
+
+# Check whether --with-mbedtls-include was given.
+if test "${with_mbedtls_include+set}" = set; then :
+  withval=$with_mbedtls_include; mbedtls_include="$withval"
+     CFLAGS="$CFLAGS -I$withval"
+
+fi
+
+
+
+# Check whether --with-mbedtls-lib was given.
+if test "${with_mbedtls_lib+set}" = set; then :
+  withval=$with_mbedtls_lib; mbedtls_lib="$withval"
+     LDFLAGS="$LDFLAGS -L$withval"
+
+fi
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for mbedtls_cipher_setup in -lmbedcrypto" >&5
+$as_echo_n "checking for mbedtls_cipher_setup in -lmbedcrypto... " >&6; }
+if ${ac_cv_lib_mbedtls_mbedtls_cipher_setup+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lmbedcrypto  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char mbedtls_cipher_setup ();
+int
+main ()
+{
+return mbedtls_cipher_setup ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_mbedtls_mbedtls_cipher_setup=yes
+else
+  ac_cv_lib_mbedtls_mbedtls_cipher_setup=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_mbedtls_mbedtls_cipher_setup" >&5
+$as_echo "$ac_cv_lib_mbedtls_mbedtls_cipher_setup" >&6; }
+if test "x$ac_cv_lib_mbedtls_mbedtls_cipher_setup" = xyes; then :
+  LIBS="-lmbedcrypto $LIBS"
+else
+  as_fn_error $? "mbed TLS libraries not found." "$LINENO" 5
+
+fi
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether mbedtls support Cipher Feedback mode or not" >&5
+$as_echo_n "checking whether mbedtls support Cipher Feedback mode or not... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <mbedtls/config.h>
+
+int
+main ()
+{
+
+#ifndef MBEDTLS_CIPHER_MODE_CFB
+#error Cipher Feedback mode a.k.a CFB not supported by your mbed TLS.
+#endif
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok" >&5
+$as_echo "ok" >&6; }
+else
+  as_fn_error $? "MBEDTLS_CIPHER_MODE_CFB required" "$LINENO" 5
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+$as_echo "#define USE_CRYPTO_MBEDTLS 1" >>confdefs.h
 
     ;;
 esac
