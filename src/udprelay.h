@@ -37,9 +37,9 @@
 
 #include "common.h"
 
-#define MAX_UDP_PACKET_SIZE (2 * 1024) // large enough for a typical MTU 1500
+#define MAX_UDP_PACKET_SIZE (65507)
 
-#define MTU 1421 // 1492 - 1 - 28 - 2 - 40 = 1421, the default MTU for UDP relay
+#define MTU 1397 // 1492 - 1 - 28 - 2 - 64 = 1397, the default MTU for UDP relay
 
 struct server_ctx {
     ev_io io;

@@ -639,10 +639,9 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         goto CLEAN_UP;
     }
 
-    // Drop large packets > default MTU
-    if (buf_len > MTU) {
-        LOGE("[udp] drop large packets, size: %d", (int)buf_len);
-        goto CLEAN_UP;
+    // packet size > default MTU
+    if (verbose && buf_len > MTU) {
+        LOGE("[udp] possible ip fragment, size: %d", (int)buf_len);
     }
 
 #ifdef UDPRELAY_LOCAL
@@ -833,10 +832,9 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 #endif
 #endif
 
-    // Drop large packets > default MTU
-    if (buf_len > MTU) {
-        LOGE("[udp] drop large packets, size: %d", (int)buf_len);
-        goto CLEAN_UP;
+    // packet size > default MTU
+    if (verbose && buf_len > MTU) {
+        LOGE("[udp] possible ip fragment, size: %d", (int)buf_len);
     }
 
     /*
