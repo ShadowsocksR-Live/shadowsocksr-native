@@ -616,7 +616,6 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     }
 #endif
 
-
     setsockopt(remotefd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
     setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));

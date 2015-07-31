@@ -1042,6 +1042,16 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         }
 #endif
 
+#ifdef ANDROID
+        if (vpn) {
+            if (protect_socket(remotefd) == -1) {
+                ERROR("protect_socket");
+                close(remotefd);
+                goto CLEAN_UP;
+            }
+        }
+#endif
+
         // Init remote_ctx
         remote_ctx = new_remote(remotefd, server_ctx);
         remote_ctx->src_addr = src_addr;
@@ -1055,6 +1065,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         // Start remote io
         ev_io_start(EV_A_ & remote_ctx->io);
         ev_timer_start(EV_A_ & remote_ctx->watcher);
+
     }
 
     if (offset > 0) {
@@ -1064,15 +1075,6 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     buf = ss_encrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
 
-#ifdef ANDROID
-    if (vpn) {
-        if (protect_socket(remote_ctx->fd) == -1) {
-            ERROR("protect_socket");
-            close_and_free_remote(EV_A_ remote_ctx);
-            goto CLEAN_UP;
-        }
-    }
-#endif
     int s = sendto(remote_ctx->fd, buf, buf_len, 0, remote_addr, remote_addr_len);
 
     if (s == -1) {
