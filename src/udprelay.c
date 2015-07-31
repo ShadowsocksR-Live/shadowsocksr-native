@@ -641,7 +641,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
 
     // Drop large packets > default MTU
     if (buf_len > MTU) {
-        LOGE("[udp] drop large packets, size: %ld", buf_len);
+        LOGE("[udp] drop large packets, size: %d", (int)buf_len);
         goto CLEAN_UP;
     }
 
@@ -835,7 +835,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     // Drop large packets > default MTU
     if (buf_len > MTU) {
-        LOGE("[udp] drop large packets, size: %ld", buf_len);
+        LOGE("[udp] drop large packets, size: %d", (int)buf_len);
         goto CLEAN_UP;
     }
 
