@@ -13218,8 +13218,8 @@ else
 fi
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether mbedtls support Cipher Feedback mode or not" >&5
-$as_echo_n "checking whether mbedtls support Cipher Feedback mode or not... " >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether mbedtls supports Cipher Feedback mode or not" >&5
+$as_echo_n "checking whether mbedtls supports Cipher Feedback mode or not... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -13243,6 +13243,94 @@ if ac_fn_c_try_compile "$LINENO"; then :
 $as_echo "ok" >&6; }
 else
   as_fn_error $? "MBEDTLS_CIPHER_MODE_CFB required" "$LINENO" 5
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether mbedtls supports the ARC4 stream cipher or not" >&5
+$as_echo_n "checking whether mbedtls supports the ARC4 stream cipher or not... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <mbedtls/config.h>
+
+int
+main ()
+{
+
+#ifndef MBEDTLS_ARC4_C
+#error the ARC4 stream cipher not supported by your mbed TLS.
+#endif
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok" >&5
+$as_echo "ok" >&6; }
+else
+  as_fn_error $? "MBEDTLS_ARC4_C required" "$LINENO" 5
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether mbedtls supports the Blowfish block cipher or not" >&5
+$as_echo_n "checking whether mbedtls supports the Blowfish block cipher or not... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <mbedtls/config.h>
+
+int
+main ()
+{
+
+#ifndef MBEDTLS_BLOWFISH_C
+#error the Blowfish block cipher not supported by your mbed TLS.
+#endif
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok" >&5
+$as_echo "ok" >&6; }
+else
+  as_fn_error $? "MBEDTLS_BLOWFISH_C required" "$LINENO" 5
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether mbedtls supports the Camellia block cipher or not" >&5
+$as_echo_n "checking whether mbedtls supports the Camellia block cipher or not... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <mbedtls/config.h>
+
+int
+main ()
+{
+
+#ifndef MBEDTLS_CAMELLIA_C
+#error the Camellia block cipher not supported by your mbed TLS.
+#endif
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok" >&5
+$as_echo "ok" >&6; }
+else
+  as_fn_error $? "MBEDTLS_CAMELLIA_C required" "$LINENO" 5
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext

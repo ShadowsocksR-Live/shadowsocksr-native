@@ -27,7 +27,7 @@ AC_DEFUN([ss_MBEDTLS],
     [AC_MSG_ERROR([mbed TLS libraries not found.])]
   )
 
-  AC_MSG_CHECKING([whether mbedtls support Cipher Feedback mode or not])
+  AC_MSG_CHECKING([whether mbedtls supports Cipher Feedback mode or not])
   AC_COMPILE_IFELSE(
     [AC_LANG_PROGRAM(
       [[
@@ -41,5 +41,54 @@ AC_DEFUN([ss_MBEDTLS],
     )],
     [AC_MSG_RESULT([ok])],
     [AC_MSG_ERROR([MBEDTLS_CIPHER_MODE_CFB required])]
+  )
+
+
+  AC_MSG_CHECKING([whether mbedtls supports the ARC4 stream cipher or not])
+  AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[
+#include <mbedtls/config.h>
+      ]],
+      [[
+#ifndef MBEDTLS_ARC4_C
+#error the ARC4 stream cipher not supported by your mbed TLS.
+#endif
+      ]]
+    )],
+    [AC_MSG_RESULT([ok])],
+    [AC_MSG_ERROR([MBEDTLS_ARC4_C required])]
+  )
+
+  AC_MSG_CHECKING([whether mbedtls supports the Blowfish block cipher or not])
+  AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[
+#include <mbedtls/config.h>
+      ]],
+      [[
+#ifndef MBEDTLS_BLOWFISH_C
+#error the Blowfish block cipher not supported by your mbed TLS.
+#endif
+      ]]
+    )],
+    [AC_MSG_RESULT([ok])],
+    [AC_MSG_ERROR([MBEDTLS_BLOWFISH_C required])]
+  )
+
+  AC_MSG_CHECKING([whether mbedtls supports the Camellia block cipher or not])
+  AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[
+#include <mbedtls/config.h>
+      ]],
+      [[
+#ifndef MBEDTLS_CAMELLIA_C
+#error the Camellia block cipher not supported by your mbed TLS.
+#endif
+      ]]
+    )],
+    [AC_MSG_RESULT([ok])],
+    [AC_MSG_ERROR([MBEDTLS_CAMELLIA_C required])]
   )
 ])
