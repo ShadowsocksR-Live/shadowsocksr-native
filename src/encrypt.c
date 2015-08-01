@@ -47,6 +47,22 @@
 #include <stdio.h>
 #endif
 
+#elif defined(USE_CRYPTO_MBEDTLS)
+
+#include <mbedtls/md5.h>
+#include <mbedtls/entropy.h>
+#include <mbedtls/ctr_drbg.h>
+#include <mbedtls/version.h>
+#define CIPHER_UNSUPPORTED "unsupported"
+
+#include <time.h>
+#ifdef _WIN32
+#include <windows.h>
+#include <wincrypt.h>
+#else
+#include <stdio.h>
+#endif
+
 #endif
 
 #include <sodium.h>
@@ -98,6 +114,30 @@ static const char * supported_ciphers[CIPHER_NUM] =
 
 #ifdef USE_CRYPTO_POLARSSL
 static const char * supported_ciphers_polarssl[CIPHER_NUM] =
+{
+    "table",
+    "ARC4-128",
+    "ARC4-128",
+    "AES-128-CFB128",
+    "AES-192-CFB128",
+    "AES-256-CFB128",
+    "BLOWFISH-CFB64",
+    "CAMELLIA-128-CFB128",
+    "CAMELLIA-192-CFB128",
+    "CAMELLIA-256-CFB128",
+    CIPHER_UNSUPPORTED,
+    CIPHER_UNSUPPORTED,
+    CIPHER_UNSUPPORTED,
+    CIPHER_UNSUPPORTED,
+    CIPHER_UNSUPPORTED,
+    "salsa20",
+    "chacha20"
+};
+#endif
+
+#ifdef USE_CRYPTO_MBEDTLS
+// FIXME: check it
+static const char * supported_ciphers_mbedtls[CIPHER_NUM] =
 {
     "table",
     "ARC4-128",
@@ -261,6 +301,13 @@ unsigned char *enc_md5(const unsigned char *d, size_t n, unsigned char *md)
     }
     md5(d, n, md);
     return md;
+#elif defined(USE_CRYPTO_MBEDTLS)
+    static unsigned char m[16];
+    if (md == NULL) {
+        md = m;
+    }
+    mbedtls_md5(d, n, md);
+    return md;
 #endif
 }
 
@@ -295,7 +342,8 @@ int cipher_iv_size(const cipher_kt_t *cipher)
 {
 #if defined(USE_CRYPTO_OPENSSL)
     return EVP_CIPHER_iv_length(cipher);
-#elif defined(USE_CRYPTO_POLARSSL)
+#elif defined(USE_CRYPTO_POLARSSL) || defined(USE_CRYPTO_MBEDTLS)
+    //FIXME: check data structure of cipher
     if (cipher == NULL) {
         return 0;
     }
@@ -317,6 +365,21 @@ int cipher_key_size(const cipher_kt_t *cipher)
         return 128 / 8;
     }
     return cipher->key_length / 8;
+#elif defined(USE_CRYPTO_MBEDTLS)
+    // FIXME: ditto, cipher data structure
+    /*
+     * Semi-API changes (technically public, morally private)
+   * Renamed a few headers to include _internal in the name. Those headers are
+     not supposed to be included by users.
+   * Changed md_info_t into an opaque structure (use md_get_xxx() accessors).
+   * Changed pk_info_t into an opaque structure.
+   * Changed cipher_base_t into an opaque structure.
+     */
+    if (cipher == NULL) {
+        return 0;
+    }
+    /* From Version 1.2.7 released 2013-04-13 Default Blowfish keysize is now 128-bits */
+    return cipher->key_bitlen / 8;
 #endif
 }
 
@@ -416,6 +479,123 @@ int bytes_to_key(const cipher_kt_t *cipher, const digest_type_t *md,
     md_free_ctx(&c);
     memset(md_buf, 0, MAX_MD_SIZE);
     return rv;
+#elif defined(USE_CRYPTO_MBEDTLS)
+/*
+ * 
+ * Generic message digest context.
+
+typedef struct {
+    Information about the associated message digest
+    const mbedtls_md_info_t *md_info;
+
+    Digest-specific context 
+    void *md_ctx;
+
+     HMAC part of the context 
+    void *hmac_ctx;
+} mbedtls_md_context_t; // mbedtls 2.0.0
+
+typedef struct {
+    Information about the associated message digest 
+    const md_info_t *md_info;
+
+    Digest-specific context 
+    void *md_ctx;
+} md_context_t; //polarssl 1.3
+
+ */
+    // NOTE: different struct body, initialize new param hmac 0 to disable HMAC
+    mbedtls_md_context_t c;
+    unsigned char md_buf[MAX_MD_SIZE];
+    int niv;
+    int nkey;
+    int addmd;
+    unsigned int mds;
+    unsigned int i;
+    int rv;
+
+    nkey = cipher_key_size(cipher);
+    niv = cipher_iv_size(cipher);
+    rv = nkey;
+    if (pass == NULL) {
+        return nkey;
+    }
+
+    memset(&c, 0, sizeof(mbedtls_md_context_t));
+    //FIXME: md_init_ctx superseded by mbedtls_md_setup() in 2.0.0
+    // new param hmac      0 to save some meory(maybe a typo? memory?) is HMAC will not be use,
+    //                     non-zero is HMAC is going to be used with this context.
+    if (mbedtls_md_setup(&c, md, 0)) {
+        return 0;
+    }
+    addmd = 0;
+    mds = mbedtls_md_get_size(md);
+    for (;; ) {
+        int error;
+        do {
+            error = 1;
+            if (mbedtls_md_starts(&c)) {
+                break;
+            }
+            if (addmd) {
+                if (mbedtls_md_update(&c, &(md_buf[0]), mds)) {
+                    break;
+                }
+            } else {
+                addmd = 1;
+            }
+            if (mbedtls_md_update(&c, pass, datal)) {
+                break;
+            }
+            if (mbedtls_md_finish(&c, &(md_buf[0]))) {
+                break;
+            }
+            error = 0;
+        } while (0);
+        if (error) {
+            mbedtls_md_free(&c); //md_free_ctx deprecated, Use mbedtls_md_free() instead
+            memset(md_buf, 0, MAX_MD_SIZE);
+            return 0;
+        }
+
+        i = 0;
+        if (nkey) {
+            for (;; ) {
+                if (nkey == 0) {
+                    break;
+                }
+                if (i == mds) {
+                    break;
+                }
+                if (key != NULL) {
+                    *(key++) = md_buf[i];
+                }
+                nkey--;
+                i++;
+            }
+        }
+        if (niv && (i != mds)) {
+            for (;; ) {
+                if (niv == 0) {
+                    break;
+                }
+                if (i == mds) {
+                    break;
+                }
+                if (iv != NULL) {
+                    *(iv++) = md_buf[i];
+                }
+                niv--;
+                i++;
+            }
+        }
+        if ((nkey == 0) && (niv == 0)) {
+            break;
+        }
+    }
+    mbedtls_md_free(&c); //NOTE: md_free_ctx deprecated, Use mbedtls_md_free() instead
+    memset(md_buf, 0, MAX_MD_SIZE);
+    return rv;
 #endif
 }
 
@@ -482,6 +662,66 @@ int rand_bytes(uint8_t *output, int len)
         len -= blen;
     }
     return 1;
+#elif defined(USE_CRYPTO_MBEDTLS)
+    static mbedtls_entropy_context ec = {};
+    // FIXME: ctr_drbg_context changed, [if defined(MBEDTLS_THREADING_C)    mbedtls_threading_mutex_t mutex;]
+    static mbedtls_ctr_drbg_context cd_ctx = {};
+    static unsigned char rand_initialised = 0;
+    const size_t blen = min(len, MBEDTLS_CTR_DRBG_MAX_REQUEST);
+
+    if (!rand_initialised) {
+#ifdef _WIN32
+        HCRYPTPROV hProvider;
+        union {
+            unsigned __int64 seed;
+            BYTE buffer[8];
+        } rand_buffer;
+
+        hProvider = 0;
+        if (CryptAcquireContext(&hProvider, 0, 0, PROV_RSA_FULL, \
+                                CRYPT_VERIFYCONTEXT | CRYPT_SILENT)) {
+            CryptGenRandom(hProvider, 8, rand_buffer.buffer);
+            CryptReleaseContext(hProvider, 0);
+        } else {
+            rand_buffer.seed = (unsigned __int64)clock();
+        }
+#else
+        FILE *urand;
+        union {
+            uint64_t seed;
+            uint8_t buffer[8];
+        } rand_buffer;
+
+        urand = fopen("/dev/urandom", "r");
+        if (urand) {
+            int read = fread(&rand_buffer.seed, sizeof(rand_buffer.seed), 1,
+                             urand);
+            fclose(urand);
+            if (read <= 0) {
+                rand_buffer.seed = (uint64_t)clock();
+            }
+        } else {
+            rand_buffer.seed = (uint64_t)clock();
+        }
+#endif
+        mbedtls_entropy_init(&ec);
+        // FIXME: ctr_drbg_init changed, seems we should initialize it before calling mbedtls_ctr_drbg_seed()
+        mbedtls_ctr_drbg_init(&cd_ctx);
+        if (mbedtls_ctr_drbg_seed(&cd_ctx, mbedtls_entropy_func, &ec,
+                          (const unsigned char *)rand_buffer.buffer, 8) != 0) {
+            mbedtls_entropy_free(&ec);
+            FATAL("mbed TLS: Failed to initialize random generator");
+        }
+        rand_initialised = 1;
+    }
+    while (len > 0) {
+        if (mbedtls_ctr_drbg_random(&cd_ctx, output, blen) != 0) {
+            return 0;
+        }
+        output += blen;
+        len -= blen;
+    }
+    return 1;
 #endif
 }
 
@@ -511,6 +751,14 @@ const cipher_kt_t *get_cipher_type(int method)
         return NULL;
     }
     return cipher_info_from_string(polarname);
+#elif defined(USE_CRYPTO_MBEDTLS)
+    const char *mbedtlsname = supported_ciphers_mbedtls[method];
+    if (strcmp(mbedtlsname, CIPHER_UNSUPPORTED) == 0) {
+        LOGE("Cipher %s currently is not supported by mbed TLS library",
+             ciphername);
+        return NULL;
+    }
+    return mbedtls_cipher_info_from_string(mbedtlsname);
 #endif
 }
 
@@ -525,6 +773,8 @@ const digest_type_t *get_digest_type(const char *digest)
     return EVP_get_digestbyname(digest);
 #elif defined(USE_CRYPTO_POLARSSL)
     return md_info_from_string(digest);
+#elif defined(USE_CRYPTO_MBEDTLS)
+    return mbedtls_md_info_from_string(digest);
 #endif
 }
 
@@ -587,6 +837,19 @@ void cipher_context_init(cipher_ctx_t *ctx, int method, int enc)
     }
     if (cipher_init_ctx(evp, cipher) != 0) {
         FATAL("Cannot initialize PolarSSL cipher context");
+    }
+#elif defined(USE_CRYPTO_MBEDTLS)
+//FIXME: mbedtls_cipher_setup future change
+//NOTE: Currently also clears structure. In future versions you will be required to call 
+//      mbedtls_cipher_init() on the structure first.
+// void mbedtls_cipher_init( mbedtls_cipher_context_t *ctx );
+    if (cipher == NULL) {
+        LOGE("Cipher %s not found in mbed TLS library", ciphername);
+        FATAL("Cannot initialize mbed TLS cipher");
+    }
+    mbedtls_cipher_init(evp);
+    if (mbedtls_cipher_setup(evp, cipher) != 0) {
+        FATAL("Cannot initialize mbed TLS cipher context");
     }
 #endif
 }
@@ -664,6 +927,7 @@ void cipher_context_set_iv(cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len,
         FATAL("Cannot set key and IV");
     }
 #elif defined(USE_CRYPTO_POLARSSL)
+//FIXME: PolarSSL 1.3.11: cipher_free_ctx deprecated, Use cipher_free() instead.
     if (cipher_setkey(evp, true_key, enc_key_len * 8, enc) != 0) {
         cipher_free_ctx(evp);
         FATAL("Cannot set PolarSSL cipher key");
@@ -683,6 +947,21 @@ void cipher_context_set_iv(cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len,
         FATAL("Cannot set PolarSSL cipher IV");
     }
 #endif
+#elif defined(USE_CRYPTO_MBEDTLS)
+//FIXME: cipher_free_ctx deprecated, Use cipher_free() instead in PolarSSL 1.3.11
+    if (mbedtls_cipher_setkey(evp, true_key, enc_key_len * 8, enc) != 0) {
+        mbedtls_cipher_free(evp);
+        FATAL("Cannot set mbed TLS cipher key");
+    }
+
+    if (mbedtls_cipher_set_iv(evp, iv, iv_len) != 0) {
+        mbedtls_cipher_free(evp);
+        FATAL("Cannot set mbed TLS cipher IV");
+    }
+    if (mbedtls_cipher_reset(evp) != 0) {
+        mbedtls_cipher_free(evp);
+        FATAL("Cannot finalize mbed TLS cipher context");
+    }
 #endif
 
 #ifdef DEBUG
@@ -711,7 +990,11 @@ void cipher_context_release(cipher_ctx_t *ctx)
 #if defined(USE_CRYPTO_OPENSSL)
     EVP_CIPHER_CTX_cleanup(evp);
 #elif defined(USE_CRYPTO_POLARSSL)
+//NOTE: cipher_free_ctx deprecated in PolarSSL 1.3.11
     cipher_free_ctx(evp);
+#elif defined(USE_CRYPTO_MBEDTLS)
+//NOTE: cipher_free_ctx deprecated
+    mbedtls_cipher_free(evp);
 #endif
 }
 
@@ -734,6 +1017,9 @@ static int cipher_context_update(cipher_ctx_t *ctx, uint8_t *output, int *olen,
 #elif defined(USE_CRYPTO_POLARSSL)
     return !cipher_update(evp, (const uint8_t *)input, (size_t)ilen,
                           (uint8_t *)output, (size_t *)olen);
+#elif defined(USE_CRYPTO_MBEDTLS)
+    return !mbedtls_cipher_update(evp, (const uint8_t *)input, (size_t)ilen,
+                                  (uint8_t *)output, (size_t *)olen);
 #endif
 }
 
@@ -1074,6 +1360,12 @@ void enc_key_init(int method, const char *pass)
         cipher->key_length = supported_ciphers_key_size[method] * 8;
         cipher->iv_size = supported_ciphers_iv_size[method];
 #endif
+#if defined(USE_CRYPTO_MBEDTLS)
+//FIXME: key_length changed to key_bitlen in mbed TLS 2.0.0
+        cipher->base = NULL;
+        cipher->key_bitlen = supported_ciphers_key_size[method] * 8;
+        cipher->iv_size = supported_ciphers_iv_size[method];
+#endif
     } else {
         cipher = (cipher_kt_t *)get_cipher_type(method);
     }
@@ -1084,6 +1376,16 @@ void enc_key_init(int method, const char *pass)
             if (supported_ciphers_applecc[method] != kCCAlgorithmInvalid) {
                 cipher_info.base = NULL;
                 cipher_info.key_length = supported_ciphers_key_size[method] * 8;
+                cipher_info.iv_size = supported_ciphers_iv_size[method];
+                cipher = (cipher_kt_t *)&cipher_info;
+                break;
+            }
+#endif
+#if defined(USE_CRYPTO_MBEDTLS) && defined(USE_CRYPTO_APPLECC)
+//FIXME: key_length changed to key_bitlen in mbed TLS 2.0.0
+            if (supported_ciphers_applecc[method] != kCCAlgorithmInvalid) {
+                cipher_info.base = NULL;
+                cipher_info.key_bitlen = supported_ciphers_key_size[method] * 8;
                 cipher_info.iv_size = supported_ciphers_iv_size[method];
                 cipher = (cipher_kt_t *)&cipher_info;
                 break;
