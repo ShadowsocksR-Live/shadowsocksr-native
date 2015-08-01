@@ -369,11 +369,11 @@ int cipher_key_size(const cipher_kt_t *cipher)
     // FIXME: ditto, cipher data structure
     /*
      * Semi-API changes (technically public, morally private)
-   * Renamed a few headers to include _internal in the name. Those headers are
-     not supposed to be included by users.
-   * Changed md_info_t into an opaque structure (use md_get_xxx() accessors).
-   * Changed pk_info_t into an opaque structure.
-   * Changed cipher_base_t into an opaque structure.
+     * Renamed a few headers to include _internal in the name. Those headers are
+       not supposed to be included by users.
+     * Changed md_info_t into an opaque structure (use md_get_xxx() accessors).
+     * Changed pk_info_t into an opaque structure.
+     * Changed cipher_base_t into an opaque structure.
      */
     if (cipher == NULL) {
         return 0;
@@ -481,25 +481,25 @@ int bytes_to_key(const cipher_kt_t *cipher, const digest_type_t *md,
     return rv;
 #elif defined(USE_CRYPTO_MBEDTLS)
 /*
- * 
+ *
  * Generic message digest context.
 
 typedef struct {
     Information about the associated message digest
     const mbedtls_md_info_t *md_info;
 
-    Digest-specific context 
+    Digest-specific context
     void *md_ctx;
 
-     HMAC part of the context 
+     HMAC part of the context
     void *hmac_ctx;
 } mbedtls_md_context_t; // mbedtls 2.0.0
 
 typedef struct {
-    Information about the associated message digest 
+    Information about the associated message digest
     const md_info_t *md_info;
 
-    Digest-specific context 
+    Digest-specific context
     void *md_ctx;
 } md_context_t; //polarssl 1.3
 
@@ -839,10 +839,10 @@ void cipher_context_init(cipher_ctx_t *ctx, int method, int enc)
         FATAL("Cannot initialize PolarSSL cipher context");
     }
 #elif defined(USE_CRYPTO_MBEDTLS)
-//FIXME: mbedtls_cipher_setup future change
-//NOTE: Currently also clears structure. In future versions you will be required to call 
-//      mbedtls_cipher_init() on the structure first.
-// void mbedtls_cipher_init( mbedtls_cipher_context_t *ctx );
+    // FIXME: mbedtls_cipher_setup future change
+    // NOTE:  Currently also clears structure. In future versions you will be required to call
+    //        mbedtls_cipher_init() on the structure first.
+    //        void mbedtls_cipher_init( mbedtls_cipher_context_t *ctx );
     if (cipher == NULL) {
         LOGE("Cipher %s not found in mbed TLS library", ciphername);
         FATAL("Cannot initialize mbed TLS cipher");
@@ -927,7 +927,7 @@ void cipher_context_set_iv(cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len,
         FATAL("Cannot set key and IV");
     }
 #elif defined(USE_CRYPTO_POLARSSL)
-//FIXME: PolarSSL 1.3.11: cipher_free_ctx deprecated, Use cipher_free() instead.
+    // FIXME: PolarSSL 1.3.11: cipher_free_ctx deprecated, Use cipher_free() instead.
     if (cipher_setkey(evp, true_key, enc_key_len * 8, enc) != 0) {
         cipher_free_ctx(evp);
         FATAL("Cannot set PolarSSL cipher key");
@@ -948,7 +948,7 @@ void cipher_context_set_iv(cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len,
     }
 #endif
 #elif defined(USE_CRYPTO_MBEDTLS)
-//FIXME: cipher_free_ctx deprecated, Use cipher_free() instead in PolarSSL 1.3.11
+    // FIXME: cipher_free_ctx deprecated, Use cipher_free() instead in PolarSSL 1.3.11
     if (mbedtls_cipher_setkey(evp, true_key, enc_key_len * 8, enc) != 0) {
         mbedtls_cipher_free(evp);
         FATAL("Cannot set mbed TLS cipher key");
@@ -1361,7 +1361,7 @@ void enc_key_init(int method, const char *pass)
         cipher->iv_size = supported_ciphers_iv_size[method];
 #endif
 #if defined(USE_CRYPTO_MBEDTLS)
-//FIXME: key_length changed to key_bitlen in mbed TLS 2.0.0
+        // FIXME: key_length changed to key_bitlen in mbed TLS 2.0.0
         cipher->base = NULL;
         cipher->key_bitlen = supported_ciphers_key_size[method] * 8;
         cipher->iv_size = supported_ciphers_iv_size[method];
@@ -1382,7 +1382,7 @@ void enc_key_init(int method, const char *pass)
             }
 #endif
 #if defined(USE_CRYPTO_MBEDTLS) && defined(USE_CRYPTO_APPLECC)
-//FIXME: key_length changed to key_bitlen in mbed TLS 2.0.0
+            // FIXME: key_length changed to key_bitlen in mbed TLS 2.0.0
             if (supported_ciphers_applecc[method] != kCCAlgorithmInvalid) {
                 cipher_info.base = NULL;
                 cipher_info.key_bitlen = supported_ciphers_key_size[method] * 8;
