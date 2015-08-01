@@ -310,6 +310,9 @@
 /* Use PolarSSL library */
 #undef USE_CRYPTO_POLARSSL
 
+/* Use mbed TLS library */
+#undef USE_CRYPTO_MBEDTLS
+
 /* Version number of package */
 #undef VERSION
 
