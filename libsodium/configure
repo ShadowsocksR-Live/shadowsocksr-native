@@ -4919,7 +4919,43 @@ $as_echo "$ac_cv_safe_to_define___extensions__" >&6; }
 
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -D_FORTIFY_SOURCE=2" >&5
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for _FORTIFY_SOURCE defined" >&5
+$as_echo_n "checking for _FORTIFY_SOURCE defined... " >&6; }
+if ${ac_cv_defined__FORTIFY_SOURCE+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  #ifdef _FORTIFY_SOURCE
+  int ok;
+  #else
+  choke me
+  #endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_defined__FORTIFY_SOURCE=yes
+else
+  ac_cv_defined__FORTIFY_SOURCE=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_defined__FORTIFY_SOURCE" >&5
+$as_echo "$ac_cv_defined__FORTIFY_SOURCE" >&6; }
+if test $ac_cv_defined__FORTIFY_SOURCE != "no"; then :
+
+else
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -D_FORTIFY_SOURCE=2" >&5
 $as_echo_n "checking whether C compiler accepts -D_FORTIFY_SOURCE=2... " >&6; }
 if ${ax_cv_check_cflags___D_FORTIFY_SOURCE_2+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -4954,6 +4990,8 @@ else
   :
 fi
 
+
+fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -fvisibility=hidden" >&5
 $as_echo_n "checking whether C compiler accepts -fvisibility=hidden... " >&6; }

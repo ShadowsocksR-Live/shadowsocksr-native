@@ -304,14 +304,14 @@
 /* Use Apple CommonCrypto library */
 #undef USE_CRYPTO_APPLECC
 
+/* Use mbed TLS library */
+#undef USE_CRYPTO_MBEDTLS
+
 /* Use OpenSSL library */
 #undef USE_CRYPTO_OPENSSL
 
 /* Use PolarSSL library */
 #undef USE_CRYPTO_POLARSSL
-
-/* Use mbed TLS library */
-#undef USE_CRYPTO_MBEDTLS
 
 /* Version number of package */
 #undef VERSION

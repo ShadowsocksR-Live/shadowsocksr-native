@@ -13176,7 +13176,7 @@ fi
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for mbedtls_cipher_setup in -lmbedcrypto" >&5
 $as_echo_n "checking for mbedtls_cipher_setup in -lmbedcrypto... " >&6; }
-if ${ac_cv_lib_mbedtls_mbedtls_cipher_setup+:} false; then :
+if ${ac_cv_lib_mbedcrypto_mbedtls_cipher_setup+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
@@ -13200,17 +13200,17 @@ return mbedtls_cipher_setup ();
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_mbedtls_mbedtls_cipher_setup=yes
+  ac_cv_lib_mbedcrypto_mbedtls_cipher_setup=yes
 else
-  ac_cv_lib_mbedtls_mbedtls_cipher_setup=no
+  ac_cv_lib_mbedcrypto_mbedtls_cipher_setup=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_mbedtls_mbedtls_cipher_setup" >&5
-$as_echo "$ac_cv_lib_mbedtls_mbedtls_cipher_setup" >&6; }
-if test "x$ac_cv_lib_mbedtls_mbedtls_cipher_setup" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_mbedcrypto_mbedtls_cipher_setup" >&5
+$as_echo "$ac_cv_lib_mbedcrypto_mbedtls_cipher_setup" >&6; }
+if test "x$ac_cv_lib_mbedcrypto_mbedtls_cipher_setup" = xyes; then :
   LIBS="-lmbedcrypto $LIBS"
 else
   as_fn_error $? "mbed TLS libraries not found." "$LINENO" 5
