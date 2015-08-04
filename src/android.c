@@ -61,13 +61,15 @@ int protect_socket(int fd) {
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval));
     setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv, sizeof(struct timeval));
 
-    const char path[] = "/data/data/com.github.shadowsocks/protect_path";
+    const char path[] = "#shadowsocks_protect";
 
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, path, sizeof(addr.sun_path)-1);
+    addr.sun_path[0] = 0;
+    socklen_t len = strlen(path) + offsetof(struct sockaddr_un, sun_path); 
 
-    if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
+    if (connect(sock, (struct sockaddr*)&addr, len) == -1) {
         LOGE("[android] connect() failed: %s (socket fd = %d)\n", strerror(errno), sock);
         close(sock);
         return -1;
