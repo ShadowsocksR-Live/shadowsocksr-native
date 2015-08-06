@@ -193,7 +193,7 @@ void usage()
     printf(
         "  maintained by Max Lv <max.c.lv@gmail.com> and Linus Yang <laokongzi@gmail.com>\n\n");
     printf("  usage:\n\n");
-    printf("    ss-[local|redir|server|tunnel]\n");
+    printf("    ss-[local|redir|server|tunnel|manager]\n");
     printf("\n");
     printf(
         "       -s <server_host>           host name or ip address of your remote server\n");
@@ -270,6 +270,16 @@ void usage()
         "       [--acl <acl_file>]         config file of ACL (Access Control List)\n");
     printf(
         "                                  only available in local and server mode\n");
+    printf("\n");
+    printf(
+        "       [--manager_address <addr>] UNIX domain socket address\n");
+    printf(
+        "                                  only available in server and manager mode\n");
+    printf("\n");
+    printf(
+        "       [--executable <path>]      path to the executable of ss-server\n");
+    printf(
+        "                                  only available in manager mode\n");
     printf("\n");
     printf(
         "       [-v]                       verbose mode\n");

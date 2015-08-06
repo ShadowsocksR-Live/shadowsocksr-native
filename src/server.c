@@ -44,6 +44,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <pthread.h>
+#include <sys/un.h>
 #endif
 
 #include <libcork/core.h>
@@ -79,6 +80,10 @@
 #define SSMAXCONN 1024
 #endif
 
+#ifndef UPDATE_INTERVAL
+#define UPDATE_INTERVAL 30
+#endif
+
 static void signal_cb(EV_P_ ev_signal *w, int revents);
 static void accept_cb(EV_P_ ev_io *w, int revents);
 static void server_send_cb(EV_P_ ev_io *w, int revents);
@@ -111,7 +116,58 @@ static int nofile = 0;
 static int remote_conn = 0;
 static int server_conn = 0;
 
+static char *server_port = NULL;
+static char *manager_address = NULL;
+uint64_t tx = 0;
+uint64_t rx = 0;
+ev_timer stat_update_watcher;
+
 static struct cork_dllist connections;
+
+static void stat_update_cb(EV_P_ ev_timer *watcher, int revents)
+{
+    struct sockaddr_un svaddr, claddr;
+    int sfd;
+    size_t msgLen;
+    char resp[BUF_SIZE];
+
+    if (verbose) {
+        LOGI("update traffic stat: tx: %"PRIu64" rx: %"PRIu64"", tx, rx);
+    }
+
+    sfd = socket(AF_UNIX, SOCK_DGRAM, 0);
+    if (sfd == -1) {
+        ERROR("stat_socket");
+        return;
+    }
+
+    memset(&claddr, 0, sizeof(struct sockaddr_un));
+    claddr.sun_family = AF_UNIX;
+    snprintf(claddr.sun_path, sizeof(claddr.sun_path), "/tmp/shadowsocks.%s", server_port);
+
+    unlink(claddr.sun_path);
+
+    if (bind(sfd, (struct sockaddr *) &claddr, sizeof(struct sockaddr_un)) == -1) {
+        ERROR("stat_bind");
+        close(sfd);
+        return;
+    }
+
+    memset(&svaddr, 0, sizeof(struct sockaddr_un));
+    svaddr.sun_family = AF_UNIX;
+    strncpy(svaddr.sun_path, manager_address, sizeof(svaddr.sun_path) - 1);
+
+    snprintf(resp, BUF_SIZE, "stat: {\"%s\":%"PRIu64"}", server_port, tx + rx);
+    msgLen = strlen(resp) + 1;
+    if (sendto(sfd, resp, strlen(resp) + 1, 0, (struct sockaddr *) &svaddr,
+                sizeof(struct sockaddr_un)) != msgLen) {
+        ERROR("stat_sendto");
+        return;
+    }
+
+    close(sfd);
+    unlink(claddr.sun_path);
+}
 
 static void free_connections(struct ev_loop *loop)
 {
@@ -372,6 +428,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             return;
         }
     }
+
+    tx += r;
 
     // handle incomplete header
     if (server->stage == 0) {
@@ -779,6 +837,8 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         }
     }
 
+    rx += r;
+
     server->buf = ss_encrypt(BUF_SIZE, server->buf, &r, server->e_ctx);
 
     if (server->buf == NULL) {
@@ -965,8 +1025,7 @@ static struct server * new_server(int fd, struct listen_ctx *listener)
     ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
     ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
     ev_timer_init(&server->recv_ctx->watcher, server_timeout_cb,
-                  min(MAX_CONNECT_TIMEOUT,
-                      listener->timeout), listener->timeout);
+            min(MAX_CONNECT_TIMEOUT, listener->timeout), listener->timeout);
     server->recv_ctx->server = server;
     server->recv_ctx->connected = 0;
     server->send_ctx->server = server;
@@ -1085,7 +1144,6 @@ int main(int argc, char **argv)
 
     int server_num = 0;
     const char *server_host[MAX_REMOTE_NUM];
-    const char *server_port = NULL;
 
     char * nameservers[MAX_DNS_NUM + 1];
     int nameserver_num = 0;
@@ -1093,9 +1151,10 @@ int main(int argc, char **argv)
     int option_index = 0;
     static struct option long_options[] =
     {
-        { "fast-open", no_argument,       0, 0 },
-        { "acl",       required_argument, 0, 0 },
-        { 0,           0,                 0, 0 }
+        { "fast-open",          no_argument,       0, 0 },
+        { "acl",                required_argument, 0, 0 },
+        { "manager-address",    required_argument, 0, 0 },
+        { 0,                    0,                 0, 0 }
     };
 
     opterr = 0;
@@ -1111,6 +1170,8 @@ int main(int argc, char **argv)
             } else if (option_index == 1) {
                 LOGI("initialize acl...");
                 acl = !init_acl(optarg);
+            } else if (option_index == 2) {
+                manager_address = optarg;
             }
             break;
         case 's':
@@ -1327,6 +1388,11 @@ int main(int argc, char **argv)
 
     }
 
+    if (manager_address != NULL) {
+        ev_timer_init(&stat_update_watcher, stat_update_cb, UPDATE_INTERVAL, UPDATE_INTERVAL);
+        ev_timer_start(EV_DEFAULT, &stat_update_watcher);
+    }
+
     if (mode != TCP_ONLY) {
         LOGI("UDP relay enabled");
     }
@@ -1348,6 +1414,10 @@ int main(int argc, char **argv)
 
     if (verbose) {
         LOGI("closed gracefully");
+    }
+
+    if (manager_address != NULL) {
+        ev_timer_stop(EV_DEFAULT, &stat_update_watcher);
     }
 
     // Clean up

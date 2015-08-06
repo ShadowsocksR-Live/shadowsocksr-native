@@ -1,9 +1,10 @@
 /*
- * server.c - Define the config data structure
+ * server.h - Define shadowsocks server's buffers and callbacks
  *
  * Copyright (C) 2013 - 2015, Max Lv <max.c.lv@gmail.com>
  *
  * This file is part of the shadowsocks-libev.
+ *
  * shadowsocks-libev is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
@@ -19,44 +20,40 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _JCONF_H
-#define _JCONF_H
+#ifndef _MANAGER_H
+#define _MANAGER_H
 
-#define MAX_PORT_NUM 1024
-#define MAX_REMOTE_NUM 10
-#define MAX_CONF_SIZE 128 * 1024
-#define MAX_DNS_NUM 4
-#define MAX_CONNECT_TIMEOUT 10
-#define MIN_UDP_TIMEOUT 60
+#include <ev.h>
+#include <time.h>
+#include <libcork/ds.h>
 
-typedef struct {
-    char *host;
-    char *port;
-} ss_addr_t;
+#include "jconf.h"
 
-typedef struct {
-    char *port;
-    char *password;
-} ss_port_password_t;
+#include "common.h"
 
-typedef struct {
-    int remote_num;
-    ss_addr_t remote_addr[MAX_REMOTE_NUM];
-    int port_password_num;
-    ss_port_password_t port_password[MAX_PORT_NUM];
-    char *remote_port;
-    char *local_addr;
-    char *local_port;
-    char *password;
-    char *method;
-    char *timeout;
+struct manager_ctx {
+    ev_io io;
+    int fd;
     int fast_open;
-    int nofile;
-    char *nameserver;
-} jconf_t;
+    int verbose;
+    int mode;
+    char *password;
+    char *timeout;
+    char *method;
+    char *iface;
+    char *acl;
+    char *user;
+    char *manager_address;
+    char **hosts;
+    int host_num;
+    char **nameservers;
+    int nameserver_num;
+};
 
-jconf_t *read_jconf(const char * file);
-void parse_addr(const char *str, ss_addr_t *addr);
-void free_addr(ss_addr_t *addr);
+struct server {
+    char port[8];
+    char password[128];
+    uint64_t traffic;
+};
 
-#endif // _JCONF_H
+#endif // _MANAGER_H
