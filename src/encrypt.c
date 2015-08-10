@@ -523,7 +523,7 @@ typedef struct {
 
     memset(&c, 0, sizeof(mbedtls_md_context_t));
     //FIXME: md_init_ctx superseded by mbedtls_md_setup() in 2.0.0
-    // new param hmac      0 to save some meory(maybe a typo? memory?) is HMAC will not be use,
+    // new param hmac      0 to save some memory if HMAC will not be used,
     //                     non-zero is HMAC is going to be used with this context.
     if (mbedtls_md_setup(&c, md, 0)) {
         return 0;
