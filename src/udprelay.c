@@ -96,6 +96,10 @@ static struct remote_ctx * new_remote(int fd, struct server_ctx * server_ctx);
 
 extern int verbose;
 extern int vpn;
+#ifdef UDPRELAY_REMOTE
+extern uint64_t tx;
+extern uint64_t rx;
+#endif
 
 static int server_num = 0;
 static struct server_ctx *server_ctx_list[MAX_REMOTE_NUM] = { NULL };
@@ -688,6 +692,8 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
 
 #ifdef UDPRELAY_REMOTE
 
+    rx += buf_len;
+
     char addr_header_buf[256];
     char *addr_header = remote_ctx->addr_header;
     int addr_header_len = remote_ctx->addr_header_len;
@@ -818,6 +824,9 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
 #ifdef UDPRELAY_REMOTE
+
+    tx += buf_len;
+
     buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
     if (buf == NULL) {
         ERROR("[udp] server_ss_decrypt_all");

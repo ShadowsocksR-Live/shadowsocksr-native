@@ -159,6 +159,21 @@ jconf_t *read_jconf(const char * file)
                     conf.remote_addr[0].port = NULL;
                     conf.remote_num = 1;
                 }
+            } else if (strcmp(name, "port_password") == 0) {
+                if (value->type == json_object) {
+                    for (j = 0; j < value->u.object.length; j++) {
+                        if (j >= MAX_PORT_NUM) {
+                            break;
+                        }
+                        json_value *v = value->u.object.values[j].value;
+                        if (v->type == json_string) {
+                            conf.port_password[j].port = ss_strndup(value->u.object.values[j].name,
+                                    value->u.object.values[j].name_length);
+                            conf.port_password[j].password = to_string(v);
+                            conf.port_password_num = j + 1;
+                        }
+                    }
+                }
             } else if (strcmp(name, "server_port") == 0) {
                 conf.remote_port = to_string(value);
             } else if (strcmp(name, "local_address") == 0) {

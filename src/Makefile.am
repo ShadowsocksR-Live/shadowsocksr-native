@@ -19,7 +19,7 @@ SS_COMMON_LIBS = $(PTHREAD_LIBS) \
 
 bin_PROGRAMS = ss-local ss-tunnel
 if !BUILD_WINCOMPAT
-bin_PROGRAMS += ss-server
+bin_PROGRAMS += ss-server ss-manager
 endif
 
 ss_local_SOURCES = utils.c \
@@ -52,9 +52,15 @@ ss_server_SOURCES = utils.c \
 					resolv.c \
                     server.c
 
+ss_manager_SOURCES = utils.c \
+                     jconf.c \
+                     json.c \
+                     manager.c
+
 ss_local_LDADD = $(SS_COMMON_LIBS)
 ss_tunnel_LDADD = $(SS_COMMON_LIBS)
 ss_server_LDADD = $(SS_COMMON_LIBS)
+ss_manager_LDADD = $(SS_COMMON_LIBS)
 ss_local_LDADD += $(top_builddir)/libudns/libudns.la
 ss_tunnel_LDADD += $(top_builddir)/libudns/libudns.la
 ss_server_LDADD += $(top_builddir)/libudns/libudns.la
