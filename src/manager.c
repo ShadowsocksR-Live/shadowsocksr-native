@@ -486,9 +486,6 @@ int create_server_socket(const char *host, const char *port)
 
         int opt = 1;
         setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-#ifdef SO_NOSIGPIPE
-        set_nosigpipe(server_sock);
-#endif
 
         s = bind(server_sock, rp->ai_addr, rp->ai_addrlen);
         if (s == 0) {
