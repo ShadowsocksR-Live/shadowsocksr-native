@@ -46,10 +46,10 @@
 #include <netinet/tcp.h>
 #include <pthread.h>
 #include <sys/un.h>
+#include <sys/socket.h>
 #endif
 
 #include <libcork/core.h>
-#include <udns.h>
 
 #ifdef __MINGW32__
 #include "win32.h"
@@ -65,24 +65,8 @@
 #include "utils.h"
 #include "manager.h"
 
-#ifndef EAGAIN
-#define EAGAIN EWOULDBLOCK
-#endif
-
-#ifndef EWOULDBLOCK
-#define EWOULDBLOCK EAGAIN
-#endif
-
 #ifndef BUF_SIZE
 #define BUF_SIZE 2048
-#endif
-
-#ifndef SSMAXCONN
-#define SSMAXCONN 1024
-#endif
-
-#ifndef UPDATE_INTERVAL
-#define UPDATE_INTERVAL 30
 #endif
 
 int verbose = 0;
