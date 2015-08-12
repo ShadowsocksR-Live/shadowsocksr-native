@@ -60,6 +60,7 @@
 #define SET_INTERFACE
 #endif
 
+#include "netutils.h"
 #include "utils.h"
 #include "acl.h"
 #include "server.h"
@@ -127,7 +128,7 @@ static struct cork_dllist connections;
 static void stat_update_cb(EV_P_ ev_timer *watcher, int revents)
 {
     struct sockaddr_un svaddr, claddr;
-    int sfd;
+    int sfd = -1;
     size_t msgLen;
     char resp[BUF_SIZE];
 
@@ -135,38 +136,69 @@ static void stat_update_cb(EV_P_ ev_timer *watcher, int revents)
         LOGI("update traffic stat: tx: %"PRIu64" rx: %"PRIu64"", tx, rx);
     }
 
-    sfd = socket(AF_UNIX, SOCK_DGRAM, 0);
-    if (sfd == -1) {
-        ERROR("stat_socket");
-        return;
-    }
-
-    memset(&claddr, 0, sizeof(struct sockaddr_un));
-    claddr.sun_family = AF_UNIX;
-    snprintf(claddr.sun_path, sizeof(claddr.sun_path), "/tmp/shadowsocks.%s", server_port);
-
-    unlink(claddr.sun_path);
-
-    if (bind(sfd, (struct sockaddr *) &claddr, sizeof(struct sockaddr_un)) == -1) {
-        ERROR("stat_bind");
-        close(sfd);
-        return;
-    }
-
-    memset(&svaddr, 0, sizeof(struct sockaddr_un));
-    svaddr.sun_family = AF_UNIX;
-    strncpy(svaddr.sun_path, manager_address, sizeof(svaddr.sun_path) - 1);
-
     snprintf(resp, BUF_SIZE, "stat: {\"%s\":%"PRIu64"}", server_port, tx + rx);
     msgLen = strlen(resp) + 1;
-    if (sendto(sfd, resp, strlen(resp) + 1, 0, (struct sockaddr *) &svaddr,
-                sizeof(struct sockaddr_un)) != msgLen) {
-        ERROR("stat_sendto");
-        return;
+
+    ss_addr_t ip_addr = { .host = NULL, .port = NULL };
+    parse_addr(manager_address, &ip_addr);
+
+    if (ip_addr.host == NULL || ip_addr.port == NULL) {
+        sfd = socket(AF_UNIX, SOCK_DGRAM, 0);
+        if (sfd == -1) {
+            ERROR("stat_socket");
+            return;
+        }
+
+        memset(&claddr, 0, sizeof(struct sockaddr_un));
+        claddr.sun_family = AF_UNIX;
+        snprintf(claddr.sun_path, sizeof(claddr.sun_path), "/tmp/shadowsocks.%s", server_port);
+
+        unlink(claddr.sun_path);
+
+        if (bind(sfd, (struct sockaddr *) &claddr, sizeof(struct sockaddr_un)) == -1) {
+            ERROR("stat_bind");
+            close(sfd);
+            return;
+        }
+
+        memset(&svaddr, 0, sizeof(struct sockaddr_un));
+        svaddr.sun_family = AF_UNIX;
+        strncpy(svaddr.sun_path, manager_address, sizeof(svaddr.sun_path) - 1);
+
+        if (sendto(sfd, resp, strlen(resp) + 1, 0, (struct sockaddr *) &svaddr,
+                    sizeof(struct sockaddr_un)) != msgLen) {
+            ERROR("stat_sendto");
+            close(sfd);
+            return;
+        }
+
+        unlink(claddr.sun_path);
+
+    } else {
+        struct sockaddr_storage storage;
+        memset(&storage, 0, sizeof(struct sockaddr_storage));
+        if (get_sockaddr(ip_addr.host, ip_addr.port, &storage, 0) == -1) {
+            ERROR("failed to parse the manager addr");
+            return;
+        }
+
+        sfd = socket(storage.ss_family, SOCK_DGRAM, 0);
+
+        if (sfd == -1) {
+            ERROR("stat_socket");
+            return;
+        }
+
+        size_t addr_len = get_sockaddr_len((struct sockaddr *)&storage);
+        if (sendto(sfd, resp, strlen(resp) + 1, 0, (struct sockaddr *)&storage,
+                    addr_len) != msgLen) {
+            ERROR("stat_sendto");
+            close(sfd);
+            return;
+        }
     }
 
     close(sfd);
-    unlink(claddr.sun_path);
 }
 
 static void free_connections(struct ev_loop *loop)

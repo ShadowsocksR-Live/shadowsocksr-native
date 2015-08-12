@@ -23,6 +23,7 @@
 .ds Re  \fBss-redir\fR
 .ds Se  \fBss-server\fR
 .ds Tu  \fBss-tunnel\fR
+.ds Ma  \fBss-manager\fR
 .ds Me  \fBShadowsocks\fR
 
 .TH SHADOWSOCKS-LIBEV 8 "January 7, 2015"
@@ -30,7 +31,7 @@
 shadowsocks-libev \- a lightweight and secure socks5 proxy
 
 .SH SYNOPSIS
-\*(Lo|\*(Re|\*(Se
+\*(Lo|\*(Re|\*(Se|\*(Tu|\*(Ma
     \-s server_host     \-p server_port    
     \-l local_port      \-k password    
     \-m encrypt_method  \-f pid_file
@@ -47,6 +48,11 @@ machines to proxy TCP traffic. \*(Tu is a tool for local port forwarding.
 .PP
 While \*(Lo works as a standard socks5 proxy, \*(Re works as a transparent proxy
 and requires netfilter's NAT module. For more information, check out the example
+section.
+.PP
+\*(Ma is a controller for multi-user management and traffic statistics, using UNIX
+domain socket to talk with \*(Se. Also, it provides a UNIX domain socket or IP based
+API for other software. About the details of this API, please refer to the protocol
 section.
 
 .SH OPTIONS
@@ -75,7 +81,7 @@ not work.
 Start shadowsocks as a daemon with specific pid file.
 .TP
 .B \-t \fItimeout\fP
-Set the socket timeout in secondes. The default value is 10.
+Set the socket timeout in seconds. The default value is 10.
 .TP
 .B \-c \fIconfig_file\fP
 Use a configuration file.
@@ -98,6 +104,12 @@ Enable TCP fast open.
 .TP
 .B \--acl \fIacl_config\fP
 Enable ACL (Access Control List).
+.TP
+.B \--manager-address \fIpath_to_unix_domain\fP
+Enable manager mode.
+.TP
+.B \--executable \fIpath_to_server_executable\fP
+Specify the executable path of ss-server for manager mode.
 
 .SH EXAMPLE
 \*(Re requires netfilter's NAT function. Here is an example:
@@ -135,6 +147,29 @@ Enable ACL (Access Control List).
 
     # Start the shadowsocks-redir
     root@Wrt:~# ss-redir -u -c /etc/config/shadowsocks.json -f /var/run/shadowsocks.pid
+
+.SH PROTOCOL
+\*(Ma provides several APIs through UDP protocol:
+
+    Send UDP commands in the following format to the manager-address provided to \*(Ma.
+
+        command: [JSON data]
+
+    To add a port:
+
+        add: {"server_port": 8001, "password":"7cd308cc059"}
+    
+    To remove a port:
+
+        remove: {"server_port": 8001}
+    
+    To receive a pong:
+
+        ping
+    
+    Then \*(Ma will send back the traffic statistics:
+
+        stat: {"8001":11370}
 
 .SH SEE ALSO
 .BR iptables (8),
