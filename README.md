@@ -272,7 +272,7 @@ Usage
        [--acl <acl_file>]         config file of ACL (Access Control List)
                                   only available in local and server mode
 
-       [--manager_address <addr>] UNIX domain socket address
+       [--manager-address <addr>] UNIX domain socket address
                                   only available in server and manager mode
 
        [--executable <path>]      path to the executable of ss-server
