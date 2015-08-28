@@ -272,7 +272,7 @@ void usage()
         "                                  only available in local and server mode\n");
     printf("\n");
     printf(
-        "       [--manager_address <addr>] UNIX domain socket address\n");
+        "       [--manager-address <addr>] UNIX domain socket address\n");
     printf(
         "                                  only available in server and manager mode\n");
     printf("\n");
