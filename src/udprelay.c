@@ -174,17 +174,17 @@ static int get_dstaddr(struct msghdr *msg, struct sockaddr_storage *dstaddr)
 }
 #endif
 
+#define HASH_KEY_LEN sizeof(struct sockaddr_storage) + sizeof(int)
 static char *hash_key(const int af, const struct sockaddr_storage *addr)
 {
-    int addr_len = sizeof(struct sockaddr_storage);
-    int key_len = addr_len + sizeof(int);
-    char key[key_len];
+    size_t addr_len = sizeof(struct sockaddr_storage);
+    static char key[HASH_KEY_LEN];
 
-    memset(key, 0, key_len);
+    memset(key, 0, HASH_KEY_LEN);
     memcpy(key, &af, sizeof(int));
     memcpy(key + sizeof(int), (const uint8_t *)addr, addr_len);
 
-    return (char *)enc_md5((const uint8_t *)key, key_len, NULL);
+    return key;
 }
 
 #if defined(UDPRELAY_REDIR) || defined(UDPRELAY_REMOTE)
@@ -552,7 +552,7 @@ static void query_resolve_cb(struct sockaddr *addr, void *data)
         // Lookup in the conn cache
         if (remote_ctx == NULL) {
             char *key = hash_key(0, &query_ctx->src_addr);
-            cache_lookup(query_ctx->server_ctx->conn_cache, key, 32, (void *)&remote_ctx);
+            cache_lookup(query_ctx->server_ctx->conn_cache, key, HASH_KEY_LEN, (void *)&remote_ctx);
         }
 
         if (remote_ctx == NULL) {
@@ -597,7 +597,7 @@ static void query_resolve_cb(struct sockaddr *addr, void *data)
                 if (!cache_hit) {
                     // Add to conn cache
                     char *key = hash_key(0, &remote_ctx->src_addr);
-                    cache_insert(query_ctx->server_ctx->conn_cache, key, 32, (void *)remote_ctx);
+                    cache_insert(query_ctx->server_ctx->conn_cache, key, HASH_KEY_LEN, (void *)remote_ctx);
                     ev_io_start(EV_A_ & remote_ctx->io);
                     ev_timer_start(EV_A_ & remote_ctx->watcher);
                 }
@@ -979,7 +979,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     struct cache *conn_cache = server_ctx->conn_cache;
 
     struct remote_ctx *remote_ctx = NULL;
-    cache_lookup(conn_cache, key, 32, (void *)&remote_ctx);
+    cache_lookup(conn_cache, key, HASH_KEY_LEN, (void *)&remote_ctx);
 
     if (remote_ctx != NULL) {
         if (memcmp(&src_addr, &remote_ctx->src_addr, sizeof(src_addr))) {
@@ -1068,7 +1068,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         memcpy(remote_ctx->addr_header, addr_header, addr_header_len);
 
         // Add to conn cache
-        cache_insert(conn_cache, key, 32, (void *)remote_ctx);
+        cache_insert(conn_cache, key, HASH_KEY_LEN, (void *)remote_ctx);
 
         // Start remote io
         ev_io_start(EV_A_ & remote_ctx->io);
@@ -1147,7 +1147,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 // Add to conn cache
                 remote_ctx->af = dst_addr.ss_family;
                 char *key = hash_key(remote_ctx->af, &remote_ctx->src_addr);
-                cache_insert(server_ctx->conn_cache, key, 32, (void *)remote_ctx);
+                cache_insert(server_ctx->conn_cache, key, HASH_KEY_LEN, (void *)remote_ctx);
 
                 ev_io_start(EV_A_ & remote_ctx->io);
                 ev_timer_start(EV_A_ & remote_ctx->watcher);
