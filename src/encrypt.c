@@ -67,6 +67,7 @@
 
 #include <sodium.h>
 
+#include "cache.h"
 #include "encrypt.h"
 #include "utils.h"
 
@@ -78,6 +79,8 @@ static uint8_t enc_key[MAX_KEY_LENGTH];
 static int enc_key_len;
 static int enc_iv_len;
 static int enc_method;
+
+static struct cache *iv_cache;
 
 #ifdef DEBUG
 static void dump(char *tag, char *text, int len)
@@ -1263,6 +1266,13 @@ char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len,
             cipher_context_set_iv(&ctx->evp, iv, iv_len, 0);
             ctx->counter = 0;
             ctx->init = 1;
+
+            if (cache_key_exist(iv_cache, (char *)iv, MAX_IV_LENGTH)) {
+                free(ciphertext);
+                return NULL;
+            } else {
+                cache_insert(iv_cache, (char *)iv, MAX_IV_LENGTH, NULL);
+            }
         }
 
         if (enc_method >= SALSA20) {
@@ -1335,6 +1345,9 @@ void enc_key_init(int method, const char *pass)
         LOGE("enc_key_init(): Illegal method");
         return;
     }
+
+    // Inilitialize cache
+    cache_create(&iv_cache, 256, NULL);
 
 #if defined(USE_CRYPTO_OPENSSL)
     OpenSSL_add_all_algorithms();

@@ -528,7 +528,7 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
     }
 
     char *key = hash_key(remote_ctx->af, &remote_ctx->src_addr);
-    cache_remove(remote_ctx->server_ctx->conn_cache, key);
+    cache_remove(remote_ctx->server_ctx->conn_cache, key, 32);
 }
 
 #ifdef UDPRELAY_REMOTE
@@ -552,7 +552,7 @@ static void query_resolve_cb(struct sockaddr *addr, void *data)
         // Lookup in the conn cache
         if (remote_ctx == NULL) {
             char *key = hash_key(0, &query_ctx->src_addr);
-            cache_lookup(query_ctx->server_ctx->conn_cache, key, (void *)&remote_ctx);
+            cache_lookup(query_ctx->server_ctx->conn_cache, key, 32, (void *)&remote_ctx);
         }
 
         if (remote_ctx == NULL) {
@@ -597,8 +597,7 @@ static void query_resolve_cb(struct sockaddr *addr, void *data)
                 if (!cache_hit) {
                     // Add to conn cache
                     char *key = hash_key(0, &remote_ctx->src_addr);
-                    cache_insert(query_ctx->server_ctx->conn_cache, key,
-                            (void *)remote_ctx);
+                    cache_insert(query_ctx->server_ctx->conn_cache, key, 32, (void *)remote_ctx);
                     ev_io_start(EV_A_ & remote_ctx->io);
                     ev_timer_start(EV_A_ & remote_ctx->watcher);
                 }
@@ -980,7 +979,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     struct cache *conn_cache = server_ctx->conn_cache;
 
     struct remote_ctx *remote_ctx = NULL;
-    cache_lookup(conn_cache, key, (void *)&remote_ctx);
+    cache_lookup(conn_cache, key, 32, (void *)&remote_ctx);
 
     if (remote_ctx != NULL) {
         if (memcmp(&src_addr, &remote_ctx->src_addr, sizeof(src_addr))) {
@@ -1069,7 +1068,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         memcpy(remote_ctx->addr_header, addr_header, addr_header_len);
 
         // Add to conn cache
-        cache_insert(conn_cache, key, (void *)remote_ctx);
+        cache_insert(conn_cache, key, 32, (void *)remote_ctx);
 
         // Start remote io
         ev_io_start(EV_A_ & remote_ctx->io);
@@ -1148,8 +1147,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 // Add to conn cache
                 remote_ctx->af = dst_addr.ss_family;
                 char *key = hash_key(remote_ctx->af, &remote_ctx->src_addr);
-                cache_insert(server_ctx->conn_cache, key,
-                        (void *)remote_ctx);
+                cache_insert(server_ctx->conn_cache, key, 32, (void *)remote_ctx);
 
                 ev_io_start(EV_A_ & remote_ctx->io);
                 ev_timer_start(EV_A_ & remote_ctx->watcher);

@@ -563,7 +563,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         } else if (atyp == 3) {
             // Domain name
             uint8_t name_len = *(uint8_t *)(server->buf + offset);
-            if (name_len < r && name_len < 255 && name_len > 0) {
+            if (name_len < r) {
                 memcpy(host, server->buf + offset + 1, name_len);
                 offset += name_len + 1;
             } else {
