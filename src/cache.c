@@ -226,7 +226,7 @@ int cache_insert(struct cache *cache, char *key, size_t key_len, void *data)
     }
 
     entry->key = malloc(key_len);
-    mempcpy(entry->key, key, key_len);
+    memcpy(entry->key, key, key_len);
     entry->data = data;
     HASH_ADD_KEYPTR(hh, cache->entries, entry->key, key_len, entry);
 
