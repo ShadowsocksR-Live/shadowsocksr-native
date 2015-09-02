@@ -87,8 +87,10 @@ int cache_delete(struct cache *cache, int keep_data)
     } else {
         HASH_ITER(hh, cache->entries, entry, tmp){
             HASH_DEL(cache->entries, entry);
-            if (cache->free_cb) {
-                cache->free_cb(entry->data);
+            if (entry->data != NULL) {
+                if (cache->free_cb) {
+                    cache->free_cb(entry->data);
+                }
             }
             free(entry->key);
             free(entry);
@@ -125,8 +127,12 @@ int cache_remove(struct cache *cache, char *key, size_t key_len)
 
     if (tmp) {
         HASH_DEL(cache->entries, tmp);
-        if (cache->free_cb) {
-            cache->free_cb(tmp->data);
+        if (tmp->data != NULL) {
+            if (cache->free_cb) {
+                cache->free_cb(tmp->data);
+            } else {
+                free(tmp->data);
+            }
         }
         free(tmp->key);
         free(tmp);
@@ -217,7 +223,7 @@ int cache_insert(struct cache *cache, char *key, size_t key_len, void *data)
     struct cache_entry *entry = NULL;
     struct cache_entry *tmp_entry = NULL;
 
-    if (!cache || !data) {
+    if (!cache) {
         return EINVAL;
     }
 
@@ -233,10 +239,12 @@ int cache_insert(struct cache *cache, char *key, size_t key_len, void *data)
     if (HASH_COUNT(cache->entries) >= cache->max_entries) {
         HASH_ITER(hh, cache->entries, entry, tmp_entry){
             HASH_DELETE(hh, cache->entries, entry);
-            if (cache->free_cb) {
-                cache->free_cb(entry->data);
-            } else {
-                free(entry->data);
+            if (entry->data != NULL) {
+                if (cache->free_cb) {
+                    cache->free_cb(entry->data);
+                } else {
+                    free(entry->data);
+                }
             }
             free(entry->key);
             free(entry);
