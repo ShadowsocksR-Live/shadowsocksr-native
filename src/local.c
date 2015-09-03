@@ -471,13 +471,13 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 }
 
                 if (!remote->direct) {
-                    memcpy(remote->buf, ss_addr_to_send, addr_len);
-
                     if (auth) {
-                        ss_onetimeauth(remote->buf + addr_len, ss_addr_to_send, addr_len);
+                        ss_addr_to_send[0] |= ONETIMEAUTH_FLAG;
+                        ss_onetimeauth(ss_addr_to_send + addr_len, ss_addr_to_send, addr_len);
                         addr_len += ONETIMEAUTH_BYTES;
                     }
 
+                    memcpy(remote->buf, ss_addr_to_send, addr_len);
                     if (r > 0) {
                         memcpy(remote->buf + addr_len, buf, r);
                     }

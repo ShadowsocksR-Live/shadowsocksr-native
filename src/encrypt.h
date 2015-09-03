@@ -143,6 +143,10 @@ typedef struct {
 #define ONETIMEAUTH_BYTES 16U
 #define ONETIMEAUTH_KEYBYTES 32U
 
+#define ONETIMEAUTH_FLAG 0x10
+#define ONETIMEAUTH_MASK 0xF0
+#define ADDRTYPE_MASK 0xF
+
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 

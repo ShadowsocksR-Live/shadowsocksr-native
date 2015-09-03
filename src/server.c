@@ -539,7 +539,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         memset(&storage, 0, sizeof(struct sockaddr_storage));
 
         // get remote addr and port
-        if (atyp == 1) {
+        if ((atyp & ADDRTYPE_MASK) == 1) {
             // IP V4
             struct sockaddr_in *addr = (struct sockaddr_in *)&storage;
             size_t in_addr_len = sizeof(struct in_addr);
@@ -561,7 +561,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             info.ai_protocol = IPPROTO_TCP;
             info.ai_addrlen = sizeof(struct sockaddr_in);
             info.ai_addr = (struct sockaddr *)addr;
-        } else if (atyp == 3) {
+        } else if ((atyp & ADDRTYPE_MASK) == 3) {
             // Domain name
             uint8_t name_len = *(uint8_t *)(server->buf + offset);
             if (name_len < r) {
@@ -597,7 +597,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             } else {
                 need_query = 1;
             }
-        } else if (atyp == 4) {
+        } else if ((atyp & ADDRTYPE_MASK) == 4) {
             // IP V6
             struct sockaddr_in6 *addr = (struct sockaddr_in6 *)&storage;
             size_t in6_addr_len = sizeof(struct in6_addr);
@@ -640,7 +640,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
         offset += 2;
 
-        if (auth) {
+        if (auth || (atyp & ONETIMEAUTH_MASK)) {
             if (ss_onetimeauth_verify(server->buf + offset, server->buf, offset)) {
                 LOGE("authentication error %d", atyp);
                 report_addr(server->fd);
