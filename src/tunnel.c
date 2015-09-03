@@ -410,6 +410,12 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
             memcpy(ss_addr_to_send + addr_len, &port, 2);
             addr_len += 2;
 
+            if (auth) {
+                ss_addr_to_send[0] |= ONETIMEAUTH_FLAG;
+                ss_onetimeauth(ss_addr_to_send + addr_len, ss_addr_to_send, addr_len);
+                addr_len += ONETIMEAUTH_BYTES;
+            }
+
             ss_addr_to_send = ss_encrypt(BUF_SIZE, ss_addr_to_send, &addr_len,
                                          server->e_ctx);
             if (ss_addr_to_send == NULL) {
@@ -417,12 +423,6 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
                 return;
-            }
-
-            if (auth) {
-                ss_addr_to_send[0] |= ONETIMEAUTH_FLAG;
-                ss_onetimeauth(ss_addr_to_send + addr_len, ss_addr_to_send, addr_len);
-                addr_len += ONETIMEAUTH_BYTES;
             }
 
             int s = send(remote->fd, ss_addr_to_send, addr_len, 0);
