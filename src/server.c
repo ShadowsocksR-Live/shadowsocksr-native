@@ -519,13 +519,13 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     } else if (server->stage == 0) {
 
         /*
-         * Shadowsocks Protocol:
+         * Shadowsocks TCP Relay Protocol:
          *
-         *    +------+----------+----------+
-         *    | ATYP | DST.ADDR | DST.PORT |
-         *    +------+----------+----------+
-         *    |  1   | Variable |    2     |
-         *    +------+----------+----------+
+         *    +------+----------+----------+------+
+         *    | ATYP | DST.ADDR | DST.PORT | AUTH |
+         *    +------+----------+----------+------+
+         *    |  1   | Variable |    2     |  16  |
+         *    +------+----------+----------+------+
          */
 
         int offset = 0;
