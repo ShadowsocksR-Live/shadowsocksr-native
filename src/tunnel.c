@@ -420,9 +420,9 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
             }
 
             if (auth) {
+                ss_addr_to_send[0] |= ONETIMEAUTH_FLAG;
                 ss_onetimeauth(ss_addr_to_send + addr_len, ss_addr_to_send, addr_len);
                 addr_len += ONETIMEAUTH_BYTES;
-                ss_addr_to_send[0] |= ONETIMEAUTH_FLAG;
             }
 
             int s = send(remote->fd, ss_addr_to_send, addr_len, 0);
