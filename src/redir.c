@@ -83,6 +83,7 @@ static void close_and_free_server(EV_P_ struct server *server);
 int verbose = 0;
 
 static int mode = TCP_ONLY;
+static int auth = 0;
 
 int getdestaddr(int fd, struct sockaddr_storage *destaddr)
 {
@@ -376,6 +377,11 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
                 return;
             }
 
+            if (auth) {
+                ss_onetimeauth(ss_addr_to_send + addr_len, ss_addr_to_send, addr_len);
+                addr_len += ONETIMEAUTH_BYTES;
+            }
+
             int s = send(remote->fd, ss_addr_to_send, addr_len, 0);
             free(ss_addr_to_send);
 
@@ -614,7 +620,7 @@ int main(int argc, char **argv)
 
     opterr = 0;
 
-    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:c:b:a:uUv")) != -1) {
+    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:c:b:a:uUvA")) != -1) {
         switch (c) {
         case 's':
             if (remote_num < MAX_REMOTE_NUM) {
@@ -658,6 +664,10 @@ int main(int argc, char **argv)
             break;
         case 'v':
             verbose = 1;
+            break;
+        case 'A':
+            auth = 1;
+            LOGI("onetime authentication enabled");
             break;
         }
     }

@@ -75,6 +75,7 @@
 
 static uint8_t *enc_table;
 static uint8_t *dec_table;
+static uint8_t auth_key[ONETIMEAUTH_KEYBYTES];
 static uint8_t enc_key[MAX_KEY_LENGTH];
 static int enc_key_len;
 static int enc_iv_len;
@@ -1026,6 +1027,14 @@ static int cipher_context_update(cipher_ctx_t *ctx, uint8_t *output, int *olen,
 #endif
 }
 
+int ss_onetimeauth(char *auth, char *msg, int msg_len) {
+    return crypto_onetimeauth((uint8_t *)auth, (uint8_t *)msg, msg_len, auth_key);
+}
+
+int ss_onetimeauth_verify(char *auth, char *msg, int msg_len) {
+    return crypto_onetimeauth_verify((uint8_t *)auth, (uint8_t *)msg, msg_len, auth_key);
+}
+
 char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method)
 {
     if (method > TABLE) {
@@ -1446,6 +1455,7 @@ int enc_init(const char *pass, const char *method)
     } else {
         enc_key_init(m, pass);
     }
+    crypto_generichash(auth_key, ONETIMEAUTH_KEYBYTES, (uint8_t *)pass, strlen(pass), NULL, 0);
     return m;
 }
 

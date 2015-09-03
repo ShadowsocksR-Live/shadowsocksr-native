@@ -91,6 +91,7 @@ int vpn = 0;
 int verbose = 0;
 
 static int mode = TCP_ONLY;
+static int auth = 0;
 
 #ifndef __MINGW32__
 static int setnonblocking(int fd)
@@ -418,6 +419,11 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
                 return;
             }
 
+            if (auth) {
+                ss_onetimeauth(ss_addr_to_send + addr_len, ss_addr_to_send, addr_len);
+                addr_len += ONETIMEAUTH_BYTES;
+            }
+
             int s = send(remote->fd, ss_addr_to_send, addr_len, 0);
             free(ss_addr_to_send);
 
@@ -668,9 +674,9 @@ int main(int argc, char **argv)
     USE_TTY();
 
 #ifdef ANDROID
-    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:uUvV")) != -1) {
+    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:uUvVA")) != -1) {
 #else
-    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:uUv")) != -1) {
+    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:uUvA")) != -1) {
 #endif
         switch (c) {
         case 's':
@@ -721,6 +727,10 @@ int main(int argc, char **argv)
             break;
         case 'v':
             verbose = 1;
+            break;
+        case 'A':
+            auth = 1;
+            LOGI("onetime authentication enabled");
             break;
 #ifdef ANDROID
         case 'V':

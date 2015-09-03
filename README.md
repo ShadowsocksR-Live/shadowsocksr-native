@@ -258,6 +258,11 @@ Usage
        [-u]                       enable udprelay mode,
                                   TPROXY is required in redir mode
 
+       [-U]                       enable UDP relay and disable TCP relay,
+                                  not available in local mode
+
+       [-A]                       enable onetime authentication
+
        [-L <addr>:<port>]         specify destination server address and port
                                   for local port forwarding,
                                   only available in tunnel mode

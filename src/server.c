@@ -109,6 +109,7 @@ int verbose = 0;
 
 static int acl = 0;
 static int mode = TCP_ONLY;
+static int auth = 0;
 
 static int fast_open = 0;
 #ifdef HAVE_SETRLIMIT
@@ -638,6 +639,16 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         port = (*(uint16_t *)(server->buf + offset));
 
         offset += 2;
+
+        if (auth) {
+            if (ss_onetimeauth_verify(server->buf + offset, server->buf, offset)) {
+                LOGE("authentication error %d", atyp);
+                report_addr(server->fd);
+                close_and_free_server(EV_A_ server);
+                return;
+            };
+            offset += ONETIMEAUTH_BYTES;
+        }
 
         if (verbose) {
             LOGI("connect to: %s:%d", host, ntohs(port));
@@ -1193,7 +1204,7 @@ int main(int argc, char **argv)
 
     USE_TTY();
 
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:c:i:d:a:uUv",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:c:i:d:a:uUvA",
                             long_options, &option_index)) != -1) {
         switch (c) {
         case 0:
@@ -1249,6 +1260,10 @@ int main(int argc, char **argv)
             break;
         case 'v':
             verbose = 1;
+            break;
+        case 'A':
+            auth = 1;
+            LOGI("onetime authentication enabled");
             break;
         }
     }

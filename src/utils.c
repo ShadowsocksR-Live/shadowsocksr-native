@@ -248,6 +248,9 @@ void usage()
         "                                  not available in local mode\n");
     printf("\n");
     printf(
+        "       [-A]                       enable onetime authentication\n");
+    printf("\n");
+    printf(
         "       [-L <addr>:<port>]         specify destination server address and port\n");
     printf(
         "                                  for local port forwarding,\n");

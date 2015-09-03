@@ -94,6 +94,8 @@ static int nofile = 0;
 #endif
 #endif
 
+static int auth = 0;
+
 static void server_recv_cb(EV_P_ ev_io *w, int revents);
 static void server_send_cb(EV_P_ ev_io *w, int revents);
 static void remote_recv_cb(EV_P_ ev_io *w, int revents);
@@ -470,6 +472,12 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 if (!remote->direct) {
                     memcpy(remote->buf, ss_addr_to_send, addr_len);
+
+                    if (auth) {
+                        ss_onetimeauth(remote->buf + addr_len, ss_addr_to_send, addr_len);
+                        addr_len += ONETIMEAUTH_BYTES;
+                    }
+
                     if (r > 0) {
                         memcpy(remote->buf + addr_len, buf, r);
                     }
@@ -921,10 +929,10 @@ int main(int argc, char **argv)
     USE_TTY();
 
 #ifdef ANDROID
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:uvV",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:uvVA",
                             long_options, &option_index)) != -1) {
 #else
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:uv",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:uvA",
                             long_options, &option_index)) != -1) {
 #endif
         switch (c) {
@@ -978,6 +986,10 @@ int main(int argc, char **argv)
             break;
         case 'v':
             verbose = 1;
+            break;
+        case 'A':
+            auth = 1;
+            LOGI("onetime authentication enabled");
             break;
 #ifdef ANDROID
         case 'V':
