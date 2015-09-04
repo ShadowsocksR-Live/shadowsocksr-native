@@ -1276,11 +1276,13 @@ char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len,
             ctx->counter = 0;
             ctx->init = 1;
 
-            if (cache_key_exist(iv_cache, (char *)iv, iv_len)) {
-                free(ciphertext);
-                return NULL;
-            } else {
-                cache_insert(iv_cache, (char *)iv, iv_len, NULL);
+            if (enc_method >= RC4_MD5) {
+                if (cache_key_exist(iv_cache, (char *)iv, iv_len)) {
+                    free(ciphertext);
+                    return NULL;
+                } else {
+                    cache_insert(iv_cache, (char *)iv, iv_len, NULL);
+                }
             }
         }
 
