@@ -140,7 +140,6 @@ static const char * supported_ciphers_polarssl[CIPHER_NUM] =
 #endif
 
 #ifdef USE_CRYPTO_MBEDTLS
-// FIXME: check it
 static const char * supported_ciphers_mbedtls[CIPHER_NUM] =
 {
     "table",
@@ -347,7 +346,6 @@ int cipher_iv_size(const cipher_kt_t *cipher)
 #if defined(USE_CRYPTO_OPENSSL)
     return EVP_CIPHER_iv_length(cipher);
 #elif defined(USE_CRYPTO_POLARSSL) || defined(USE_CRYPTO_MBEDTLS)
-    //FIXME: check data structure of cipher
     if (cipher == NULL) {
         return 0;
     }
@@ -370,11 +368,10 @@ int cipher_key_size(const cipher_kt_t *cipher)
     }
     return cipher->key_length / 8;
 #elif defined(USE_CRYPTO_MBEDTLS)
-    // FIXME: ditto, cipher data structure
     /*
      * Semi-API changes (technically public, morally private)
      * Renamed a few headers to include _internal in the name. Those headers are
-       not supposed to be included by users.
+     * not supposed to be included by users.
      * Changed md_info_t into an opaque structure (use md_get_xxx() accessors).
      * Changed pk_info_t into an opaque structure.
      * Changed cipher_base_t into an opaque structure.
@@ -488,7 +485,7 @@ int bytes_to_key(const cipher_kt_t *cipher, const digest_type_t *md,
  *
  * Generic message digest context.
 
-typedef struct {
+   typedef struct {
     Information about the associated message digest
     const mbedtls_md_info_t *md_info;
 
@@ -497,15 +494,15 @@ typedef struct {
 
      HMAC part of the context
     void *hmac_ctx;
-} mbedtls_md_context_t; // mbedtls 2.0.0
+   } mbedtls_md_context_t; // mbedtls 2.0.0
 
-typedef struct {
+   typedef struct {
     Information about the associated message digest
     const md_info_t *md_info;
 
     Digest-specific context
     void *md_ctx;
-} md_context_t; //polarssl 1.3
+   } md_context_t; //polarssl 1.3
 
  */
     // NOTE: different struct body, initialize new param hmac 0 to disable HMAC
@@ -526,7 +523,7 @@ typedef struct {
     }
 
     memset(&c, 0, sizeof(mbedtls_md_context_t));
-    //FIXME: md_init_ctx superseded by mbedtls_md_setup() in 2.0.0
+    // XXX: md_init_ctx superseded by mbedtls_md_setup() in 2.0.0
     // new param hmac      0 to save some memory if HMAC will not be used,
     //                     non-zero is HMAC is going to be used with this context.
     if (mbedtls_md_setup(&c, md, 0)) {
@@ -668,7 +665,7 @@ int rand_bytes(uint8_t *output, int len)
     return 1;
 #elif defined(USE_CRYPTO_MBEDTLS)
     static mbedtls_entropy_context ec = {};
-    // FIXME: ctr_drbg_context changed, [if defined(MBEDTLS_THREADING_C)    mbedtls_threading_mutex_t mutex;]
+    // XXX: ctr_drbg_context changed, [if defined(MBEDTLS_THREADING_C)    mbedtls_threading_mutex_t mutex;]
     static mbedtls_ctr_drbg_context cd_ctx = {};
     static unsigned char rand_initialised = 0;
     const size_t blen = min(len, MBEDTLS_CTR_DRBG_MAX_REQUEST);
@@ -709,10 +706,10 @@ int rand_bytes(uint8_t *output, int len)
         }
 #endif
         mbedtls_entropy_init(&ec);
-        // FIXME: ctr_drbg_init changed, seems we should initialize it before calling mbedtls_ctr_drbg_seed()
+        // XXX: ctr_drbg_init changed, seems we should initialize it before calling mbedtls_ctr_drbg_seed()
         mbedtls_ctr_drbg_init(&cd_ctx);
         if (mbedtls_ctr_drbg_seed(&cd_ctx, mbedtls_entropy_func, &ec,
-                          (const unsigned char *)rand_buffer.buffer, 8) != 0) {
+                                  (const unsigned char *)rand_buffer.buffer, 8) != 0) {
             mbedtls_entropy_free(&ec);
             FATAL("mbed TLS: Failed to initialize random generator");
         }
@@ -843,7 +840,7 @@ void cipher_context_init(cipher_ctx_t *ctx, int method, int enc)
         FATAL("Cannot initialize PolarSSL cipher context");
     }
 #elif defined(USE_CRYPTO_MBEDTLS)
-    // FIXME: mbedtls_cipher_setup future change
+    // XXX: mbedtls_cipher_setup future change
     // NOTE:  Currently also clears structure. In future versions you will be required to call
     //        mbedtls_cipher_init() on the structure first.
     //        void mbedtls_cipher_init( mbedtls_cipher_context_t *ctx );
@@ -931,7 +928,7 @@ void cipher_context_set_iv(cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len,
         FATAL("Cannot set key and IV");
     }
 #elif defined(USE_CRYPTO_POLARSSL)
-    // FIXME: PolarSSL 1.3.11: cipher_free_ctx deprecated, Use cipher_free() instead.
+    // XXX: PolarSSL 1.3.11: cipher_free_ctx deprecated, Use cipher_free() instead.
     if (cipher_setkey(evp, true_key, enc_key_len * 8, enc) != 0) {
         cipher_free_ctx(evp);
         FATAL("Cannot set PolarSSL cipher key");
@@ -952,7 +949,6 @@ void cipher_context_set_iv(cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len,
     }
 #endif
 #elif defined(USE_CRYPTO_MBEDTLS)
-    // FIXME: cipher_free_ctx deprecated, Use cipher_free() instead in PolarSSL 1.3.11
     if (mbedtls_cipher_setkey(evp, true_key, enc_key_len * 8, enc) != 0) {
         mbedtls_cipher_free(evp);
         FATAL("Cannot set mbed TLS cipher key");
@@ -1002,36 +998,41 @@ void cipher_context_release(cipher_ctx_t *ctx)
 #endif
 }
 
-static int cipher_context_update(cipher_ctx_t *ctx, uint8_t *output, int *olen,
-                                 const uint8_t *input, int ilen)
+static int cipher_context_update(cipher_ctx_t *ctx, uint8_t *output, size_t *olen,
+                                 const uint8_t *input, size_t ilen)
 {
 #ifdef USE_CRYPTO_APPLECC
     cipher_cc_t *cc = &ctx->cc;
     if (cc->valid == kCCContextValid) {
         CCCryptorStatus ret;
         ret = CCCryptorUpdate(cc->cryptor, input, ilen, output,
-                              ilen, (size_t *)olen);
+                              ilen, olen);
         return (ret == kCCSuccess) ? 1 : 0;
     }
 #endif
     cipher_evp_t *evp = &ctx->evp;
 #if defined(USE_CRYPTO_OPENSSL)
-    return EVP_CipherUpdate(evp, (uint8_t *)output, olen,
-                            (const uint8_t *)input, (size_t)ilen);
+    int err = 0, tlen = *olen;
+    err = EVP_CipherUpdate(evp, (uint8_t *)output, &tlen,
+                           (const uint8_t *)input, ilen);
+    *olen = tlen;
+    return err;
 #elif defined(USE_CRYPTO_POLARSSL)
-    return !cipher_update(evp, (const uint8_t *)input, (size_t)ilen,
-                          (uint8_t *)output, (size_t *)olen);
+    return !cipher_update(evp, (const uint8_t *)input, ilen,
+                          (uint8_t *)output, olen);
 #elif defined(USE_CRYPTO_MBEDTLS)
-    return !mbedtls_cipher_update(evp, (const uint8_t *)input, (size_t)ilen,
-                                  (uint8_t *)output, (size_t *)olen);
+    return !mbedtls_cipher_update(evp, (const uint8_t *)input, ilen,
+                                  (uint8_t *)output, olen);
 #endif
 }
 
-int ss_onetimeauth(char *auth, char *msg, int msg_len) {
+int ss_onetimeauth(char *auth, char *msg, int msg_len)
+{
     return crypto_onetimeauth((uint8_t *)auth, (uint8_t *)msg, msg_len, auth_key);
 }
 
-int ss_onetimeauth_verify(char *auth, char *msg, int msg_len) {
+int ss_onetimeauth_verify(char *auth, char *msg, int msg_len)
+{
     return crypto_onetimeauth_verify((uint8_t *)auth, (uint8_t *)msg, msg_len, auth_key);
 }
 
@@ -1041,8 +1042,8 @@ char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method)
         cipher_ctx_t evp;
         cipher_context_init(&evp, method, 1);
 
-        int p_len = *len, c_len = *len;
-        int iv_len = enc_iv_len;
+        size_t p_len = *len, c_len = *len;
+        size_t iv_len = enc_iv_len;
         int err = 1;
 
         static int tmp_len = 0;
@@ -1107,8 +1108,8 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
         static char *tmp_buf = NULL;
 
         int err = 1;
-        int iv_len = 0;
-        int p_len = *len, c_len = *len;
+        size_t iv_len = 0;
+        size_t p_len = *len, c_len = *len;
         if (!ctx->init) {
             iv_len = enc_iv_len;
         }
@@ -1191,8 +1192,8 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
     if (method > TABLE) {
         cipher_ctx_t evp;
         cipher_context_init(&evp, method, 0);
-        int iv_len = enc_iv_len;
-        int c_len = *len, p_len = *len - iv_len;
+        size_t iv_len = enc_iv_len;
+        size_t c_len = *len, p_len = *len - iv_len;
         int err = 1;
 
         static int tmp_len = 0;
@@ -1256,8 +1257,8 @@ char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len,
         static int tmp_len = 0;
         static char *tmp_buf = NULL;
 
-        int c_len = *len, p_len = *len;
-        int iv_len = 0;
+        size_t c_len = *len, p_len = *len;
+        size_t iv_len = 0;
         int err = 1;
         int buf_len = max(p_len, buf_size);
 
@@ -1385,7 +1386,7 @@ void enc_key_init(int method, const char *pass)
         cipher->iv_size = supported_ciphers_iv_size[method];
 #endif
 #if defined(USE_CRYPTO_MBEDTLS)
-        // FIXME: key_length changed to key_bitlen in mbed TLS 2.0.0
+        // XXX: key_length changed to key_bitlen in mbed TLS 2.0.0
         cipher->base = NULL;
         cipher->key_bitlen = supported_ciphers_key_size[method] * 8;
         cipher->iv_size = supported_ciphers_iv_size[method];
@@ -1406,7 +1407,7 @@ void enc_key_init(int method, const char *pass)
             }
 #endif
 #if defined(USE_CRYPTO_MBEDTLS) && defined(USE_CRYPTO_APPLECC)
-            // FIXME: key_length changed to key_bitlen in mbed TLS 2.0.0
+            // XXX: key_length changed to key_bitlen in mbed TLS 2.0.0
             if (supported_ciphers_applecc[method] != kCCAlgorithmInvalid) {
                 cipher_info.base = NULL;
                 cipher_info.key_bitlen = supported_ciphers_key_size[method] * 8;
