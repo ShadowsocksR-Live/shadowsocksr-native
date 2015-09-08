@@ -160,11 +160,11 @@ static char *get_action(char *buf, int len) {
     char *action;
     int pos = 0;
 
-    while(isspace(buf[pos]) && pos < len) pos++;
+    while(isspace((unsigned char)buf[pos]) && pos < len) pos++;
     if (pos == len) return NULL;
     action = buf + pos;
 
-    while((!isspace(buf[pos]) && buf[pos] != ':') && pos < len) pos++;
+    while((!isspace((unsigned char)buf[pos]) && buf[pos] != ':') && pos < len) pos++;
     buf[pos] = '\0';
 
     return action;
