@@ -59,6 +59,7 @@ AX_TLS([:], [:])
 dnl Checks for crypto library
 case "${with_crypto_library}" in
   openssl)
+    ss_ZLIB
     ss_OPENSSL
     AC_DEFINE([USE_CRYPTO_OPENSSL], [1], [Use OpenSSL library])
     ;;

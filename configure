@@ -777,6 +777,10 @@ with_gnu_ld
 with_sysroot
 enable_libtool_lock
 with_crypto_library
+enable_zlib
+with_zlib
+with_zlib_include
+with_zlib_lib
 with_openssl
 with_openssl_include
 with_openssl_lib
@@ -1429,6 +1433,7 @@ Optional Features:
   --enable-fast-install[=PKGS]
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --disable-zlib          disable zlib compression support
   --enable-applecc        enable Apple CommonCrypto API support
   --disable-assert        turn off assertions
   --disable-largefile     omit support for large files
@@ -1444,6 +1449,9 @@ Optional Packages:
   --with-crypto-library=library
                           build with the given crypto library,
                           TYPE=openssl|polarssl|mbedtls [default=openssl]
+  --with-zlib=DIR         zlib base directory, or:
+  --with-zlib-include=DIR zlib headers directory
+  --with-zlib-lib=DIR     zlib library directory
   --with-openssl=DIR      OpenSSL base directory, or:
   --with-openssl-include=DIR
                           OpenSSL headers directory (without trailing
@@ -12916,6 +12924,163 @@ fi
 case "${with_crypto_library}" in
   openssl)
 
+  # Check whether --enable-zlib was given.
+if test "${enable_zlib+set}" = set; then :
+  enableval=$enable_zlib;
+fi
+
+  if test "x$enable_zlib" != "xno"; then :
+
+
+$as_echo "#define HAVE_ZLIB 1" >>confdefs.h
+
+
+# Check whether --with-zlib was given.
+if test "${with_zlib+set}" = set; then :
+  withval=$with_zlib; zlib="$withval"
+       CPPFLAGS="$CPPFLAGS -I$withval/include"
+       LDFLAGS="$LDFLAGS -L$withval/lib"
+
+fi
+
+
+
+# Check whether --with-zlib-include was given.
+if test "${with_zlib_include+set}" = set; then :
+  withval=$with_zlib_include; zlib_include="$withval"
+       CPPFLAGS="$CPPFLAGS -I$withval"
+
+fi
+
+
+
+# Check whether --with-zlib-lib was given.
+if test "${with_zlib_lib+set}" = set; then :
+  withval=$with_zlib_lib; zlib_lib="$withval"
+       LDFLAGS="$LDFLAGS -L$withval"
+
+fi
+
+
+    for ac_header in zlib.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "zlib.h" "ac_cv_header_zlib_h" "$ac_includes_default"
+if test "x$ac_cv_header_zlib_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_ZLIB_H 1
+_ACEOF
+
+else
+  as_fn_error $? "\"zlib header files not found.\"" "$LINENO" 5; break
+
+fi
+
+done
+
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for compress2 in -lz" >&5
+$as_echo_n "checking for compress2 in -lz... " >&6; }
+if ${ac_cv_lib_z_compress2+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lz  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char compress2 ();
+int
+main ()
+{
+return compress2 ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_z_compress2=yes
+else
+  ac_cv_lib_z_compress2=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_z_compress2" >&5
+$as_echo "$ac_cv_lib_z_compress2" >&6; }
+if test "x$ac_cv_lib_z_compress2" = xyes; then :
+  LIBS="$LIBS -lz"
+else
+  as_fn_error $? "\"zlib libraries not found.\"" "$LINENO" 5
+
+fi
+
+
+fi
+
+
+  case $host_os in
+    *mingw*)
+    ;;
+    *)
+      ac_fn_c_check_func "$LINENO" "dlopen" "ac_cv_func_dlopen"
+if test "x$ac_cv_func_dlopen" = xyes; then :
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dlopen in -ldl" >&5
+$as_echo_n "checking for dlopen in -ldl... " >&6; }
+if ${ac_cv_lib_dl_dlopen+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ldl  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char dlopen ();
+int
+main ()
+{
+return dlopen ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_dl_dlopen=yes
+else
+  ac_cv_lib_dl_dlopen=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_dl_dlopen" >&5
+$as_echo "$ac_cv_lib_dl_dlopen" >&6; }
+if test "x$ac_cv_lib_dl_dlopen" = xyes; then :
+  LIBS="$LIBS -ldl"
+else
+  as_fn_error $? "OpenSSL depends on libdl." "$LINENO" 5; break
+
+fi
+
+
+fi
+
+    ;;
+  esac
 
 
 # Check whether --with-openssl was given.
