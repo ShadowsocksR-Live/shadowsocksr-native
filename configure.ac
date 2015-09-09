@@ -227,6 +227,12 @@ AC_CHECK_FUNCS([malloc memset socket])
 
 ACX_PTHREAD
 
+if test "$acx_pthread_ok" != "yes"; then
+    AC_MSG_ERROR([Missing Pthread Library])
+else
+    LIBS="$LIBS $PTHREAD_LIBS"
+fi
+
 AC_CONFIG_SUBDIRS([libsodium])
 
 AC_CONFIG_FILES([ shadowsocks-libev.pc

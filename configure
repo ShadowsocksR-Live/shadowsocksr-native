@@ -15509,6 +15509,12 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
+if test "$acx_pthread_ok" != "yes"; then
+    as_fn_error $? "Missing Pthread Library" "$LINENO" 5
+else
+    LIBS="$LIBS $PTHREAD_LIBS"
+fi
+
 
 
 subdirs="$subdirs libsodium"
