@@ -62,7 +62,7 @@
 #include "udprelay.h"
 
 #ifdef UDPRELAY_REMOTE
-#define MAX_UDP_CONN_NUM 1024
+#define MAX_UDP_CONN_NUM 512
 #else
 #define MAX_UDP_CONN_NUM 256
 #endif
