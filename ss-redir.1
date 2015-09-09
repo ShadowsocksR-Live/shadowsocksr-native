@@ -25,33 +25,26 @@
 .ds Ma  \fBss-manager\fR
 .ds Me  \fBShadowsocks-libev\fR
 .
-.TH "SHADOWSOCKS-LIBEV" "8" "September 10, 2015" "SHADOWSOCKS-LIBEV"
+.TH "SS-REDIR" "1" "September 10, 2015" "SHADOWSOCKS-LIBEV"
 .SH NAME
-shadowsocks-libev \- a lightweight and secure socks5 proxy
+ss-redir \- shadowsocks client as transparent proxy, libev port
 
 .SH SYNOPSIS
-\*(Lo|\*(Re|\*(Se|\*(Tu|\*(Ma
-    [\fB\-s\fR \fIserver_host\fR]     [\fB\-p\fR \fIserver_port\fR]
-    [\fB\-l\fR \fIlocal_port\fR]      [\fB\-k\fR \fIpassword\fR]
-    [\fB\-m\fR \fIencrypt_method\fR]  [\fB\-f\fR \fIpid_file\fR]
-    [\fB\-t\fR \fItimeout\fR]         [\fB\-c\fR \fIconfig_file\fR]
+\*(Re
+    [\fB\-AhuUv\fR]
+    [\fB\-s\fR \fIserver_host\fR] [\fB\-p\fR \fIserver_port\fR]    [\fB\-l\fR \fIlocal_port\fR]
+    [\fB\-k\fR \fIpassword\fR]    [\fB\-m\fR \fIencrypt_method\fR] [\fB\-f\fR \fIpid_file\fR]
+    [\fB\-t\fR \fItimeout\fR]     [\fB\-c\fR \fIconfig_file\fR]    [\fB\-b\fR \fIlocal_address\fR]
+    [\fB\-a\fR \fIuser_name\fR]
 
 .SH DESCRIPTION
 \*(Me is a lightweight and secure socks5 proxy. It is a port of the original
 shadowsocks created by clowwindy. \*(Me is written in pure C and takes advantage
 of \fBlibev\fP to achieve both high performance and low resource consumption.
 .PP
-\*(Me consists of five components. One is \*(Se(1) that runs on a remote server
-to provide secured tunnel service. \*(Lo(1) and \*(Re(1) are clients on your local
-machines to proxy TCP traffic. \*(Tu(1) is a tool for local port forwarding.
-.PP
-While \*(Lo(1) works as a standard socks5 proxy, \*(Re(1) works as a transparent proxy
-and requires netfilter's NAT module. For more information, check out the example
-section.
-.PP
-\*(Ma(1) is a controller for multi-user management and traffic statistics, using UNIX
-domain socket to talk with \*(Se(1). Also, it provides a UNIX domain socket or IP based
-API for other software. About the details of this API, please refer to the protocol
+\*(Me consists of five components. \*(Re(1) works as a transparent proxy on local
+machines to proxy TCP traffic and requires netfilter's NAT module. For more
+information, check out \fBshadowsocks-libev\fR(8) and the following \fBEXAMPLE\fR
 section.
 
 .SH OPTIONS
@@ -88,15 +81,8 @@ Set the socket timeout in seconds. The default value is 10.
 .B \-c \fIconfig_file\fP
 Use a configuration file.
 .TP
-.B \-i \fIinterface\fP
-Specify network interface to bind.
-
-Not available in redir mode.
-.TP
 .B \-b \fIlocal_address\fP
 Specify local address to bind.
-
-Not available in server mode.
 .TP
 .B \-a \fIuser_name\fP
 Run as a specific user.
@@ -107,38 +93,9 @@ TPROXY is required in redir mode.
 .TP
 .B \-U
 Enable UDP relay and disable TCP relay.
-Not available in local mode.
 .TP
 .B \-A
 Enable onetime authentication.
-.TP
-.B \-L \fIaddr\fR:\fIport\fP
-Specify destination server address and port for local port forwarding.
-
-Only available in tunnel mode.
-.TP
-.B \-d \fIaddr\fP
-Setup name servers for internal DNS resolver (libudns). The default server
-is fetched from /etc/resolv.conf.
-
-Only available in server mode.
-.TP
-.B \--fast-open
-Enable TCP fast open.
-
-Only available in local and server mode, with Linux kernel > 3.7.0.
-.TP
-.B \--acl \fIacl_config\fP
-Enable ACL (Access Control List) and specify config file.
-Only available in local and server mode.
-.TP
-.B \--manager-address \fIpath_to_unix_domain\fP
-Specify UNIX domain socket address.
-Only available in server and manager mode.
-.TP
-.B \--executable \fIpath_to_server_executable\fP
-Specify the executable path of ss-server.
-Only available in manager mode.
 .TP
 .B \-v
 Enable verbose mode.
@@ -180,35 +137,12 @@ Enable verbose mode.
     # Start the shadowsocks-redir
     root@Wrt:~# ss-redir -u -c /etc/config/shadowsocks.json -f /var/run/shadowsocks.pid
 
-.SH PROTOCOL
-\*(Ma(1) provides several APIs through UDP protocol:
-
-    Send UDP commands in the following format to the manager-address provided to \*(Ma(1).
-
-        command: [JSON data]
-
-    To add a port:
-
-        add: {"server_port": 8001, "password":"7cd308cc059"}
-
-    To remove a port:
-
-        remove: {"server_port": 8001}
-
-    To receive a pong:
-
-        ping
-
-    Then \*(Ma(1) will send back the traffic statistics:
-
-        stat: {"8001":11370}
-
 .SH SEE ALSO
 .BR \*(Lo (1),
 .BR \*(Se (1),
 .BR \*(Tu (1),
-.BR \*(Re (1),
 .BR \*(Ma (1),
+.BR shadowsocks-libev (8),
 .BR iptables (8),
 /etc/shadowsocks-libev/config.json
 .br
