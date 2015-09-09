@@ -641,13 +641,13 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         offset += 2;
 
         if (auth || (atyp & ONETIMEAUTH_MASK)) {
-            if (ss_onetimeauth_verify(server->buf + offset, server->buf, offset)) {
+            r -= ONETIMEAUTH_BYTES;
+            if (ss_onetimeauth_verify(server->buf + r, server->buf, r)) {
                 LOGE("authentication error %d", atyp);
                 report_addr(server->fd);
                 close_and_free_server(EV_A_ server);
                 return;
             };
-            offset += ONETIMEAUTH_BYTES;
         }
 
         if (verbose) {
