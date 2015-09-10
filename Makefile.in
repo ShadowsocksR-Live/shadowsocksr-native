@@ -122,9 +122,10 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-man8dir = $(mandir)/man8
-am__installdirs = "$(DESTDIR)$(man8dir)" \
+man1dir = $(mandir)/man1
+am__installdirs = "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man8dir)" \
 	"$(DESTDIR)$(pkgconfiglibdir)"
+man8dir = $(mandir)/man8
 NROFF = nroff
 MANS = $(man_MANS)
 DATA = $(pkgconfiglib_DATA)
@@ -299,7 +300,9 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = libsodium libcork libipset libudns libev src
 ACLOCAL_AMFLAGS = -I m4
-man_MANS = shadowsocks-libev.8
+man_MANS = man/shadowsocks-libev.8 man/ss-server.1 man/ss-local.1 man/ss-redir.1\
+	   man/ss-manager.1 man/ss-tunnel.1
+
 pkgconfiglibdir = $(libdir)/pkgconfig
 pkgconfiglib_DATA = shadowsocks-libev.pc
 all: config.h
@@ -366,6 +369,49 @@ clean-libtool:
 
 distclean-libtool:
 	-rm -f libtool config.lt
+install-man1: $(man_MANS)
+	@$(NORMAL_INSTALL)
+	@list1=''; \
+	list2='$(man_MANS)'; \
+	test -n "$(man1dir)" \
+	  && test -n "`echo $$list1$$list2`" \
+	  || exit 0; \
+	echo " $(MKDIR_P) '$(DESTDIR)$(man1dir)'"; \
+	$(MKDIR_P) "$(DESTDIR)$(man1dir)" || exit 1; \
+	{ for i in $$list1; do echo "$$i"; done;  \
+	if test -n "$$list2"; then \
+	  for i in $$list2; do echo "$$i"; done \
+	    | sed -n '/\.1[a-z]*$$/p'; \
+	fi; \
+	} | while read p; do \
+	  if test -f $$p; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; echo "$$p"; \
+	done | \
+	sed -e 'n;s,.*/,,;p;h;s,.*\.,,;s,^[^1][0-9a-z]*$$,1,;x' \
+	      -e 's,\.[0-9a-z]*$$,,;$(transform);G;s,\n,.,' | \
+	sed 'N;N;s,\n, ,g' | { \
+	list=; while read file base inst; do \
+	  if test "$$base" = "$$inst"; then list="$$list $$file"; else \
+	    echo " $(INSTALL_DATA) '$$file' '$(DESTDIR)$(man1dir)/$$inst'"; \
+	    $(INSTALL_DATA) "$$file" "$(DESTDIR)$(man1dir)/$$inst" || exit $$?; \
+	  fi; \
+	done; \
+	for i in $$list; do echo "$$i"; done | $(am__base_list) | \
+	while read files; do \
+	  test -z "$$files" || { \
+	    echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(man1dir)'"; \
+	    $(INSTALL_DATA) $$files "$(DESTDIR)$(man1dir)" || exit $$?; }; \
+	done; }
+
+uninstall-man1:
+	@$(NORMAL_UNINSTALL)
+	@list=''; test -n "$(man1dir)" || exit 0; \
+	files=`{ for i in $$list; do echo "$$i"; done; \
+	l2='$(man_MANS)'; for i in $$l2; do echo "$$i"; done | \
+	  sed -n '/\.1[a-z]*$$/p'; \
+	} | sed -e 's,.*/,,;h;s,.*\.,,;s,^[^1][0-9a-z]*$$,1,;x' \
+	      -e 's,\.[0-9a-z]*$$,,;$(transform);G;s,\n,.,'`; \
+	dir='$(DESTDIR)$(man1dir)'; $(am__uninstall_files_from_dir)
 install-man8: $(man_MANS)
 	@$(NORMAL_INSTALL)
 	@list1=''; \
@@ -771,7 +817,7 @@ check: check-recursive
 all-am: Makefile $(MANS) $(DATA) config.h
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(man8dir)" "$(DESTDIR)$(pkgconfiglibdir)"; do \
+	for dir in "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man8dir)" "$(DESTDIR)$(pkgconfiglibdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-recursive
@@ -842,7 +888,7 @@ install-info: install-info-recursive
 
 install-info-am:
 
-install-man: install-man8
+install-man: install-man1 install-man8
 
 install-pdf: install-pdf-recursive
 
@@ -874,7 +920,7 @@ ps-am:
 
 uninstall-am: uninstall-man uninstall-pkgconfiglibDATA
 
-uninstall-man: uninstall-man8
+uninstall-man: uninstall-man1 uninstall-man8
 
 .MAKE: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) all \
 	ctags-recursive install-am install-strip tags-recursive
@@ -889,13 +935,14 @@ uninstall-man: uninstall-man8
 	install install-am install-data install-data-am install-dvi \
 	install-dvi-am install-exec install-exec-am install-html \
 	install-html-am install-info install-info-am install-man \
-	install-man8 install-pdf install-pdf-am \
+	install-man1 install-man8 install-pdf install-pdf-am \
 	install-pkgconfiglibDATA install-ps install-ps-am \
 	install-strip installcheck installcheck-am installdirs \
 	installdirs-am maintainer-clean maintainer-clean-generic \
 	mostlyclean mostlyclean-generic mostlyclean-libtool pdf pdf-am \
 	ps ps-am tags tags-recursive uninstall uninstall-am \
-	uninstall-man uninstall-man8 uninstall-pkgconfiglibDATA
+	uninstall-man uninstall-man1 uninstall-man8 \
+	uninstall-pkgconfiglibDATA
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
