@@ -528,7 +528,7 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
     }
 
     char *key = hash_key(remote_ctx->af, &remote_ctx->src_addr);
-    cache_remove(remote_ctx->server_ctx->conn_cache, key, 32);
+    cache_remove(remote_ctx->server_ctx->conn_cache, key, HASH_KEY_LEN);
 }
 
 #ifdef UDPRELAY_REMOTE
