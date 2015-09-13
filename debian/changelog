@@ -1,3 +1,9 @@
+shadowsocks-libev (2.3.2-1) unstable; urgency=low
+
+  * Fix minor issues of build scripts.
+
+ -- Max Lv <max.c.lv@gmail.com>  Sun, 13 Sep 2015 15:22:28 +0900
+
 shadowsocks-libev (2.3.1-1) unstable; urgency=low
 
   * Fix an issue of connection cache of UDP relay.
