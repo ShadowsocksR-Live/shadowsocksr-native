@@ -184,7 +184,12 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         }
     }
 
+    if (auth) {
+        ss_gen_crc(remote->buf, &r, remote->crc_buf, &remote->crc_idx, BUF_SIZE);
+    }
+
     remote->buf = ss_encrypt(BUF_SIZE, remote->buf, &r, server->e_ctx);
+
     if (remote->buf == NULL) {
         LOGE("invalid password or cipher");
         close_and_free_remote(EV_A_ remote);
@@ -193,6 +198,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     int s = send(remote->fd, remote->buf, r, 0);
+
     if (s == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             // no data, wait for send
@@ -444,6 +450,9 @@ static struct remote * new_remote(int fd, int timeout)
 {
     struct remote *remote;
     remote = malloc(sizeof(struct remote));
+
+    memset(remote, 0, sizeof(struct remote));
+
     remote->buf = malloc(BUF_SIZE);
     remote->recv_ctx = malloc(sizeof(struct remote_ctx));
     remote->send_ctx = malloc(sizeof(struct remote_ctx));

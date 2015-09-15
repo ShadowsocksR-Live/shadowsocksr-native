@@ -1462,3 +1462,70 @@ int enc_init(const char *pass, const char *method)
     return m;
 }
 
+/*
+ * Return CRC-8 of the data, using x^8 + x^2 + x + 1 polynomial.  A table-based
+ * algorithm would be faster, but for only a few bytes it isn't worth the code
+ * size.
+ */
+uint8_t crc8(const void *vptr, int len)
+{
+    const uint8_t *data = vptr;
+    unsigned crc = 0;
+    int i, j;
+
+    for (j = len; j; j--, data++) {
+        crc ^= (*data << 8);
+        for(i = 8; i; i--) {
+            if (crc & 0x8000)
+                crc ^= (0x1070 << 3);
+            crc <<= 1;
+        }
+    }
+
+    return (uint8_t)(crc >> 8);
+}
+
+int ss_check_crc(char *buf, ssize_t *buf_len, char *crc_buf, ssize_t *crc_idx)
+{
+    int i, j;
+    ssize_t blen = *buf_len;
+    ssize_t cidx = *crc_idx;
+
+    for (i = 0, j = 0; i < blen; i++) {
+        if (cidx == CRC_BUF_LEN) {
+            uint8_t c = crc8((const void*)crc_buf, CRC_BUF_LEN);
+            if (memcmp(&c, buf + i, 1) != 0) return 0;
+            cidx = 0;
+        } else {
+            crc_buf[cidx] = buf[j] = buf[i];
+            cidx++; j++;
+        }
+    }
+    *buf_len = j;
+    *crc_idx = cidx;
+    return 1;
+}
+
+void ss_gen_crc(char *buf, ssize_t *buf_len, char *crc_buf, ssize_t *crc_idx, int buf_size)
+{
+    int i, j;
+    ssize_t blen = *buf_len;
+    ssize_t cidx = *crc_idx;
+    int size = max(blen / CRC_BUF_LEN + blen, buf_size);
+
+    if (buf_size < size) {
+        buf = realloc(buf, size);
+    }
+    for (i = 0, j = 0; i < blen; i++, j++) {
+        if (cidx == CRC_BUF_LEN) {
+            uint8_t c = crc8((const void*)crc_buf, CRC_BUF_LEN);
+            memmove(buf + j + 1, buf + j, blen - i);
+            memcpy(buf + j, &c, 1);
+            j++; cidx = 0;
+        }
+        crc_buf[cidx] = buf[j];
+        cidx++;
+    }
+    *buf_len = j;
+    *crc_idx = cidx;
+}

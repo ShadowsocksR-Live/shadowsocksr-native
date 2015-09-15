@@ -81,6 +81,9 @@ struct remote {
     struct server *server;
     struct sockaddr_storage addr;
     int addr_len;
+
+    ssize_t crc_idx;
+    char crc_buf[CRC_BUF_LEN];
 };
 
 #endif // _LOCAL_H

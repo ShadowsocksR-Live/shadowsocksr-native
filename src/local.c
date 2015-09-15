@@ -244,6 +244,10 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 return;
             }
 
+            if (remote->send_ctx->connected && auth) {
+                ss_gen_crc(remote->buf, &r, remote->crc_buf, &remote->crc_idx, BUF_SIZE);
+            }
+
             // insert shadowsocks header
             if (!remote->direct) {
                 remote->buf = ss_encrypt(BUF_SIZE, remote->buf, &r,
@@ -478,6 +482,11 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     }
 
                     memcpy(remote->buf, ss_addr_to_send, addr_len);
+
+                    if (auth) {
+                        ss_gen_crc(buf, &r, remote->crc_buf, &remote->crc_idx, BUF_SIZE);
+                    }
+
                     if (r > 0) {
                         memcpy(remote->buf + addr_len, buf, r);
                     }

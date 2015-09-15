@@ -495,6 +495,14 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     // handshake and transmit data
     if (server->stage == 5) {
+        if (server->auth
+                && !ss_check_crc(remote->buf, &r, server->crc_buf, &server->crc_idx)) {
+            LOGE("crc error");
+            report_addr(server->fd);
+            close_and_free_server(EV_A_ server);
+            close_and_free_remote(EV_A_ remote);
+            return;
+        }
         int s = send(remote->fd, remote->buf, r, 0);
         if (s == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -648,6 +656,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 return;
             };
             offset += ONETIMEAUTH_BYTES;
+            server->auth = 1;
         }
 
         if (verbose) {
@@ -658,6 +667,14 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         if (r > offset) {
             server->buf_len = r - offset;
             server->buf_idx = offset;
+        }
+
+        if (server->auth
+                && !ss_check_crc(server->buf + server->buf_idx, &server->buf_len, server->crc_buf, &server->crc_idx)) {
+            LOGE("crc error");
+            report_addr(server->fd);
+            close_and_free_server(EV_A_ server);
+            return;
         }
 
         if (!need_query) {
@@ -1061,6 +1078,9 @@ static struct server * new_server(int fd, struct listen_ctx *listener)
 
     struct server *server;
     server = malloc(sizeof(struct server));
+
+    memset(server, 0, sizeof(struct server));
+
     server->buf = malloc(BUF_SIZE);
     server->recv_ctx = malloc(sizeof(struct server_ctx));
     server->send_ctx = malloc(sizeof(struct server_ctx));
