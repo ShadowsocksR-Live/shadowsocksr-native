@@ -529,11 +529,23 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         /*
          * Shadowsocks TCP Relay Protocol:
          *
-         *    +------+----------+----------+------+
-         *    | ATYP | DST.ADDR | DST.PORT | AUTH |
-         *    +------+----------+----------+------+
-         *    |  1   | Variable |    2     |  16  |
-         *    +------+----------+----------+------+
+         *    +------+----------+----------+-----------------+
+         *    | ATYP | DST.ADDR | DST.PORT | AUTH (Optional) |
+         *    +------+----------+----------+-----------------+
+         *    |  1   | Variable |    2     |       16        |
+         *    +------+----------+----------+-----------------+
+         *
+         *    If ATYP & ONETIMEAUTH_FLAG(0x10) == 1, AUTH and CRC are enabled.
+         */
+
+        /*
+         * Shadowsocks TCP Request Payload CRC (Optional, no CRC for response's payload):
+         *
+         *    +------+------+------+------+------+
+         *    | DATA | CRC8 | DATA | CRC8 |     ...
+         *    +------+------+------+------+------+
+         *    | 128  |  1   | 128  |  1   |     ...
+         *    +------+------+------+------+------+
          */
 
         int offset = 0;
@@ -648,7 +660,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
         offset += 2;
 
-        if (auth || (atyp & ONETIMEAUTH_MASK)) {
+        if (auth || (atyp & ONETIMEAUTH_FLAG)) {
             if (ss_onetimeauth_verify(server->buf + offset, server->buf, offset)) {
                 LOGE("authentication error %d", atyp);
                 report_addr(server->fd);

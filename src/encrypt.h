@@ -144,7 +144,6 @@ typedef struct {
 #define ONETIMEAUTH_KEYBYTES 32U
 
 #define ONETIMEAUTH_FLAG 0x10
-#define ONETIMEAUTH_MASK 0xF0
 #define ADDRTYPE_MASK 0xF
 
 #define CRC_BUF_LEN 128
