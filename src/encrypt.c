@@ -1514,13 +1514,13 @@ int ss_check_crc(char *buf, ssize_t *buf_len, char *crc_buf, ssize_t *crc_idx)
     ssize_t cidx = *crc_idx;
 
     for (i = 0, j = 0; i < blen; i++) {
-        crc_buf[cidx] = buf[i];
-        cidx++;
         if (cidx < CRC_BUF_LEN) {
             buf[j] = buf[i];
             j++;
         }
-        if (cidx == CRC_BUF_LEN + 1) {
+        crc_buf[cidx] = buf[i];
+        cidx++;
+        if (cidx == CRC_BUF_LEN + 2) {
             uint16_t c = crc16((const void*)crc_buf, CRC_BUF_LEN);
             c = htons(c);
             if (memcmp(&c, crc_buf + CRC_BUF_LEN, 2) != 0) return 0;
@@ -1548,7 +1548,7 @@ char *ss_gen_crc(char *buf, ssize_t *buf_len, char *crc_buf, ssize_t *crc_idx, i
             c = htons(c);
             memmove(buf + j + 2, buf + j, blen - i);
             memcpy(buf + j, &c, 2);
-            j++; cidx = 0;
+            j += 2; cidx = 0;
         }
         crc_buf[cidx] = buf[j];
         cidx++;
