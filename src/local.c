@@ -1090,10 +1090,6 @@ int main(int argc, char **argv)
 #endif
     }
 
-    if (auth) {
-        LOGI("onetime authentication enabled");
-    }
-
 #ifdef __MINGW32__
     winsock_init();
 #else
@@ -1149,6 +1145,10 @@ int main(int argc, char **argv)
 
     ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
     ev_io_start(loop, &listen_ctx.io);
+
+    if (auth) {
+        LOGI("onetime authentication enabled");
+    }
 
     // Setup UDP
     if (mode != TCP_ONLY) {

@@ -1385,10 +1385,6 @@ int main(int argc, char **argv)
 #endif
     }
 
-    if (auth) {
-        LOGI("onetime authentication enabled");
-    }
-
 #ifdef __MINGW32__
     winsock_init();
 #else
@@ -1473,6 +1469,10 @@ int main(int argc, char **argv)
     if (manager_address != NULL) {
         ev_timer_init(&stat_update_watcher, stat_update_cb, UPDATE_INTERVAL, UPDATE_INTERVAL);
         ev_timer_start(EV_DEFAULT, &stat_update_watcher);
+    }
+
+    if (auth) {
+        LOGI("onetime authentication enabled");
     }
 
     if (mode != TCP_ONLY) {

@@ -805,10 +805,6 @@ int main(int argc, char **argv)
         daemonize(pid_path);
     }
 
-    if (auth) {
-        LOGI("onetime authentication enabled");
-    }
-
     // parse tunnel addr
     parse_addr(tunnel_addr_str, &tunnel_addr);
 
@@ -866,6 +862,10 @@ int main(int argc, char **argv)
 
         ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
         ev_io_start(loop, &listen_ctx.io);
+    }
+
+    if (auth) {
+        LOGI("onetime authentication enabled");
     }
 
     // Setup UDP
