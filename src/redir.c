@@ -678,7 +678,6 @@ int main(int argc, char **argv)
             break;
         case 'A':
             auth = 1;
-            LOGI("onetime authentication enabled");
             break;
         }
     }
@@ -739,6 +738,10 @@ int main(int argc, char **argv)
     if (pid_flags) {
         USE_SYSLOG(argv[0]);
         daemonize(pid_path);
+    }
+
+    if (auth) {
+        LOGI("onetime authentication enabled");
     }
 
     // ignore SIGPIPE

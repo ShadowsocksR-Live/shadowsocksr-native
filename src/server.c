@@ -1295,7 +1295,6 @@ int main(int argc, char **argv)
             break;
         case 'A':
             auth = 1;
-            LOGI("onetime authentication enabled");
             break;
         }
     }
@@ -1384,6 +1383,10 @@ int main(int argc, char **argv)
 #else
         LOGE("tcp fast open is not supported by this environment");
 #endif
+    }
+
+    if (auth) {
+        LOGI("onetime authentication enabled");
     }
 
 #ifdef __MINGW32__
