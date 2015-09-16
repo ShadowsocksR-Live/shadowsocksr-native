@@ -197,7 +197,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     if (auth) {
-        ss_gen_crc(remote->buf, &r, remote->crc_buf, &remote->crc_idx, BUF_SIZE);
+        remote->buf = ss_gen_crc(remote->buf, &r, remote->crc_buf, &remote->crc_idx, BUF_SIZE);
     }
 
     remote->buf = ss_encrypt(BUF_SIZE, remote->buf, &r, server->e_ctx);

@@ -173,6 +173,6 @@ int ss_onetimeauth(char *auth, char *msg, int msg_len);
 int ss_onetimeauth_verify(char *auth, char *msg, int msg_len);
 
 int ss_check_crc(char *buf, ssize_t *buf_len, char *crc_buf, ssize_t *crc_idx);
-void ss_gen_crc(char *buf, ssize_t *buf_len, char *crc_buf, ssize_t *crc_idx, int buf_size);
+char * ss_gen_crc(char *buf, ssize_t *buf_len, char *crc_buf, ssize_t *crc_idx, int buf_size);
 
 #endif // _ENCRYPT_H
