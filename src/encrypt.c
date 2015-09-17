@@ -868,7 +868,9 @@ void cipher_context_set_iv(cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len,
         return;
     }
 
-    memcpy(ctx->iv, iv, iv_len);
+    if (!enc) {
+        memcpy(ctx->iv, iv, iv_len);
+    }
 
     if (enc_method >= SALSA20) {
         return;
@@ -1533,10 +1535,10 @@ int ss_check_crc(char *buf, ssize_t *buf_len, char *crc_buf, ssize_t *crc_idx)
         }
         crc_buf[cidx] = buf[i];
         cidx++;
-        if (cidx == CRC_BUF_LEN + 2) {
+        if (cidx == CRC_BUF_LEN + CRC_BYTES) {
             uint16_t c = crc16((const void*)crc_buf, CRC_BUF_LEN);
             c = htons(c);
-            if (memcmp(&c, crc_buf + CRC_BUF_LEN, 2) != 0) return 0;
+            if (memcmp(&c, crc_buf + CRC_BUF_LEN, CRC_BYTES) != 0) return 0;
             cidx = 0;
         }
     }
@@ -1550,7 +1552,7 @@ char *ss_gen_crc(char *buf, ssize_t *buf_len, char *crc_buf, ssize_t *crc_idx, i
     int i, j;
     ssize_t blen = *buf_len;
     ssize_t cidx = *crc_idx;
-    int size = max(blen / CRC_BUF_LEN * 2 + blen, buf_size);
+    int size = max((blen / CRC_BUF_LEN + 1) * CRC_BYTES + blen, buf_size);
 
     if (buf_size < size) {
         buf = realloc(buf, size);
@@ -1559,9 +1561,9 @@ char *ss_gen_crc(char *buf, ssize_t *buf_len, char *crc_buf, ssize_t *crc_idx, i
         if (cidx == CRC_BUF_LEN) {
             uint16_t c = crc16((const void*)crc_buf, CRC_BUF_LEN);
             c = htons(c);
-            memmove(buf + j + 2, buf + j, blen - i);
-            memcpy(buf + j, &c, 2);
-            j += 2; cidx = 0;
+            memmove(buf + j + CRC_BYTES, buf + j, blen - i);
+            memcpy(buf + j, &c, CRC_BYTES);
+            j += CRC_BYTES; cidx = 0;
         }
         crc_buf[cidx] = buf[j];
         cidx++;

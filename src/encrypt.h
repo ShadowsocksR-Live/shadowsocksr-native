@@ -147,6 +147,7 @@ typedef struct {
 #define ADDRTYPE_MASK 0xF
 
 #define CRC_BUF_LEN 128
+#define CRC_BYTES 2
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))

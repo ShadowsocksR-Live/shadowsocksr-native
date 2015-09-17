@@ -58,7 +58,7 @@ struct server {
 
     int auth;
     ssize_t crc_idx;
-    char crc_buf[CRC_BUF_LEN + 2]; // 2 bytes for CRC16
+    char crc_buf[CRC_BUF_LEN + CRC_BYTES]; // 2 bytes for CRC16
 
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;
