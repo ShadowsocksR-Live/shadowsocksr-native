@@ -79,7 +79,6 @@
 
 static uint8_t *enc_table;
 static uint8_t *dec_table;
-static uint8_t auth_key[ONETIMEAUTH_KEYBYTES];
 static uint8_t enc_key[MAX_KEY_LENGTH];
 static int enc_key_len;
 static int enc_iv_len;
@@ -869,12 +868,9 @@ void cipher_context_set_iv(cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len,
         return;
     }
 
-    if (enc) {
-        rand_bytes(iv, iv_len);
-    }
+    memcpy(ctx->iv, iv, iv_len);
 
     if (enc_method >= SALSA20) {
-        memcpy(ctx->iv, iv, iv_len);
         return;
     }
 
@@ -1030,13 +1026,25 @@ static int cipher_context_update(cipher_ctx_t *ctx, uint8_t *output, size_t *ole
 #endif
 }
 
-int ss_onetimeauth(char *auth, char *msg, int msg_len)
+int ss_onetimeauth(char *auth, char *msg, int msg_len, struct enc_ctx *ctx)
 {
+    uint8_t auth_key[ONETIMEAUTH_KEYBYTES];
+    uint8_t auth_bytes[MAX_IV_LENGTH + MAX_KEY_LENGTH];
+    memcpy(auth_bytes, ctx->evp.iv, enc_iv_len);
+    memcpy(auth_bytes + enc_iv_len, enc_key, enc_key_len);
+    crypto_generichash(auth_key, ONETIMEAUTH_KEYBYTES, auth_bytes, enc_iv_len + enc_key_len, NULL, 0);
+
     return crypto_onetimeauth((uint8_t *)auth, (uint8_t *)msg, msg_len, auth_key);
 }
 
-int ss_onetimeauth_verify(char *auth, char *msg, int msg_len)
+int ss_onetimeauth_verify(char *auth, char *msg, int msg_len, struct enc_ctx *ctx)
 {
+    uint8_t auth_key[ONETIMEAUTH_KEYBYTES];
+    uint8_t auth_bytes[MAX_IV_LENGTH + MAX_KEY_LENGTH];
+    memcpy(auth_bytes, ctx->evp.iv, enc_iv_len);
+    memcpy(auth_bytes + enc_iv_len, enc_key, enc_key_len);
+    crypto_generichash(auth_key, ONETIMEAUTH_KEYBYTES, auth_bytes, enc_iv_len + enc_key_len, NULL, 0);
+
     return crypto_onetimeauth_verify((uint8_t *)auth, (uint8_t *)msg, msg_len, auth_key);
 }
 
@@ -1060,6 +1068,7 @@ char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method)
         char *ciphertext = tmp_buf;
 
         uint8_t iv[MAX_IV_LENGTH];
+        rand_bytes(iv, iv_len);
         cipher_context_set_iv(&evp, iv, iv_len, 1);
         memcpy(ciphertext, iv, iv_len);
 
@@ -1126,9 +1135,8 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
         char *ciphertext = tmp_buf;
 
         if (!ctx->init) {
-            uint8_t iv[MAX_IV_LENGTH];
-            cipher_context_set_iv(&ctx->evp, iv, iv_len, 1);
-            memcpy(ciphertext, iv, iv_len);
+            cipher_context_set_iv(&ctx->evp, ctx->evp.iv, iv_len, 1);
+            memcpy(ciphertext, ctx->evp.iv, iv_len);
             ctx->counter = 0;
             ctx->init = 1;
         }
@@ -1254,8 +1262,7 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method)
     }
 }
 
-char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len,
-                  struct enc_ctx *ctx)
+char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len, struct enc_ctx *ctx)
 {
     if (ctx != NULL) {
         static int tmp_len = 0;
@@ -1353,6 +1360,10 @@ void enc_ctx_init(int method, struct enc_ctx *ctx, int enc)
 {
     memset(ctx, 0, sizeof(struct enc_ctx));
     cipher_context_init(&ctx->evp, method, enc);
+
+    if (enc) {
+        rand_bytes(ctx->evp.iv, enc_iv_len);
+    }
 }
 
 void enc_key_init(int method, const char *pass)
@@ -1462,7 +1473,6 @@ int enc_init(const char *pass, const char *method)
     } else {
         enc_key_init(m, pass);
     }
-    crypto_generichash(auth_key, ONETIMEAUTH_KEYBYTES, (uint8_t *)pass, strlen(pass), NULL, 0);
     return m;
 }
 

@@ -377,7 +377,7 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
 
             if (auth) {
                 ss_addr_to_send[0] |= ONETIMEAUTH_FLAG;
-                ss_onetimeauth(ss_addr_to_send + addr_len, ss_addr_to_send, addr_len);
+                ss_onetimeauth(ss_addr_to_send + addr_len, ss_addr_to_send, addr_len, server->e_ctx);
                 addr_len += ONETIMEAUTH_BYTES;
             }
 
