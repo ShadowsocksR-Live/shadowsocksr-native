@@ -1,3 +1,10 @@
+shadowsocks-libev (2.3.3-1) unstable; urgency=low
+
+  * Refine the onetime authentication of header.
+  * Enforce CRC16 on the payload.
+
+ -- Max Lv <max.c.lv@gmail.com>  Fri, 18 Sep 2015 10:38:21 +0900
+
 shadowsocks-libev (2.3.2-1) unstable; urgency=low
 
   * Fix minor issues of build scripts.
