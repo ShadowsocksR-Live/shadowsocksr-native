@@ -185,7 +185,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     if (auth) {
-        remote->buf = ss_gen_crc(remote->buf, &r, remote->crc_buf, &remote->crc_idx, BUF_SIZE);
+        remote->buf = ss_gen_hash(remote->buf, &r, remote->hash_buf, &remote->hash_idx, BUF_SIZE);
     }
 
     remote->buf = ss_encrypt(BUF_SIZE, remote->buf, &r, server->e_ctx);
@@ -740,6 +740,10 @@ int main(int argc, char **argv)
         daemonize(pid_path);
     }
 
+    if (auth) {
+        LOGI("onetime authentication enabled");
+    }
+
     // ignore SIGPIPE
     signal(SIGPIPE, SIG_IGN);
     signal(SIGABRT, SIG_IGN);
@@ -784,10 +788,6 @@ int main(int argc, char **argv)
 
         ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
         ev_io_start(loop, &listen_ctx.io);
-    }
-
-    if (auth) {
-        LOGI("onetime authentication enabled");
     }
 
     // Setup UDP

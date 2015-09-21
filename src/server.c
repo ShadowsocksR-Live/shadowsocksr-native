@@ -496,8 +496,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     // handshake and transmit data
     if (server->stage == 5) {
         if (server->auth
-                && !ss_check_crc(remote->buf, &r, server->crc_buf, &server->crc_idx)) {
-            LOGE("crc error");
+                && !ss_check_hash(remote->buf, &r, server->hash_buf, &server->hash_idx)) {
+            LOGE("hash error");
             report_addr(server->fd);
             close_and_free_server(EV_A_ server);
             close_and_free_remote(EV_A_ remote);
@@ -527,25 +527,27 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     } else if (server->stage == 0) {
 
         /*
-         * Shadowsocks TCP Relay Protocol:
+         * Shadowsocks TCP Relay Header:
          *
-         *    +------+----------+----------+-----------------+
-         *    | ATYP | DST.ADDR | DST.PORT | AUTH (Optional) |
-         *    +------+----------+----------+-----------------+
-         *    |  1   | Variable |    2     |       16        |
-         *    +------+----------+----------+-----------------+
+         *    +------+----------+----------+---------------------+
+         *    | ATYP | DST.ADDR | DST.PORT |       Poly1305      |
+         *    +------+----------+----------+---------------------+
+         *    |  1   | Variable |    2     |          16         |
+         *    +------+----------+----------+---------------------+
          *
-         *    If ATYP & ONETIMEAUTH_FLAG(0x10) == 1, AUTH and CRC are enabled.
+         *    If ATYP & ONETIMEAUTH_FLAG(0x10) == 1, Authentication (Poly1305) and Hash (BLAKE2b) are enabled.
+         *
+         *    The key of Poly1305 is BLAKE2b(IV + KEY) and the input is the whole header.
          */
 
         /*
-         * Shadowsocks TCP Request Payload CRC (Optional, no CRC for response's payload):
+         * Shadowsocks TCP Request Payload CRC (Optional, no hash check for response's payload):
          *
-         *    +------+-------+------+-------+------+
-         *    | DATA | CRC16 | DATA | CRC16 |     ...
-         *    +------+-------+------+-------+------+
-         *    | 128  |   2   | 128  |   2   |     ...
-         *    +------+-------+------+-------+------+
+         *    +------+---------+------+---------+------+
+         *    | DATA | BLAKE2b | DATA | BLAKE2b |     ...
+         *    +------+---------+------+---------+------+
+         *    | 128  |    4    | 128  |    4    |     ...
+         *    +------+---------+------+---------+------+
          */
 
         int offset = 0;
@@ -682,8 +684,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         }
 
         if (server->auth
-                && !ss_check_crc(server->buf + server->buf_idx, &server->buf_len, server->crc_buf, &server->crc_idx)) {
-            LOGE("crc error");
+                && !ss_check_hash(server->buf + server->buf_idx, &server->buf_len, server->hash_buf, &server->hash_idx)) {
+            LOGE("hash error");
             report_addr(server->fd);
             close_and_free_server(EV_A_ server);
             return;
@@ -1385,6 +1387,10 @@ int main(int argc, char **argv)
 #endif
     }
 
+    if (auth) {
+        LOGI("onetime authentication enabled");
+    }
+
 #ifdef __MINGW32__
     winsock_init();
 #else
@@ -1469,10 +1475,6 @@ int main(int argc, char **argv)
     if (manager_address != NULL) {
         ev_timer_init(&stat_update_watcher, stat_update_cb, UPDATE_INTERVAL, UPDATE_INTERVAL);
         ev_timer_start(EV_DEFAULT, &stat_update_watcher);
-    }
-
-    if (auth) {
-        LOGI("onetime authentication enabled");
     }
 
     if (mode != TCP_ONLY) {

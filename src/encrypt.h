@@ -146,8 +146,8 @@ typedef struct {
 #define ONETIMEAUTH_FLAG 0x10
 #define ADDRTYPE_MASK 0xF
 
-#define CRC_BUF_LEN 128
-#define CRC_BYTES 2
+#define HASH_BUF_LEN 128
+#define HASH_BYTES 4
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
@@ -173,7 +173,7 @@ unsigned char *enc_md5(const unsigned char *d, size_t n, unsigned char *md);
 int ss_onetimeauth(char *auth, char *msg, int msg_len, struct enc_ctx *ctx);
 int ss_onetimeauth_verify(char *auth, char *msg, int msg_len, struct enc_ctx *ctx);
 
-int ss_check_crc(char *buf, ssize_t *buf_len, char *crc_buf, ssize_t *crc_idx);
-char * ss_gen_crc(char *buf, ssize_t *buf_len, char *crc_buf, ssize_t *crc_idx, int buf_size);
+int ss_check_hash(char *buf, ssize_t *buf_len, char *hash_buf, ssize_t *hash_idx);
+char * ss_gen_hash(char *buf, ssize_t *buf_len, char *hash_buf, ssize_t *hash_idx, int buf_size);
 
 #endif // _ENCRYPT_H

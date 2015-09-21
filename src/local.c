@@ -245,7 +245,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             }
 
             if (remote->send_ctx->connected && auth) {
-                remote->buf = ss_gen_crc(remote->buf, &r, remote->crc_buf, &remote->crc_idx, BUF_SIZE);
+                remote->buf = ss_gen_hash(remote->buf, &r, remote->hash_buf, &remote->hash_idx, BUF_SIZE);
             }
 
             // insert shadowsocks header
@@ -484,7 +484,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     memcpy(remote->buf, ss_addr_to_send, addr_len);
 
                     if (auth) {
-                        buf = ss_gen_crc(buf, &r, remote->crc_buf, &remote->crc_idx, BUF_SIZE);
+                        buf = ss_gen_hash(buf, &r, remote->hash_buf, &remote->hash_idx, BUF_SIZE);
                     }
 
                     if (r > 0) {
@@ -1090,6 +1090,10 @@ int main(int argc, char **argv)
 #endif
     }
 
+    if (auth) {
+        LOGI("onetime authentication enabled");
+    }
+
 #ifdef __MINGW32__
     winsock_init();
 #else
@@ -1145,10 +1149,6 @@ int main(int argc, char **argv)
 
     ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
     ev_io_start(loop, &listen_ctx.io);
-
-    if (auth) {
-        LOGI("onetime authentication enabled");
-    }
 
     // Setup UDP
     if (mode != TCP_ONLY) {
