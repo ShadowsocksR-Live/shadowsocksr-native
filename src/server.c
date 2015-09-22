@@ -495,8 +495,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     // handshake and transmit data
     if (server->stage == 5) {
-        if (server->auth
-                && !ss_check_hash(remote->buf, &r, server->hash_buf, &server->hash_idx)) {
+        if (server->auth && !ss_check_hash(&remote->buf, &r, server->chunk, BUF_SIZE)) {
             LOGE("hash error");
             report_addr(server->fd);
             close_and_free_server(EV_A_ server);
@@ -541,13 +540,13 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
          */
 
         /*
-         * Shadowsocks TCP Request Payload CRC (Optional, no hash check for response's payload):
+         * Shadowsocks TCP Request Chunk (Optional, no hash check for response's payload):
          *
-         *    +------+---------+------+---------+------+
-         *    | DATA | BLAKE2b | DATA | BLAKE2b |     ...
-         *    +------+---------+------+---------+------+
-         *    | 128  |    4    | 128  |    4    |     ...
-         *    +------+---------+------+---------+------+
+         *    +------+---------+-------------+------+
+         *    | LEN  | BLAKE2b |    DATA     |      ...
+         *    +------+---------+-------------+------+
+         *    |  2   |    4    |  Variable   |      ...
+         *    +------+---------+-------------+------+
          */
 
         int offset = 0;
@@ -680,11 +679,10 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         // XXX: should handle buffer carefully
         if (r > offset) {
             server->buf_len = r - offset;
-            server->buf_idx = offset;
+            memmove(server->buf, server->buf + offset, server->buf_len);
         }
 
-        if (server->auth
-                && !ss_check_hash(server->buf + server->buf_idx, &server->buf_len, server->hash_buf, &server->hash_idx)) {
+        if (server->auth && !ss_check_hash(&server->buf, &server->buf_len, server->chunk, BUF_SIZE)) {
             LOGE("hash error");
             report_addr(server->fd);
             close_and_free_server(EV_A_ server);
@@ -704,8 +702,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 // XXX: should handle buffer carefully
                 if (server->buf_len > 0) {
-                    memcpy(remote->buf, server->buf + server->buf_idx,
-                           server->buf_len);
+                    memcpy(remote->buf, server->buf + server->buf_idx, server->buf_len);
                     remote->buf_len = server->buf_len;
                     remote->buf_idx = 0;
                     server->buf_len = 0;
@@ -1123,6 +1120,9 @@ static struct server * new_server(int fd, struct listen_ctx *listener)
     server->buf_idx = 0;
     server->remote = NULL;
 
+    server->chunk = (struct chunk *)malloc(sizeof(struct chunk));
+    memset(server->chunk, 0, sizeof(struct chunk));
+
     cork_dllist_add(&connections, &server->entries);
 
     return server;
@@ -1132,6 +1132,13 @@ static void free_server(struct server *server)
 {
     cork_dllist_remove(&server->entries);
 
+    if (server->chunk != NULL) {
+        if (server->chunk->buf != NULL) {
+            free(server->chunk->buf);
+        }
+        free(server->chunk);
+        server->chunk = NULL;
+    }
     if (server->remote != NULL) {
         server->remote->server = NULL;
     }
