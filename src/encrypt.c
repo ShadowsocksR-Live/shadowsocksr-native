@@ -1510,15 +1510,18 @@ int ss_check_hash(char **buf_ptr, ssize_t *buf_len, struct chunk *chunk, struct 
 
         if (cidx == chunk->len + AUTH_BYTES) {
             // Compare hash
-            uint8_t *hash = (uint8_t *)malloc(chunk->len);
+            uint8_t hash[HASH_BYTES];
             uint8_t key[MAX_IV_LENGTH + sizeof(uint32_t)];
 
-            memcpy(key, ctx->evp.iv, enc_key_len);
+            memcpy(key, ctx->evp.iv, enc_iv_len);
             memcpy(key + enc_iv_len, &chunk->counter, sizeof(uint32_t));
             crypto_generichash(hash, HASH_BYTES, (uint8_t *)chunk->buf + AUTH_BYTES, chunk->len,
                     key, enc_iv_len + sizeof(uint32_t));
 
-            if (memcmp(hash, chunk->buf + CLEN_BYTES, HASH_BYTES) != 0) return 0;
+            if (memcmp(hash, chunk->buf + CLEN_BYTES, HASH_BYTES) != 0) {
+                *buf_ptr = buf;
+                return 0;
+            }
 
             // Copy chunk back to buffer
             memmove(buf + j + chunk->len, buf + k, blen - i - 1);
@@ -1559,7 +1562,7 @@ char *ss_gen_hash(char *buf, ssize_t *buf_len, uint32_t *counter, struct enc_ctx
     memcpy(buf + CLEN_BYTES, hash, HASH_BYTES);
     memcpy(buf, &chunk_len, CLEN_BYTES);
 
-    *buf_len = blen + AUTH_BYTES;
     *counter = *counter + 1;
+    *buf_len = blen + AUTH_BYTES;
     return buf;
 }
