@@ -1,0 +1,21 @@
+#  This file is part of shadowsocks-libev.
+#
+#  Shadowsocks-libev is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This file is default for Debian packaging.
+
+[Unit]
+Description=Shadowsocks-libev Default Server Service
+After=network.target
+
+[Service]
+Type=simple
+User=nobody
+ExecStart=/usr/bin/ss-server -c /etc/shadowsocks-libev/config.json
+
+[Install]
+WantedBy=multi-user.target
+
