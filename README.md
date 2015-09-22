@@ -69,8 +69,8 @@ sudo apt-get install shadowsocks-libev
 
 ``` bash
 cd shadowsocks-libev
-sudo apt-get install build-essential autoconf libtool libssl-dev gawk debhelper
-dpkg-buildpackage -us -uc
+sudo apt-get install build-essential automake libtool libssl-dev gawk debhelper dh-systemd
+sh debian/autopkg.sh
 cd ..
 sudo dpkg -i shadowsocks-libev*.deb
 ```

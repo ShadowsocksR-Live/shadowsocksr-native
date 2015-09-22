@@ -1,6 +1,16 @@
 shadowsocks-libev for Debian
 ----------------------
 
-<possible notes regarding this package - if none, delete this file>
+The Debian package has added systemd support. By default, the dpkg installer
+will enable initscripts if the OS is using sysvinit, and systemd service unit
+file if the OS is using systemd. This is done automatically.
+
+Another problem is that shadowsocks-libev is licensed under GPLv3+. This will
+conflict with OpenSSL License when linked against OpenSSL library. As a
+result, this package faces licensing problem. Use it at your own risk.
+
+ -- Boyuan Yang <073plan@gmail.com>  Fri, 11 Sep 2015 19:08:30 +0800
+
+(No special notes.)
 
  -- Max Lv <max.c.lv@gmail.com>  Sat, 06 Apr 2013 16:59:15 +0800
