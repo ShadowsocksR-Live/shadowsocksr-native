@@ -1511,7 +1511,12 @@ int ss_check_hash(char **buf_ptr, ssize_t *buf_len, struct chunk *chunk, int buf
         if (cidx == chunk->len + AUTH_BYTES) {
             // Compare hash
             uint8_t *hash = (uint8_t *)malloc(chunk->len);
-            crypto_generichash(hash, HASH_BYTES, (uint8_t *)chunk->buf + AUTH_BYTES, chunk->len, NULL, 0);
+            uint8_t key[MAX_KEY_LENGTH + sizeof(uint32_t)];
+
+            memcpy(key, enc_key, enc_key_len);
+            memcpy(key + enc_key_len, &chunk->counter, sizeof(uint32_t));
+            crypto_generichash(hash, HASH_BYTES, (uint8_t *)chunk->buf + AUTH_BYTES, chunk->len,
+                    key, enc_key_len + sizeof(uint32_t));
 
             if (memcmp(hash, chunk->buf + CLEN_BYTES, HASH_BYTES) != 0) return 0;
 
@@ -1523,6 +1528,7 @@ int ss_check_hash(char **buf_ptr, ssize_t *buf_len, struct chunk *chunk, int buf
             j += chunk->len;
             k = j;
             cidx = 0;
+            chunk->counter++;
         }
     }
 
@@ -1532,7 +1538,7 @@ int ss_check_hash(char **buf_ptr, ssize_t *buf_len, struct chunk *chunk, int buf
     return 1;
 }
 
-char *ss_gen_hash(char *buf, ssize_t *buf_len, int buf_size)
+char *ss_gen_hash(char *buf, ssize_t *buf_len, uint32_t *counter, int buf_size)
 {
     ssize_t blen = *buf_len;
     int size = max(AUTH_BYTES + blen, buf_size);
@@ -1543,12 +1549,17 @@ char *ss_gen_hash(char *buf, ssize_t *buf_len, int buf_size)
 
     uint16_t chunk_len = htons((uint16_t)blen);
     uint8_t hash[HASH_BYTES];
-    crypto_generichash(hash, HASH_BYTES, (uint8_t *)buf, blen, NULL, 0);
+    uint8_t key[MAX_KEY_LENGTH + sizeof(uint32_t)];
+
+    memcpy(key, enc_key, enc_key_len);
+    memcpy(key + enc_key_len, counter, sizeof(uint32_t));
+    crypto_generichash(hash, HASH_BYTES, (uint8_t *)buf, blen, key, enc_key_len + sizeof(uint32_t));
 
     memmove(buf + AUTH_BYTES, buf, blen);
     memcpy(buf + CLEN_BYTES, hash, HASH_BYTES);
     memcpy(buf, &chunk_len, CLEN_BYTES);
 
     *buf_len = blen + AUTH_BYTES;
+    *counter = *counter + 1;
     return buf;
 }

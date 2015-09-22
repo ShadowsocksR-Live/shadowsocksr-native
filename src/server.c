@@ -547,6 +547,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
          *    +------+---------+-------------+------+
          *    |  2   |    4    |  Variable   |      ...
          *    +------+---------+-------------+------+
+         *
+         *    The key of BLAKE2b is (KEY + CHUNK ID)
          */
 
         int offset = 0;

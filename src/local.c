@@ -245,7 +245,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             }
 
             if (!remote->direct && remote->send_ctx->connected && auth) {
-                remote->buf = ss_gen_hash(remote->buf, &r, BUF_SIZE);
+                remote->buf = ss_gen_hash(remote->buf, &r, &remote->counter, BUF_SIZE);
             }
 
             // insert shadowsocks header
@@ -485,7 +485,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
                     if (r > 0) {
                         if (auth) {
-                            buf = ss_gen_hash(buf, &r, BUF_SIZE);
+                            buf = ss_gen_hash(buf, &r, &remote->counter, BUF_SIZE);
                         }
                         memcpy(remote->buf + addr_len, buf, r);
                     }
