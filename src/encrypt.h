@@ -181,7 +181,7 @@ unsigned char *enc_md5(const unsigned char *d, size_t n, unsigned char *md);
 int ss_onetimeauth(char *auth, char *msg, int msg_len, struct enc_ctx *ctx);
 int ss_onetimeauth_verify(char *auth, char *msg, int msg_len, struct enc_ctx *ctx);
 
-int ss_check_hash(char **buf_ptr, ssize_t *buf_len, struct chunk *chunk, int buf_size);
-char *ss_gen_hash(char *buf, ssize_t *buf_len, uint32_t *counter, int buf_size);
+int ss_check_hash(char **buf_ptr, ssize_t *buf_len, struct chunk *chunk, struct enc_ctx *ctx, int buf_size);
+char *ss_gen_hash(char *buf, ssize_t *buf_len, uint32_t *counter, struct enc_ctx *ctx, int buf_size);
 
 #endif // _ENCRYPT_H
