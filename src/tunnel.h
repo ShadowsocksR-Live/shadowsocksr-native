@@ -74,9 +74,6 @@ struct remote {
     struct remote_ctx *recv_ctx;
     struct remote_ctx *send_ctx;
     struct server *server;
-
-    ssize_t hash_idx;
-    char hash_buf[HASH_BUF_LEN];
 };
 
 #endif // _TUNNEL_H

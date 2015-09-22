@@ -1478,53 +1478,77 @@ int enc_init(const char *pass, const char *method)
     return m;
 }
 
-int ss_check_hash(char *buf, ssize_t *buf_len, char *hash_buf, ssize_t *hash_idx)
+int ss_check_hash(char **buf_ptr, ssize_t *buf_len, struct chunk *chunk, int buf_size)
 {
-    int i, j;
+    int i, j, k;
+    char *buf = *buf_ptr;
     ssize_t blen = *buf_len;
-    ssize_t cidx = *hash_idx;
+    uint32_t cidx = chunk->idx;
 
-    for (i = 0, j = 0; i < blen; i++) {
-        if (cidx < HASH_BUF_LEN) {
-            buf[j] = buf[i];
-            j++;
+    if (chunk->buf == NULL) {
+        chunk->buf = (char *)malloc(buf_size);
+        chunk->len = buf_size - AUTH_BYTES;
+    }
+
+    int size = max(chunk->len + blen, buf_size);
+    if (buf_size < size) {
+        buf = realloc(buf, size);
+    }
+
+    for (i = 0, j = 0, k = 0; i < blen; i++) {
+
+        chunk->buf[cidx++] = buf[k++];
+
+        if (cidx == CLEN_BYTES) {
+            uint16_t clen = ntohs(*((uint16_t *)chunk->buf));
+
+            if (chunk->len < clen) {
+                chunk->buf = realloc(chunk->buf, clen + AUTH_BYTES);
+            }
+            chunk->len = clen;
         }
-        hash_buf[cidx] = buf[i];
-        cidx++;
-        if (cidx == HASH_BUF_LEN + HASH_BYTES) {
-            uint8_t hash[HASH_BYTES];
-            crypto_generichash(hash, HASH_BYTES, (uint8_t *)hash_buf, HASH_BUF_LEN, NULL, 0);
-            if (memcmp(hash, hash_buf + HASH_BUF_LEN, HASH_BYTES) != 0) return 0;
+
+        if (cidx == chunk->len + AUTH_BYTES) {
+            // Compare hash
+            uint8_t *hash = (uint8_t *)malloc(chunk->len);
+            crypto_generichash(hash, HASH_BYTES, (uint8_t *)chunk->buf + AUTH_BYTES, chunk->len, NULL, 0);
+
+            if (memcmp(hash, chunk->buf + CLEN_BYTES, HASH_BYTES) != 0) return 0;
+
+            // Copy chunk back to buffer
+            memmove(buf + j + chunk->len, buf + k, blen - i - 1);
+            memcpy(buf + j, chunk->buf + AUTH_BYTES, chunk->len);
+
+            // Reset the base offset
+            j += chunk->len;
+            k = j;
             cidx = 0;
         }
     }
+
+    *buf_ptr = buf;
     *buf_len = j;
-    *hash_idx = cidx;
+    chunk->idx = cidx;
     return 1;
 }
 
-char *ss_gen_hash(char *buf, ssize_t *buf_len, char *hash_buf, ssize_t *hash_idx, int buf_size)
+char *ss_gen_hash(char *buf, ssize_t *buf_len, int buf_size)
 {
-    int i, j;
     ssize_t blen = *buf_len;
-    ssize_t cidx = *hash_idx;
-    int size = max((blen / HASH_BUF_LEN + 1) * HASH_BYTES + blen, buf_size);
+    int size = max(AUTH_BYTES + blen, buf_size);
 
     if (buf_size < size) {
         buf = realloc(buf, size);
     }
-    for (i = 0, j = 0; i < blen; i++, j++) {
-        if (cidx == HASH_BUF_LEN) {
-            uint8_t hash[HASH_BYTES];
-            crypto_generichash(hash, HASH_BYTES, (uint8_t *)hash_buf, HASH_BUF_LEN, NULL, 0);
-            memmove(buf + j + HASH_BYTES, buf + j, blen - i);
-            memcpy(buf + j, hash, HASH_BYTES);
-            j += HASH_BYTES; cidx = 0;
-        }
-        hash_buf[cidx] = buf[j];
-        cidx++;
-    }
-    *buf_len = j;
-    *hash_idx = cidx;
+
+    uint16_t chunk_len = htons((uint16_t)blen);
+    uint8_t hash[HASH_BYTES];
+    crypto_generichash(hash, HASH_BYTES, (uint8_t *)buf, blen, NULL, 0);
+
+    memmove(buf + AUTH_BYTES, buf, blen);
+    memcpy(buf + CLEN_BYTES, hash, HASH_BYTES);
+    memcpy(buf, &chunk_len, CLEN_BYTES);
+
+    *buf_len = blen + AUTH_BYTES;
     return buf;
 }
