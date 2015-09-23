@@ -648,7 +648,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
 #ifdef UDPRELAY_LOCAL
-    buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
+    buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method, 0);
     if (buf == NULL) {
         ERROR("[udp] server_ss_decrypt_all");
         goto CLEAN_UP;
@@ -708,7 +708,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     memcpy(buf, addr_header, addr_header_len);
     buf_len += addr_header_len;
 
-    buf = ss_encrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
+    buf = ss_encrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method, 0);
 #endif
 
     size_t remote_src_addr_len = get_sockaddr_len((struct sockaddr *)&remote_ctx->src_addr);
@@ -826,7 +826,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     tx += buf_len;
 
-    buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
+    buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method, 1);
     if (buf == NULL) {
         ERROR("[udp] server_ss_decrypt_all");
         goto CLEAN_UP;
@@ -1081,7 +1081,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         memmove(buf, buf + offset, buf_len);
     }
 
-    buf = ss_encrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method);
+    buf = ss_encrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method, 1);
 
     int s = sendto(remote_ctx->fd, buf, buf_len, 0, remote_addr, remote_addr_len);
 

@@ -164,8 +164,8 @@ struct enc_ctx {
     cipher_ctx_t evp;
 };
 
-char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method);
-char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method);
+char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method, int auth);
+char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method, int auth);
 char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
                   struct enc_ctx *ctx);
 char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len,
@@ -176,8 +176,8 @@ int enc_get_iv_len(void);
 void cipher_context_release(cipher_ctx_t *evp);
 unsigned char *enc_md5(const unsigned char *d, size_t n, unsigned char *md);
 
-int ss_onetimeauth(char *auth, char *msg, int msg_len, struct enc_ctx *ctx);
-int ss_onetimeauth_verify(char *auth, char *msg, int msg_len, struct enc_ctx *ctx);
+int ss_onetimeauth(char *auth, char *msg, int msg_len, uint8_t *iv);
+int ss_onetimeauth_verify(char *auth, char *msg, int msg_len, uint8_t *iv);
 
 int ss_check_hash(char **buf_ptr, ssize_t *buf_len, struct chunk *chunk, struct enc_ctx *ctx, int buf_size);
 char *ss_gen_hash(char *buf, ssize_t *buf_len, uint32_t *counter, struct enc_ctx *ctx, int buf_size);
