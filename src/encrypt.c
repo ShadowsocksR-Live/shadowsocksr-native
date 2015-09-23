@@ -1079,9 +1079,9 @@ char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method, i
             ss_onetimeauth(hash, plaintext, p_len, iv);
             if (buf_size < ONETIMEAUTH_BYTES + p_len) {
                 plaintext = realloc(plaintext, ONETIMEAUTH_BYTES + p_len);
-                memcpy(plaintext + p_len, hash, ONETIMEAUTH_BYTES);
-                p_len = c_len = p_len + ONETIMEAUTH_BYTES;
             }
+            memcpy(plaintext + p_len, hash, ONETIMEAUTH_BYTES);
+            p_len = c_len = p_len + ONETIMEAUTH_BYTES;
         }
 
         if (method >= SALSA20) {

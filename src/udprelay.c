@@ -682,7 +682,9 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     memmove(buf, buf + len, buf_len);
 #else
     // Construct packet
-    buf = realloc(buf, buf_len + 3);
+    if (BUF_SIZE < buf_len + 3) {
+        buf = realloc(buf, buf_len + 3);
+    }
     memmove(buf + 3, buf, buf_len);
     memset(buf, 0, 3);
     buf_len += 3;
@@ -703,7 +705,9 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     // Construct packet
-    buf = realloc(buf, buf_len + addr_header_len);
+    if (BUF_SIZE < buf_len + addr_header_len) {
+        buf = realloc(buf, buf_len + addr_header_len);
+    }
     memmove(buf + addr_header_len, buf, buf_len);
     memcpy(buf, addr_header, addr_header_len);
     buf_len += addr_header_len;
@@ -894,7 +898,9 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     // reconstruct the buffer
-    buf = realloc(buf, buf_len + addr_header_len);
+    if (BUF_SIZE < buf_len + addr_header_len) {
+        buf = realloc(buf, buf_len + addr_header_len);
+    }
     memmove(buf + addr_header_len, buf, buf_len);
     memcpy(buf, addr_header, addr_header_len);
     buf_len += addr_header_len;
@@ -950,7 +956,9 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     addr_header_len += 2;
 
     // reconstruct the buffer
-    buf = realloc(buf, buf_len + addr_header_len);
+    if (BUF_SIZE < buf_len + addr_header_len) {
+        buf = realloc(buf, buf_len + addr_header_len);
+    }
     memmove(buf + addr_header_len, buf, buf_len);
     memcpy(buf, addr_header, addr_header_len);
     buf_len += addr_header_len;
