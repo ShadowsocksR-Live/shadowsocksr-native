@@ -71,6 +71,7 @@
 #include <arpa/inet.h>
 #endif
 
+#include "hmac-sha1.h"
 #include "cache.h"
 #include "encrypt.h"
 #include "utils.h"
@@ -1030,24 +1031,22 @@ static int cipher_context_update(cipher_ctx_t *ctx, uint8_t *output, size_t *ole
 
 int ss_onetimeauth(char *auth, char *msg, int msg_len, struct enc_ctx *ctx)
 {
-    uint8_t auth_key[ONETIMEAUTH_KEYBYTES];
-    uint8_t auth_bytes[MAX_IV_LENGTH + MAX_KEY_LENGTH];
-    memcpy(auth_bytes, ctx->evp.iv, enc_iv_len);
-    memcpy(auth_bytes + enc_iv_len, enc_key, enc_key_len);
-    crypto_generichash(auth_key, ONETIMEAUTH_KEYBYTES, auth_bytes, enc_iv_len + enc_key_len, NULL, 0);
-
-    return crypto_onetimeauth((uint8_t *)auth, (uint8_t *)msg, msg_len, auth_key);
+    uint8_t auth_key[MAX_IV_LENGTH + MAX_KEY_LENGTH];
+    memcpy(auth_key, ctx->evp.iv, enc_iv_len);
+    memcpy(auth_key + enc_iv_len, enc_key, enc_key_len);
+    sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)auth);
+    return 0;
 }
 
 int ss_onetimeauth_verify(char *auth, char *msg, int msg_len, struct enc_ctx *ctx)
 {
-    uint8_t auth_key[ONETIMEAUTH_KEYBYTES];
-    uint8_t auth_bytes[MAX_IV_LENGTH + MAX_KEY_LENGTH];
-    memcpy(auth_bytes, ctx->evp.iv, enc_iv_len);
-    memcpy(auth_bytes + enc_iv_len, enc_key, enc_key_len);
-    crypto_generichash(auth_key, ONETIMEAUTH_KEYBYTES, auth_bytes, enc_iv_len + enc_key_len, NULL, 0);
+    uint8_t hash[ONETIMEAUTH_BYTES];
+    uint8_t auth_key[MAX_IV_LENGTH + MAX_KEY_LENGTH];
+    memcpy(auth_key, ctx->evp.iv, enc_iv_len);
+    memcpy(auth_key + enc_iv_len, enc_key, enc_key_len);
+    sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, hash);
 
-    return crypto_onetimeauth_verify((uint8_t *)auth, (uint8_t *)msg, msg_len, auth_key);
+    return memcmp(auth, hash, ONETIMEAUTH_BYTES);
 }
 
 char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method)
@@ -1510,16 +1509,16 @@ int ss_check_hash(char **buf_ptr, ssize_t *buf_len, struct chunk *chunk, struct 
 
         if (cidx == chunk->len + AUTH_BYTES) {
             // Compare hash
-            uint8_t hash[HASH_BYTES];
+            uint8_t hash[ONETIMEAUTH_BYTES];
             uint8_t key[MAX_IV_LENGTH + sizeof(uint32_t)];
 
             uint32_t c = htonl(chunk->counter);
             memcpy(key, ctx->evp.iv, enc_iv_len);
             memcpy(key + enc_iv_len, &c, sizeof(uint32_t));
-            crypto_generichash(hash, HASH_BYTES, (uint8_t *)chunk->buf + AUTH_BYTES, chunk->len,
-                    key, enc_iv_len + sizeof(uint32_t));
+            sha1_hmac(key, enc_iv_len + sizeof(uint32_t),
+                    (uint8_t *)chunk->buf + AUTH_BYTES, chunk->len, hash);
 
-            if (memcmp(hash, chunk->buf + CLEN_BYTES, HASH_BYTES) != 0) {
+            if (memcmp(hash, chunk->buf + CLEN_BYTES, ONETIMEAUTH_BYTES) != 0) {
                 *buf_ptr = buf;
                 return 0;
             }
@@ -1552,16 +1551,16 @@ char *ss_gen_hash(char *buf, ssize_t *buf_len, uint32_t *counter, struct enc_ctx
     }
 
     uint16_t chunk_len = htons((uint16_t)blen);
-    uint8_t hash[HASH_BYTES];
+    uint8_t hash[ONETIMEAUTH_BYTES];
     uint8_t key[MAX_IV_LENGTH + sizeof(uint32_t)];
 
     uint32_t c = htonl(*counter);
     memcpy(key, ctx->evp.iv, enc_iv_len);
     memcpy(key + enc_iv_len, &c, sizeof(uint32_t));
-    crypto_generichash(hash, HASH_BYTES, (uint8_t *)buf, blen, key, enc_iv_len + sizeof(uint32_t));
+    sha1_hmac(key, enc_iv_len + sizeof(uint32_t), (uint8_t *)buf, blen, hash);
 
     memmove(buf + AUTH_BYTES, buf, blen);
-    memcpy(buf + CLEN_BYTES, hash, HASH_BYTES);
+    memcpy(buf + CLEN_BYTES, hash, ONETIMEAUTH_BYTES);
     memcpy(buf, &chunk_len, CLEN_BYTES);
 
     *counter = *counter + 1;

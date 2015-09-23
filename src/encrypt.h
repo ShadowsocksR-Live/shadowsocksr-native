@@ -140,15 +140,13 @@ typedef struct {
 #define SALSA20             15
 #define CHACHA20            16
 
-#define ONETIMEAUTH_BYTES 16U
-#define ONETIMEAUTH_KEYBYTES 32U
 
 #define ONETIMEAUTH_FLAG 0x10
 #define ADDRTYPE_MASK 0xF
 
-#define HASH_BYTES 4
-#define CLEN_BYTES 2
-#define AUTH_BYTES (HASH_BYTES + CLEN_BYTES)
+#define ONETIMEAUTH_BYTES 20U
+#define CLEN_BYTES 2U
+#define AUTH_BYTES (ONETIMEAUTH_BYTES + CLEN_BYTES)
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
