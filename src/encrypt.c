@@ -790,8 +790,6 @@ void cipher_context_init(cipher_ctx_t *ctx, int method, int enc)
         return;
     }
 
-    enc_iv_len = 0;
-
     if (method >= SALSA20) {
         enc_iv_len = supported_ciphers_iv_size[method];
         return;
