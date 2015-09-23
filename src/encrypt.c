@@ -1513,8 +1513,9 @@ int ss_check_hash(char **buf_ptr, ssize_t *buf_len, struct chunk *chunk, struct 
             uint8_t hash[HASH_BYTES];
             uint8_t key[MAX_IV_LENGTH + sizeof(uint32_t)];
 
+            uint32_t c = htonl(chunk->counter);
             memcpy(key, ctx->evp.iv, enc_iv_len);
-            memcpy(key + enc_iv_len, &chunk->counter, sizeof(uint32_t));
+            memcpy(key + enc_iv_len, &c, sizeof(uint32_t));
             crypto_generichash(hash, HASH_BYTES, (uint8_t *)chunk->buf + AUTH_BYTES, chunk->len,
                     key, enc_iv_len + sizeof(uint32_t));
 
@@ -1554,8 +1555,9 @@ char *ss_gen_hash(char *buf, ssize_t *buf_len, uint32_t *counter, struct enc_ctx
     uint8_t hash[HASH_BYTES];
     uint8_t key[MAX_IV_LENGTH + sizeof(uint32_t)];
 
+    uint32_t c = htonl(*counter);
     memcpy(key, ctx->evp.iv, enc_iv_len);
-    memcpy(key + enc_iv_len, counter, sizeof(uint32_t));
+    memcpy(key + enc_iv_len, &c, sizeof(uint32_t));
     crypto_generichash(hash, HASH_BYTES, (uint8_t *)buf, blen, key, enc_iv_len + sizeof(uint32_t));
 
     memmove(buf + AUTH_BYTES, buf, blen);
