@@ -869,11 +869,15 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
      * +----+------+------+----------+----------+----------+
      *
      * shadowsocks UDP Request (before encrypted)
-     * +------+----------+----------+----------+
-     * | ATYP | DST.ADDR | DST.PORT |   DATA   |
-     * +------+----------+----------+----------+
-     * |  1   | Variable |    2     | Variable |
-     * +------+----------+----------+----------+
+     * +------+----------+----------+----------+-------------+
+     * | ATYP | DST.ADDR | DST.PORT |   DATA   |  HMAC-SHA1  |
+     * +------+----------+----------+----------+-------------+
+     * |  1   | Variable |    2     | Variable |     20      |
+     * +------+----------+----------+----------+-------------+
+     *
+     * If ATYP & ONETIMEAUTH_FLAG(0x10) == 1, Authentication (HMAC-SHA1) is enabled.
+     *
+     * The key of HMAC-SHA1 is (IV + KEY) and the input is the whole packet.
      *
      * shadowsocks UDP Response (before encrypted)
      * +------+----------+----------+----------+

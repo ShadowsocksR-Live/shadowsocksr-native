@@ -528,27 +528,27 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         /*
          * Shadowsocks TCP Relay Header:
          *
-         *    +------+----------+----------+---------------------+
-         *    | ATYP | DST.ADDR | DST.PORT |       Poly1305      |
-         *    +------+----------+----------+---------------------+
-         *    |  1   | Variable |    2     |          16         |
-         *    +------+----------+----------+---------------------+
+         *    +------+----------+----------+----------------+
+         *    | ATYP | DST.ADDR | DST.PORT |    HMAC-SHA1   |
+         *    +------+----------+----------+----------------+
+         *    |  1   | Variable |    2     |      20        |
+         *    +------+----------+----------+----------------+
          *
-         *    If ATYP & ONETIMEAUTH_FLAG(0x10) == 1, Authentication (Poly1305) and Hash (BLAKE2b) are enabled.
+         *    If ATYP & ONETIMEAUTH_FLAG(0x10) == 1, Authentication (HMAC-SHA1) is enabled.
          *
-         *    The key of Poly1305 is BLAKE2b(IV + KEY) and the input is the whole header.
+         *    The key of HMAC-SHA1 is (IV + KEY) and the input is the whole header.
          */
 
         /*
-         * Shadowsocks TCP Request Chunk (Optional, no hash check for response's payload):
+         * Shadowsocks TCP Request's Chunk Authentication (Optional, no hash check for response's payload):
          *
-         *    +------+---------+-------------+------+
-         *    | LEN  | BLAKE2b |    DATA     |      ...
-         *    +------+---------+-------------+------+
-         *    |  2   |    4    |  Variable   |      ...
-         *    +------+---------+-------------+------+
+         *    +------+-----------+-------------+------+
+         *    | LEN  | HMAC-SHA1 |    DATA     |      ...
+         *    +------+-----------+-------------+------+
+         *    |  2   |    20     |  Variable   |      ...
+         *    +------+-----------+-------------+------+
          *
-         *    The key of BLAKE2b is (IV + CHUNK ID)
+         *    The key of HMAC-SHA1 is (IV + CHUNK ID)
          */
 
         int offset = 0;
