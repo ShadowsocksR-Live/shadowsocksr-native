@@ -30,8 +30,6 @@
 #include "hmac-sha1.h"
 
 
-
-
 /*
  * SHA-1 context setup
  */

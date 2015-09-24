@@ -30,6 +30,7 @@
 
 #include <openssl/md5.h>
 #include <openssl/rand.h>
+#include <openssl/hmac.h>
 
 #elif defined(USE_CRYPTO_POLARSSL)
 
@@ -1532,8 +1533,13 @@ int ss_check_hash(char **buf_ptr, ssize_t *buf_len, struct chunk *chunk, struct 
             uint32_t c = htonl(chunk->counter);
             memcpy(key, ctx->evp.iv, enc_iv_len);
             memcpy(key + enc_iv_len, &c, sizeof(uint32_t));
+#if defined(USE_CRYPTO_OPENSSL)
+            HMAC(EVP_sha1(), key, enc_iv_len + sizeof(uint32_t),
+                    (uint8_t *)chunk->buf + AUTH_BYTES, chunk->len, hash, NULL);
+#else
             sha1_hmac(key, enc_iv_len + sizeof(uint32_t),
                     (uint8_t *)chunk->buf + AUTH_BYTES, chunk->len, hash);
+#endif
 
             if (memcmp(hash, chunk->buf + CLEN_BYTES, ONETIMEAUTH_BYTES) != 0) {
                 *buf_ptr = buf;
@@ -1574,7 +1580,11 @@ char *ss_gen_hash(char *buf, ssize_t *buf_len, uint32_t *counter, struct enc_ctx
     uint32_t c = htonl(*counter);
     memcpy(key, ctx->evp.iv, enc_iv_len);
     memcpy(key + enc_iv_len, &c, sizeof(uint32_t));
+#if defined(USE_CRYPTO_OPENSSL)
+    HMAC(EVP_sha1(), key, enc_iv_len + sizeof(uint32_t), (uint8_t *)buf, blen, hash, NULL);
+#else
     sha1_hmac(key, enc_iv_len + sizeof(uint32_t), (uint8_t *)buf, blen, hash);
+#endif
 
     memmove(buf + AUTH_BYTES, buf, blen);
     memcpy(buf + CLEN_BYTES, hash, ONETIMEAUTH_BYTES);
