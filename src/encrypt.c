@@ -1032,22 +1032,25 @@ static int cipher_context_update(cipher_ctx_t *ctx, uint8_t *output, size_t *ole
 
 int ss_onetimeauth(char *auth, char *msg, int msg_len, uint8_t *iv)
 {
+    uint8_t hash[ONETIMEAUTH_BYTES * 2];
     uint8_t auth_key[MAX_IV_LENGTH + MAX_KEY_LENGTH];
     memcpy(auth_key, iv, enc_iv_len);
     memcpy(auth_key + enc_iv_len, enc_key, enc_key_len);
 
 #if defined(USE_CRYPTO_OPENSSL)
-    HMAC(EVP_sha1(), auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)auth, NULL);
+    HMAC(EVP_sha1(), auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash, NULL);
 #else
-    ss_sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)auth);
+    ss_sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash);
 #endif
+
+    memcpy(auth, hash, ONETIMEAUTH_BYTES);
 
     return 0;
 }
 
 int ss_onetimeauth_verify(char *auth, char *msg, int msg_len, uint8_t *iv)
 {
-    uint8_t hash[ONETIMEAUTH_BYTES];
+    uint8_t hash[ONETIMEAUTH_BYTES * 2];
     uint8_t auth_key[MAX_IV_LENGTH + MAX_KEY_LENGTH];
     memcpy(auth_key, iv, enc_iv_len);
     memcpy(auth_key + enc_iv_len, enc_key, enc_key_len);
@@ -1087,7 +1090,7 @@ char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method, i
         memcpy(ciphertext, iv, iv_len);
 
         if (auth) {
-            char hash[ONETIMEAUTH_BYTES];
+            char hash[ONETIMEAUTH_BYTES * 2];
             ss_onetimeauth(hash, plaintext, p_len, iv);
             if (buf_size < ONETIMEAUTH_BYTES + p_len) {
                 plaintext = realloc(plaintext, ONETIMEAUTH_BYTES + p_len);
@@ -1538,7 +1541,7 @@ int ss_check_hash(char **buf_ptr, ssize_t *buf_len, struct chunk *chunk, struct 
 
         if (cidx == chunk->len + AUTH_BYTES) {
             // Compare hash
-            uint8_t hash[ONETIMEAUTH_BYTES];
+            uint8_t hash[ONETIMEAUTH_BYTES * 2];
             uint8_t key[MAX_IV_LENGTH + sizeof(uint32_t)];
 
             uint32_t c = htonl(chunk->counter);
@@ -1585,7 +1588,7 @@ char *ss_gen_hash(char *buf, ssize_t *buf_len, uint32_t *counter, struct enc_ctx
     }
 
     uint16_t chunk_len = htons((uint16_t)blen);
-    uint8_t hash[ONETIMEAUTH_BYTES];
+    uint8_t hash[ONETIMEAUTH_BYTES * 2];
     uint8_t key[MAX_IV_LENGTH + sizeof(uint32_t)];
 
     uint32_t c = htonl(*counter);

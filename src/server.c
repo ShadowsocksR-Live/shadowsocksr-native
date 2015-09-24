@@ -531,12 +531,13 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
          *    +------+----------+----------+----------------+
          *    | ATYP | DST.ADDR | DST.PORT |    HMAC-SHA1   |
          *    +------+----------+----------+----------------+
-         *    |  1   | Variable |    2     |      20        |
+         *    |  1   | Variable |    2     |      10        |
          *    +------+----------+----------+----------------+
          *
          *    If ATYP & ONETIMEAUTH_FLAG(0x10) == 1, Authentication (HMAC-SHA1) is enabled.
          *
          *    The key of HMAC-SHA1 is (IV + KEY) and the input is the whole header.
+         *    The output of HMAC-SHA is truncated to 10 bytes (leftmost bits).
          */
 
         /*
@@ -545,10 +546,11 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
          *    +------+-----------+-------------+------+
          *    | LEN  | HMAC-SHA1 |    DATA     |      ...
          *    +------+-----------+-------------+------+
-         *    |  2   |    20     |  Variable   |      ...
+         *    |  2   |    10     |  Variable   |      ...
          *    +------+-----------+-------------+------+
          *
          *    The key of HMAC-SHA1 is (IV + CHUNK ID)
+         *    The output of HMAC-SHA is truncated to 10 bytes (leftmost bits).
          */
 
         int offset = 0;
