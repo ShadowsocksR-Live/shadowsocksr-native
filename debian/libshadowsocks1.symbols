@@ -572,16 +572,6 @@ libshadowsocks.so.1 libshadowsocks1 #MINVER#
  set_nofile@Base 2.3.1
  setinterface@Base 2.3.1
  setnonblocking@Base 2.3.1
- sha1@Base 2.4.0-1
- sha1_finish@Base 2.4.0-1
- sha1_hmac@Base 2.4.0-1
- sha1_hmac_finish@Base 2.4.0-1
- sha1_hmac_reset@Base 2.4.0-1
- sha1_hmac_starts@Base 2.4.0-1
- sha1_hmac_update@Base 2.4.0-1
- sha1_process@Base 2.4.0-1
- sha1_starts@Base 2.4.0-1
- sha1_update@Base 2.4.0-1
  sodium_allocarray@Base 2.3.1
  sodium_bin2hex@Base 2.3.1
  sodium_free@Base 2.3.1
@@ -611,6 +601,16 @@ libshadowsocks.so.1 libshadowsocks1 #MINVER#
  ss_itoa@Base 2.3.1
  ss_onetimeauth@Base 2.3.1
  ss_onetimeauth_verify@Base 2.3.1
+ ss_sha1@Base 2.4.0-1
+ ss_sha1_finish@Base 2.4.0-1
+ ss_sha1_hmac@Base 2.4.0-1
+ ss_sha1_hmac_finish@Base 2.4.0-1
+ ss_sha1_hmac_reset@Base 2.4.0-1
+ ss_sha1_hmac_starts@Base 2.4.0-1
+ ss_sha1_hmac_update@Base 2.4.0-1
+ ss_sha1_process@Base 2.4.0-1
+ ss_sha1_starts@Base 2.4.0-1
+ ss_sha1_update@Base 2.4.0-1
  ss_strndup@Base 2.3.1
  start_ss_local_server@Base 2.3.1
  udns_jraninit@Base 2.3.1
