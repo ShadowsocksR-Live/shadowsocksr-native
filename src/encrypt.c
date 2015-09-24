@@ -1037,7 +1037,7 @@ int ss_onetimeauth(char *auth, char *msg, int msg_len, uint8_t *iv)
     memcpy(auth_key + enc_iv_len, enc_key, enc_key_len);
 
 #if defined(USE_CRYPTO_OPENSSL)
-    HMAC(EVP_sha1(), auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, auth, NULL);
+    HMAC(EVP_sha1(), auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)auth, NULL);
 #else
     sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)auth);
 #endif
