@@ -1039,7 +1039,7 @@ int ss_onetimeauth(char *auth, char *msg, int msg_len, uint8_t *iv)
 #if defined(USE_CRYPTO_OPENSSL)
     HMAC(EVP_sha1(), auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)auth, NULL);
 #else
-    sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)auth);
+    ss_sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)auth);
 #endif
 
     return 0;
@@ -1055,7 +1055,7 @@ int ss_onetimeauth_verify(char *auth, char *msg, int msg_len, uint8_t *iv)
 #if defined(USE_CRYPTO_OPENSSL)
     HMAC(EVP_sha1(), auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, hash, NULL);
 #else
-    sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, hash);
+    ss_sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, hash);
 #endif
 
     return memcmp(auth, hash, ONETIMEAUTH_BYTES);
@@ -1548,7 +1548,7 @@ int ss_check_hash(char **buf_ptr, ssize_t *buf_len, struct chunk *chunk, struct 
             HMAC(EVP_sha1(), key, enc_iv_len + sizeof(uint32_t),
                     (uint8_t *)chunk->buf + AUTH_BYTES, chunk->len, hash, NULL);
 #else
-            sha1_hmac(key, enc_iv_len + sizeof(uint32_t),
+            ss_sha1_hmac(key, enc_iv_len + sizeof(uint32_t),
                     (uint8_t *)chunk->buf + AUTH_BYTES, chunk->len, hash);
 #endif
 
@@ -1594,7 +1594,7 @@ char *ss_gen_hash(char *buf, ssize_t *buf_len, uint32_t *counter, struct enc_ctx
 #if defined(USE_CRYPTO_OPENSSL)
     HMAC(EVP_sha1(), key, enc_iv_len + sizeof(uint32_t), (uint8_t *)buf, blen, hash, NULL);
 #else
-    sha1_hmac(key, enc_iv_len + sizeof(uint32_t), (uint8_t *)buf, blen, hash);
+    ss_sha1_hmac(key, enc_iv_len + sizeof(uint32_t), (uint8_t *)buf, blen, hash);
 #endif
 
     memmove(buf + AUTH_BYTES, buf, blen);
