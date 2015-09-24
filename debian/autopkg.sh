@@ -21,7 +21,7 @@ tar -czvf ../$(basename $CURR_PKG_DIR)_$(cat ./configure.ac | grep AC_INIT | gre
 #dh_make --multi --createorig --yes --copyright gpl3
 A=$(which debuild > /dev/null 2> /dev/null; echo $?)
 if [ "${A}x" = "0x" ]; then
-    debuild -us -uc
+    debuild -us -uc -i
 else
-    dpkg-buildpackage -us -uc
+    dpkg-buildpackage -us -uc -i
 fi
