@@ -1035,7 +1035,13 @@ int ss_onetimeauth(char *auth, char *msg, int msg_len, uint8_t *iv)
     uint8_t auth_key[MAX_IV_LENGTH + MAX_KEY_LENGTH];
     memcpy(auth_key, iv, enc_iv_len);
     memcpy(auth_key + enc_iv_len, enc_key, enc_key_len);
+
+#if defined(USE_CRYPTO_OPENSSL)
+    HMAC(EVP_sha1(), auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, auth, NULL);
+#else
     sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)auth);
+#endif
+
     return 0;
 }
 
@@ -1045,7 +1051,12 @@ int ss_onetimeauth_verify(char *auth, char *msg, int msg_len, uint8_t *iv)
     uint8_t auth_key[MAX_IV_LENGTH + MAX_KEY_LENGTH];
     memcpy(auth_key, iv, enc_iv_len);
     memcpy(auth_key + enc_iv_len, enc_key, enc_key_len);
+
+#if defined(USE_CRYPTO_OPENSSL)
+    HMAC(EVP_sha1(), auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, hash, NULL);
+#else
     sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, hash);
+#endif
 
     return memcmp(auth, hash, ONETIMEAUTH_BYTES);
 }
