@@ -1473,7 +1473,7 @@ int main(int argc, char **argv)
 
         // Setup UDP
         if (mode != TCP_ONLY) {
-            init_udprelay(server_host[index], server_port, m, atoi(timeout),
+            init_udprelay(server_host[index], server_port, m, auth, atoi(timeout),
                           iface);
         }
 

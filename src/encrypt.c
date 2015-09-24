@@ -1244,8 +1244,9 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method, 
                                         c_len - iv_len);
         }
 
-        if (auth) {
+        if (auth || (plaintext[0] & ONETIMEAUTH_FLAG)) {
             char hash[ONETIMEAUTH_BYTES];
+            memcpy(hash, plaintext + p_len - ONETIMEAUTH_BYTES, ONETIMEAUTH_BYTES);
             ret = !ss_onetimeauth_verify(hash, plaintext, p_len - ONETIMEAUTH_BYTES, iv);
             if (ret) p_len -= ONETIMEAUTH_BYTES;
         }
