@@ -32,14 +32,14 @@ make %{?_smp_mflags}
 make install DESTDIR=%{buildroot}
 mkdir -p %{buildroot}/etc/shadowsocks-libev
 %if 0%{?rhel} == 6
-mkdir -p %{buildroot}/etc/init.d
-install -m 755 %{_builddir}/%{buildsubdir}/rpm/SOURCES/etc/init.d/shadowsocks-libev %{buildroot}/etc/init.d/shadowsocks-libev
+mkdir -p %{buildroot}%{_initddir}
+install -m 755 %{_builddir}/%{buildsubdir}/rpm/SOURCES/etc/init.d/shadowsocks-libev %{buildroot}%{_initddir}/shadowsocks-libev
 %else
-mkdir -p %{buildroot}/etc/default
-install -m 644 %{_builddir}/%{buildsubdir}/debian/shadowsocks-libev.default %{buildroot}/etc/default/shadowsocks-libev
+mkdir -p %{buildroot}%{_sysconfdir}/default
+install -m 644 %{_builddir}/%{buildsubdir}/debian/shadowsocks-libev.default %{buildroot}%{_sysconfdir}/default/shadowsocks-libev
 install -m 644 %{_builddir}/%{buildsubdir}/debian/shadowsocks-libev.service %{buildroot}%{_unitdir}/shadowsocks-libev.service
 %endif
-install -m 644 %{_builddir}/%{buildsubdir}/debian/config.json %{buildroot}/etc/shadowsocks-libev/config.json
+install -m 644 %{_builddir}/%{buildsubdir}/debian/config.json %{buildroot}%{_sysconfdir}/shadowsocks-libev/config.json
 
 %if 0%{?rhel} == 6
 %post
@@ -67,9 +67,10 @@ BuildRequires: systemd
 %{_bindir}/*
 %{_libdir}/*
 %if 0%{?rhel} == 6
-%{_sysconfdir}/init.d/*
+%{_initddir}/shadowsocks-libev
 %else
-%{_unitdir}/*
+%{_unitdir}/shadowsocks-libev.service
+%config(noreplace) %{_sysconfdir}/default/shadowsocks-libev
 %endif
 %config(noreplace) %{_sysconfdir}/shadowsocks-libev/config.json
 %doc %{_mandir}/*
