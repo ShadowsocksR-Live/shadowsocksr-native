@@ -7,12 +7,12 @@ show_help()
     echo
     echo -e "Options:"
     echo -e "  -h    show this help."
-    echo -e "  -v    with argument version(2.1.4 by default)."
-    echo -e "  -f    with argument format(tar.xz by default) used by git archive."
+    echo -e "  -v    with argument version (2.4.0 by default)."
+    echo -e "  -f    with argument format (tar.xz by default) used by git archive."
     echo
     echo -e "Examples:"
-    echo -e "  to build base on version \`2.1.4' with format \`tar.xz', run:"
-    echo -e "    `basename $0` -f tar.xz -v 2.1.4"
+    echo -e "  to build base on version \`2.4.0' with format \`tar.xz', run:"
+    echo -e "    `basename $0` -f tar.xz -v 2.4.0"
 }
 
 while getopts "hv:f:" opt
@@ -48,7 +48,7 @@ get_att_val()
     fi
 }
 
-get_att_val version "2.1.4"
+get_att_val version "2.4.0"
 get_att_val format "tar.xz"
 
 name="shadowsocks-libev"
