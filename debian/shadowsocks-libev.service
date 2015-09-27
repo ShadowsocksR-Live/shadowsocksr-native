@@ -5,7 +5,8 @@
 #  the Free Software Foundation; either version 3 of the License, or
 #  (at your option) any later version.
 #
-#  This file is default for Debian packaging.
+#  This file is default for Debian packaging. See also
+#  /etc/default/shadowsocks-libev for environment variables.
 
 [Unit]
 Description=Shadowsocks-libev Default Server Service
@@ -13,8 +14,11 @@ After=network.target
 
 [Service]
 Type=simple
-User=nobody
-ExecStart=/usr/bin/ss-server -c /etc/shadowsocks-libev/config.json
+EnvironmentFile=/etc/default/shadowsocks-libev
+User=root
+#Group=$GROUP
+#LimitNOFILE=$MAXFD
+ExecStart=/usr/bin/ss-server -a $USER -c $CONFFILE $DAEMON_ARGS
 
 [Install]
 WantedBy=multi-user.target
