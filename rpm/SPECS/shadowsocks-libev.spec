@@ -1,56 +1,89 @@
-Name:           shadowsocks-libev
-Version:        2.1.4
-Release:        1%{?dist}
-Summary:        A lightweight secured socks5 proxy for embedded devices and low end boxes.
+Name:		shadowsocks-libev
+Version:	2.4.0
+Release:	1%{?dist}
+Summary:	A lightweight and secure socks5 proxy
 
-License:        GPLv3+
-URL:            https://github.com/shadowsocks/shadowsocks-libev
-Source0:        %{name}-%{version}.tar.xz
-Source1:        shadowsocks@.service
-Source2:        shadowsocks-server@.service
+Group:		Applications/Internet
+License:	GPLv3+
+URL:		https://github.com/madeye/%{name}
+Source0:	%{url}/archive/v%{version}.tar.gz
 
+BuildRequires:	openssl-devel
+Requires:	openssl
+
+Conflicts:	python-shadowsocks python3-shadowsocks
+
+AutoReq:	no
 
 %description
-Shadowsocks-libev is a lightweight secured socks5 proxy for embedded devices and low end boxes.
+shadowsocks-libev is a lightweight secured scoks5 proxy for embedded devices and low end boxes.
+
 
 %prep
 %setup -q
 
 
 %build
-%configure
+%configure --enable-shared
 make %{?_smp_mflags}
 
 
 %install
-rm -rf $RPM_BUILD_ROOT
-%make_install
-mkdir -p %{buildroot}/usr/lib/systemd/system
-cp %{SOURCE1} %{SOURCE2} %{buildroot}/usr/lib/systemd/system
+make install DESTDIR=%{buildroot}
+mkdir -p %{buildroot}/etc/shadowsocks-libev
+%if 0%{?rhel} == 6
+mkdir -p %{buildroot}%{_initddir}
+install -m 755 %{_builddir}/%{buildsubdir}/rpm/SOURCES/etc/init.d/shadowsocks-libev %{buildroot}%{_initddir}/shadowsocks-libev
+%else
+mkdir -p %{buildroot}%{_sysconfdir}/default
+install -m 644 %{_builddir}/%{buildsubdir}/debian/shadowsocks-libev.default %{buildroot}%{_sysconfdir}/default/shadowsocks-libev
+install -m 644 %{_builddir}/%{buildsubdir}/debian/shadowsocks-libev.service %{buildroot}%{_unitdir}/shadowsocks-libev.service
+%endif
+install -m 644 %{_builddir}/%{buildsubdir}/debian/config.json %{buildroot}%{_sysconfdir}/shadowsocks-libev/config.json
+
+%if 0%{?rhel} == 6
+%post
+/sbin/chkconfig --add shadowsocks-libev
+%preun
+if [ $1 -eq 0 ]; then
+    /sbin/service shadowsocks-libev stop
+    /sbin/chkconfig --del shadowsocks-libev
+fi
+%else
+Requires(post): systemd
+Requires(preun): systemd
+Requires(postun): systemd
+BuildRequires: systemd
+%post
+%systemd_post shadowsocks-libev.service
+%preun
+%systemd_preun shadowsocks-libev.service
+%postun
+%systemd_postun_with_restart shadowsocks-libev.service
+%endif
 
 
 %files
-%{_bindir}/ss-local
-%{_bindir}/ss-redir
-%{_bindir}/ss-server
-%{_bindir}/ss-tunnel
+%{_bindir}/*
+%{_libdir}/*
+%if 0%{?rhel} == 6
+%{_initddir}/shadowsocks-libev
+%else
+%{_unitdir}/shadowsocks-libev.service
+%config(noreplace) %{_sysconfdir}/default/shadowsocks-libev
+%endif
+%config(noreplace) %{_sysconfdir}/shadowsocks-libev/config.json
 %doc %{_mandir}/*
-%doc /usr/lib/systemd/system/*
-
 
 %package devel
-Summary:        Files for development of applications which will use shadowsocks.
-License:        GPLv3+
-URL:            https://github.com/shadowsocks/shadowsocks-libev
+Summary:    Development files for shadowsocks-libev
+License:    GPLv3+
 
 %description devel
-Shadowsocks-libev is a lightweight secured socks5 proxy for embedded devices and low end boxes.
+Development files for shadowsocks-libev
 
 %files devel
-%{_includedir}/shadowsocks.h
-%{_libdir}/libshadowsocks.a
-%{_libdir}/libshadowsocks.la
-%{_libdir}/pkgconfig/shadowsocks-libev.pc
-
+%{_includedir}/*
 
 %changelog
+
