@@ -188,6 +188,8 @@ jconf_t *read_jconf(const char * file)
                 conf.timeout = to_string(value);
             } else if (strcmp(name, "fast_open") == 0) {
                 conf.fast_open = value->u.boolean;
+            } else if (strcmp(name, "auth") == 0) {
+                conf.auth = value->u.boolean;
             } else if (strcmp(name, "nofile") == 0) {
                 conf.nofile = value->u.integer;
             } else if (strcmp(name, "nameserver") == 0) {

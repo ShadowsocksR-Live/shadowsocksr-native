@@ -784,6 +784,9 @@ int main(int argc, char **argv)
         if (timeout == NULL) {
             timeout = conf->timeout;
         }
+        if (auth == 0) {
+            auth = conf->auth;
+        }
     }
 
     if (remote_num == 0 || remote_port == NULL || tunnel_addr_str == NULL ||

@@ -50,6 +50,7 @@ typedef struct {
     char *password;
     char *method;
     char *timeout;
+    int auth;
     int fast_open;
     int nofile;
     char *nameserver;
