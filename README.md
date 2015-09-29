@@ -67,10 +67,25 @@ sudo apt-get install shadowsocks-libev
 
 #### Build package from source
 
+Supported Platforms:
+
+* Debian 7 (see below), 8, unstable
+* Ubuntu 14.10, 15.04 or higher
+
+To build packages on Debian 7 (Wheezy), you need to enable `debian-backports`
+to install systemd-compatibility packages like `dh-systemd` or `init-system-helpers`.
+
+This also means that you can only install those built packages on systems that have
+`init-system-helpers` installed.
+
+Otherwise, try to build and install directly from source. See the **Linux**
+section below.
+
 ``` bash
 cd shadowsocks-libev
-sudo apt-get install build-essential automake libtool libssl-dev gawk debhelper dh-systemd
-sh debian/autopkg.sh
+sudo apt-get install build-essential autoconf libtool libssl-dev \
+    gawk debhelper dh-systemd init-system-helpers
+dpkg-buildpackage -us -uc -i
 cd ..
 sudo dpkg -i shadowsocks-libev*.deb
 ```
@@ -78,11 +93,15 @@ sudo dpkg -i shadowsocks-libev*.deb
 #### Configure and start the service
 
 ```
-# Edit the configuration
+# Edit the configuration file
 sudo vim /etc/shadowsocks-libev/config.json
 
+# Edit the default configuration for debian
+sudo vim /etc/default/shadowsocks-libev
+
 # Start the service
-sudo /etc/init.d/shadowsocks-libev start
+sudo /etc/init.d/shadowsocks-libev start    # for sysvinit, or
+sudo systemctl start shasowsocks-libev      # for systemd
 ```
 
 ### Fedora & RHEL

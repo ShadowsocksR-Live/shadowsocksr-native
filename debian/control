@@ -22,7 +22,7 @@ Architecture: any
 Multi-Arch: same
 Section: libs
 Priority: extra
-Breaks: shadowsocks-libev (<< 2.3.1)
+Breaks: shadowsocks-libev (<< 2.4.0)
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: lightweight and secure socks5 proxy (shared library)
@@ -35,7 +35,7 @@ Package: libshadowsocks-dev
 Architecture: any
 Section: libdevel
 Priority: extra
-Breaks: shadowsocks-libev (<< 2.3.1)
+Breaks: shadowsocks-libev (<< 2.4.0)
 Depends: libshadowsocks1 (= ${binary:Version}), ${misc:Depends}
 Description: lightweight and secure socks5 proxy (development files)
  Shadowsocks-libev is a lightweight and secure socks5 proxy for
@@ -47,7 +47,7 @@ Package: libshadowsocks-dbg
 Architecture: any
 Section: debug
 Priority: extra
-Breaks: shadowsocks-libev (<< 2.3.1)
+Breaks: shadowsocks-libev (<< 2.4.0)
 Depends: libshadowsocks1 (= ${binary:Version}), ${misc:Depends}
 Description: debugging symbols for the libshadowsocks1 library
  Shadowsocks-libev is a lightweight and secure socks5 proxy for
