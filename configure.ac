@@ -19,6 +19,18 @@ AC_DISABLE_STATIC
 AC_DISABLE_SHARED
 LT_INIT([dlopen])
 
+dnl Checks for using shared libraries from system
+AC_ARG_ENABLE(
+  [system-shared-lib],
+  AS_HELP_STRING([--enable-system-shared-lib], [build against shared libraries when possible]),
+  [
+    case "${enableval}" in
+      yes) enable_system_shared_lib=true ;;
+      no) enable_system_shared_lib=false ;;
+      *) AC_MSG_ERROR([bad value ${enableval} for --enable-system-shared-lib]) ;;
+    esac], [enable_system_shared_lib=false])
+AM_CONDITIONAL([USE_SYSTEM_SHARED_LIB], [test x$enable_system_shared_lib = xtrue])
+
 dnl Checks for crypto library
 AC_ARG_WITH(
   [crypto-library],
