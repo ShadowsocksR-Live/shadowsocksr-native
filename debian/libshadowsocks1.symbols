@@ -1,8 +1,8 @@
 libshadowsocks.so.1 libshadowsocks1 #MINVER#
  ERROR@Base 2.3.1
  FATAL@Base 2.3.1
- #MISSING: 2.4.0-1 _crypto_stream_salsa20@Base 2.3.1
- #MISSING: 2.4.0-1 _crypto_stream_salsa20_xor_ic@Base 2.3.1
+ _crypto_stream_salsa20@Base 2.4.0
+ _crypto_stream_salsa20_xor_ic@Base 2.4.0
  _dns_format_code@Base 2.3.1
  acl_contains_ip@Base 2.3.1
  bytes_to_key@Base 2.3.1
@@ -601,16 +601,16 @@ libshadowsocks.so.1 libshadowsocks1 #MINVER#
  ss_itoa@Base 2.3.1
  ss_onetimeauth@Base 2.3.1
  ss_onetimeauth_verify@Base 2.3.1
- ss_sha1@Base 2.4.0-1
- ss_sha1_finish@Base 2.4.0-1
- ss_sha1_hmac@Base 2.4.0-1
- ss_sha1_hmac_finish@Base 2.4.0-1
- ss_sha1_hmac_reset@Base 2.4.0-1
- ss_sha1_hmac_starts@Base 2.4.0-1
- ss_sha1_hmac_update@Base 2.4.0-1
- ss_sha1_process@Base 2.4.0-1
- ss_sha1_starts@Base 2.4.0-1
- ss_sha1_update@Base 2.4.0-1
+ ss_sha1@Base 2.4.0
+ ss_sha1_finish@Base 2.4.0
+ ss_sha1_hmac@Base 2.4.0
+ ss_sha1_hmac_finish@Base 2.4.0
+ ss_sha1_hmac_reset@Base 2.4.0
+ ss_sha1_hmac_starts@Base 2.4.0
+ ss_sha1_hmac_update@Base 2.4.0
+ ss_sha1_process@Base 2.4.0
+ ss_sha1_starts@Base 2.4.0
+ ss_sha1_update@Base 2.4.0
  ss_strndup@Base 2.3.1
  start_ss_local_server@Base 2.3.1
  udns_jraninit@Base 2.3.1
