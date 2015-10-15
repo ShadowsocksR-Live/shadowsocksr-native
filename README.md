@@ -51,6 +51,9 @@ wget -O- http://shadowsocks.org/debian/1D27208A.gpg | sudo apt-key add -
 Add either of the following lines to your /etc/apt/sources.list
 
 ```
+# Ubuntu 14.04 or above
+deb http://shadowsocks.org/ubuntu trusty main
+
 # Debian Wheezy, Ubuntu 12.04 or any distribution with libssl > 1.0.1
 deb http://shadowsocks.org/debian wheezy main
 
