@@ -27,5 +27,12 @@ override_dh_auto_configure:
 	dh_auto_configure -- \
         --enable-shared
 
+override_dh_installinit:
+	dh_installinit
+	dh_installinit --no-start --name=shadowsocks-libev-server@
+	dh_installinit --no-start --name=shadowsocks-libev-tunnel@
+	dh_installinit --no-start --name=shadowsocks-libev-redir@
+	dh_installinit --no-start --name=shadowsocks-libev-local@
+
 %:
 	dh $@  --with systemd
