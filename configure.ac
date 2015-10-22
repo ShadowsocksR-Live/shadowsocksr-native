@@ -245,7 +245,9 @@ else
     LIBS="$LIBS $PTHREAD_LIBS"
 fi
 
-AC_CONFIG_SUBDIRS([libsodium])
+AM_COND_IF([USE_SYSTEM_SHARED_LIB],
+  [],
+  [AC_CONFIG_SUBDIRS([libsodium])])
 
 AC_CONFIG_FILES([ shadowsocks-libev.pc
                  Makefile
