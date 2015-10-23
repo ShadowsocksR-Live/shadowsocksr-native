@@ -648,6 +648,8 @@ BUILD_WINCOMPAT_TRUE
 BUILD_REDIRECTOR_FALSE
 BUILD_REDIRECTOR_TRUE
 INET_NTOP_LIB
+USE_SYSTEM_SHARED_LIB_FALSE
+USE_SYSTEM_SHARED_LIB_TRUE
 CPP
 OTOOL64
 OTOOL
@@ -776,6 +778,7 @@ enable_fast_install
 with_gnu_ld
 with_sysroot
 enable_libtool_lock
+enable_system_shared_lib
 with_crypto_library
 enable_zlib
 with_zlib
@@ -1433,6 +1436,8 @@ Optional Features:
   --enable-fast-install[=PKGS]
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --enable-system-shared-lib
+                          build against shared libraries when possible
   --disable-zlib          disable zlib compression support
   --enable-applecc        enable Apple CommonCrypto API support
   --disable-assert        turn off assertions
@@ -11735,6 +11740,27 @@ CC="$lt_save_CC"
 
 
 
+# Check whether --enable-system-shared-lib was given.
+if test "${enable_system_shared_lib+set}" = set; then :
+  enableval=$enable_system_shared_lib;
+    case "${enableval}" in
+      yes) enable_system_shared_lib=true ;;
+      no) enable_system_shared_lib=false ;;
+      *) as_fn_error $? "bad value ${enableval} for --enable-system-shared-lib" "$LINENO" 5 ;;
+    esac
+else
+  enable_system_shared_lib=false
+fi
+
+ if test x$enable_system_shared_lib = xtrue; then
+  USE_SYSTEM_SHARED_LIB_TRUE=
+  USE_SYSTEM_SHARED_LIB_FALSE='#'
+else
+  USE_SYSTEM_SHARED_LIB_TRUE='#'
+  USE_SYSTEM_SHARED_LIB_FALSE=
+fi
+
+
 
 # Check whether --with-crypto-library was given.
 if test "${with_crypto_library+set}" = set; then :
@@ -15517,8 +15543,11 @@ fi
 
 
 
-subdirs="$subdirs libsodium"
+if test -z "$USE_SYSTEM_SHARED_LIB_TRUE"; then :
+  else
+  subdirs="$subdirs libsodium"
 
+fi
 
 ac_config_files="$ac_config_files shadowsocks-libev.pc Makefile libcork/Makefile libipset/Makefile libudns/Makefile libev/Makefile src/Makefile"
 
@@ -15653,6 +15682,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${AMDEP_TRUE}" && test -z "${AMDEP_FALSE}"; then
   as_fn_error $? "conditional \"AMDEP\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${USE_SYSTEM_SHARED_LIB_TRUE}" && test -z "${USE_SYSTEM_SHARED_LIB_FALSE}"; then
+  as_fn_error $? "conditional \"USE_SYSTEM_SHARED_LIB\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__fastdepCC_TRUE}" && test -z "${am__fastdepCC_FALSE}"; then

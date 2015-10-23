@@ -136,7 +136,7 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir dist dist-all distcheck
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = $(SUBDIRS)
+DIST_SUBDIRS = libsodium libcork libipset libudns libev src
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -298,7 +298,8 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = libsodium libcork libipset libudns libev src
+@USE_SYSTEM_SHARED_LIB_FALSE@SUBDIRS = libsodium libcork libipset libudns libev src
+@USE_SYSTEM_SHARED_LIB_TRUE@SUBDIRS = libcork libipset src
 ACLOCAL_AMFLAGS = -I m4
 man_MANS = man/shadowsocks-libev.8 man/ss-server.1 man/ss-local.1 man/ss-redir.1\
 	   man/ss-manager.1 man/ss-tunnel.1
