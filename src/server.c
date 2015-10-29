@@ -569,7 +569,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             struct sockaddr_in *addr = (struct sockaddr_in *)&storage;
             size_t in_addr_len = sizeof(struct in_addr);
             addr->sin_family = AF_INET;
-            if (r > in_addr_len) {
+            if (r > in_addr_len + 3) {
                 addr->sin_addr = *(struct in_addr *)(server->buf + offset);
                 dns_ntop(AF_INET, (const void *)(server->buf + offset),
                          host, INET_ADDRSTRLEN);
@@ -589,7 +589,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         } else if ((atyp & ADDRTYPE_MASK) == 3) {
             // Domain name
             uint8_t name_len = *(uint8_t *)(server->buf + offset);
-            if (name_len < r) {
+            if (name_len + 4 < r) {
                 memcpy(host, server->buf + offset + 1, name_len);
                 offset += name_len + 1;
             } else {
@@ -627,7 +627,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             struct sockaddr_in6 *addr = (struct sockaddr_in6 *)&storage;
             size_t in6_addr_len = sizeof(struct in6_addr);
             addr->sin6_family = AF_INET6;
-            if (r > in6_addr_len) {
+            if (r > in6_addr_len + 3) {
                 addr->sin6_addr = *(struct in6_addr *)(server->buf + offset);
                 dns_ntop(AF_INET6, (const void *)(server->buf + offset),
                          host, INET6_ADDRSTRLEN);
