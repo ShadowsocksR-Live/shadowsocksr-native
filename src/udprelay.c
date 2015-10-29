@@ -653,7 +653,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
 #ifdef UDPRELAY_LOCAL
     buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method, 0);
     if (buf == NULL) {
-        ERROR("[udp] server_ss_decrypt_all");
+        LOGE("[udp] server_ss_decrypt_all");
         goto CLEAN_UP;
     }
 
@@ -835,7 +835,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     buf = ss_decrypt_all(BUF_SIZE, buf, &buf_len, server_ctx->method, server_ctx->auth);
     if (buf == NULL) {
-        ERROR("[udp] server_ss_decrypt_all");
+        LOGE("[udp] server_ss_decrypt_all");
         goto CLEAN_UP;
     }
 #endif

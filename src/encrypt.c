@@ -1233,7 +1233,7 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method, 
         size_t c_len = *len, p_len = *len - iv_len;
         int ret = 1;
 
-        if (*len < iv_len) {
+        if (*len <= iv_len) {
             return NULL;
         }
 
