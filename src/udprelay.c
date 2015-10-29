@@ -232,7 +232,7 @@ static int parse_udprealy_header(const char * buf, const int buf_len,
     if ((atyp & ADDRTYPE_MASK) == 1) {
         // IP V4
         size_t in_addr_len = sizeof(struct in_addr);
-        if (buf_len > in_addr_len + 3) {
+        if (buf_len >= in_addr_len + 3) {
             if (storage != NULL) {
                 struct sockaddr_in *addr = (struct sockaddr_in *)storage;
                 addr->sin_family = AF_INET;
@@ -248,7 +248,7 @@ static int parse_udprealy_header(const char * buf, const int buf_len,
     } else if ((atyp & ADDRTYPE_MASK) == 3) {
         // Domain name
         uint8_t name_len = *(uint8_t *)(buf + offset);
-        if (name_len + 4 < buf_len) {
+        if (name_len + 4 <= buf_len) {
             if (storage != NULL) {
                 char tmp[256] = { 0 };
                 struct cork_ip ip;
@@ -275,7 +275,7 @@ static int parse_udprealy_header(const char * buf, const int buf_len,
     } else if ((atyp & ADDRTYPE_MASK) == 4) {
         // IP V6
         size_t in6_addr_len = sizeof(struct in6_addr);
-        if (buf_len > in6_addr_len + 3) {
+        if (buf_len >= in6_addr_len + 3) {
             if (storage != NULL) {
                 struct sockaddr_in6 *addr = (struct sockaddr_in6 *)storage;
                 addr->sin6_family = AF_INET6;
