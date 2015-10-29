@@ -189,7 +189,8 @@ static char *hash_key(const int af, const struct sockaddr_storage *addr)
 
 #if defined(UDPRELAY_REDIR) || defined(UDPRELAY_REMOTE)
 static int construct_udprealy_header(const struct sockaddr_storage *in_addr,
-        char *addr_header) {
+                                     char *addr_header)
+{
 
     int addr_header_len = 0;
     if (in_addr->ss_family == AF_INET) {
@@ -223,7 +224,9 @@ static int parse_udprealy_header(const char * buf, const int buf_len,
     const uint8_t atyp = *(uint8_t *)buf;
     int offset = 1;
 
-    if (auth != NULL) *auth |= (atyp & ONETIMEAUTH_FLAG);
+    if (auth != NULL) {
+        *auth |= (atyp & ONETIMEAUTH_FLAG);
+    }
 
     // get remote addr and port
     if ((atyp & ADDRTYPE_MASK) == 1) {
@@ -247,7 +250,7 @@ static int parse_udprealy_header(const char * buf, const int buf_len,
         uint8_t name_len = *(uint8_t *)(buf + offset);
         if (name_len + 4 < buf_len) {
             if (storage != NULL) {
-                char tmp[256] = {0};
+                char tmp[256] = { 0 };
                 struct cork_ip ip;
                 memcpy(tmp, buf + offset + 1, name_len);
                 if (cork_ip_init(&ip, tmp) != -1) {
@@ -580,7 +583,7 @@ static void query_resolve_cb(struct sockaddr *addr, void *data)
                 remote_ctx->server_ctx = query_ctx->server_ctx;
                 remote_ctx->addr_header_len = query_ctx->addr_header_len;
                 memcpy(remote_ctx->addr_header, query_ctx->addr_header,
-                        query_ctx->addr_header_len);
+                       query_ctx->addr_header_len);
             } else {
                 ERROR("[udp] bind() error");
             }
@@ -748,7 +751,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     int s = sendto(src_fd, buf, buf_len, 0,
-            (struct sockaddr *)&remote_ctx->src_addr, remote_src_addr_len);
+                   (struct sockaddr *)&remote_ctx->src_addr, remote_src_addr_len);
     if (s == -1) {
         ERROR("[udp] remote_recv_sendto");
         close(src_fd);
@@ -1120,7 +1123,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         cache_hit = 1;
         // detect destination mismatch
         if (remote_ctx->addr_header_len != addr_header_len
-                || memcmp(addr_header, remote_ctx->addr_header, addr_header_len) != 0) {
+            || memcmp(addr_header, remote_ctx->addr_header, addr_header_len) != 0) {
             if (dst_addr.ss_family != AF_INET && dst_addr.ss_family != AF_INET6) {
                 need_query = 1;
             }
@@ -1156,8 +1159,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     if (remote_ctx != NULL && !need_query) {
         size_t addr_len = get_sockaddr_len((struct sockaddr *)&dst_addr);
         int s = sendto(remote_ctx->fd, buf + addr_header_len,
-                buf_len - addr_header_len, 0,
-                (struct sockaddr *)&dst_addr, addr_len);
+                       buf_len - addr_header_len, 0,
+                       (struct sockaddr *)&dst_addr, addr_len);
 
         if (s == -1) {
             ERROR("[udp] sendto_remote");
@@ -1183,8 +1186,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         hints.ai_protocol = IPPROTO_UDP;
 
         struct query_ctx *query_ctx = new_query_ctx(buf + addr_header_len,
-                buf_len -
-                addr_header_len);
+                                                    buf_len -
+                                                    addr_header_len);
         query_ctx->server_ctx = server_ctx;
         query_ctx->addr_header_len = addr_header_len;
         query_ctx->src_addr = src_addr;
@@ -1195,7 +1198,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         }
 
         struct ResolvQuery *query = resolv_query(host, query_resolve_cb,
-                NULL, query_ctx, htons(atoi(port)));
+                                                 NULL, query_ctx, htons(atoi(port)));
         if (query == NULL) {
             ERROR("[udp] unable to create DNS query");
             close_and_free_query(EV_A_ query_ctx);

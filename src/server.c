@@ -134,10 +134,10 @@ static void stat_update_cb(EV_P_ ev_timer *watcher, int revents)
     char resp[BUF_SIZE];
 
     if (verbose) {
-        LOGI("update traffic stat: tx: %"PRIu64" rx: %"PRIu64"", tx, rx);
+        LOGI("update traffic stat: tx: %" PRIu64 " rx: %" PRIu64 "", tx, rx);
     }
 
-    snprintf(resp, BUF_SIZE, "stat: {\"%s\":%"PRIu64"}", server_port, tx + rx);
+    snprintf(resp, BUF_SIZE, "stat: {\"%s\":%" PRIu64 "}", server_port, tx + rx);
     msgLen = strlen(resp) + 1;
 
     ss_addr_t ip_addr = { .host = NULL, .port = NULL };
@@ -156,7 +156,7 @@ static void stat_update_cb(EV_P_ ev_timer *watcher, int revents)
 
         unlink(claddr.sun_path);
 
-        if (bind(sfd, (struct sockaddr *) &claddr, sizeof(struct sockaddr_un)) == -1) {
+        if (bind(sfd, (struct sockaddr *)&claddr, sizeof(struct sockaddr_un)) == -1) {
             ERROR("stat_bind");
             close(sfd);
             return;
@@ -166,8 +166,8 @@ static void stat_update_cb(EV_P_ ev_timer *watcher, int revents)
         svaddr.sun_family = AF_UNIX;
         strncpy(svaddr.sun_path, manager_address, sizeof(svaddr.sun_path) - 1);
 
-        if (sendto(sfd, resp, strlen(resp) + 1, 0, (struct sockaddr *) &svaddr,
-                    sizeof(struct sockaddr_un)) != msgLen) {
+        if (sendto(sfd, resp, strlen(resp) + 1, 0, (struct sockaddr *)&svaddr,
+                   sizeof(struct sockaddr_un)) != msgLen) {
             ERROR("stat_sendto");
             close(sfd);
             return;
@@ -192,7 +192,7 @@ static void stat_update_cb(EV_P_ ev_timer *watcher, int revents)
 
         size_t addr_len = get_sockaddr_len((struct sockaddr *)&storage);
         if (sendto(sfd, resp, strlen(resp) + 1, 0, (struct sockaddr *)&storage,
-                    addr_len) != msgLen) {
+                   addr_len) != msgLen) {
             ERROR("stat_sendto");
             close(sfd);
             return;
@@ -671,7 +671,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 report_addr(server->fd);
                 close_and_free_server(EV_A_ server);
                 return;
-            };
+            }
+            ;
             offset += ONETIMEAUTH_BYTES;
             server->auth = 1;
         }
@@ -1103,7 +1104,7 @@ static struct server * new_server(int fd, struct listen_ctx *listener)
     ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
     ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
     ev_timer_init(&server->recv_ctx->watcher, server_timeout_cb,
-            min(MAX_CONNECT_TIMEOUT, listener->timeout), listener->timeout);
+                  min(MAX_CONNECT_TIMEOUT, listener->timeout), listener->timeout);
     server->recv_ctx->server = server;
     server->recv_ctx->connected = 0;
     server->send_ctx->server = server;
@@ -1239,10 +1240,10 @@ int main(int argc, char **argv)
     int option_index = 0;
     static struct option long_options[] =
     {
-        { "fast-open",          no_argument,       0, 0 },
-        { "acl",                required_argument, 0, 0 },
-        { "manager-address",    required_argument, 0, 0 },
-        { 0,                    0,                 0, 0 }
+        { "fast-open",       no_argument,       0, 0 },
+        { "acl",             required_argument, 0, 0 },
+        { "manager-address", required_argument, 0, 0 },
+        { 0,                 0,                 0, 0 }
     };
 
     opterr = 0;
