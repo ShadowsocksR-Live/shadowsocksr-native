@@ -1229,11 +1229,16 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
 char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method, int auth)
 {
     if (method > TABLE) {
-        cipher_ctx_t evp;
-        cipher_context_init(&evp, method, 0);
         size_t iv_len = enc_iv_len;
         size_t c_len = *len, p_len = *len - iv_len;
         int ret = 1;
+
+        if (*len < iv_len) {
+            return NULL;
+        }
+
+        cipher_ctx_t evp;
+        cipher_context_init(&evp, method, 0);
 
         static int tmp_len = 0;
         static char *tmp_buf = NULL;
