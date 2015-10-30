@@ -70,6 +70,7 @@
 #define BUF_SIZE 2048
 #endif
 
+int auth = 0;
 int verbose = 0;
 char *executable = "ss-server";
 char working_dir[128];
@@ -124,6 +125,10 @@ static char *construct_command_line(struct manager_ctx *manager, struct server *
     if (manager->mode == TCP_AND_UDP) {
         int len = strlen(cmd);
         snprintf(cmd + len, BUF_SIZE - len, " -u");
+    }
+    if (manager->auth) {
+        int len = strlen(cmd);
+        snprintf(cmd + len, BUF_SIZE - len, " -A");
     }
     if (manager->fast_open) {
         int len = strlen(cmd);
@@ -619,6 +624,9 @@ int main(int argc, char **argv)
         case 'v':
             verbose = 1;
             break;
+        case 'A':
+            auth = 1;
+            break;
         }
     }
 
@@ -652,6 +660,9 @@ int main(int argc, char **argv)
         if (conf->nameserver != NULL) {
             nameservers[nameserver_num++] = conf->nameserver;
         }
+        if (auth == 0) {
+            auth = conf->auth;
+        }
     }
 
     if (server_num == 0) {
@@ -684,6 +695,10 @@ int main(int argc, char **argv)
 #endif
     }
 
+    if (auth) {
+        LOGI("onetime authentication enabled");
+    }
+
 #ifdef __MINGW32__
     winsock_init();
 #else
@@ -706,6 +721,7 @@ int main(int argc, char **argv)
     manager.fast_open = fast_open;
     manager.verbose = verbose;
     manager.mode = mode;
+    manager.auth = auth;
     manager.password = password;
     manager.timeout = timeout;
     manager.method = method;
