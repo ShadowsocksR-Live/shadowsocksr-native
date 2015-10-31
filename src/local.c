@@ -358,6 +358,14 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             char *send_buf = (char *)&response;
             send(server->fd, send_buf, sizeof(response), 0);
             server->stage = 1;
+
+            int off = (buf[1] & 0xff) + 2;
+            if (buf[0] == 0x05 && off < r) {
+                memmove(buf, buf + off, r - off);
+                r -= off;
+                continue;
+            }
+
             return;
         } else if (server->stage == 1) {
             struct socks5_request *request = (struct socks5_request *)buf;
