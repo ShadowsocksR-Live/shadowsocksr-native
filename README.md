@@ -1,8 +1,6 @@
-shadowsocks-libev
-=================
+# shadowsocks-libev
 
-Intro
------
+## Intro
 
 [Shadowsocks-libev](http://shadowsocks.org) is a lightweight secured socks5 
 proxy for embedded devices and low end boxes.
@@ -13,10 +11,9 @@ created by [@clowwindy](https://github.com/clowwindy) maintained by
 
 Current version: 2.4.1 | [Changelog](debian/changelog)
 
-Travis CI: [![Travis CI](https://travis-ci.org/shadowsocks/shadowsocks-libev.png?branch=master)](https://travis-ci.org/shadowsocks/shadowsocks-libev) | Jenkins Matrix: [![Jenkins](https://jenkins.shadowvpn.org/buildStatus/icon?job=Shadowsocks-libev)](https://jenkins.shadowvpn.org/job/Shadowsocks-libev/)
+Travis CI: [![Travis CI](https://travis-ci.org/shadowsocks/shadowsocks-libev.svg?branch=master)](https://travis-ci.org/shadowsocks/shadowsocks-libev) | Jenkins Matrix: [![Jenkins](https://jenkins.shadowvpn.org/buildStatus/icon?job=Shadowsocks-libev)](https://jenkins.shadowvpn.org/job/Shadowsocks-libev/)
 
-Features
---------
+## Features
 
 Shadowsocks-libev is writen in pure C and only depends on
 [libev](http://software.schmorp.de/pkg/libev.html) and 
@@ -26,10 +23,9 @@ In normal usage, the memory footprint is about 600KB and the CPU utilization is
 no more than 5% on a low-end router (Buffalo WHR-G300N V2 with a 400MHz MIPS CPU, 
 32MB memory and 4MB flash).
 
-Installation
-------------
+## Installation
 
-#### Notes about PolarSSL
+**Notes about PolarSSL**
 
 * Default crypto library is OpenSSL. To build against PolarSSL,
 specify `--with-crypto-library=polarssl` and  `--with-polarssl=/path/to/polarssl`
@@ -42,7 +38,7 @@ CAST5-CFB, DES-CFB, IDEA-CFB, RC2-CFB and SEED-CFB.
 
 #### Install from repository
 
-Add GPG public key
+Add GPG public key:
 
 ```bash
 wget -O- http://shadowsocks.org/debian/1D27208A.gpg | sudo apt-key add -
@@ -61,7 +57,7 @@ deb http://shadowsocks.org/debian wheezy main
 deb http://shadowsocks.org/debian squeeze main
 ```
 
-Then,
+Then:
 
 ``` bash
 sudo apt-get update
@@ -189,7 +185,7 @@ make V=99 package/shadowsocks-libev/openwrt/compile
 ```
 
 ### OS X
-For OS X , use [homebrew](http://brew.sh) to install or build.
+For OS X, use [Homebrew](http://brew.sh) to install or build.
 
 Install homebrew
 
@@ -210,7 +206,7 @@ At the moment, only `ss-local` is supported to build against MinGW (msys).
 If you are using MinGW (msys), please download OpenSSL or PolarSSL source tarball
 to the home directory of msys, and build it like this (may take a few minutes):
 
-* OpenSSL
+#### OpenSSL
 
 ```bash
 tar zxf openssl-1.0.1e.tar.gz
@@ -219,7 +215,7 @@ cd openssl-1.0.1e
 make && make install
 ```
 
-* PolarSSL
+#### PolarSSL
 
 ```bash
 tar zxf polarssl-1.3.2-gpl.tgz
@@ -231,22 +227,21 @@ make install DESTDIR="$HOME/prebuilt"
 Then, build the binary using the commands below, and all `.exe` files 
 will be built at `$HOME/ss/bin`:
 
-* OpenSSL
+#### OpenSSL
 
 ```bash
 ./configure --prefix="$HOME/ss" --with-openssl="$HOME/prebuilt"
 make && make install
 ```
 
-* PolarSSL
+#### PolarSSL
 
 ```bash
 ./configure --prefix="$HOME/ss" --with-crypto-library=polarssl --with-polarssl=$HOME/prebuilt
 make && make install
 ```
 
-Usage
------
+## Usage
 
 ```
     ss-[local|redir|server|tunnel]
@@ -316,7 +311,7 @@ notes:
 
 ## Advanced usage
 
-The latest shadowsocks-libev has provided a *redir* mode. You can configure your linux based box or router to proxy all tcp traffic transparently.
+The latest shadowsocks-libev has provided a *redir* mode. You can configure your Linux-based box or router to proxy all tcp traffic transparently.
 
     # Create new chain
     root@Wrt:~# iptables -t nat -N SHADOWSOCKS
@@ -363,7 +358,7 @@ set up your server's firewall rules to limit connections from each user.
 
 ## License
 
-Copyright (C) 2014 Max Lv <max.c.lv@gmail.com>
+Copyright (C) 2015 Max Lv <max.c.lv@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
