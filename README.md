@@ -64,15 +64,22 @@ sudo apt-get update
 sudo apt-get install shadowsocks-libev
 ```
 
-#### Build package from source
+#### Build deb package from source
 
 Supported Platforms:
 
 * Debian 7 (see below), 8, unstable
-* Ubuntu 14.10, 15.04 or higher
+* Ubuntu 14.04 (see below), Ubuntu 14.10, 15.04, 15.10 or higher
 
+**Note for Ubuntu 14.04 users**:
+Packages built on Ubuntu 14.04 may be used in later Ubuntu versions. However,
+packages built on Debian 7/8/9 or Ubuntu 14.10+ **cannot** be installed on
+Ubuntu 14.04.
+
+**Note for Debian 7.x users**:
 To build packages on Debian 7 (Wheezy), you need to enable `debian-backports`
 to install systemd-compatibility packages like `dh-systemd` or `init-system-helpers`.
+Please follow the instructions on [Debian Backports](http://backports.debian.org).
 
 This also means that you can only install those built packages on systems that have
 `init-system-helpers` installed.
@@ -132,6 +139,14 @@ or `yum`:
 su -c 'yum update'
 su -c 'yum install shadowsocks-libev'
 ```
+
+### Archlinux
+
+```bash
+sudo pacman -S shadowsocks-libev
+```
+
+Please refer to downstream `PKGBUILD` file for any extra modifications.
 
 ### Linux
 
