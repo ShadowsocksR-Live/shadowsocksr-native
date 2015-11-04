@@ -53,8 +53,6 @@ deb http://shadowsocks.org/ubuntu trusty main
 # Debian Wheezy, Ubuntu 12.04 or any distribution with libssl > 1.0.1
 deb http://shadowsocks.org/debian wheezy main
 
-# Debian Squeeze, Ubuntu 11.04, or any distribution with libssl > 0.9.8, but < 1.0.0
-deb http://shadowsocks.org/debian squeeze main
 ```
 
 Then:
