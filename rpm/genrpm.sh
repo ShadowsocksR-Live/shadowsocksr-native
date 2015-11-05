@@ -58,8 +58,8 @@ pushd `git rev-parse --show-toplevel`
 git archive v${version} --format=${format} --prefix=${name}-${version}/ -o rpm/SOURCES/${name}-${version}.${format}
 pushd rpm
 
-sed -i -e "s/^\(Version:        \).*$/\1${version}/" \
-       -e "s/^\(Source0:        %{name}-%{version}\.\).*$/\1${format}/" \
+sed -i -e "s/^\(Version:	\).*$/\1${version}/" \
+       -e "s/^\(Source0:	\).*$/\1${name}-${version}.${format}/" \
     SPECS/${spec_name}
 
 rpmbuild -bb SPECS/${spec_name} --define "%_topdir `pwd`"
