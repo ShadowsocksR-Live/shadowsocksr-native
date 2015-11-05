@@ -45,7 +45,8 @@
 #include "netutils.h"
 #include "utils.h"
 
-int protect_socket(int fd) {
+int protect_socket(int fd)
+{
     int sock;
     struct sockaddr_un addr;
 
@@ -57,7 +58,7 @@ int protect_socket(int fd) {
     // Set timeout to 100us
     struct timeval tv;
     tv.tv_sec = 1;  /*  0 Secs Timeout */
-    tv.tv_usec = 0;  // Not init'ing this can cause strange errors
+    tv.tv_usec = 0; // Not init'ing this can cause strange errors
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval));
     setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv, sizeof(struct timeval));
 
@@ -65,9 +66,9 @@ int protect_socket(int fd) {
 
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, path, sizeof(addr.sun_path)-1);
+    strncpy(addr.sun_path, path, sizeof(addr.sun_path) - 1);
 
-    if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
+    if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
         LOGE("[android] connect() failed: %s (socket fd = %d)\n", strerror(errno), sock);
         close(sock);
         return -1;

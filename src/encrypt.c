@@ -1229,11 +1229,16 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
 char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method, int auth)
 {
     if (method > TABLE) {
-        cipher_ctx_t evp;
-        cipher_context_init(&evp, method, 0);
         size_t iv_len = enc_iv_len;
         size_t c_len = *len, p_len = *len - iv_len;
         int ret = 1;
+
+        if (*len <= iv_len) {
+            return NULL;
+        }
+
+        cipher_ctx_t evp;
+        cipher_context_init(&evp, method, 0);
 
         static int tmp_len = 0;
         static char *tmp_buf = NULL;
@@ -1260,10 +1265,16 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method, 
         }
 
         if (auth || (plaintext[0] & ONETIMEAUTH_FLAG)) {
-            char hash[ONETIMEAUTH_BYTES];
-            memcpy(hash, plaintext + p_len - ONETIMEAUTH_BYTES, ONETIMEAUTH_BYTES);
-            ret = !ss_onetimeauth_verify(hash, plaintext, p_len - ONETIMEAUTH_BYTES, iv);
-            if (ret) p_len -= ONETIMEAUTH_BYTES;
+            if (p_len > ONETIMEAUTH_BYTES) {
+                char hash[ONETIMEAUTH_BYTES];
+                memcpy(hash, plaintext + p_len - ONETIMEAUTH_BYTES, ONETIMEAUTH_BYTES);
+                ret = !ss_onetimeauth_verify(hash, plaintext, p_len - ONETIMEAUTH_BYTES, iv);
+                if (ret) {
+                    p_len -= ONETIMEAUTH_BYTES;
+                }
+            } else {
+                ret = 0;
+            }
         }
 
         if (!ret) {
@@ -1549,10 +1560,10 @@ int ss_check_hash(char **buf_ptr, ssize_t *buf_len, struct chunk *chunk, struct 
             memcpy(key + enc_iv_len, &c, sizeof(uint32_t));
 #if defined(USE_CRYPTO_OPENSSL)
             HMAC(EVP_sha1(), key, enc_iv_len + sizeof(uint32_t),
-                    (uint8_t *)chunk->buf + AUTH_BYTES, chunk->len, hash, NULL);
+                 (uint8_t *)chunk->buf + AUTH_BYTES, chunk->len, hash, NULL);
 #else
             ss_sha1_hmac(key, enc_iv_len + sizeof(uint32_t),
-                    (uint8_t *)chunk->buf + AUTH_BYTES, chunk->len, hash);
+                         (uint8_t *)chunk->buf + AUTH_BYTES, chunk->len, hash);
 #endif
 
             if (memcmp(hash, chunk->buf + CLEN_BYTES, ONETIMEAUTH_BYTES) != 0) {

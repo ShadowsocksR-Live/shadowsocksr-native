@@ -70,6 +70,7 @@
 #define BUF_SIZE 2048
 #endif
 
+int auth = 0;
 int verbose = 0;
 char *executable = "ss-server";
 char working_dir[128];
@@ -87,15 +88,16 @@ int setnonblocking(int fd)
 }
 #endif
 
-static char *construct_command_line(struct manager_ctx *manager, struct server *server) {
+static char *construct_command_line(struct manager_ctx *manager, struct server *server)
+{
     static char cmd[BUF_SIZE];
     int i;
 
     memset(cmd, 0, BUF_SIZE);
     snprintf(cmd, BUF_SIZE,
-            "%s -p %s -m %s -k %s --manager-address %s -f %s/.shadowsocks_%s.pid", executable,
-            server->port, manager->method, server->password, manager->manager_address,
-            working_dir, server->port);
+             "%s -p %s -m %s -k %s --manager-address %s -f %s/.shadowsocks_%s.pid", executable,
+             server->port, manager->method, server->password, manager->manager_address,
+             working_dir, server->port);
     if (manager->acl != NULL) {
         int len = strlen(cmd);
         snprintf(cmd + len, BUF_SIZE - len, " --acl %s", manager->acl);
@@ -124,6 +126,10 @@ static char *construct_command_line(struct manager_ctx *manager, struct server *
         int len = strlen(cmd);
         snprintf(cmd + len, BUF_SIZE - len, " -u");
     }
+    if (manager->auth) {
+        int len = strlen(cmd);
+        snprintf(cmd + len, BUF_SIZE - len, " -A");
+    }
     if (manager->fast_open) {
         int len = strlen(cmd);
         snprintf(cmd + len, BUF_SIZE - len, " --fast_open");
@@ -145,32 +151,45 @@ static char *construct_command_line(struct manager_ctx *manager, struct server *
 }
 
 
-static char *get_data(char *buf, int len) {
+static char *get_data(char *buf, int len)
+{
     char *data;
     int pos = 0;
 
-    while(buf[pos] != '{' && pos < len) pos++;
-    if (pos == len) return NULL;
+    while (buf[pos] != '{' && pos < len) {
+        pos++;
+    }
+    if (pos == len) {
+        return NULL;
+    }
     data = buf + pos - 1;
 
     return data;
 }
 
-static char *get_action(char *buf, int len) {
+static char *get_action(char *buf, int len)
+{
     char *action;
     int pos = 0;
 
-    while(isspace((unsigned char)buf[pos]) && pos < len) pos++;
-    if (pos == len) return NULL;
+    while (isspace((unsigned char)buf[pos]) && pos < len) {
+        pos++;
+    }
+    if (pos == len) {
+        return NULL;
+    }
     action = buf + pos;
 
-    while((!isspace((unsigned char)buf[pos]) && buf[pos] != ':') && pos < len) pos++;
+    while ((!isspace((unsigned char)buf[pos]) && buf[pos] != ':') && pos < len) {
+        pos++;
+    }
     buf[pos] = '\0';
 
     return action;
 }
 
-static struct server *get_server(char *buf, int len) {
+static struct server *get_server(char *buf, int len)
+{
     char *data = get_data(buf, len);
     char error_buf[512];
     struct server *server = (struct server *)malloc(sizeof(struct server));
@@ -198,7 +217,7 @@ static struct server *get_server(char *buf, int len) {
                 if (value->type == json_string) {
                     strncpy(server->port, value->u.string.ptr, 8);
                 } else if (value->type == json_integer) {
-                    snprintf(server->port, 8, "%"PRIu64"", value->u.integer);
+                    snprintf(server->port, 8, "%" PRIu64 "", value->u.integer);
                 }
             } else if (strcmp(name, "password") == 0) {
                 if (value->type == json_string) {
@@ -216,7 +235,8 @@ static struct server *get_server(char *buf, int len) {
     return server;
 }
 
-static int parse_traffic(char *buf, int len, char *port, uint64_t *traffic) {
+static int parse_traffic(char *buf, int len, char *port, uint64_t *traffic)
+{
     char *data = get_data(buf, len);
     char error_buf[512];
     json_settings settings = { 0 };
@@ -294,7 +314,7 @@ static void remove_server(char *prefix, char *port)
 
 static void update_stat(char *port, uint64_t traffic)
 {
-    void *ret = cork_hash_table_get(server_table, (void*)port);
+    void *ret = cork_hash_table_get(server_table, (void *)port);
     if (ret != NULL) {
         struct server *server = (struct server *)ret;
         server->traffic = traffic;
@@ -312,7 +332,7 @@ static void manager_recv_cb(EV_P_ ev_io *w, int revents)
     memset(buf, 0, BUF_SIZE);
 
     len = sizeof(struct sockaddr_un);
-    r = recvfrom(manager->fd, buf, BUF_SIZE, 0, (struct sockaddr *) &claddr, &len);
+    r = recvfrom(manager->fd, buf, BUF_SIZE, 0, (struct sockaddr *)&claddr, &len);
     if (r == -1) {
         ERROR("manager_recvfrom");
         return;
@@ -376,7 +396,7 @@ static void manager_recv_cb(EV_P_ ev_io *w, int revents)
 
     } else if (strcmp(action, "ping") == 0) {
 
-        struct cork_hash_table_entry  *entry;
+        struct cork_hash_table_entry *entry;
         struct cork_hash_table_iterator server_iter;
 
         char buf[BUF_SIZE];
@@ -386,18 +406,18 @@ static void manager_recv_cb(EV_P_ ev_io *w, int revents)
 
         cork_hash_table_iterator_init(server_table, &server_iter);
 
-        while((entry = cork_hash_table_iterator_next(&server_iter)) != NULL) {
-            struct server *server = (struct server*)entry->value;
+        while ((entry = cork_hash_table_iterator_next(&server_iter)) != NULL) {
+            struct server *server = (struct server *)entry->value;
             size_t pos = strlen(buf);
             if (pos > BUF_SIZE / 2) {
                 buf[pos - 1] = '}';
                 if (sendto(manager->fd, buf, pos + 1, 0, (struct sockaddr *)&claddr, len)
-                        != pos + 1) {
+                    != pos + 1) {
                     ERROR("ping_sendto");
                 }
                 memset(buf, 0, BUF_SIZE);
             } else {
-                sprintf(buf + pos, "\"%s\":%"PRIu64",", server->port, server->traffic);
+                sprintf(buf + pos, "\"%s\":%" PRIu64 ",", server->port, server->traffic);
             }
         }
 
@@ -409,14 +429,14 @@ static void manager_recv_cb(EV_P_ ev_io *w, int revents)
         }
 
         if (sendto(manager->fd, buf, pos + 1, 0, (struct sockaddr *)&claddr, len)
-               != pos + 1) {
+            != pos + 1) {
             ERROR("ping_sendto");
         }
     }
 
     return;
 
-ERROR_MSG:
+ ERROR_MSG:
     strcpy(buf, "err");
     if (sendto(manager->fd, buf, 4, 0, (struct sockaddr *)&claddr, len) != 4) {
         ERROR("error_sendto");
@@ -538,11 +558,11 @@ int main(int argc, char **argv)
     int option_index = 0;
     static struct option long_options[] =
     {
-        { "fast-open",          no_argument,       0, 0 },
-        { "acl",                required_argument, 0, 0 },
-        { "manager-address",    required_argument, 0, 0 },
-        { "executable",         required_argument, 0, 0 },
-        { 0,                    0,                 0, 0 }
+        { "fast-open",       no_argument,       0, 0 },
+        { "acl",             required_argument, 0, 0 },
+        { "manager-address", required_argument, 0, 0 },
+        { "executable",      required_argument, 0, 0 },
+        { 0,                 0,                 0, 0 }
     };
 
     opterr = 0;
@@ -604,6 +624,9 @@ int main(int argc, char **argv)
         case 'v':
             verbose = 1;
             break;
+        case 'A':
+            auth = 1;
+            break;
         }
     }
 
@@ -637,6 +660,9 @@ int main(int argc, char **argv)
         if (conf->nameserver != NULL) {
             nameservers[nameserver_num++] = conf->nameserver;
         }
+        if (auth == 0) {
+            auth = conf->auth;
+        }
     }
 
     if (server_num == 0) {
@@ -669,6 +695,10 @@ int main(int argc, char **argv)
 #endif
     }
 
+    if (auth) {
+        LOGI("onetime authentication enabled");
+    }
+
 #ifdef __MINGW32__
     winsock_init();
 #else
@@ -691,6 +721,7 @@ int main(int argc, char **argv)
     manager.fast_open = fast_open;
     manager.verbose = verbose;
     manager.mode = mode;
+    manager.auth = auth;
     manager.password = password;
     manager.timeout = timeout;
     manager.method = method;
@@ -754,7 +785,7 @@ int main(int argc, char **argv)
         svaddr.sun_family = AF_UNIX;
         strncpy(svaddr.sun_path, manager_address, sizeof(svaddr.sun_path) - 1);
 
-        if (bind(sfd, (struct sockaddr *) &svaddr, sizeof(struct sockaddr_un)) == -1) {
+        if (bind(sfd, (struct sockaddr *)&svaddr, sizeof(struct sockaddr_un)) == -1) {
             ERROR("bind");
             exit(EXIT_FAILURE);
         }
@@ -777,13 +808,13 @@ int main(int argc, char **argv)
     }
 
     // Clean up
-    struct cork_hash_table_entry  *entry;
+    struct cork_hash_table_entry *entry;
     struct cork_hash_table_iterator server_iter;
 
     cork_hash_table_iterator_init(server_table, &server_iter);
 
-    while((entry = cork_hash_table_iterator_next(&server_iter)) != NULL) {
-        struct server *server = (struct server*)entry->value;
+    while ((entry = cork_hash_table_iterator_next(&server_iter)) != NULL) {
+        struct server *server = (struct server *)entry->value;
         stop_server(working_dir, server->port);
     }
 

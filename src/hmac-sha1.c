@@ -49,9 +49,9 @@ void ss_sha1_process( ss_sha1_context *ctx, const unsigned char data[64] )
 {
     uint32_t temp, W[16], A, B, C, D, E;
 
-    GET_UINT32_BE( W[ 0], data,  0 );
-    GET_UINT32_BE( W[ 1], data,  4 );
-    GET_UINT32_BE( W[ 2], data,  8 );
+    GET_UINT32_BE( W[ 0], data, 0 );
+    GET_UINT32_BE( W[ 1], data, 4 );
+    GET_UINT32_BE( W[ 2], data, 8 );
     GET_UINT32_BE( W[ 3], data, 12 );
     GET_UINT32_BE( W[ 4], data, 16 );
     GET_UINT32_BE( W[ 5], data, 20 );
@@ -66,19 +66,19 @@ void ss_sha1_process( ss_sha1_context *ctx, const unsigned char data[64] )
     GET_UINT32_BE( W[14], data, 56 );
     GET_UINT32_BE( W[15], data, 60 );
 
-#define S(x,n) ((x << n) | ((x & 0xFFFFFFFF) >> (32 - n)))
+#define S(x, n) ((x << n) | ((x & 0xFFFFFFFF) >> (32 - n)))
 
-#define R(t)                                            \
-(                                                       \
-    temp = W[(t -  3) & 0x0F] ^ W[(t - 8) & 0x0F] ^     \
-           W[(t - 14) & 0x0F] ^ W[ t      & 0x0F],      \
-    ( W[t & 0x0F] = S(temp,1) )                         \
-)
+#define R(t)                                           \
+    (                                                  \
+        temp = W[(t - 3) & 0x0F] ^ W[(t - 8) & 0x0F] ^ \
+               W[(t - 14) & 0x0F] ^ W[ t & 0x0F],      \
+        ( W[t & 0x0F] = S(temp, 1) )                   \
+    )
 
-#define P(a,b,c,d,e,x)                                  \
-{                                                       \
-    e += S(a,5) + F(b,c,d) + K + x; b = S(b,30);        \
-}
+#define P(a, b, c, d, e, x)                              \
+    {                                                    \
+        e += S(a, 5) + F(b, c, d) + K + x; b = S(b, 30); \
+    }
 
     A = ctx->state[0];
     B = ctx->state[1];
@@ -86,7 +86,7 @@ void ss_sha1_process( ss_sha1_context *ctx, const unsigned char data[64] )
     D = ctx->state[3];
     E = ctx->state[4];
 
-#define F(x,y,z) (z ^ (x & (y ^ z)))
+#define F(x, y, z) (z ^ (x & (y ^ z)))
 #define K 0x5A827999
 
     P( A, B, C, D, E, W[0]  );
@@ -113,7 +113,7 @@ void ss_sha1_process( ss_sha1_context *ctx, const unsigned char data[64] )
 #undef K
 #undef F
 
-#define F(x,y,z) (x ^ y ^ z)
+#define F(x, y, z) (x ^ y ^ z)
 #define K 0x6ED9EBA1
 
     P( A, B, C, D, E, R(20) );
@@ -140,7 +140,7 @@ void ss_sha1_process( ss_sha1_context *ctx, const unsigned char data[64] )
 #undef K
 #undef F
 
-#define F(x,y,z) ((x & y) | (z & (x | y)))
+#define F(x, y, z) ((x & y) | (z & (x | y)))
 #define K 0x8F1BBCDC
 
     P( A, B, C, D, E, R(40) );
@@ -167,7 +167,7 @@ void ss_sha1_process( ss_sha1_context *ctx, const unsigned char data[64] )
 #undef K
 #undef F
 
-#define F(x,y,z) (x ^ y ^ z)
+#define F(x, y, z) (x ^ y ^ z)
 #define K 0xCA62C1D6
 
     P( A, B, C, D, E, R(60) );
@@ -209,44 +209,45 @@ void ss_sha1_update( ss_sha1_context *ctx, const unsigned char *input, size_t il
     size_t fill;
     uint32_t left;
 
-    if( ilen <= 0 )
+    if (ilen <= 0) {
         return;
+    }
 
     left = ctx->total[0] & 0x3F;
     fill = 64 - left;
 
-    ctx->total[0] += (uint32_t) ilen;
+    ctx->total[0] += (uint32_t)ilen;
     ctx->total[0] &= 0xFFFFFFFF;
 
-    if( ctx->total[0] < (uint32_t) ilen )
+    if (ctx->total[0] < (uint32_t)ilen) {
         ctx->total[1]++;
+    }
 
-    if( left && ilen >= fill )
-    {
-        memcpy( (void *) (ctx->buffer + left), input, fill );
+    if (left && ilen >= fill) {
+        memcpy( (void *)(ctx->buffer + left), input, fill );
         ss_sha1_process( ctx, ctx->buffer );
         input += fill;
-        ilen  -= fill;
+        ilen -= fill;
         left = 0;
     }
 
-    while( ilen >= 64 )
-    {
+    while (ilen >= 64) {
         ss_sha1_process( ctx, input );
         input += 64;
-        ilen  -= 64;
+        ilen -= 64;
     }
 
-    if( ilen > 0 )
-        memcpy( (void *) (ctx->buffer + left), input, ilen );
+    if (ilen > 0) {
+        memcpy( (void *)(ctx->buffer + left), input, ilen );
+    }
 }
 
 static const unsigned char ss_sha1_padding[64] =
 {
- 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 /*
@@ -259,11 +260,11 @@ void ss_sha1_finish( ss_sha1_context *ctx, unsigned char output[20] )
     unsigned char msglen[8];
 
     high = ( ctx->total[0] >> 29 )
-         | ( ctx->total[1] <<  3 );
-    low  = ( ctx->total[0] <<  3 );
+           | ( ctx->total[1] << 3 );
+    low = ( ctx->total[0] << 3 );
 
     PUT_UINT32_BE( high, msglen, 0 );
-    PUT_UINT32_BE( low,  msglen, 4 );
+    PUT_UINT32_BE( low, msglen, 4 );
 
     last = ctx->total[0] & 0x3F;
     padn = ( last < 56 ) ? ( 56 - last ) : ( 120 - last );
@@ -271,9 +272,9 @@ void ss_sha1_finish( ss_sha1_context *ctx, unsigned char output[20] )
     ss_sha1_update( ctx, ss_sha1_padding, padn );
     ss_sha1_update( ctx, msglen, 8 );
 
-    PUT_UINT32_BE( ctx->state[0], output,  0 );
-    PUT_UINT32_BE( ctx->state[1], output,  4 );
-    PUT_UINT32_BE( ctx->state[2], output,  8 );
+    PUT_UINT32_BE( ctx->state[0], output, 0 );
+    PUT_UINT32_BE( ctx->state[1], output, 4 );
+    PUT_UINT32_BE( ctx->state[2], output, 8 );
     PUT_UINT32_BE( ctx->state[3], output, 12 );
     PUT_UINT32_BE( ctx->state[4], output, 16 );
 }
@@ -299,8 +300,7 @@ void ss_sha1_hmac_starts( ss_sha1_context *ctx, const unsigned char *key, size_t
     size_t i;
     unsigned char sum[20];
 
-    if( keylen > 64 )
-    {
+    if (keylen > 64) {
         ss_sha1( key, keylen, sum );
         keylen = 20;
         key = sum;
@@ -309,8 +309,7 @@ void ss_sha1_hmac_starts( ss_sha1_context *ctx, const unsigned char *key, size_t
     memset( ctx->ipad, 0x36, 64 );
     memset( ctx->opad, 0x5C, 64 );
 
-    for( i = 0; i < keylen; i++ )
-    {
+    for (i = 0; i < keylen; i++) {
         ctx->ipad[i] = (unsigned char)( ctx->ipad[i] ^ key[i] );
         ctx->opad[i] = (unsigned char)( ctx->opad[i] ^ key[i] );
     }
@@ -358,8 +357,8 @@ void ss_sha1_hmac_reset( ss_sha1_context *ctx )
  * output = HMAC-SHA-1( hmac key, input buffer )
  */
 void ss_sha1_hmac( const unsigned char *key, size_t keylen,
-                const unsigned char *input, size_t ilen,
-                unsigned char output[20] )
+                   const unsigned char *input, size_t ilen,
+                   unsigned char output[20] )
 {
     ss_sha1_context ctx;
 
