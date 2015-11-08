@@ -70,7 +70,6 @@
 #define BUF_SIZE 2048
 #endif
 
-int auth = 0;
 int verbose = 0;
 char *executable = "ss-server";
 char working_dir[128];
@@ -544,6 +543,7 @@ int main(int argc, char **argv)
     char *iface = NULL;
     char *manager_address = NULL;
 
+    int auth = 0;
     int fast_open = 0;
     int mode = TCP_ONLY;
 
@@ -569,7 +569,7 @@ int main(int argc, char **argv)
 
     USE_TTY();
 
-    while ((c = getopt_long(argc, argv, "f:s:l:k:t:m:c:i:d:a:uUv",
+    while ((c = getopt_long(argc, argv, "f:s:l:k:t:m:c:i:d:a:uUvA",
                             long_options, &option_index)) != -1) {
         switch (c) {
         case 0:
