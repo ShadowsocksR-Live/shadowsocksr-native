@@ -292,8 +292,8 @@ void usage()
 void daemonize(const char * path)
 {
 #ifndef __MINGW32__
-    /* Our process ID and Session ID */
-    pid_t pid, sid;
+    /* Our process ID */
+    pid_t pid;
 
     /* Fork off the parent process */
     pid = fork();
@@ -314,6 +314,10 @@ void daemonize(const char * path)
         exit(EXIT_SUCCESS);
     }
 
+#ifndef ANDROID
+    /* Our session ID */
+    pid_t sid;
+
     /* Change the file mode mask */
     umask(0);
 
@@ -331,6 +335,7 @@ void daemonize(const char * path)
         /* Log the failure */
         exit(EXIT_FAILURE);
     }
+#endif
 
     /* Close out the standard file descriptors */
     close(STDIN_FILENO);
