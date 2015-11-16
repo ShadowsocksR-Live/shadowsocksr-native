@@ -20,6 +20,10 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -30,10 +34,6 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "utils.h"
 
