@@ -27,7 +27,7 @@
 #error "Cannot determine system endianness"
 #endif
 
-#define CORK_HAVE_REALLOCF  1
+#define CORK_HAVE_REALLOCF  0
 #define CORK_HAVE_PTHREADS  1
 
 
