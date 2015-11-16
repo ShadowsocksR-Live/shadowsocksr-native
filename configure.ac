@@ -126,6 +126,27 @@ case $host in
     ;;
 esac
 
+GGL_CHECK_STACK_PROTECTOR([has_stack_protector=yes], [has_stack_protector=no])
+# XXX - disable -fstack-protector due to missing libssp_nonshared
+case "$host_os" in
+     *aix*)
+	AC_MSG_NOTICE([-fstack-protector disabled on AIX])
+	has_stack_protector=no
+	;;
+     *sunos*)
+	AC_MSG_NOTICE([-fstack-protector disabled on SunOS])
+	has_stack_protector=no
+	;;
+     *solaris*)
+	AC_MSG_NOTICE([-fstack-protector disabled on Solaris])
+	has_stack_protector=no
+	;;
+esac
+if test x$has_stack_protector = xyes; then
+   CFLAGS="$CFLAGS -fstack-protector"
+   AC_MSG_NOTICE([-fstack-protector enabled in CFLAGS])
+fi
+
 AM_CONDITIONAL(BUILD_REDIRECTOR, test "$os_support" = "linux")
 AM_CONDITIONAL(BUILD_WINCOMPAT, test "$os_support" = "mingw")
 

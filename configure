@@ -13708,6 +13708,86 @@ $as_echo "transparent proxy does not support for $host" >&6; }
     ;;
 esac
 
+
+ggl_check_stack_protector_save_CXXFLAGS="$CXXFLAGS"
+ggl_check_stack_protector_save_CFLAGS="$CFLAGS"
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if -fstack-protector and -fstack-protector-all are supported." >&5
+$as_echo_n "checking if -fstack-protector and -fstack-protector-all are supported.... " >&6; }
+
+CXXFLAGS="$CXXFLAGS -fstack-protector"
+CFLAGS="$CFLAGS -fstack-protector"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int main() {
+  return 0;
+}
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ggl_check_stack_protector_ok=yes
+else
+  ggl_check_stack_protector_ok=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+CXXFLAGS="$ggl_check_stack_protector_save_CXXFLAGS -fstack-protector-all"
+CFLAGS="$ggl_check_stack_protector_save_CFLAGS -fstack-protector-all"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int main() {
+  return 0;
+}
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ggl_check_stack_protector_all_ok=yes
+else
+  ggl_check_stack_protector_all_ok=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+if test "x$ggl_check_stack_protector_ok" = "xyes" -a \
+        "x$ggl_check_stack_protector_all_ok" = "xyes"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+  has_stack_protector=yes
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+  has_stack_protector=no
+fi
+
+CXXFLAGS="$ggl_check_stack_protector_save_CXXFLAGS"
+CFLAGS="$ggl_check_stack_protector_save_CFLAGS"
+
+
+# XXX - disable -fstack-protector due to missing libssp_nonshared
+case "$host_os" in
+     *aix*)
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: -fstack-protector disabled on AIX" >&5
+$as_echo "$as_me: -fstack-protector disabled on AIX" >&6;}
+	has_stack_protector=no
+	;;
+     *sunos*)
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: -fstack-protector disabled on SunOS" >&5
+$as_echo "$as_me: -fstack-protector disabled on SunOS" >&6;}
+	has_stack_protector=no
+	;;
+     *solaris*)
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: -fstack-protector disabled on Solaris" >&5
+$as_echo "$as_me: -fstack-protector disabled on Solaris" >&6;}
+	has_stack_protector=no
+	;;
+esac
+if test x$has_stack_protector = xyes; then
+   CFLAGS="$CFLAGS -fstack-protector"
+   { $as_echo "$as_me:${as_lineno-$LINENO}: -fstack-protector enabled in CFLAGS" >&5
+$as_echo "$as_me: -fstack-protector enabled in CFLAGS" >&6;}
+fi
+
  if test "$os_support" = "linux"; then
   BUILD_REDIRECTOR_TRUE=
   BUILD_REDIRECTOR_FALSE='#'
