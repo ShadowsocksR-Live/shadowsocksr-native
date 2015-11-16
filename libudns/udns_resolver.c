@@ -133,7 +133,7 @@ struct sockaddr_ns {
 #ifdef HAVE_IPv6
     struct sockaddr_in6 sin6;
 #endif
-    }
+  };
 };
 
 #define sin_eq(a,b) \
