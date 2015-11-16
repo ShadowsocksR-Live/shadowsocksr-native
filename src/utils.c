@@ -102,11 +102,8 @@ int run_as(const char *user)
             /* Note that we use getpwnam_r() instead of getpwnam(),
                which returns its result in a statically allocated buffer and
                cannot be considered thread safe. */
-#ifndef __sun
             err = getpwnam_r(user, &pwdbuf, buf, buflen, &pwd);
-#else
-            pwd = getpwnam_r(user, &pwdbuf, buf, buflen);
-#endif
+
             if (err == 0 && pwd) {
                 /* setgid first, because we may not be allowed to do it anymore after setuid */
                 if (setgid(pwd->pw_gid) != 0) {
