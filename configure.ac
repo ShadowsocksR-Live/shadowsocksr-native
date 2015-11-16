@@ -230,8 +230,6 @@ if test "$ac_cv_func_select" != "yes"; then
   ])
 fi
 
-AC_SYS_LARGEFILE
-
 AC_CHECK_LIB(socket, connect)
 
 dnl Checks for library functions.
