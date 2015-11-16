@@ -142,7 +142,17 @@ case "$host_os" in
 	has_stack_protector=no
 	;;
 esac
-if test x$has_stack_protector = xyes; then
+
+AC_ARG_ENABLE(ssp,
+[AS_HELP_STRING(--disable-ssp,Do not compile with -fstack-protector)],
+[
+  enable_ssp="no"
+],
+[
+  enable_ssp="yes"
+])
+
+if test x$has_stack_protector = xyes && test x$enable_ssp = xyes; then
    CFLAGS="$CFLAGS -fstack-protector"
    AC_MSG_NOTICE([-fstack-protector enabled in CFLAGS])
 fi

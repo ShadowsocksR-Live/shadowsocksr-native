@@ -794,6 +794,7 @@ with_mbedtls
 with_mbedtls_include
 with_mbedtls_lib
 enable_applecc
+enable_ssp
 enable_assert
 '
       ac_precious_vars='build_alias
@@ -1439,6 +1440,7 @@ Optional Features:
                           build against shared libraries when possible
   --disable-zlib          disable zlib compression support
   --enable-applecc        enable Apple CommonCrypto API support
+  --disable-ssp           Do not compile with -fstack-protector
   --disable-assert        turn off assertions
 
 Optional Packages:
@@ -13782,7 +13784,20 @@ $as_echo "$as_me: -fstack-protector disabled on Solaris" >&6;}
 	has_stack_protector=no
 	;;
 esac
-if test x$has_stack_protector = xyes; then
+
+# Check whether --enable-ssp was given.
+if test "${enable_ssp+set}" = set; then :
+  enableval=$enable_ssp;
+  enable_ssp="no"
+
+else
+
+  enable_ssp="yes"
+
+fi
+
+
+if test x$has_stack_protector = xyes && test x$enable_ssp = xyes; then
    CFLAGS="$CFLAGS -fstack-protector"
    { $as_echo "$as_me:${as_lineno-$LINENO}: -fstack-protector enabled in CFLAGS" >&5
 $as_echo "$as_me: -fstack-protector enabled in CFLAGS" >&6;}
