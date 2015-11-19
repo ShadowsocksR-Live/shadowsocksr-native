@@ -82,6 +82,9 @@
 int verbose = 0;
 #ifdef ANDROID
 int vpn = 0;
+uint64_t tx = 0;
+uint64_t rx = 0;
+ev_timer stat_timer;
 #endif
 
 static int acl = 0;
@@ -250,6 +253,9 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
             // insert shadowsocks header
             if (!remote->direct) {
+#ifdef ANDROID
+                tx += r;
+#endif
                 remote->buf = ss_encrypt(BUF_SIZE, remote->buf, &r,
                                          server->e_ctx);
 
@@ -571,10 +577,18 @@ static void server_send_cb(EV_P_ ev_io *w, int revents)
             server->buf_idx = 0;
             ev_io_stop(EV_A_ & server_send_ctx->io);
             ev_io_start(EV_A_ & remote->recv_ctx->io);
+            return;
         }
     }
 
 }
+
+#ifdef ANDROID
+static void stat_update_cb(EV_P_ ev_timer *watcher, int revents)
+{
+    send_traffic_stat(tx, rx);
+}
+#endif
 
 static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 {
@@ -620,6 +634,9 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     if (!remote->direct) {
+#ifdef ANDROID
+        rx += r;
+#endif
         server->buf = ss_decrypt(BUF_SIZE, server->buf, &r, server->d_ctx);
         if (server->buf == NULL) {
             LOGE("invalid password or cipher");
@@ -733,13 +750,9 @@ static struct remote * new_remote(int fd, int timeout)
     ev_io_init(&remote->recv_ctx->io, remote_recv_cb, fd, EV_READ);
     ev_io_init(&remote->send_ctx->io, remote_send_cb, fd, EV_WRITE);
     ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb,
-                  min(MAX_CONNECT_TIMEOUT,
-                      timeout),
-                  0);
+                  min(MAX_CONNECT_TIMEOUT, timeout), 0);
     ev_timer_init(&remote->recv_ctx->watcher, remote_timeout_cb,
-                  min(MAX_CONNECT_TIMEOUT,
-                      timeout),
-                  timeout);
+                  min(MAX_CONNECT_TIMEOUT, timeout), timeout);
     remote->recv_ctx->remote = remote;
     remote->send_ctx->remote = remote;
     return remote;
@@ -1141,6 +1154,11 @@ int main(int argc, char **argv)
 
     struct ev_loop *loop = EV_DEFAULT;
 
+#ifdef ANDROID
+    ev_timer_init(&stat_timer, stat_update_cb, 1, 1);
+    ev_timer_start(loop, stat_timer);
+#endif
+
     // Setup socket
     int listenfd;
     listenfd = create_and_bind(local_addr, local_port);
@@ -1182,6 +1200,11 @@ int main(int argc, char **argv)
     }
 
     // Clean up
+
+#ifdef ANDROID
+    ev_timer_stop(loop, stat_timer);
+#endif
+
     ev_io_stop(loop, &listen_ctx.io);
     free_connections(loop);
 
