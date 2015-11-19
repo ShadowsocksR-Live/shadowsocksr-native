@@ -122,7 +122,7 @@ int send_traffic_stat(uint64_t tx, uint64_t rx)
     }
 
     char stat[256] = {0};
-    snprintf(stat, 256, "%" PRIu64 "|%" PRIu64, tx, rx);
+    snprintf(stat, 256, "%llu|%llu", tx, rx);
     size_t len = strlen(stat);
 
     if (send(sock, stat, len, 0) == -1) {

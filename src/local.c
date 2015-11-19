@@ -1156,7 +1156,7 @@ int main(int argc, char **argv)
 
 #ifdef ANDROID
     ev_timer_init(&stat_timer, stat_update_cb, 1, 1);
-    ev_timer_start(loop, stat_timer);
+    ev_timer_start(loop, &stat_timer);
 #endif
 
     // Setup socket
@@ -1202,7 +1202,7 @@ int main(int argc, char **argv)
     // Clean up
 
 #ifdef ANDROID
-    ev_timer_stop(loop, stat_timer);
+    ev_timer_stop(loop, &stat_timer);
 #endif
 
     ev_io_stop(loop, &listen_ctx.io);
