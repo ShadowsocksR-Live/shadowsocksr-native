@@ -84,7 +84,7 @@ int verbose = 0;
 int vpn = 0;
 uint64_t tx = 0;
 uint64_t rx = 0;
-ev_timer stat_timer;
+ev_tstamp last = 0;
 #endif
 
 static int acl = 0;
@@ -584,9 +584,13 @@ static void server_send_cb(EV_P_ ev_io *w, int revents)
 }
 
 #ifdef ANDROID
-static void stat_update_cb(EV_P_ ev_timer *watcher, int revents)
+static void stat_update_cb(struct ev_loop *loop)
 {
-    send_traffic_stat(tx, rx);
+    ev_tstamp now = ev_now(loop);
+    if (now - last > 1.0) {
+        send_traffic_stat(tx, rx);
+        last = now;
+    }
 }
 #endif
 
@@ -612,6 +616,10 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     struct server *server = remote->server;
 
     ev_timer_again(EV_A_ & remote->recv_ctx->watcher);
+
+#ifdef ANDROID
+    stat_update_cb(loop);
+#endif
 
     ssize_t r = recv(remote->fd, server->buf, BUF_SIZE, 0);
 
@@ -1154,11 +1162,6 @@ int main(int argc, char **argv)
 
     struct ev_loop *loop = EV_DEFAULT;
 
-#ifdef ANDROID
-    ev_timer_init(&stat_timer, stat_update_cb, 1, 1);
-    ev_timer_start(loop, &stat_timer);
-#endif
-
     // Setup socket
     int listenfd;
     listenfd = create_and_bind(local_addr, local_port);
@@ -1200,10 +1203,6 @@ int main(int argc, char **argv)
     }
 
     // Clean up
-
-#ifdef ANDROID
-    ev_timer_stop(loop, &stat_timer);
-#endif
 
     ev_io_stop(loop, &listen_ctx.io);
     free_connections(loop);
