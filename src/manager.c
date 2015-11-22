@@ -36,6 +36,7 @@
 #include <getopt.h>
 #include <math.h>
 #include <ctype.h>
+#include <limits.h>
 
 #ifndef __MINGW32__
 #include <netdb.h>
@@ -67,17 +68,17 @@
 #include "manager.h"
 
 #ifndef BUF_SIZE
-#define BUF_SIZE 2048
+#define BUF_SIZE 65535
 #endif
 
 int verbose = 0;
 char *executable = "ss-server";
-char working_dir[128];
+char working_dir[PATH_MAX];
 
 static struct cork_hash_table *server_table;
 
 #ifndef __MINGW32__
-int setnonblocking(int fd)
+static int setnonblocking(int fd)
 {
     int flags;
     if (-1 == (flags = fcntl(fd, F_GETFL, 0))) {
@@ -87,16 +88,38 @@ int setnonblocking(int fd)
 }
 #endif
 
+static void build_config(char *prefix, struct server *server)
+{
+    char path[PATH_MAX];
+
+    snprintf(path, PATH_MAX, "%s/.shadowsocks_%s.conf", prefix, server->port);
+    FILE *f = fopen(path, "w+");
+    if (f == NULL) {
+        if (verbose) {
+            LOGE("unable to open config file");
+        }
+        return;
+    }
+    fprintf(f, "{\n");
+    fprintf(f, "\"server_port\":\"%s\",\n", server->port);
+    fprintf(f, "\"password\":\"%s\",\n", server->password);
+    fprintf(f, "}\n");
+    fclose(f);
+}
+
 static char *construct_command_line(struct manager_ctx *manager, struct server *server)
 {
     static char cmd[BUF_SIZE];
     int i;
 
+    build_config(working_dir, server);
+
     memset(cmd, 0, BUF_SIZE);
     snprintf(cmd, BUF_SIZE,
-             "%s -p %s -m %s -k %s --manager-address %s -f %s/.shadowsocks_%s.pid", executable,
-             server->port, manager->method, server->password, manager->manager_address,
-             working_dir, server->port);
+            "%s -m %s --manager-address %s -f %s/.shadowsocks_%s.pid -c %s/.shadowsocks_%s.conf",
+            executable, manager->method, manager->manager_address,
+            working_dir, server->port, working_dir, server->port);
+
     if (manager->acl != NULL) {
         int len = strlen(cmd);
         snprintf(cmd + len, BUF_SIZE - len, " --acl %s", manager->acl);
@@ -280,9 +303,9 @@ static void add_server(struct manager_ctx *manager, struct server *server)
 
 static void stop_server(char *prefix, char *port)
 {
-    char path[128];
+    char path[PATH_MAX];
     int pid;
-    snprintf(path, 128, "%s/.shadowsocks_%s.pid", prefix, port);
+    snprintf(path, PATH_MAX, "%s/.shadowsocks_%s.pid", prefix, port);
     FILE *f = fopen(path, "r");
     if (f == NULL) {
         if (verbose) {
@@ -294,7 +317,6 @@ static void stop_server(char *prefix, char *port)
         kill(pid, SIGTERM);
     }
     fclose(f);
-
 }
 
 static void remove_server(char *prefix, char *port)
@@ -666,7 +688,7 @@ int main(int argc, char **argv)
     }
 
     if (server_num == 0) {
-        server_host[server_num++] = NULL;
+        server_host[server_num++] = "0.0.0.0";
     }
 
     if (method == NULL) {
@@ -744,7 +766,7 @@ int main(int argc, char **argv)
 
     struct passwd *pw = getpwuid(getuid());
     const char *homedir = pw->pw_dir;
-    snprintf(working_dir, 128, "%s/.shadowsocks", homedir);
+    snprintf(working_dir, PATH_MAX, "%s/.shadowsocks", homedir);
 
     int err = mkdir(working_dir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     if (err != 0 && errno != EEXIST) {
