@@ -53,12 +53,27 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@USE_SYSTEM_SHARED_LIB_FALSE@am__append_1 = -I$(top_srcdir)/libev \
+@USE_SYSTEM_SHARED_LIB_FALSE@	-I$(top_srcdir)/libudns \
+@USE_SYSTEM_SHARED_LIB_FALSE@	-I$(top_srcdir)/libsodium/src/libsodium/include
+@USE_SYSTEM_SHARED_LIB_TRUE@am__append_2 = -lev -lsodium -lm
+@USE_SYSTEM_SHARED_LIB_FALSE@am__append_3 = $(top_builddir)/libev/libev.la \
+@USE_SYSTEM_SHARED_LIB_FALSE@                  $(top_builddir)/libsodium/src/libsodium/libsodium.la
+
 bin_PROGRAMS = ss-local$(EXEEXT) ss-tunnel$(EXEEXT) $(am__EXEEXT_1) \
 	$(am__EXEEXT_2)
-@BUILD_WINCOMPAT_FALSE@am__append_1 = ss-server ss-manager
-@BUILD_WINCOMPAT_TRUE@am__append_2 = win32.c
-@BUILD_WINCOMPAT_TRUE@am__append_3 = win32.c
-@BUILD_REDIRECTOR_TRUE@am__append_4 = ss-redir
+@BUILD_WINCOMPAT_FALSE@am__append_4 = ss-server ss-manager
+@USE_SYSTEM_SHARED_LIB_TRUE@am__append_5 = -ludns
+@USE_SYSTEM_SHARED_LIB_TRUE@am__append_6 = -ludns
+@USE_SYSTEM_SHARED_LIB_TRUE@am__append_7 = -ludns
+@USE_SYSTEM_SHARED_LIB_FALSE@am__append_8 = $(top_builddir)/libudns/libudns.la
+@USE_SYSTEM_SHARED_LIB_FALSE@am__append_9 = $(top_builddir)/libudns/libudns.la
+@USE_SYSTEM_SHARED_LIB_FALSE@am__append_10 = $(top_builddir)/libudns/libudns.la
+@BUILD_WINCOMPAT_TRUE@am__append_11 = win32.c
+@BUILD_WINCOMPAT_TRUE@am__append_12 = win32.c
+@BUILD_REDIRECTOR_TRUE@am__append_13 = ss-redir
+@BUILD_REDIRECTOR_TRUE@@USE_SYSTEM_SHARED_LIB_TRUE@am__append_14 = -ludns
+@BUILD_REDIRECTOR_TRUE@@USE_SYSTEM_SHARED_LIB_FALSE@am__append_15 = $(top_builddir)/libudns/libudns.la
 subdir = src
 DIST_COMMON = $(include_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
@@ -108,13 +123,11 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" \
 	"$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(top_builddir)/libev/libev.la \
-	$(top_builddir)/libipset/libipset.la \
-	$(top_builddir)/libcork/libcork.la \
-	$(top_builddir)/libsodium/src/libsodium/libsodium.la \
-	$(am__DEPENDENCIES_1)
-am__DEPENDENCIES_3 = $(am__DEPENDENCIES_2) \
-	$(top_builddir)/libudns/libudns.la
+am__DEPENDENCIES_2 = $(top_builddir)/libipset/libipset.la \
+	$(top_builddir)/libcork/libcork.la $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__append_3)
+am__DEPENDENCIES_3 = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
+	$(am__append_8)
 libshadowsocks_la_DEPENDENCIES = $(am__DEPENDENCIES_3)
 am__libshadowsocks_la_SOURCES_DIST = utils.c jconf.c json.c encrypt.c \
 	udprelay.c cache.c acl.c netutils.c hmac-sha1.c local.c \
@@ -150,8 +163,8 @@ am_ss_local_OBJECTS = ss_local-utils.$(OBJEXT) \
 	ss_local-netutils.$(OBJEXT) ss_local-hmac-sha1.$(OBJEXT) \
 	ss_local-local.$(OBJEXT) $(am__objects_3)
 ss_local_OBJECTS = $(am_ss_local_OBJECTS)
-ss_local_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(top_builddir)/libudns/libudns.la
+ss_local_DEPENDENCIES = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
+	$(am__append_8)
 ss_local_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(ss_local_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -172,7 +185,7 @@ am__ss_redir_SOURCES_DIST = utils.c jconf.c json.c encrypt.c \
 @BUILD_REDIRECTOR_TRUE@	ss_redir-redir.$(OBJEXT)
 ss_redir_OBJECTS = $(am_ss_redir_OBJECTS)
 @BUILD_REDIRECTOR_TRUE@ss_redir_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-@BUILD_REDIRECTOR_TRUE@	$(top_builddir)/libudns/libudns.la
+@BUILD_REDIRECTOR_TRUE@	$(am__DEPENDENCIES_1) $(am__append_15)
 ss_redir_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(ss_redir_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -183,8 +196,8 @@ am_ss_server_OBJECTS = ss_server-utils.$(OBJEXT) \
 	ss_server-acl.$(OBJEXT) ss_server-resolv.$(OBJEXT) \
 	ss_server-hmac-sha1.$(OBJEXT) ss_server-server.$(OBJEXT)
 ss_server_OBJECTS = $(am_ss_server_OBJECTS)
-ss_server_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(top_builddir)/libudns/libudns.la
+ss_server_DEPENDENCIES = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
+	$(am__append_10)
 ss_server_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(ss_server_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -198,8 +211,8 @@ am_ss_tunnel_OBJECTS = ss_tunnel-utils.$(OBJEXT) \
 	ss_tunnel-hmac-sha1.$(OBJEXT) ss_tunnel-tunnel.$(OBJEXT) \
 	$(am__objects_4)
 ss_tunnel_OBJECTS = $(am_ss_tunnel_OBJECTS)
-ss_tunnel_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(top_builddir)/libudns/libudns.la
+ss_tunnel_DEPENDENCIES = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
+	$(am__append_9)
 ss_tunnel_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(ss_tunnel_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -369,20 +382,16 @@ top_srcdir = @top_srcdir@
 VERSION_INFO = 1:0:0
 AM_CFLAGS = -g -O2 -Wall -Werror -Wno-deprecated-declarations \
 	-fno-strict-aliasing -std=gnu99 -D_GNU_SOURCE \
-	$(PTHREAD_CFLAGS) -I$(top_srcdir)/libev \
-	-I$(top_srcdir)/libudns -I$(top_srcdir)/libipset/include \
-	-I$(top_srcdir)/libcork/include \
-	-I$(top_srcdir)/libsodium/src/libsodium/include
-SS_COMMON_LIBS = $(top_builddir)/libev/libev.la \
-				 $(top_builddir)/libipset/libipset.la \
-				 $(top_builddir)/libcork/libcork.la \
-				 $(top_builddir)/libsodium/src/libsodium/libsodium.la \
-				 $(INET_NTOP_LIB)
-
+	$(PTHREAD_CFLAGS) $(am__append_1) \
+	-I$(top_srcdir)/libipset/include \
+	-I$(top_srcdir)/libcork/include
+SS_COMMON_LIBS = $(top_builddir)/libipset/libipset.la \
+	$(top_builddir)/libcork/libcork.la $(INET_NTOP_LIB) \
+	$(am__append_2) $(am__append_3)
 ss_local_SOURCES = utils.c jconf.c json.c encrypt.c udprelay.c cache.c \
-	acl.c netutils.c hmac-sha1.c local.c $(am__append_2)
+	acl.c netutils.c hmac-sha1.c local.c $(am__append_11)
 ss_tunnel_SOURCES = utils.c jconf.c json.c encrypt.c udprelay.c \
-	cache.c netutils.c hmac-sha1.c tunnel.c $(am__append_3)
+	cache.c netutils.c hmac-sha1.c tunnel.c $(am__append_12)
 ss_server_SOURCES = utils.c \
 					netutils.c \
                     jconf.c \
@@ -400,9 +409,9 @@ ss_manager_SOURCES = utils.c \
                      json.c \
                      manager.c
 
-ss_local_LDADD = $(SS_COMMON_LIBS) $(top_builddir)/libudns/libudns.la
-ss_tunnel_LDADD = $(SS_COMMON_LIBS) $(top_builddir)/libudns/libudns.la
-ss_server_LDADD = $(SS_COMMON_LIBS) $(top_builddir)/libudns/libudns.la
+ss_local_LDADD = $(SS_COMMON_LIBS) $(am__append_5) $(am__append_8)
+ss_tunnel_LDADD = $(SS_COMMON_LIBS) $(am__append_6) $(am__append_9)
+ss_server_LDADD = $(SS_COMMON_LIBS) $(am__append_7) $(am__append_10)
 ss_manager_LDADD = $(SS_COMMON_LIBS)
 ss_local_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_LOCAL
 ss_tunnel_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_LOCAL -DUDPRELAY_TUNNEL
@@ -419,7 +428,7 @@ ss_server_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_REMOTE
 
 @BUILD_REDIRECTOR_TRUE@ss_redir_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_REDIR -DUDPRELAY_LOCAL
 @BUILD_REDIRECTOR_TRUE@ss_redir_LDADD = $(SS_COMMON_LIBS) \
-@BUILD_REDIRECTOR_TRUE@	$(top_builddir)/libudns/libudns.la
+@BUILD_REDIRECTOR_TRUE@	$(am__append_14) $(am__append_15)
 lib_LTLIBRARIES = libshadowsocks.la
 libshadowsocks_la_SOURCES = $(ss_local_SOURCES)
 libshadowsocks_la_CFLAGS = $(ss_local_CFLAGS) -DLIB_ONLY

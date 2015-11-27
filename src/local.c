@@ -375,6 +375,14 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             char *send_buf = (char *)&response;
             send(server->fd, send_buf, sizeof(response), 0);
             server->stage = 1;
+
+            int off = (buf[1] & 0xff) + 2;
+            if (buf[0] == 0x05 && off < r) {
+                memmove(buf, buf + off, r - off);
+                r -= off;
+                continue;
+            }
+
             return;
         } else if (server->stage == 1) {
             struct socks5_request *request = (struct socks5_request *)buf;
@@ -415,8 +423,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 if (request->atyp == 1) {
                     // IP V4
                     size_t in_addr_len = sizeof(struct in_addr);
-                    memcpy(ss_addr_to_send + addr_len, buf + 4, in_addr_len +
-                           2);
+                    memcpy(ss_addr_to_send + addr_len, buf + 4, in_addr_len + 2);
                     addr_len += in_addr_len + 2;
 
                     if (acl || verbose) {
@@ -430,8 +437,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     // Domain name
                     uint8_t name_len = *(uint8_t *)(buf + 4);
                     ss_addr_to_send[addr_len++] = name_len;
-                    memcpy(ss_addr_to_send + addr_len, buf + 4 + 1, name_len +
-                           2);
+                    memcpy(ss_addr_to_send + addr_len, buf + 4 + 1, name_len + 2);
                     addr_len += name_len + 2;
 
                     if (acl || verbose) {
@@ -444,8 +450,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 } else if (request->atyp == 4) {
                     // IP V6
                     size_t in6_addr_len = sizeof(struct in6_addr);
-                    memcpy(ss_addr_to_send + addr_len, buf + 4, in6_addr_len +
-                           2);
+                    memcpy(ss_addr_to_send + addr_len, buf + 4, in6_addr_len + 2);
                     addr_len += in6_addr_len + 2;
 
                     if (acl || verbose) {
@@ -906,7 +911,7 @@ static void close_and_free_server(EV_P_ struct server *server)
 }
 
 static struct remote * create_remote(struct listen_ctx *listener,
-                                         struct sockaddr *addr)
+                                     struct sockaddr *addr)
 {
     struct sockaddr *remote_addr;
 
@@ -1236,7 +1241,7 @@ int main(int argc, char **argv)
     for (i = 0; i < remote_num; i++) {
         char *host = remote_addr[i].host;
         char *port = remote_addr[i].port == NULL ? remote_port :
-            remote_addr[i].port;
+                     remote_addr[i].port;
         struct sockaddr_storage *storage = malloc(sizeof(struct sockaddr_storage));
         memset(storage, 0, sizeof(struct sockaddr_storage));
         if (get_sockaddr(host, port, storage, 1) == -1) {

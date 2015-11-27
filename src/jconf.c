@@ -168,7 +168,7 @@ jconf_t *read_jconf(const char * file)
                         json_value *v = value->u.object.values[j].value;
                         if (v->type == json_string) {
                             conf.port_password[j].port = ss_strndup(value->u.object.values[j].name,
-                                    value->u.object.values[j].name_length);
+                                                                    value->u.object.values[j].name_length);
                             conf.port_password[j].password = to_string(v);
                             conf.port_password_num = j + 1;
                         }
