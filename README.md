@@ -2,11 +2,11 @@
 
 ## Intro
 
-[Shadowsocks-libev](http://shadowsocks.org) is a lightweight secured socks5 
-proxy for embedded devices and low end boxes.
+[Shadowsocks-libev](http://shadowsocks.org) is a lightweight secured SOCKS5 
+proxy for embedded devices and low-end boxes.
 
-It is a port of [shadowsocks](https://github.com/shadowsocks/shadowsocks) 
-created by [@clowwindy](https://github.com/clowwindy) maintained by 
+It is a port of [Shadowsocks](https://github.com/shadowsocks/shadowsocks) 
+created by [@clowwindy](https://github.com/clowwindy), which is maintained by 
 [@madeye](https://github.com/madeye) and [@linusyang](https://github.com/linusyang).
 
 Current version: 2.4.1 | [Changelog](debian/changelog)
@@ -15,9 +15,9 @@ Travis CI: [![Travis CI](https://travis-ci.org/shadowsocks/shadowsocks-libev.svg
 
 ## Features
 
-Shadowsocks-libev is writen in pure C and only depends on
+Shadowsocks-libev is written in pure C and only depends on
 [libev](http://software.schmorp.de/pkg/libev.html) and 
-[openssl](http://www.openssl.org/) or [polarssl](https://polarssl.org/).
+[OpenSSL](http://www.openssl.org/) or [PolarSSL](https://polarssl.org/).
 
 In normal usage, the memory footprint is about 600KB and the CPU utilization is 
 no more than 5% on a low-end router (Buffalo WHR-G300N V2 with a 400MHz MIPS CPU, 
@@ -27,7 +27,7 @@ no more than 5% on a low-end router (Buffalo WHR-G300N V2 with a 400MHz MIPS CPU
 
 **Notes about PolarSSL**
 
-* Default crypto library is OpenSSL. To build against PolarSSL,
+* The default crypto library is OpenSSL. To build against PolarSSL,
 specify `--with-crypto-library=polarssl` and  `--with-polarssl=/path/to/polarssl`
 when running `./configure`.
 * PolarSSL __1.2.5 or newer__ is required. Currently, PolarSSL does __NOT__ support 
@@ -44,7 +44,7 @@ Add GPG public key:
 wget -O- http://shadowsocks.org/debian/1D27208A.gpg | sudo apt-key add -
 ```
 
-Add either of the following lines to your /etc/apt/sources.list
+Add either of the following lines to your /etc/apt/sources.list:
 
 ```
 # Ubuntu 14.04 or above
@@ -165,15 +165,15 @@ cd /usr/ports/net/shadowsocks-libev
 make install
 ```
 
-Edit your config.json file. By default, it's located in /usr/local/etc/shadowsocks-libev
+Edit your config.json file. By default, it's located in /usr/local/etc/shadowsocks-libev.
 
-To enable shadowsocks-libev, add the following rc variable to your /etc/rc.conf file.
+To enable shadowsocks-libev, add the following rc variable to your /etc/rc.conf file:
 
 ```
 shadowsocks_libev_enable="YES"
 ```
 
-Start the shadowsocks server:
+Start the Shadowsocks server:
 
 ```bash
 service shadowsocks_libev start
@@ -200,12 +200,12 @@ make V=99 package/shadowsocks-libev/openwrt/compile
 ### OS X
 For OS X, use [Homebrew](http://brew.sh) to install or build.
 
-Install homebrew
+Install Homebrew:
 
 ```bash
 ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
-Install shadowsocks-libev
+Install shadowsocks-libev:
 
 ```bash
 brew install shadowsocks-libev
@@ -324,7 +324,7 @@ notes:
 
 ## Advanced usage
 
-The latest shadowsocks-libev has provided a *redir* mode. You can configure your Linux-based box or router to proxy all tcp traffic transparently.
+The latest shadowsocks-libev has provided a *redir* mode. You can configure your Linux-based box or router to proxy all TCP traffic transparently.
 
     # Create new chain
     root@Wrt:~# iptables -t nat -N SHADOWSOCKS
@@ -363,10 +363,10 @@ The latest shadowsocks-libev has provided a *redir* mode. You can configure your
 
 ## Security Tips
 
-Although shadowsocks-libev can handle thousands of concurrent connections nicely, we still recommend to
-set up your server's firewall rules to limit connections from each user.
+Although shadowsocks-libev can handle thousands of concurrent connections nicely, we still recommend
+setting up your server's firewall rules to limit connections from each user:
 
-    # Up to 32 connections are enough for normal usages
+    # Up to 32 connections are enough for normal usage
     iptables -A INPUT -p tcp --syn --dport ${SHADOWSOCKS_PORT} -m connlimit --connlimit-above 32 -j REJECT --reject-with tcp-reset
 
 ## License
