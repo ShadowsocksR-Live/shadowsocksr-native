@@ -84,6 +84,8 @@ int verbose = 0;
 int vpn = 0;
 #endif
 
+#include "obfs.c" // I don't want to modify makefile
+
 static int acl = 0;
 static int mode = TCP_ONLY;
 
@@ -250,15 +252,30 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
             // insert shadowsocks header
             if (!remote->direct) {
+                // SSR beg
+                if (remote->server->protocol_plugin) {
+                    obfs_class *protocol_plugin = remote->server->protocol_plugin;
+                    if (protocol_plugin->client_pre_encrypt) {
+                        r = protocol_plugin->client_pre_encrypt(remote->server->protocol, remote->buf, r);
+                    }
+                }
                 remote->buf = ss_encrypt(BUF_SIZE, remote->buf, &r,
                                          server->e_ctx);
 
                 if (remote->buf == NULL) {
-                    LOGE("invalid password or cipher");
+                    LOGE("server invalid password or cipher");
                     close_and_free_remote(EV_A_ remote);
                     close_and_free_server(EV_A_ server);
                     return;
                 }
+
+                if (remote->server->obfs_plugin) {
+                    obfs_class *obfs_plugin = remote->server->obfs_plugin;
+                    if (obfs_plugin->client_encode) {
+                        r = obfs_plugin->client_encode(remote->server->obfs, remote->buf, r);
+                    }
+                }
+                // SSR end
             }
 
             if (!remote->send_ctx->connected) {
@@ -474,6 +491,33 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     return;
                 }
 
+                // SSR beg
+                if (server->listener->obfs_global == NULL && server->obfs_plugin) {
+                    server->listener->obfs_global = server->obfs_plugin->init_data();
+                }
+                if (server->listener->protocol_global == NULL && server->protocol_plugin) {
+                    server->listener->protocol_global = server->protocol_plugin->init_data();
+                }
+
+                server_info _server_info;
+                memset(&_server_info, 0, sizeof(server_info));
+                strcpy(_server_info.host, inet_ntoa(((struct sockaddr_in*)&remote->addr)->sin_addr));
+                _server_info.port = ((struct sockaddr_in*)&remote->addr)->sin_port;
+                _server_info.port = _server_info.port >> 8 | _server_info.port << 8;
+                _server_info.param = server->listener->obfs_param;
+                _server_info.g_data = server->listener->obfs_global;
+                _server_info.tcp_mss = 1440;
+
+                if (server->obfs_plugin)
+                    server->obfs_plugin->set_server_info(server->obfs, &_server_info);
+
+                _server_info.param = NULL;
+                _server_info.g_data = server->listener->protocol_global;
+
+                if (server->protocol_plugin)
+                    server->protocol_plugin->set_server_info(server->protocol, &_server_info);
+                // SSR end
+
                 if (!remote->direct) {
                     if (auth) {
                         ss_addr_to_send[0] |= ONETIMEAUTH_FLAG;
@@ -615,13 +659,30 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     if (!remote->direct) {
+        // SSR beg
+        if (remote->server->obfs_plugin) {
+            obfs_class *obfs_plugin = remote->server->obfs_plugin;
+            if (obfs_plugin->client_decode) {
+                int needsendback;
+                r = obfs_plugin->client_decode(remote->server->obfs, server->buf, r, &needsendback);
+            }
+        }
+        if ( r == 0 )
+            return;
         server->buf = ss_decrypt(BUF_SIZE, server->buf, &r, server->d_ctx);
         if (server->buf == NULL) {
-            LOGE("invalid password or cipher");
+            LOGE("remote invalid password or cipher");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
         }
+        if (remote->server->protocol_plugin) {
+            obfs_class *protocol_plugin = remote->server->protocol_plugin;
+            if (protocol_plugin->client_post_decrypt) {
+                r = protocol_plugin->client_post_decrypt(remote->server->protocol, server->buf, r);
+            }
+        }
+        // SSR end
     }
 
     int s = send(server->fd, server->buf, r, 0);
@@ -719,7 +780,7 @@ static struct remote * new_remote(int fd, int timeout)
 
     memset(remote, 0, sizeof(struct remote));
 
-    remote->buf = malloc(BUF_SIZE);
+    remote->buf = malloc(BUF_SIZE * 2);
     remote->recv_ctx = malloc(sizeof(struct remote_ctx));
     remote->send_ctx = malloc(sizeof(struct remote_ctx));
     remote->recv_ctx->connected = 0;
@@ -772,7 +833,7 @@ static struct server * new_server(int fd, int method)
 
     memset(server, 0, sizeof(struct server));
 
-    server->buf = malloc(BUF_SIZE);
+    server->buf = malloc(BUF_SIZE * 2);
     server->recv_ctx = malloc(sizeof(struct server_ctx));
     server->send_ctx = malloc(sizeof(struct server_ctx));
     server->recv_ctx->connected = 0;
@@ -815,6 +876,20 @@ static void free_server(struct server *server)
     if (server->buf != NULL) {
         free(server->buf);
     }
+    // SSR beg
+    if (server->obfs_plugin) {
+        server->obfs_plugin->dispose(server->obfs);
+        server->obfs = NULL;
+        free_obfs_class(server->obfs_plugin);
+        server->obfs_plugin = NULL;
+    }
+    if (server->protocol_plugin) {
+        server->protocol_plugin->dispose(server->protocol);
+        server->protocol = NULL;
+        free_obfs_class(server->protocol_plugin);
+        server->protocol_plugin = NULL;
+    }
+    // SSR end
     free(server->recv_ctx);
     free(server->send_ctx);
     free(server);
@@ -898,6 +973,16 @@ void accept_cb(EV_P_ ev_io *w, int revents)
 
     struct server *server = new_server(serverfd, listener->method);
     server->listener = listener;
+    // SSR beg
+    server->obfs_plugin = new_obfs_class(listener->obfs_name);
+    if (server->obfs_plugin) {
+        server->obfs = server->obfs_plugin->new_obfs();
+    }
+    server->protocol_plugin = new_obfs_class(listener->protocol_name);
+    if (server->protocol_plugin) {
+        server->protocol = server->protocol_plugin->new_obfs();
+    }
+    // SSR end
 
     ev_io_start(EV_A_ & server->recv_ctx->io);
 }
@@ -913,7 +998,10 @@ int main(int argc, char **argv)
     char *local_addr = NULL;
     char *password = NULL;
     char *timeout = NULL;
+    char *protocol = NULL; // SSR
     char *method = NULL;
+    char *obfs = NULL; // SSR
+    char *obfs_param = NULL; // SSR
     char *pid_path = NULL;
     char *conf_path = NULL;
     char *iface = NULL;
@@ -937,10 +1025,10 @@ int main(int argc, char **argv)
     USE_TTY();
 
 #ifdef ANDROID
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:uvVA",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:P:o:M:uvVA", // SSR
                             long_options, &option_index)) != -1) {
 #else
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:uvA",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:P:o:M:uvA", // SSR
                             long_options, &option_index)) != -1) {
 #endif
         switch (c) {
@@ -974,9 +1062,20 @@ int main(int argc, char **argv)
         case 't':
             timeout = optarg;
             break;
+        // SSR beg
+        case 'P':
+            protocol = optarg;
+            break;
         case 'm':
             method = optarg;
             break;
+        case 'o':
+            obfs = optarg;
+            break;
+        case 'M':
+            obfs_param = optarg;
+            break;
+        // SSR end
         case 'c':
             conf_path = optarg;
             break;
@@ -1036,9 +1135,24 @@ int main(int argc, char **argv)
         if (password == NULL) {
             password = conf->password;
         }
+        // SSR beg
+        if (protocol == NULL) {
+            protocol = conf->protocol;
+            LOGI("protocol %s", protocol);
+        }
         if (method == NULL) {
             method = conf->method;
+            LOGI("method %s", method);
         }
+        if (obfs == NULL) {
+            obfs = conf->obfs;
+            LOGI("obfs %s", obfs);
+        }
+        if (obfs_param == NULL) {
+            obfs_param = conf->obfs_param;
+            LOGI("obfs_param %s", obfs_param);
+        }
+        // SSR end
         if (timeout == NULL) {
             timeout = conf->timeout;
         }
@@ -1132,7 +1246,14 @@ int main(int argc, char **argv)
     }
     listen_ctx.timeout = atoi(timeout);
     listen_ctx.iface = iface;
+    // SSR beg
+    listen_ctx.protocol_name = protocol;
     listen_ctx.method = m;
+    listen_ctx.obfs_name = obfs;
+    listen_ctx.obfs_param = obfs_param;
+    listen_ctx.protocol_global = NULL;
+    listen_ctx.obfs_global = NULL;
+    // SSR end
 
     struct ev_loop *loop = EV_DEFAULT;
 

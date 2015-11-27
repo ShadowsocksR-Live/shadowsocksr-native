@@ -182,8 +182,14 @@ jconf_t *read_jconf(const char * file)
                 conf.local_port = to_string(value);
             } else if (strcmp(name, "password") == 0) {
                 conf.password = to_string(value);
+            } else if (strcmp(name, "protocol") == 0) { // SSR
+                conf.protocol = to_string(value);
             } else if (strcmp(name, "method") == 0) {
                 conf.method = to_string(value);
+            } else if (strcmp(name, "obfs") == 0) { // SSR
+                conf.obfs = to_string(value);
+            } else if (strcmp(name, "obfs_param") == 0) { // SSR
+                conf.obfs_param = to_string(value);
             } else if (strcmp(name, "timeout") == 0) {
                 conf.timeout = to_string(value);
             } else if (strcmp(name, "fast_open") == 0) {

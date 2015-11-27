@@ -27,6 +27,7 @@
 #include <libcork/ds.h>
 
 #include "encrypt.h"
+#include "obfs.h"
 #include "jconf.h"
 
 #include "common.h"
@@ -39,6 +40,12 @@ struct listen_ctx {
     int timeout;
     int fd;
     struct sockaddr **remote_addr;
+
+    char *protocol_name;
+    char *obfs_name;
+    char *obfs_param;
+    void *protocol_global;
+    void *obfs_global;
 };
 
 struct server_ctx {
@@ -61,6 +68,11 @@ struct server {
     struct remote *remote;
 
     struct cork_dllist_item entries;
+
+    obfs *protocol;
+    obfs *obfs;
+    obfs_class *protocol_plugin;
+    obfs_class *obfs_plugin;
 };
 
 struct remote_ctx {

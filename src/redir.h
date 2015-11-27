@@ -25,6 +25,7 @@
 
 #include <ev.h>
 #include "encrypt.h"
+#include "obfs.h"
 #include "jconf.h"
 
 struct listen_ctx {
@@ -34,6 +35,13 @@ struct listen_ctx {
     int fd;
     int method;
     struct sockaddr **remote_addr;
+
+    // SSR
+    char *protocol_name;
+    char *obfs_name;
+    char *obfs_param;
+    void *protocol_global;
+    void *obfs_global;
 };
 
 struct server_ctx {
@@ -53,6 +61,12 @@ struct server {
     struct server_ctx *recv_ctx;
     struct server_ctx *send_ctx;
     struct remote *remote;
+
+    // SSR
+    obfs *protocol;
+    obfs *obfs;
+    obfs_class *protocol_plugin;
+    obfs_class *obfs_plugin;
 };
 
 struct remote_ctx {
