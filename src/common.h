@@ -66,6 +66,7 @@ void free_udprelay(void);
 
 #ifdef ANDROID
 int protect_socket(int fd);
+int send_traffic_stat(uint64_t tx, uint64_t rx);
 #endif
 
 #endif // _COMMON_H

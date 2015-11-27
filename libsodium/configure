@@ -5430,7 +5430,7 @@ if test "x$enable_ssp" != "xno"; then :
 
 
 case $host_os in #(
-  cygwin*|mingw*|msys|pw32*|cegcc*) :
+  cygwin*|mingw*|msys|pw32*|cegcc*|*aix*|*sunos*|*solaris*) :
       ;; #(
   *) :
 

@@ -82,6 +82,9 @@
 int verbose = 0;
 #ifdef ANDROID
 int vpn = 0;
+uint64_t tx = 0;
+uint64_t rx = 0;
+ev_tstamp last = 0;
 #endif
 
 #include "obfs.c" // I don't want to modify makefile
@@ -259,6 +262,9 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                         r = protocol_plugin->client_pre_encrypt(remote->server->protocol, remote->buf, r);
                     }
                 }
+#ifdef ANDROID
+                tx += r;
+#endif
                 remote->buf = ss_encrypt(BUF_SIZE, remote->buf, &r,
                                          server->e_ctx);
 
@@ -615,10 +621,22 @@ static void server_send_cb(EV_P_ ev_io *w, int revents)
             server->buf_idx = 0;
             ev_io_stop(EV_A_ & server_send_ctx->io);
             ev_io_start(EV_A_ & remote->recv_ctx->io);
+            return;
         }
     }
 
 }
+
+#ifdef ANDROID
+static void stat_update_cb(struct ev_loop *loop)
+{
+    ev_tstamp now = ev_now(loop);
+    if (now - last > 1.0) {
+        send_traffic_stat(tx, rx);
+        last = now;
+    }
+}
+#endif
 
 static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 {
@@ -642,6 +660,10 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     struct server *server = remote->server;
 
     ev_timer_again(EV_A_ & remote->recv_ctx->watcher);
+
+#ifdef ANDROID
+    stat_update_cb(loop);
+#endif
 
     ssize_t r = recv(remote->fd, server->buf, BUF_SIZE, 0);
 
@@ -674,6 +696,9 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         }
         if ( r == 0 )
             return;
+#ifdef ANDROID
+        rx += r;
+#endif
         server->buf = ss_decrypt(BUF_SIZE, server->buf, &r, server->d_ctx);
         if (server->buf == NULL) {
             LOGE("remote invalid password or cipher");
@@ -794,13 +819,9 @@ static struct remote * new_remote(int fd, int timeout)
     ev_io_init(&remote->recv_ctx->io, remote_recv_cb, fd, EV_READ);
     ev_io_init(&remote->send_ctx->io, remote_send_cb, fd, EV_WRITE);
     ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb,
-                  min(MAX_CONNECT_TIMEOUT,
-                      timeout),
-                  0);
+                  min(MAX_CONNECT_TIMEOUT, timeout), 0);
     ev_timer_init(&remote->recv_ctx->watcher, remote_timeout_cb,
-                  min(MAX_CONNECT_TIMEOUT,
-                      timeout),
-                  timeout);
+                  min(MAX_CONNECT_TIMEOUT, timeout), timeout);
     remote->recv_ctx->remote = remote;
     remote->send_ctx->remote = remote;
     return remote;
@@ -1303,6 +1324,7 @@ int main(int argc, char **argv)
     }
 
     // Clean up
+
     ev_io_stop(loop, &listen_ctx.io);
     free_connections(loop);
 
