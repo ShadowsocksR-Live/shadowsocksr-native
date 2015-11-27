@@ -3,7 +3,9 @@
 
 #include "obfs.h"
 
+#include "crc32.c"
 #include "http_simple.c"
+#include "verify.c"
 
 
 
@@ -18,7 +20,7 @@ obfs * new_obfs() {
 }
 
 void set_server_info(obfs *self, server_info *server) {
-    memcpy(&self->server, server, sizeof(server_info));
+    memmove(&self->server, server, sizeof(server_info));
 }
 
 void dispose_obfs(obfs *self) {
@@ -33,6 +35,7 @@ obfs_class * new_obfs_class(char *plugin_name)
         return NULL;
     if (strcmp(plugin_name, "plain") == 0)
         return NULL;
+    init_crc32_table();
     if (strcmp(plugin_name, "http_simple") == 0) {
         obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
         plugin->init_data = init_data;
@@ -42,6 +45,17 @@ obfs_class * new_obfs_class(char *plugin_name)
 
         plugin->client_encode = http_simple_client_encode;
         plugin->client_decode = http_simple_client_decode;
+
+        return plugin;
+    } else if (strcmp(plugin_name, "verify_simple") == 0) {
+        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
+        plugin->init_data = init_data;
+        plugin->new_obfs = verify_simple_new_obfs;
+        plugin->set_server_info = set_server_info;
+        plugin->dispose = verify_simple_dispose;
+
+        plugin->client_pre_encrypt = verify_simple_client_pre_encrypt;
+        plugin->client_post_decrypt = verify_simple_client_post_decrypt;
 
         return plugin;
     }

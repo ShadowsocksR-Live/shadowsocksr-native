@@ -8,11 +8,11 @@ typedef struct http_simple_local_data {
     char *encode_buffer;
 }http_simple_local_data;
 
-void http_simple_local_data_init(http_simple_local_data* data) {
-    data->has_sent_header = 0;
-    data->has_recv_header = 0;
-    data->ret_buffer = NULL;
-    data->encode_buffer = NULL;
+void http_simple_local_data_init(http_simple_local_data* local) {
+    local->has_sent_header = 0;
+    local->has_recv_header = 0;
+    local->ret_buffer = NULL;
+    local->encode_buffer = NULL;
 }
 
 obfs * http_simple_new_obfs() {
@@ -26,9 +26,11 @@ void http_simple_dispose(obfs *self) {
     http_simple_local_data *local = (http_simple_local_data*)self->l_data;
     if (local->ret_buffer != NULL) {
         free(local->ret_buffer);
+        local->ret_buffer = NULL;
     }
     if (local->encode_buffer != NULL) {
         free(local->encode_buffer);
+        local->encode_buffer = NULL;
     }
     free(local);
     dispose_obfs(self);
@@ -53,7 +55,8 @@ void http_simple_encode_head(obfs *self, char *data, int datalength) {
     local->encode_buffer[pos * 3] = 0;
 }
 
-int http_simple_client_encode(obfs *self, char *encryptdata, int datalength) {
+int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength) {
+    char *encryptdata = *pencryptdata;
     http_simple_local_data *local = (http_simple_local_data*)self->l_data;
     if (local->has_sent_header) {
         return datalength;
@@ -95,7 +98,8 @@ int http_simple_client_encode(obfs *self, char *encryptdata, int datalength) {
     return outlength;
 }
 
-int http_simple_client_decode(obfs *self, char *encryptdata, int datalength, int *needsendback) {
+int http_simple_client_decode(obfs *self, char **pencryptdata, int datalength, int *needsendback) {
+    char *encryptdata = *pencryptdata;
     http_simple_local_data *local = (http_simple_local_data*)self->l_data;
     *needsendback = 0;
     if (local->has_recv_header) {

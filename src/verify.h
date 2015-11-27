@@ -20,14 +20,14 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _HTTP_SIMPLE_H
-#define _HTTP_SIMPLE_H
+#ifndef _VERIFY_H
+#define _VERIFY_H
 
-void * http_simple_init_data();
-obfs * http_simple_new_obfs();
-void http_simple_dispose(obfs *self);
+void * verify_simple_init_data();
+obfs * verify_simple_new_obfs();
+void verify_simple_dispose(obfs *self);
 
-int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength);
-int http_simple_client_decode(obfs *self, char **pencryptdata, int datalength, int *needsendback);
+int verify_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength);
+int verify_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalength);
 
-#endif // _HTTP_SIMPLE_H
+#endif // _VERIFY_H

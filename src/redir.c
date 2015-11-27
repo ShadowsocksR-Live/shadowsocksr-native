@@ -194,7 +194,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     if (remote->server->protocol_plugin) {
         obfs_class *protocol_plugin = remote->server->protocol_plugin;
         if (protocol_plugin->client_pre_encrypt) {
-            r = protocol_plugin->client_pre_encrypt(remote->server->protocol, remote->buf, r);
+            r = protocol_plugin->client_pre_encrypt(remote->server->protocol, &remote->buf, r);
         }
     }
 
@@ -203,7 +203,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     if (remote->server->obfs_plugin) {
         obfs_class *obfs_plugin = remote->server->obfs_plugin;
         if (obfs_plugin->client_encode) {
-            r = obfs_plugin->client_encode(remote->server->obfs, remote->buf, r);
+            r = obfs_plugin->client_encode(remote->server->obfs, &remote->buf, r);
         }
     }
     // SSR end
@@ -322,7 +322,13 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         obfs_class *obfs_plugin = remote->server->obfs_plugin;
         if (obfs_plugin->client_decode) {
             int needsendback;
-            r = obfs_plugin->client_decode(remote->server->obfs, server->buf, r, &needsendback);
+            r = obfs_plugin->client_decode(remote->server->obfs, &server->buf, r, &needsendback);
+            if (r < 0) {
+                LOGE("client_decode");
+                close_and_free_remote(EV_A_ remote);
+                close_and_free_server(EV_A_ server);
+                return;
+            }
         }
     }
     if ( r == 0 )
@@ -338,7 +344,15 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     if (remote->server->protocol_plugin) {
         obfs_class *protocol_plugin = remote->server->protocol_plugin;
         if (protocol_plugin->client_post_decrypt) {
-            r = protocol_plugin->client_post_decrypt(remote->server->protocol, server->buf, r);
+            r = protocol_plugin->client_post_decrypt(remote->server->protocol, &server->buf, r);
+            if (r < 0) {
+                LOGE("client_post_decrypt");
+                close_and_free_remote(EV_A_ remote);
+                close_and_free_server(EV_A_ server);
+                return;
+            }
+            if ( r == 0 )
+                return;
         }
     }
     // SSR end

@@ -52,17 +52,17 @@ typedef struct obfs_class {
     void (*dispose)(obfs *self);
 
     int (*client_pre_encrypt)(obfs *self,
-            char *plaindata,
+            char **pplaindata,
             int datalength);
     int (*client_encode)(obfs *self,
-            char *encryptdata,
+            char **pencryptdata,
             int datalength);
     int (*client_decode)(obfs *self,
-            char *encryptdata,
+            char **pencryptdata,
             int datalength,
             int *needsendback);
     int (*client_post_decrypt)(obfs *self,
-            char *plaindata,
+            char **pplaindata,
             int datalength);
 }obfs_class;
 
