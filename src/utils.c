@@ -20,6 +20,10 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -30,10 +34,6 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "utils.h"
 
@@ -103,6 +103,7 @@ int run_as(const char *user)
                which returns its result in a statically allocated buffer and
                cannot be considered thread safe. */
             err = getpwnam_r(user, &pwdbuf, buf, buflen, &pwd);
+
             if (err == 0 && pwd) {
                 /* setgid first, because we may not be allowed to do it anymore after setuid */
                 if (setgid(pwd->pw_gid) != 0) {
@@ -309,7 +310,7 @@ void daemonize(const char * path)
             FATAL("Invalid pid file\n");
         }
 
-        fprintf(file, "%d", pid);
+        fprintf(file, "%d", (int)pid);
         fclose(file);
         exit(EXIT_SUCCESS);
     }

@@ -188,7 +188,7 @@ AS_CASE([$host_os],
 AS_IF([test "x$enable_ssp" != "xno"],[
 
 AS_CASE([$host_os],
-  [cygwin*|mingw*|msys|pw32*|cegcc*], [ ],
+  [cygwin*|mingw*|msys|pw32*|cegcc*|*aix*|*sunos*|*solaris*], [ ],
   [*], [
     AX_CHECK_COMPILE_FLAG([-fstack-protector], [
       AX_CHECK_LINK_FLAG([-fstack-protector],
