@@ -4,7 +4,6 @@
 typedef struct http_simple_local_data {
     int has_sent_header;
     int has_recv_header;
-    char *ret_buffer;
     char *encode_buffer;
     int send_capacity;
 }http_simple_local_data;
@@ -12,7 +11,6 @@ typedef struct http_simple_local_data {
 void http_simple_local_data_init(http_simple_local_data* local) {
     local->has_sent_header = 0;
     local->has_recv_header = 0;
-    local->ret_buffer = NULL;
     local->encode_buffer = NULL;
     local->send_capacity = BUF_SIZE;
 }
@@ -26,10 +24,6 @@ obfs * http_simple_new_obfs() {
 
 void http_simple_dispose(obfs *self) {
     http_simple_local_data *local = (http_simple_local_data*)self->l_data;
-    if (local->ret_buffer != NULL) {
-        free(local->ret_buffer);
-        local->ret_buffer = NULL;
-    }
     if (local->encode_buffer != NULL) {
         free(local->encode_buffer);
         local->encode_buffer = NULL;
@@ -64,11 +58,9 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength) {
         return datalength;
     }
     char hostport[128];
-    int head_size = 64; // TODO
+    int head_size = self->server.head_len + (xorshift128plus() & 0x3F);
     int outlength;
-    if (local->ret_buffer == NULL) {
-        local->ret_buffer = (char*)malloc(datalength * 2 + 1024);
-    }
+    char * out_buffer = (char*)malloc(datalength * 2 + 2048);
     if (head_size > datalength)
         head_size = datalength;
     http_simple_encode_head(self, encryptdata, head_size);
@@ -78,7 +70,7 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength) {
         sprintf(hostport, "%s", self->server.param ? self->server.param : self->server.host);
     else
         sprintf(hostport, "%s:%d", self->server.param ? self->server.param : self->server.host, self->server.port);
-    sprintf(local->ret_buffer,
+    sprintf(out_buffer,
             "GET /%s HTTP/1.1\r\n"
             "Host: %s\r\n"
             "User-Agent: %s\r\n"
@@ -92,8 +84,8 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength) {
             hostport,
             "Mozilla/5.0 (Windows NT 6.3; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0"
             );
-    outlength = strlen(local->ret_buffer);
-    memmove(local->ret_buffer + outlength, encryptdata + head_size, datalength - head_size);
+    outlength = strlen(out_buffer);
+    memmove(out_buffer + outlength, encryptdata + head_size, datalength - head_size);
     outlength += datalength - head_size;
     local->has_sent_header = 1;
     if (local->send_capacity < outlength) {
@@ -102,7 +94,8 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength) {
         *pencryptdata = (char*)malloc(local->send_capacity);
         encryptdata = *pencryptdata;
     }
-    memmove(encryptdata, local->ret_buffer, outlength);
+    memmove(encryptdata, out_buffer, outlength);
+    free(out_buffer);
     return outlength;
 }
 
