@@ -41,11 +41,12 @@ struct listen_ctx {
     int fd;
     struct sockaddr **remote_addr;
 
+    // SSR
     char *protocol_name;
     char *obfs_name;
     char *obfs_param;
-    void *protocol_global;
-    void *obfs_global;
+    void **list_protocol_global;
+    void **list_obfs_global;
 };
 
 struct server_ctx {
@@ -69,6 +70,7 @@ struct server {
 
     struct cork_dllist_item entries;
 
+    // SSR
     obfs *protocol;
     obfs *obfs;
     obfs_class *protocol_plugin;
@@ -94,6 +96,9 @@ struct remote {
     struct sockaddr_storage addr;
     int addr_len;
     uint32_t counter;
+
+    // SSR
+    int remote_index;
 };
 
 #endif // _LOCAL_H

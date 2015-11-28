@@ -671,6 +671,7 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     server->destaddr = destaddr;
 
     // SSR beg
+    remote->remote_index = index;
     server->obfs_plugin = new_obfs_class(listener->obfs_name);
     if (server->obfs_plugin) {
         server->obfs = server->obfs_plugin->new_obfs();
@@ -679,11 +680,11 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     if (server->protocol_plugin) {
         server->protocol = server->protocol_plugin->new_obfs();
     }
-    if (listener->obfs_global == NULL && server->obfs_plugin) {
-        listener->obfs_global = server->obfs_plugin->init_data();
+    if (listener->list_obfs_global[remote->remote_index] == NULL && server->obfs_plugin) {
+        listener->list_obfs_global[remote->remote_index] = server->obfs_plugin->init_data();
     }
-    if (listener->protocol_global == NULL && server->protocol_plugin) {
-        listener->protocol_global = server->protocol_plugin->init_data();
+    if (listener->list_protocol_global[remote->remote_index] == NULL && server->protocol_plugin) {
+        listener->list_protocol_global[remote->remote_index] = server->protocol_plugin->init_data();
     }
     server_info _server_info;
     memset(&_server_info, 0, sizeof(server_info));
@@ -691,14 +692,14 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     _server_info.port = ((struct sockaddr_in*)remote_addr)->sin_port;
     _server_info.port = _server_info.port >> 8 | _server_info.port << 8;
     _server_info.param = listener->obfs_param;
-    _server_info.g_data = listener->obfs_global;
+    _server_info.g_data = listener->list_obfs_global[remote->remote_index];
     _server_info.tcp_mss = 1440;
 
     if (server->obfs_plugin)
         server->obfs_plugin->set_server_info(server->obfs, &_server_info);
 
     _server_info.param = NULL;
-    _server_info.g_data = listener->protocol_global;
+    _server_info.g_data = listener->list_protocol_global[remote->remote_index];
 
     if (server->protocol_plugin)
         server->protocol_plugin->set_server_info(server->protocol, &_server_info);
@@ -904,8 +905,10 @@ int main(int argc, char **argv)
     listen_ctx.method = m;
     listen_ctx.obfs_name = obfs;
     listen_ctx.obfs_param = obfs_param;
-    listen_ctx.protocol_global = NULL;
-    listen_ctx.obfs_global = NULL;
+    listen_ctx.list_protocol_global = malloc(sizeof(void *) * remote_num);
+    listen_ctx.list_obfs_global = malloc(sizeof(void *) * remote_num);
+    memset(listen_ctx.list_protocol_global, 0, sizeof(void *) * remote_num);
+    memset(listen_ctx.list_obfs_global, 0, sizeof(void *) * remote_num);
     // SSR end
 
     struct ev_loop *loop = EV_DEFAULT;

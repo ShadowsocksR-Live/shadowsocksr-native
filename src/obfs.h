@@ -37,6 +37,7 @@ typedef struct server_info {
     size_t recv_iv_len;
     uint8_t *key;
     size_t key_len;
+    int head_len;
     size_t tcp_mss;
 }server_info;
 

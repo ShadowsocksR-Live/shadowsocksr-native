@@ -23,7 +23,6 @@
 #ifndef _HTTP_SIMPLE_H
 #define _HTTP_SIMPLE_H
 
-void * http_simple_init_data();
 obfs * http_simple_new_obfs();
 void http_simple_dispose(obfs *self);
 

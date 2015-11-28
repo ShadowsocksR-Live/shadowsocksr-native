@@ -1,7 +1,7 @@
 
 #include "verify.h"
 
-static int verify_simple_pack_unit_size = 4000;
+static int verify_simple_pack_unit_size = 2000;
 
 typedef struct verify_simple_local_data {
     char * recv_buffer;
@@ -46,7 +46,7 @@ int verify_simple_pack_data(char *data, int datalength, char *outdata) {
 
 int verify_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength) {
     char *plaindata = *pplaindata;
-    char * out_buffer = (char*)malloc(datalength * 2 + 8);
+    char * out_buffer = (char*)malloc(datalength * 2 + 32);
     char * buffer = out_buffer;
     char * data = plaindata;
     int len = datalength;
@@ -71,6 +71,8 @@ int verify_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalen
     char *plaindata = *pplaindata;
     verify_simple_local_data *local = (verify_simple_local_data*)self->l_data;
     uint8_t * recv_buffer = (uint8_t *)local->recv_buffer;
+    if (local->recv_buffer_size + datalength > 16384)
+        return -1;
     memmove(recv_buffer + local->recv_buffer_size, plaindata, datalength);
     local->recv_buffer_size += datalength;
 
@@ -99,7 +101,7 @@ int verify_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalen
     }
     int len = buffer - out_buffer;
     if (local->recv_capacity < len) {
-        local->recv_capacity = len;
+        local->recv_capacity = len * 2;
         free(plaindata);
         *pplaindata = (char*)malloc(local->recv_capacity);
         plaindata = *pplaindata;

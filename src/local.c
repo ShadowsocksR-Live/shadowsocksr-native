@@ -503,11 +503,11 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 }
 
                 // SSR beg
-                if (server->listener->obfs_global == NULL && server->obfs_plugin) {
-                    server->listener->obfs_global = server->obfs_plugin->init_data();
+                if (server->listener->list_obfs_global[remote->remote_index] == NULL && server->obfs_plugin) {
+                    server->listener->list_obfs_global[remote->remote_index] = server->obfs_plugin->init_data();
                 }
-                if (server->listener->protocol_global == NULL && server->protocol_plugin) {
-                    server->listener->protocol_global = server->protocol_plugin->init_data();
+                if (server->listener->list_protocol_global[remote->remote_index] == NULL && server->protocol_plugin) {
+                    server->listener->list_protocol_global[remote->remote_index] = server->protocol_plugin->init_data();
                 }
 
                 server_info _server_info;
@@ -516,14 +516,15 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 _server_info.port = ((struct sockaddr_in*)&remote->addr)->sin_port;
                 _server_info.port = _server_info.port >> 8 | _server_info.port << 8;
                 _server_info.param = server->listener->obfs_param;
-                _server_info.g_data = server->listener->obfs_global;
+                _server_info.g_data = server->listener->list_obfs_global[remote->remote_index];
+                _server_info.head_len = get_head_size(ss_addr_to_send, 320, 30);
                 _server_info.tcp_mss = 1440;
 
                 if (server->obfs_plugin)
                     server->obfs_plugin->set_server_info(server->obfs, &_server_info);
 
                 _server_info.param = NULL;
-                _server_info.g_data = server->listener->protocol_global;
+                _server_info.g_data = server->listener->list_protocol_global[remote->remote_index];
 
                 if (server->protocol_plugin)
                     server->protocol_plugin->set_server_info(server->protocol, &_server_info);
@@ -981,6 +982,7 @@ static struct remote * create_remote(struct listen_ctx *listener,
     struct remote *remote = new_remote(remotefd, listener->timeout);
     remote->addr_len = get_sockaddr_len(remote_addr);
     memcpy(&(remote->addr), remote_addr, remote->addr_len);
+    remote->remote_index = index;
 
     return remote;
 }
@@ -1291,8 +1293,10 @@ int main(int argc, char **argv)
     listen_ctx.method = m;
     listen_ctx.obfs_name = obfs;
     listen_ctx.obfs_param = obfs_param;
-    listen_ctx.protocol_global = NULL;
-    listen_ctx.obfs_global = NULL;
+    listen_ctx.list_protocol_global = malloc(sizeof(void *) * remote_num);
+    listen_ctx.list_obfs_global = malloc(sizeof(void *) * remote_num);
+    memset(listen_ctx.list_protocol_global, 0, sizeof(void *) * remote_num);
+    memset(listen_ctx.list_obfs_global, 0, sizeof(void *) * remote_num);
     // SSR end
 
     struct ev_loop *loop = EV_DEFAULT;
@@ -1348,8 +1352,14 @@ int main(int argc, char **argv)
 
     for (i = 0; i < remote_num; i++) {
         free(listen_ctx.remote_addr[i]);
+        if (listen_ctx.list_protocol_global[i])
+            free(listen_ctx.list_protocol_global[i]);
+        if (listen_ctx.list_obfs_global[i])
+            free(listen_ctx.list_obfs_global[i]);
     }
     free(listen_ctx.remote_addr);
+    free(listen_ctx.list_protocol_global); // SSR
+    free(listen_ctx.list_obfs_global); // SSR
 
 #ifdef __MINGW32__
     winsock_cleanup();

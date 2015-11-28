@@ -1,5 +1,5 @@
 /*
- * verify.h - Define shadowsocks server's buffers and callbacks
+ * auth.h - Define shadowsocks server's buffers and callbacks
  *
  * Copyright (C) 2015 - 2015, Break Wa11 <mmgac001@gmail.com>
  *
@@ -20,13 +20,14 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _VERIFY_H
-#define _VERIFY_H
+#ifndef _AUTH_H
+#define _AUTH_H
 
-obfs * verify_simple_new_obfs();
-void verify_simple_dispose(obfs *self);
+void * auth_simple_init_data();
+obfs * auth_simple_new_obfs();
+void auth_simple_dispose(obfs *self);
 
-int verify_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength);
-int verify_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalength);
+int auth_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength);
+int auth_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalength);
 
-#endif // _VERIFY_H
+#endif // _AUTH_H

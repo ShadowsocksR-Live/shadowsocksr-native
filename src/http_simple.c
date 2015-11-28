@@ -62,7 +62,7 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength) {
         return datalength;
     }
     char hostport[128];
-    int head_size = 64;
+    int head_size = 64; // TODO
     int outlength;
     if (local->ret_buffer == NULL) {
         local->ret_buffer = (char*)malloc(datalength + 1024);

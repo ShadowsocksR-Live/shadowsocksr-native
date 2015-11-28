@@ -39,16 +39,3 @@ void fillcrc32(unsigned char *buffer, unsigned int size) {
     buffer[3] = crc >> 24;
 }
 
-static uint64_t shift128plus_s[2] = {0x10000000, 0xFFFFFFFF};
-
-uint64_t xorshift128plus(void) {
-    uint64_t x = shift128plus_s[0];
-    uint64_t const y = shift128plus_s[1];
-    shift128plus_s[0] = y;
-    x ^= x << 23; // a
-    x ^= x >> 17; // b
-    x ^= y ^ (y >> 26); // c
-    shift128plus_s[1] = x;
-    return x + y;
-}
-

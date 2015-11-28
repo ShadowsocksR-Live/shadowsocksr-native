@@ -40,8 +40,8 @@ struct listen_ctx {
     char *protocol_name;
     char *obfs_name;
     char *obfs_param;
-    void *protocol_global;
-    void *obfs_global;
+    void **list_protocol_global;
+    void **list_obfs_global;
 };
 
 struct server_ctx {
@@ -85,6 +85,9 @@ struct remote {
     struct remote_ctx *send_ctx;
     struct server *server;
     uint32_t counter;
+
+    // SSR
+    int remote_index;
 };
 
 #endif // _LOCAL_H
