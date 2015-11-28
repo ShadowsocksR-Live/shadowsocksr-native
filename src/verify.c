@@ -72,9 +72,7 @@ int verify_simple_client_pre_encrypt(obfs *self, char **pplaindata, int dataleng
         plaindata = *pplaindata;
     }
     if (local->send_capacity < len) {
-        local->send_capacity = len * 2;
-        free(plaindata);
-        *pplaindata = (char*)malloc(local->send_capacity);
+        *pplaindata = (char*)realloc(*pplaindata, len);
         plaindata = *pplaindata;
     }
     memmove(plaindata, out_buffer, len);
@@ -116,9 +114,7 @@ int verify_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalen
     }
     int len = buffer - out_buffer;
     if (local->recv_capacity < len) {
-        local->recv_capacity = len * 2;
-        free(plaindata);
-        *pplaindata = (char*)malloc(local->recv_capacity);
+        *pplaindata = (char*)realloc(*pplaindata, len);
         plaindata = *pplaindata;
     }
     memmove(plaindata, out_buffer, len);

@@ -75,8 +75,12 @@
 #define EWOULDBLOCK EAGAIN
 #endif
 
+#ifndef RECV_SIZE
+#define RECV_SIZE 2048
+#endif
+
 #ifndef BUF_SIZE
-#define BUF_SIZE 2048
+#define BUF_SIZE 8192
 #endif
 
 int verbose = 0;
@@ -220,7 +224,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     ssize_t r;
 
-    r = recv(server->fd, buf, BUF_SIZE, 0);
+    r = recv(server->fd, buf, RECV_SIZE, 0);
 
     if (r == 0) {
         // connection closed
@@ -666,7 +670,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     stat_update_cb(loop);
 #endif
 
-    ssize_t r = recv(remote->fd, server->buf, BUF_SIZE, 0);
+    ssize_t r = recv(remote->fd, server->buf, RECV_SIZE, 0);
 
     if (r == 0) {
         // connection closed
@@ -1352,10 +1356,15 @@ int main(int argc, char **argv)
 
     for (i = 0; i < remote_num; i++) {
         free(listen_ctx.remote_addr[i]);
-        if (listen_ctx.list_protocol_global[i])
+        /*
+        if (listen_ctx.list_protocol_global[i]) {
             free(listen_ctx.list_protocol_global[i]);
-        if (listen_ctx.list_obfs_global[i])
+            listen_ctx.list_protocol_global[i] = NULL;
+        }
+        if (listen_ctx.list_obfs_global[i]) {
             free(listen_ctx.list_obfs_global[i]);
+            listen_ctx.list_obfs_global[i] = NULL;
+        }// */
     }
     free(listen_ctx.remote_addr);
     free(listen_ctx.list_protocol_global); // SSR

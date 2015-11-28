@@ -37,8 +37,7 @@ char http_simple_hex(char c) {
     return c - 10 + 'a';
 }
 
-void http_simple_encode_head(obfs *self, char *data, int datalength) {
-    http_simple_local_data *local = (http_simple_local_data*)self->l_data;
+void http_simple_encode_head(http_simple_local_data *local, char *data, int datalength) {
     if (local->encode_buffer == NULL) {
         local->encode_buffer = (char*)malloc(datalength * 3 + 1);
     }
@@ -60,16 +59,16 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength) {
     char hostport[128];
     int head_size = self->server.head_len + (xorshift128plus() & 0x3F);
     int outlength;
-    char * out_buffer = (char*)malloc(datalength * 2 + 2048);
+    char * out_buffer = (char*)malloc(datalength + 2048);
     if (head_size > datalength)
         head_size = datalength;
-    http_simple_encode_head(self, encryptdata, head_size);
+    http_simple_encode_head(local, encryptdata, head_size);
     if (self->server.param && strlen(self->server.param) == 0)
         self->server.param = NULL;
     if (self->server.port == 80)
-        sprintf(hostport, "%s", self->server.param ? self->server.param : self->server.host);
+        sprintf(hostport, "%s", (self->server.param ? self->server.param : self->server.host));
     else
-        sprintf(hostport, "%s:%d", self->server.param ? self->server.param : self->server.host, self->server.port);
+        sprintf(hostport, "%s:%d", (self->server.param ? self->server.param : self->server.host), self->server.port);
     sprintf(out_buffer,
             "GET /%s HTTP/1.1\r\n"
             "Host: %s\r\n"
@@ -89,13 +88,15 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength) {
     outlength += datalength - head_size;
     local->has_sent_header = 1;
     if (local->send_capacity < outlength) {
-        local->send_capacity = outlength * 2;
-        free(encryptdata);
-        *pencryptdata = (char*)malloc(local->send_capacity);
+        *pencryptdata = (char*)realloc(*pencryptdata, outlength);
         encryptdata = *pencryptdata;
     }
     memmove(encryptdata, out_buffer, outlength);
     free(out_buffer);
+    if (local->encode_buffer != NULL) {
+        free(local->encode_buffer);
+        local->encode_buffer = NULL;
+    }
     return outlength;
 }
 

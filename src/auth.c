@@ -114,9 +114,7 @@ int auth_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength
     }
     len = buffer - out_buffer;
     if (local->send_capacity < len) {
-        local->send_capacity = len * 2;
-        free(plaindata);
-        *pplaindata = (char*)malloc(local->send_capacity);
+        *pplaindata = (char*)realloc(*pplaindata, len);
         plaindata = *pplaindata;
     }
     memmove(plaindata, out_buffer, len);
@@ -158,9 +156,7 @@ int auth_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalengt
     }
     int len = buffer - out_buffer;
     if (local->recv_capacity < len) {
-        local->recv_capacity = len * 2;
-        free(plaindata);
-        *pplaindata = (char*)malloc(local->recv_capacity);
+        *pplaindata = (char*)realloc(*pplaindata, len);
         plaindata = *pplaindata;
     }
     memmove(plaindata, out_buffer, len);
