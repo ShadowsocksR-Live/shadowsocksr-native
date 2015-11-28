@@ -825,7 +825,7 @@ static struct remote * new_remote(int fd, int timeout)
 
     memset(remote, 0, sizeof(struct remote));
 
-    remote->buf = malloc(BUF_SIZE * 2);
+    remote->buf = malloc(BUF_SIZE);
     remote->recv_ctx = malloc(sizeof(struct remote_ctx));
     remote->send_ctx = malloc(sizeof(struct remote_ctx));
     remote->recv_ctx->connected = 0;
@@ -874,7 +874,7 @@ static struct server * new_server(int fd, int method)
 
     memset(server, 0, sizeof(struct server));
 
-    server->buf = malloc(BUF_SIZE * 2);
+    server->buf = malloc(BUF_SIZE);
     server->recv_ctx = malloc(sizeof(struct server_ctx));
     server->send_ctx = malloc(sizeof(struct server_ctx));
     server->recv_ctx->connected = 0;

@@ -71,6 +71,12 @@ int verify_simple_client_pre_encrypt(obfs *self, char **pplaindata, int dataleng
         *pplaindata = (char*)malloc(local->send_capacity);
         plaindata = *pplaindata;
     }
+    if (local->send_capacity < len) {
+        local->send_capacity = len * 2;
+        free(plaindata);
+        *pplaindata = (char*)malloc(local->send_capacity);
+        plaindata = *pplaindata;
+    }
     memmove(plaindata, out_buffer, len);
     free(out_buffer);
     return len;
