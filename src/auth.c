@@ -14,6 +14,7 @@ typedef struct auth_simple_local_data {
     int has_sent_header;
     char * recv_buffer;
     int recv_buffer_size;
+    int send_capacity;
     int recv_capacity;
 }auth_simple_local_data;
 
@@ -21,6 +22,7 @@ void auth_simple_local_data_init(auth_simple_local_data* local) {
     local->has_sent_header = 0;
     local->recv_buffer = (char*)malloc(16384);
     local->recv_buffer_size = 0;
+    local->send_capacity = BUF_SIZE;
     local->recv_capacity = BUF_SIZE;
 }
 
@@ -111,6 +113,12 @@ int auth_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength
         buffer += pack_len;
     }
     len = buffer - out_buffer;
+    if (local->send_capacity < len) {
+        local->send_capacity = len * 2;
+        free(plaindata);
+        *pplaindata = (char*)malloc(local->send_capacity);
+        plaindata = *pplaindata;
+    }
     memmove(plaindata, out_buffer, len);
     free(out_buffer);
     return len;

@@ -6,12 +6,14 @@ static int verify_simple_pack_unit_size = 2000;
 typedef struct verify_simple_local_data {
     char * recv_buffer;
     int recv_buffer_size;
+    int send_capacity;
     int recv_capacity;
 }verify_simple_local_data;
 
 void verify_simple_local_data_init(verify_simple_local_data* local) {
     local->recv_buffer = (char*)malloc(16384);
     local->recv_buffer_size = 0;
+    local->send_capacity = BUF_SIZE;
     local->recv_capacity = BUF_SIZE;
 }
 
@@ -46,6 +48,7 @@ int verify_simple_pack_data(char *data, int datalength, char *outdata) {
 
 int verify_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength) {
     char *plaindata = *pplaindata;
+    verify_simple_local_data *local = (verify_simple_local_data*)self->l_data;
     char * out_buffer = (char*)malloc(datalength * 2 + 32);
     char * buffer = out_buffer;
     char * data = plaindata;
@@ -62,6 +65,12 @@ int verify_simple_client_pre_encrypt(obfs *self, char **pplaindata, int dataleng
         buffer += pack_len;
     }
     len = buffer - out_buffer;
+    if (local->send_capacity < len) {
+        local->send_capacity = len * 2;
+        free(plaindata);
+        *pplaindata = (char*)malloc(local->send_capacity);
+        plaindata = *pplaindata;
+    }
     memmove(plaindata, out_buffer, len);
     free(out_buffer);
     return len;
