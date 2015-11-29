@@ -5,14 +5,12 @@ typedef struct http_simple_local_data {
     int has_sent_header;
     int has_recv_header;
     char *encode_buffer;
-    int send_capacity;
 }http_simple_local_data;
 
 void http_simple_local_data_init(http_simple_local_data* local) {
     local->has_sent_header = 0;
     local->has_recv_header = 0;
     local->encode_buffer = NULL;
-    local->send_capacity = BUF_SIZE;
 }
 
 obfs * http_simple_new_obfs() {
@@ -50,7 +48,7 @@ void http_simple_encode_head(http_simple_local_data *local, char *data, int data
     local->encode_buffer[pos * 3] = 0;
 }
 
-int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength) {
+int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength, ssize_t* capacity) {
     char *encryptdata = *pencryptdata;
     http_simple_local_data *local = (http_simple_local_data*)self->l_data;
     if (local->has_sent_header) {
@@ -87,8 +85,8 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength) {
     memmove(out_buffer + outlength, encryptdata + head_size, datalength - head_size);
     outlength += datalength - head_size;
     local->has_sent_header = 1;
-    if (local->send_capacity < outlength) {
-        *pencryptdata = (char*)realloc(*pencryptdata, outlength);
+    if (*capacity < outlength) {
+        *pencryptdata = (char*)realloc(*pencryptdata, *capacity = outlength * 2);
         encryptdata = *pencryptdata;
     }
     memmove(encryptdata, out_buffer, outlength);
@@ -100,7 +98,7 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength) {
     return outlength;
 }
 
-int http_simple_client_decode(obfs *self, char **pencryptdata, int datalength, int *needsendback) {
+int http_simple_client_decode(obfs *self, char **pencryptdata, int datalength, ssize_t* capacity, int *needsendback) {
     char *encryptdata = *pencryptdata;
     http_simple_local_data *local = (http_simple_local_data*)self->l_data;
     *needsendback = 0;

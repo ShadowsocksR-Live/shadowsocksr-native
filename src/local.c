@@ -75,12 +75,8 @@
 #define EWOULDBLOCK EAGAIN
 #endif
 
-#ifndef RECV_SIZE
-#define RECV_SIZE 2048
-#endif
-
 #ifndef BUF_SIZE
-#define BUF_SIZE 8192
+#define BUF_SIZE 2048
 #endif
 
 int verbose = 0;
@@ -224,7 +220,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     ssize_t r;
 
-    r = recv(server->fd, buf, RECV_SIZE, 0);
+    r = recv(server->fd, buf, BUF_SIZE, 0);
 
     if (r == 0) {
         // connection closed
@@ -254,7 +250,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             }
 
             if (!remote->direct && remote->send_ctx->connected && auth) {
-                remote->buf = ss_gen_hash(remote->buf, &r, &remote->counter, server->e_ctx, BUF_SIZE);
+                remote->buf = ss_gen_hash(remote->buf, &r, &remote->counter, server->e_ctx, &remote->buf_capacity);
             }
 
             // insert shadowsocks header
@@ -263,13 +259,13 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 if (remote->server->protocol_plugin) {
                     obfs_class *protocol_plugin = remote->server->protocol_plugin;
                     if (protocol_plugin->client_pre_encrypt) {
-                        r = protocol_plugin->client_pre_encrypt(remote->server->protocol, &remote->buf, r);
+                        r = protocol_plugin->client_pre_encrypt(remote->server->protocol, &remote->buf, r, &remote->buf_capacity);
                     }
                 }
 #ifdef ANDROID
                 tx += r;
 #endif
-                remote->buf = ss_encrypt(BUF_SIZE, remote->buf, &r,
+                remote->buf = ss_encrypt(&remote->buf_capacity, remote->buf, &r,
                                          server->e_ctx);
 
                 if (remote->buf == NULL) {
@@ -282,7 +278,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 if (remote->server->obfs_plugin) {
                     obfs_class *obfs_plugin = remote->server->obfs_plugin;
                     if (obfs_plugin->client_encode) {
-                        r = obfs_plugin->client_encode(remote->server->obfs, &remote->buf, r);
+                        r = obfs_plugin->client_encode(remote->server->obfs, &remote->buf, r, &remote->buf_capacity);
                     }
                 }
                 // SSR end
@@ -545,7 +541,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
                     if (r > 0) {
                         if (auth) {
-                            buf = ss_gen_hash(buf, &r, &remote->counter, server->e_ctx, BUF_SIZE);
+                            buf = ss_gen_hash(buf, &r, &remote->counter, server->e_ctx, &server->buf_capacity);
                         }
                         memcpy(remote->buf + addr_len, buf, r);
                     }
@@ -670,7 +666,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     stat_update_cb(loop);
 #endif
 
-    ssize_t r = recv(remote->fd, server->buf, RECV_SIZE, 0);
+    ssize_t r = recv(remote->fd, server->buf, BUF_SIZE, 0);
 
     if (r == 0) {
         // connection closed
@@ -696,7 +692,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
             obfs_class *obfs_plugin = remote->server->obfs_plugin;
             if (obfs_plugin->client_decode) {
                 int needsendback;
-                r = obfs_plugin->client_decode(remote->server->obfs, &server->buf, r, &needsendback);
+                r = obfs_plugin->client_decode(remote->server->obfs, &server->buf, r, &server->buf_capacity, &needsendback);
                 if (r < 0) {
                     LOGE("client_decode");
                     close_and_free_remote(EV_A_ remote);
@@ -710,7 +706,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
 #ifdef ANDROID
         rx += r;
 #endif
-        server->buf = ss_decrypt(BUF_SIZE, server->buf, &r, server->d_ctx);
+        server->buf = ss_decrypt(&server->buf_capacity, server->buf, &r, server->d_ctx);
         if (server->buf == NULL) {
             LOGE("remote invalid password or cipher");
             close_and_free_remote(EV_A_ remote);
@@ -720,7 +716,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         if (remote->server->protocol_plugin) {
             obfs_class *protocol_plugin = remote->server->protocol_plugin;
             if (protocol_plugin->client_post_decrypt) {
-                r = protocol_plugin->client_post_decrypt(remote->server->protocol, &server->buf, r);
+                r = protocol_plugin->client_post_decrypt(remote->server->protocol, &server->buf, r, &server->buf_capacity);
                 if (r < 0) {
                     LOGE("client_post_decrypt");
                     close_and_free_remote(EV_A_ remote);
@@ -830,6 +826,7 @@ static struct remote * new_remote(int fd, int timeout)
     memset(remote, 0, sizeof(struct remote));
 
     remote->buf = malloc(BUF_SIZE);
+    remote->buf_capacity = BUF_SIZE;
     remote->recv_ctx = malloc(sizeof(struct remote_ctx));
     remote->send_ctx = malloc(sizeof(struct remote_ctx));
     remote->recv_ctx->connected = 0;
@@ -879,6 +876,7 @@ static struct server * new_server(int fd, int method)
     memset(server, 0, sizeof(struct server));
 
     server->buf = malloc(BUF_SIZE);
+    server->buf_capacity = BUF_SIZE;
     server->recv_ctx = malloc(sizeof(struct server_ctx));
     server->send_ctx = malloc(sizeof(struct server_ctx));
     server->recv_ctx->connected = 0;
@@ -1356,7 +1354,7 @@ int main(int argc, char **argv)
 
     for (i = 0; i < remote_num; i++) {
         free(listen_ctx.remote_addr[i]);
-        /*
+        //*
         if (listen_ctx.list_protocol_global[i]) {
             free(listen_ctx.list_protocol_global[i]);
             listen_ctx.list_protocol_global[i] = NULL;

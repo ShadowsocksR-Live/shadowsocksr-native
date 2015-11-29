@@ -55,6 +55,7 @@ struct server {
     ssize_t buf_len;
     ssize_t buf_idx;
     char *buf; // server send from, remote recv into
+    ssize_t buf_capacity;
 
     int auth;
     struct chunk *chunk;
@@ -82,6 +83,7 @@ struct remote {
     ssize_t buf_len;
     ssize_t buf_idx;
     char *buf; // remote send from, server recv into
+    ssize_t buf_capacity;
     struct remote_ctx *recv_ctx;
     struct remote_ctx *send_ctx;
     struct server *server;

@@ -60,6 +60,7 @@ struct server {
     ssize_t buf_len;
     ssize_t buf_idx;
     char *buf; // server send from, remote recv into
+    ssize_t buf_capacity;
     char stage;
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;
@@ -90,6 +91,7 @@ struct remote {
     ssize_t buf_idx;
     int direct;
     char *buf; // remote send from, server recv into
+    ssize_t buf_capacity;
     struct remote_ctx *recv_ctx;
     struct remote_ctx *send_ctx;
     struct server *server;

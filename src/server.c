@@ -483,7 +483,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         }
     }
 
-    *buf = ss_decrypt(BUF_SIZE, *buf, &r, server->d_ctx);
+    *buf = ss_decrypt(&server->buf_capacity, *buf, &r, server->d_ctx);
 
     if (*buf == NULL) {
         LOGE("invalid password or cipher");
@@ -915,7 +915,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
 
     rx += r;
 
-    server->buf = ss_encrypt(BUF_SIZE, server->buf, &r, server->e_ctx);
+    server->buf = ss_encrypt(&remote->buf_capacity, server->buf, &r, server->e_ctx);
 
     if (server->buf == NULL) {
         LOGE("invalid password or cipher");
@@ -1044,6 +1044,7 @@ static struct remote * new_remote(int fd)
     struct remote *remote;
     remote = malloc(sizeof(struct remote));
     remote->buf = malloc(BUF_SIZE);
+    remote->buf_capacity = BUF_SIZE;
     remote->recv_ctx = malloc(sizeof(struct remote_ctx));
     remote->send_ctx = malloc(sizeof(struct remote_ctx));
     remote->fd = fd;
@@ -1098,6 +1099,7 @@ static struct server * new_server(int fd, struct listen_ctx *listener)
     memset(server, 0, sizeof(struct server));
 
     server->buf = malloc(BUF_SIZE);
+    server->buf_capacity = BUF_SIZE;
     server->recv_ctx = malloc(sizeof(struct server_ctx));
     server->send_ctx = malloc(sizeof(struct server_ctx));
     server->fd = fd;

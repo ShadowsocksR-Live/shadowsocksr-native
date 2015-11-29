@@ -26,7 +26,7 @@
 obfs * http_simple_new_obfs();
 void http_simple_dispose(obfs *self);
 
-int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength);
-int http_simple_client_decode(obfs *self, char **pencryptdata, int datalength, int *needsendback);
+int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength, ssize_t* capacity);
+int http_simple_client_decode(obfs *self, char **pencryptdata, int datalength, ssize_t* capacity, int *needsendback);
 
 #endif // _HTTP_SIMPLE_H

@@ -197,10 +197,10 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     if (auth) {
-        remote->buf = ss_gen_hash(remote->buf, &r, &remote->counter, server->e_ctx, BUF_SIZE);
+        remote->buf = ss_gen_hash(remote->buf, &r, &remote->counter, server->e_ctx, &remote->buf_capacity);
     }
 
-    remote->buf = ss_encrypt(BUF_SIZE, remote->buf, &r, server->e_ctx);
+    remote->buf = ss_encrypt(&remote->buf_capacity, remote->buf, &r, server->e_ctx);
 
     if (remote->buf == NULL) {
         LOGE("invalid password or cipher");
@@ -320,7 +320,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         }
     }
 
-    server->buf = ss_decrypt(BUF_SIZE, server->buf, &r, server->d_ctx);
+    server->buf = ss_decrypt(&server->buf_capacity, server->buf, &r, server->d_ctx);
 
     if (server->buf == NULL) {
         LOGE("invalid password or cipher");
@@ -420,7 +420,7 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
                 addr_len += ONETIMEAUTH_BYTES;
             }
 
-            ss_addr_to_send = ss_encrypt(BUF_SIZE, ss_addr_to_send, &addr_len,
+            ss_addr_to_send = ss_encrypt(&remote->buf_capacity, ss_addr_to_send, &addr_len,
                                          server->e_ctx);
             if (ss_addr_to_send == NULL) {
                 LOGE("invalid password or cipher");
@@ -493,6 +493,7 @@ static struct remote * new_remote(int fd, int timeout)
     memset(remote, 0, sizeof(struct remote));
 
     remote->buf = malloc(BUF_SIZE);
+    remote->buf_capacity = BUF_SIZE;
     remote->recv_ctx = malloc(sizeof(struct remote_ctx));
     remote->send_ctx = malloc(sizeof(struct remote_ctx));
     remote->fd = fd;
@@ -540,6 +541,7 @@ static struct server * new_server(int fd, int method)
     struct server *server;
     server = malloc(sizeof(struct server));
     server->buf = malloc(BUF_SIZE);
+    server->buf_capacity = BUF_SIZE;
     server->recv_ctx = malloc(sizeof(struct server_ctx));
     server->send_ctx = malloc(sizeof(struct server_ctx));
     server->fd = fd;

@@ -12,7 +12,7 @@
 
 
 void * init_data() {
-    return "";
+    return malloc(1);
 }
 
 obfs * new_obfs() {

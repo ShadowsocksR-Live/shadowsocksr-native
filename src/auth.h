@@ -27,7 +27,7 @@ void * auth_simple_init_data();
 obfs * auth_simple_new_obfs();
 void auth_simple_dispose(obfs *self);
 
-int auth_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength);
-int auth_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalength);
+int auth_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength, ssize_t* capacity);
+int auth_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalength, ssize_t* capacity);
 
 #endif // _AUTH_H

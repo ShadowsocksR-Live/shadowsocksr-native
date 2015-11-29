@@ -14,16 +14,12 @@ typedef struct auth_simple_local_data {
     int has_sent_header;
     char * recv_buffer;
     int recv_buffer_size;
-    int send_capacity;
-    int recv_capacity;
 }auth_simple_local_data;
 
 void auth_simple_local_data_init(auth_simple_local_data* local) {
     local->has_sent_header = 0;
     local->recv_buffer = (char*)malloc(16384);
     local->recv_buffer_size = 0;
-    local->send_capacity = BUF_SIZE;
-    local->recv_capacity = BUF_SIZE;
 }
 
 void * auth_simple_init_data() {
@@ -84,7 +80,7 @@ int auth_simple_pack_auth_data(auth_simple_global_data *global, char *data, int 
     return out_size;
 }
 
-int auth_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength) {
+int auth_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength, ssize_t* capacity) {
     char *plaindata = *pplaindata;
     auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
     char * out_buffer = (char*)malloc(datalength * 2 + 64);
@@ -113,8 +109,8 @@ int auth_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength
         buffer += pack_len;
     }
     len = buffer - out_buffer;
-    if (local->send_capacity < len) {
-        *pplaindata = (char*)realloc(*pplaindata, len);
+    if (*capacity < len) {
+        *pplaindata = (char*)realloc(*pplaindata, *capacity = len * 2);
         plaindata = *pplaindata;
     }
     memmove(plaindata, out_buffer, len);
@@ -122,7 +118,7 @@ int auth_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength
     return len;
 }
 
-int auth_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalength) {
+int auth_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalength, ssize_t* capacity) {
     char *plaindata = *pplaindata;
     auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
     uint8_t * recv_buffer = (uint8_t *)local->recv_buffer;
@@ -155,8 +151,8 @@ int auth_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalengt
         memmove(recv_buffer, recv_buffer + length, local->recv_buffer_size -= length);
     }
     int len = buffer - out_buffer;
-    if (local->recv_capacity < len) {
-        *pplaindata = (char*)realloc(*pplaindata, len);
+    if (*capacity < len) {
+        *pplaindata = (char*)realloc(*pplaindata, *capacity = len * 2);
         plaindata = *pplaindata;
     }
     memmove(plaindata, out_buffer, len);

@@ -1140,7 +1140,7 @@ char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method, i
     }
 }
 
-char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
+char * ss_encrypt(ssize_t* p_buf_size, char *plaintext, ssize_t *len,
                   struct enc_ctx *ctx)
 {
     if (ctx != NULL) {
@@ -1154,7 +1154,7 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
             iv_len = enc_iv_len;
         }
 
-        int buf_len = max(iv_len + c_len, buf_size);
+        int buf_len = max(iv_len + c_len, *p_buf_size);
         if (tmp_len < buf_len) {
             tmp_len = buf_len;
             tmp_buf = realloc(tmp_buf, buf_len);
@@ -1171,13 +1171,14 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
         if (enc_method >= SALSA20) {
             int padding = ctx->counter % SODIUM_BLOCK_SIZE;
             if (buf_len < iv_len + padding + c_len) {
-                buf_len = max(iv_len + (padding + c_len) * 2, buf_size);
+                buf_len = max(iv_len + (padding + c_len) * 2, *p_buf_size);
                 ciphertext = realloc(ciphertext, buf_len);
                 tmp_len = buf_len;
                 tmp_buf = ciphertext;
             }
             if (padding) {
-                plaintext = realloc(plaintext, max(p_len + padding, buf_size));
+                *p_buf_size = max(p_len + padding, *p_buf_size);
+                plaintext = realloc(plaintext, *p_buf_size);
                 memmove(plaintext + padding, plaintext, p_len);
                 memset(plaintext, 0, padding);
             }
@@ -1209,8 +1210,8 @@ char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
         dump("CIPHER", ciphertext + iv_len, c_len);
 #endif
 
-        if (buf_size < iv_len + c_len) {
-            plaintext = realloc(plaintext, iv_len + c_len);
+        if (*p_buf_size < iv_len + c_len) {
+            plaintext = realloc(plaintext, *p_buf_size = iv_len + c_len);
         }
         *len = iv_len + c_len;
         memcpy(plaintext, ciphertext, *len);
@@ -1307,7 +1308,7 @@ char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method, 
     }
 }
 
-char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len, struct enc_ctx *ctx)
+char * ss_decrypt(ssize_t *p_buf_size, char *ciphertext, ssize_t *len, struct enc_ctx *ctx)
 {
     if (ctx != NULL) {
         static int tmp_len = 0;
@@ -1316,7 +1317,7 @@ char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len, struct enc_ctx *
         size_t c_len = *len, p_len = *len;
         size_t iv_len = 0;
         int err = 1;
-        int buf_len = max(p_len, buf_size);
+        int buf_len = max(p_len, *p_buf_size);
 
         if (tmp_len < buf_len) {
             tmp_len = buf_len;
@@ -1346,13 +1347,14 @@ char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len, struct enc_ctx *
         if (enc_method >= SALSA20) {
             int padding = ctx->counter % SODIUM_BLOCK_SIZE;
             if (buf_len < (p_len + padding) * 2) {
-                buf_len = max((p_len + padding) * 2, buf_size);
+                buf_len = max((p_len + padding) * 2, *p_buf_size);
                 plaintext = realloc(plaintext, buf_len);
                 tmp_len = buf_len;
                 tmp_buf = plaintext;
             }
             if (padding) {
-                ciphertext = realloc(ciphertext, max(c_len + padding, buf_size));
+                *p_buf_size = max(c_len + padding, *p_buf_size);
+                ciphertext = realloc(ciphertext, *p_buf_size);
                 memmove(ciphertext + iv_len + padding, ciphertext + iv_len,
                         c_len - iv_len);
                 memset(ciphertext + iv_len, 0, padding);
@@ -1383,8 +1385,8 @@ char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len, struct enc_ctx *
         dump("CIPHER", ciphertext + iv_len, c_len - iv_len);
 #endif
 
-        if (buf_size < p_len) {
-            ciphertext = realloc(ciphertext, p_len);
+        if (*p_buf_size < p_len) {
+            ciphertext = realloc(ciphertext, *p_buf_size = p_len);
         }
         *len = p_len;
         memcpy(ciphertext, plaintext, *len);
@@ -1520,7 +1522,7 @@ int enc_init(const char *pass, const char *method)
     return m;
 }
 
-int ss_check_hash(char **buf_ptr, ssize_t *buf_len, struct chunk *chunk, struct enc_ctx *ctx, int buf_size)
+int ss_check_hash(char **buf_ptr, ssize_t *buf_len, struct chunk *chunk, struct enc_ctx *ctx, ssize_t buf_size)
 {
     int i, j, k;
     char *buf = *buf_ptr;
@@ -1589,13 +1591,14 @@ int ss_check_hash(char **buf_ptr, ssize_t *buf_len, struct chunk *chunk, struct 
     return 1;
 }
 
-char *ss_gen_hash(char *buf, ssize_t *buf_len, uint32_t *counter, struct enc_ctx *ctx, int buf_size)
+char *ss_gen_hash(char *buf, ssize_t *buf_len, uint32_t *counter, struct enc_ctx *ctx, ssize_t *p_buf_size)
 {
     ssize_t blen = *buf_len;
-    int size = max(AUTH_BYTES + blen, buf_size);
+    ssize_t size = max(AUTH_BYTES + blen, *p_buf_size);
 
-    if (buf_size < size) {
+    if (*p_buf_size < size) {
         buf = realloc(buf, size);
+        *p_buf_size = size;
     }
 
     uint16_t chunk_len = htons((uint16_t)blen);
