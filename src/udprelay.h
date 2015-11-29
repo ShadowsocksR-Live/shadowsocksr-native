@@ -41,7 +41,7 @@
 
 #define MTU 1397 // 1492 - 1 - 28 - 2 - 64 = 1397, the default MTU for UDP relay
 
-struct server_ctx {
+typedef struct server_ctx {
     ev_io io;
     int fd;
     int method;
@@ -59,22 +59,21 @@ struct server_ctx {
 #ifdef UDPRELAY_REMOTE
     struct ev_loop *loop;
 #endif
-};
+} server_ctx_t;
 
 #ifdef UDPRELAY_REMOTE
-struct query_ctx {
+typedef struct query_ctx {
     struct ResolvQuery *query;
     struct sockaddr_storage src_addr;
-    int buf_len;
-    char *buf; // server send from, remote recv into
+    buffer_t *buf;
     int addr_header_len;
     char addr_header[384];
     struct server_ctx *server_ctx;
     struct remote_ctx *remote_ctx;
-};
+} query_ctx_t;
 #endif
 
-struct remote_ctx {
+typedef struct remote_ctx {
     ev_io io;
     ev_timer watcher;
     int af;
@@ -83,16 +82,6 @@ struct remote_ctx {
     char addr_header[384];
     struct sockaddr_storage src_addr;
     struct server_ctx *server_ctx;
-};
-
-#ifdef ANDROID
-struct protect_ctx {
-    int buf_len;
-    char *buf;
-    struct sockaddr_storage addr;
-    int addr_len;
-    struct remote_ctx *remote_ctx;
-};
-#endif
+} remote_ctx_t;
 
 #endif // _UDPRELAY_H

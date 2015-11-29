@@ -151,35 +151,45 @@ typedef struct {
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 
-struct chunk {
+typedef struct buffer {
+    size_t idx;
+    size_t len;
+    size_t capacity;
+    char   *array;
+} buffer_t;
+
+typedef struct chunk {
     uint32_t idx;
     uint32_t len;
     uint32_t counter;
-    char *buf;
-};
+    buffer_t *buf;
+} chunk_t;
 
-struct enc_ctx {
+typedef struct enc_ctx {
     uint8_t init;
     uint64_t counter;
     cipher_ctx_t evp;
-};
+} enc_ctx_t;
 
-char * ss_encrypt_all(int buf_size, char *plaintext, ssize_t *len, int method, int auth);
-char * ss_decrypt_all(int buf_size, char *ciphertext, ssize_t *len, int method, int auth);
-char * ss_encrypt(int buf_size, char *plaintext, ssize_t *len,
-                  struct enc_ctx *ctx);
-char * ss_decrypt(int buf_size, char *ciphertext, ssize_t *len,
-                  struct enc_ctx *ctx);
-void enc_ctx_init(int method, struct enc_ctx *ctx, int enc);
+int ss_encrypt_all(buffer_t *plaintext, int method, int auth);
+int ss_decrypt_all(buffer_t *ciphertext, int method, int auth);
+int ss_encrypt(buffer_t *plaintext, enc_ctx_t *ctx);
+int ss_decrypt(buffer_t *ciphertext, enc_ctx_t *ctx);
+
+void enc_ctx_init(int method, enc_ctx_t *ctx, int enc);
 int enc_init(const char *pass, const char *method);
 int enc_get_iv_len(void);
 void cipher_context_release(cipher_ctx_t *evp);
 unsigned char *enc_md5(const unsigned char *d, size_t n, unsigned char *md);
 
-int ss_onetimeauth(char *auth, char *msg, int msg_len, uint8_t *iv);
-int ss_onetimeauth_verify(char *auth, char *msg, int msg_len, uint8_t *iv);
+int ss_onetimeauth(buffer_t *buf, uint8_t *iv);
+int ss_onetimeauth_verify(buffer_t *buf, uint8_t *iv);
 
-int ss_check_hash(char **buf_ptr, ssize_t *buf_len, struct chunk *chunk, struct enc_ctx *ctx, int buf_size);
-char *ss_gen_hash(char *buf, ssize_t *buf_len, uint32_t *counter, struct enc_ctx *ctx, int buf_size);
+int ss_check_hash(buffer_t *buf, chunk_t *chunk, enc_ctx_t *ctx);
+int ss_gen_hash(buffer_t *buf, uint32_t *counter, enc_ctx_t *ctx);
+
+int balloc(buffer_t *ptr, size_t capacity);
+int brealloc(buffer_t *ptr, size_t len, size_t capacity);
+void bfree(buffer_t *ptr);
 
 #endif // _ENCRYPT_H
