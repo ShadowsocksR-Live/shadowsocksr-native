@@ -50,14 +50,14 @@ int protect_socket(int fd)
     int sock;
     struct sockaddr_un addr;
 
-    if ( (sock = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+    if ((sock = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
         LOGE("[android] socket() failed: %s (socket fd = %d)\n", strerror(errno), sock);
         return -1;
     }
 
     // Set timeout to 1s
     struct timeval tv;
-    tv.tv_sec = 1;
+    tv.tv_sec  = 1;
     tv.tv_usec = 0;
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval));
     setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv, sizeof(struct timeval));
@@ -97,14 +97,14 @@ int send_traffic_stat(uint64_t tx, uint64_t rx)
     int sock;
     struct sockaddr_un addr;
 
-    if ( (sock = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+    if ((sock = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
         LOGE("[android] socket() failed: %s (socket fd = %d)\n", strerror(errno), sock);
         return -1;
     }
 
     // Set timeout to 1s
     struct timeval tv;
-    tv.tv_sec = 1;
+    tv.tv_sec  = 1;
     tv.tv_usec = 0;
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval));
     setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv, sizeof(struct timeval));
@@ -121,7 +121,7 @@ int send_traffic_stat(uint64_t tx, uint64_t rx)
         return -1;
     }
 
-    char stat[256] = {0};
+    char stat[256] = { 0 };
     snprintf(stat, 256, "%llu|%llu", tx, rx);
     size_t len = strlen(stat);
 

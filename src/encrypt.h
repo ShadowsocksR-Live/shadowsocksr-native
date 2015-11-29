@@ -140,7 +140,6 @@ typedef struct {
 #define SALSA20             15
 #define CHACHA20            16
 
-
 #define ONETIMEAUTH_FLAG 0x10
 #define ADDRTYPE_MASK 0xF
 

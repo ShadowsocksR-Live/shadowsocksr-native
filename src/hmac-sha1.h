@@ -31,34 +31,30 @@
 #include <stdint.h>
 #include <string.h>
 
-
 /*
  * 32-bit integer manipulation macros (big endian)
  */
 
-#define GET_UINT32_BE(n,b,i)                           \
-{                                                       \
-    (n) = ( (uint32_t) (b)[(i)    ] << 24 )             \
-        | ( (uint32_t) (b)[(i) + 1] << 16 )             \
-        | ( (uint32_t) (b)[(i) + 2] <<  8 )             \
-        | ( (uint32_t) (b)[(i) + 3]       );            \
-}
+#define GET_UINT32_BE(n, b, i)                           \
+    {                                                       \
+        (n) = ((uint32_t)(b)[(i)] << 24)             \
+              | ((uint32_t)(b)[(i) + 1] << 16)             \
+              | ((uint32_t)(b)[(i) + 2] << 8)             \
+              | ((uint32_t)(b)[(i) + 3]);            \
+    }
 
-#define PUT_UINT32_BE(n,b,i)                            \
-{                                                        \
-    (b)[(i)    ] = (unsigned char) ( (n) >> 24 );       \
-    (b)[(i) + 1] = (unsigned char) ( (n) >> 16 );       \
-    (b)[(i) + 2] = (unsigned char) ( (n) >>  8 );       \
-    (b)[(i) + 3] = (unsigned char) ( (n)       );       \
-}
-
-
+#define PUT_UINT32_BE(n, b, i)                            \
+    {                                                        \
+        (b)[(i)]     = (unsigned char)((n) >> 24);       \
+        (b)[(i) + 1] = (unsigned char)((n) >> 16);       \
+        (b)[(i) + 2] = (unsigned char)((n) >> 8);       \
+        (b)[(i) + 3] = (unsigned char)((n));       \
+    }
 
 /**
  * \brief          SHA-1 context structure
  */
-typedef struct
-{
+typedef struct {
     uint32_t total[2];          /*!< number of bytes processed  */
     uint32_t state[5];          /*!< intermediate digest state  */
     unsigned char buffer[64];   /*!< data block being processed */
@@ -73,7 +69,7 @@ ss_sha1_context;
  *
  * \param ctx      context to be initialized
  */
-void ss_sha1_starts( ss_sha1_context *ctx );
+void ss_sha1_starts(ss_sha1_context *ctx);
 
 /**
  * \brief          SHA-1 process buffer
@@ -82,7 +78,7 @@ void ss_sha1_starts( ss_sha1_context *ctx );
  * \param input    buffer holding the  data
  * \param ilen     length of the input data
  */
-void ss_sha1_update( ss_sha1_context *ctx, const unsigned char *input, size_t ilen );
+void ss_sha1_update(ss_sha1_context *ctx, const unsigned char *input, size_t ilen);
 
 /**
  * \brief          SHA-1 final digest
@@ -90,11 +86,10 @@ void ss_sha1_update( ss_sha1_context *ctx, const unsigned char *input, size_t il
  * \param ctx      SHA-1 context
  * \param output   SHA-1 checksum result
  */
-void ss_sha1_finish( ss_sha1_context *ctx, unsigned char output[20] );
+void ss_sha1_finish(ss_sha1_context *ctx, unsigned char output[20]);
 
 /* Internal use */
-void ss_sha1_process( ss_sha1_context *ctx, const unsigned char data[64] );
-
+void ss_sha1_process(ss_sha1_context *ctx, const unsigned char data[64]);
 
 /**
  * \brief          Output = SHA-1( input buffer )
@@ -103,8 +98,7 @@ void ss_sha1_process( ss_sha1_context *ctx, const unsigned char data[64] );
  * \param ilen     length of the input data
  * \param output   SHA-1 checksum result
  */
-void ss_sha1( const unsigned char *input, size_t ilen, unsigned char output[20] );
-
+void ss_sha1(const unsigned char *input, size_t ilen, unsigned char output[20]);
 
 /**
  * \brief          SHA-1 HMAC context setup
@@ -113,7 +107,7 @@ void ss_sha1( const unsigned char *input, size_t ilen, unsigned char output[20] 
  * \param key      HMAC secret key
  * \param keylen   length of the HMAC key
  */
-void ss_sha1_hmac_starts( ss_sha1_context *ctx, const unsigned char *key, size_t keylen );
+void ss_sha1_hmac_starts(ss_sha1_context *ctx, const unsigned char *key, size_t keylen);
 
 /**
  * \brief          SHA-1 HMAC process buffer
@@ -122,7 +116,7 @@ void ss_sha1_hmac_starts( ss_sha1_context *ctx, const unsigned char *key, size_t
  * \param input    buffer holding the  data
  * \param ilen     length of the input data
  */
-void ss_sha1_hmac_update( ss_sha1_context *ctx, const unsigned char *input, size_t ilen );
+void ss_sha1_hmac_update(ss_sha1_context *ctx, const unsigned char *input, size_t ilen);
 
 /**
  * \brief          SHA-1 HMAC final digest
@@ -130,14 +124,14 @@ void ss_sha1_hmac_update( ss_sha1_context *ctx, const unsigned char *input, size
  * \param ctx      HMAC context
  * \param output   SHA-1 HMAC checksum result
  */
-void ss_sha1_hmac_finish( ss_sha1_context *ctx, unsigned char output[20] );
+void ss_sha1_hmac_finish(ss_sha1_context *ctx, unsigned char output[20]);
 
 /**
  * \brief          SHA-1 HMAC context reset
  *
  * \param ctx      HMAC context to be reset
  */
-void ss_sha1_hmac_reset( ss_sha1_context *ctx );
+void ss_sha1_hmac_reset(ss_sha1_context *ctx);
 
 /**
  * \brief          Output = HMAC-SHA-1( hmac key, input buffer )
@@ -148,10 +142,8 @@ void ss_sha1_hmac_reset( ss_sha1_context *ctx );
  * \param ilen     length of the input data
  * \param output   HMAC-SHA-1 result
  */
-void ss_sha1_hmac( const unsigned char *key, size_t keylen,
-                const unsigned char *input, size_t ilen,
-                unsigned char output[20] );
-
-
+void ss_sha1_hmac(const unsigned char *key, size_t keylen,
+                  const unsigned char *input, size_t ilen,
+                  unsigned char output[20]);
 
 #endif /* HMAC_SHA1_H_ */

@@ -45,7 +45,7 @@
 #define INT_DIGITS 19           /* enough for 64 bit integer */
 
 #ifdef LIB_ONLY
-FILE * logfile;
+FILE *logfile;
 #endif
 
 #ifdef HAS_SYSLOG
@@ -57,8 +57,8 @@ void ERROR(const char *s)
 {
     char *msg = strerror(errno);
     LOGE("%s: %s", s, msg);
-
 }
+
 #endif
 
 int use_tty = 1;
@@ -71,13 +71,13 @@ char *ss_itoa(int i)
     if (i >= 0) {
         do {
             *--p = '0' + (i % 10);
-            i /= 10;
+            i   /= 10;
         } while (i != 0);
         return p;
     } else {                     /* i < 0 */
         do {
             *--p = '0' - (i % 10);
-            i /= 10;
+            i   /= 10;
         } while (i != 0);
         *--p = '-';
     }
@@ -100,8 +100,8 @@ int run_as(const char *user)
             char buf[buflen];  /* variable length array */
 
             /* Note that we use getpwnam_r() instead of getpwnam(),
-               which returns its result in a statically allocated buffer and
-               cannot be considered thread safe. */
+             * which returns its result in a statically allocated buffer and
+             * cannot be considered thread safe. */
             err = getpwnam_r(user, &pwdbuf, buf, buflen, &pwd);
 
             if (err == 0 && pwd) {
@@ -130,7 +130,7 @@ int run_as(const char *user)
                 return 0;
             } else if (buflen >= 16 * 1024) {
                 /* If getpwnam_r() seems defective, call it quits rather than
-                   keep on allocating ever larger buffers until we crash. */
+                 * keep on allocating ever larger buffers until we crash. */
                 LOGE(
                     "getpwnam_r() requires more than %u bytes of buffer space.",
                     (unsigned)buflen);
@@ -160,11 +160,9 @@ int run_as(const char *user)
 #endif
     }
 
-#endif //__MINGW32__
+#endif // __MINGW32__
     return 1;
 }
-
-
 
 char *ss_strndup(const char *s, size_t n)
 {
@@ -290,7 +288,7 @@ void usage()
     printf("\n");
 }
 
-void daemonize(const char * path)
+void daemonize(const char *path)
 {
 #ifndef __MINGW32__
     /* Our process ID and Session ID */
@@ -303,7 +301,7 @@ void daemonize(const char * path)
     }
 
     /* If we got a good PID, then
-       we can exit the parent process. */
+     * we can exit the parent process. */
     if (pid > 0) {
         FILE *file = fopen(path, "w");
         if (file == NULL) {
@@ -365,5 +363,5 @@ int set_nofile(int nofile)
 
     return 0;
 }
-#endif
 
+#endif

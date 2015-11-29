@@ -44,7 +44,7 @@ static void parse_addr_cidr(const char *str, char *host, int *cidr)
     } else {
         memcpy(host, str, ret);
         host[ret] = '\0';
-        *cidr = atoi(str + ret + 1);
+        *cidr     = atoi(str + ret + 1);
     }
 }
 
@@ -62,7 +62,7 @@ int init_acl(const char *path)
     }
 
     char line[256];
-    while (!feof(f)) {
+    while (!feof(f))
         if (fgets(line, 256, f)) {
             // Trim the newline
             int len = strlen(line);
@@ -92,7 +92,6 @@ int init_acl(const char *path)
                 }
             }
         }
-    }
 
     fclose(f);
 
@@ -105,7 +104,7 @@ void free_acl(void)
     ipset_done(&acl_ipv6_set);
 }
 
-int acl_contains_ip(const char * host)
+int acl_contains_ip(const char *host)
 {
     struct cork_ip addr;
     int err = cork_ip_init(&addr, host);

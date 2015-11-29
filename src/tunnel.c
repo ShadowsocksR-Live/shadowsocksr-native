@@ -77,8 +77,8 @@ static void server_send_cb(EV_P_ ev_io *w, int revents);
 static void remote_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_send_cb(EV_P_ ev_io *w, int revents);
 
-static remote_t * new_remote(int fd, int timeout);
-static server_t * new_server(int fd, int method);
+static remote_t *new_remote(int fd, int timeout);
+static server_t *new_server(int fd, int method);
 
 static void free_remote(remote_t *remote);
 static void close_and_free_remote(EV_P_ remote_t *remote);
@@ -102,10 +102,11 @@ static int setnonblocking(int fd)
     }
     return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
+
 #endif
 
 #ifdef SET_INTERFACE
-int setinterface(int socket_fd, const char * interface_name)
+int setinterface(int socket_fd, const char *interface_name)
 {
     struct ifreq interface;
     memset(&interface, 0, sizeof(interface));
@@ -114,6 +115,7 @@ int setinterface(int socket_fd, const char * interface_name)
                          sizeof(struct ifreq));
     return res;
 }
+
 #endif
 
 int create_and_bind(const char *addr, const char *port)
@@ -123,7 +125,7 @@ int create_and_bind(const char *addr, const char *port)
     int s, listen_sock;
 
     memset(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family = AF_UNSPEC;     /* Return IPv4 and IPv6 choices */
+    hints.ai_family   = AF_UNSPEC;   /* Return IPv4 and IPv6 choices */
     hints.ai_socktype = SOCK_STREAM; /* We want a TCP socket */
 
     s = getaddrinfo(addr, port, &hints, &result);
@@ -168,8 +170,8 @@ int create_and_bind(const char *addr, const char *port)
 static void server_recv_cb(EV_P_ ev_io *w, int revents)
 {
     server_ctx_t *server_recv_ctx = (server_ctx_t *)w;
-    server_t *server = server_recv_ctx->server;
-    remote_t *remote = server->remote;
+    server_t *server              = server_recv_ctx->server;
+    remote_t *remote              = server->remote;
 
     if (remote == NULL) {
         close_and_free_server(EV_A_ server);
@@ -228,7 +230,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         }
     } else if (s < remote->buf->len) {
         remote->buf->len -= s;
-        remote->buf->idx = s;
+        remote->buf->idx  = s;
         ev_io_stop(EV_A_ & server_recv_ctx->io);
         ev_io_start(EV_A_ & remote->send_ctx->io);
         return;
@@ -238,8 +240,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 static void server_send_cb(EV_P_ ev_io *w, int revents)
 {
     server_ctx_t *server_send_ctx = (server_ctx_t *)w;
-    server_t *server = server_send_ctx->server;
-    remote_t *remote = server->remote;
+    server_t *server              = server_send_ctx->server;
+    remote_t *remote              = server->remote;
     if (server->buf->len == 0) {
         // close and free
         close_and_free_remote(EV_A_ remote);
@@ -275,13 +277,12 @@ static void server_send_cb(EV_P_ ev_io *w, int revents)
             }
         }
     }
-
 }
 
 static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 {
     remote_ctx_t *remote_ctx = (remote_ctx_t *)(((void *)watcher)
-                                                          - sizeof(ev_io));
+                                                - sizeof(ev_io));
     remote_t *remote = remote_ctx->remote;
     server_t *server = remote->server;
 
@@ -298,8 +299,8 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 static void remote_recv_cb(EV_P_ ev_io *w, int revents)
 {
     remote_ctx_t *remote_recv_ctx = (remote_ctx_t *)w;
-    remote_t *remote = remote_recv_ctx->remote;
-    server_t *server = remote->server;
+    remote_t *remote              = remote_recv_ctx->remote;
+    server_t *server              = remote->server;
 
     ssize_t r = recv(remote->fd, server->buf->array, BUF_SIZE, 0);
 
@@ -349,7 +350,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         }
     } else if (s < server->buf->len) {
         server->buf->len -= s;
-        server->buf->idx = s;
+        server->buf->idx  = s;
         ev_io_stop(EV_A_ & remote_recv_ctx->io);
         ev_io_start(EV_A_ & server->send_ctx->io);
         return;
@@ -359,8 +360,8 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
 static void remote_send_cb(EV_P_ ev_io *w, int revents)
 {
     remote_ctx_t *remote_send_ctx = (remote_ctx_t *)w;
-    remote_t *remote = remote_send_ctx->remote;
-    server_t *server = remote->server;
+    remote_t *remote              = remote_send_ctx->remote;
+    server_t *server              = remote->server;
 
     if (!remote_send_ctx->connected) {
         struct sockaddr_storage addr;
@@ -485,31 +486,32 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
                 ev_io_start(EV_A_ & server->recv_ctx->io);
             }
         }
-
     }
 }
 
-static remote_t * new_remote(int fd, int timeout)
+static remote_t *new_remote(int fd, int timeout)
 {
     remote_t *remote;
     remote = malloc(sizeof(remote_t));
 
     memset(remote, 0, sizeof(remote_t));
 
-    remote->buf = malloc(BUF_SIZE);
-    remote->recv_ctx = malloc(sizeof(remote_ctx_t));
-    remote->send_ctx = malloc(sizeof(remote_ctx_t));
-    remote->fd = fd;
+    remote->buf                 = malloc(sizeof(buffer_t));
+    remote->recv_ctx            = malloc(sizeof(remote_ctx_t));
+    remote->send_ctx            = malloc(sizeof(remote_ctx_t));
+    remote->fd                  = fd;
+    remote->recv_ctx->remote    = remote;
+    remote->recv_ctx->connected = 0;
+    remote->send_ctx->remote    = remote;
+    remote->send_ctx->connected = 0;
+
     ev_io_init(&remote->recv_ctx->io, remote_recv_cb, fd, EV_READ);
     ev_io_init(&remote->send_ctx->io, remote_send_cb, fd, EV_WRITE);
     ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb,
                   min(MAX_CONNECT_TIMEOUT, timeout), 0);
-    remote->recv_ctx->remote = remote;
-    remote->recv_ctx->connected = 0;
-    remote->send_ctx->remote = remote;
-    remote->send_ctx->connected = 0;
-    remote->buf->len = 0;
-    remote->buf->idx = 0;
+
+    balloc(remote->buf, BUF_SIZE);
+
     return remote;
 }
 
@@ -540,20 +542,20 @@ static void close_and_free_remote(EV_P_ remote_t *remote)
     }
 }
 
-static server_t * new_server(int fd, int method)
+static server_t *new_server(int fd, int method)
 {
     server_t *server;
-    server = malloc(sizeof(server_t));
-    server->buf = malloc(BUF_SIZE);
-    server->recv_ctx = malloc(sizeof(server_ctx_t));
-    server->send_ctx = malloc(sizeof(server_ctx_t));
-    server->fd = fd;
-    ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
-    ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
-    server->recv_ctx->server = server;
+
+    server                      = malloc(sizeof(server_t));
+    server->buf                 = malloc(sizeof(buffer_t));
+    server->recv_ctx            = malloc(sizeof(server_ctx_t));
+    server->send_ctx            = malloc(sizeof(server_ctx_t));
+    server->fd                  = fd;
+    server->recv_ctx->server    = server;
     server->recv_ctx->connected = 0;
-    server->send_ctx->server = server;
+    server->send_ctx->server    = server;
     server->send_ctx->connected = 0;
+
     if (method) {
         server->e_ctx = malloc(sizeof(struct enc_ctx));
         server->d_ctx = malloc(sizeof(struct enc_ctx));
@@ -563,8 +565,12 @@ static server_t * new_server(int fd, int method)
         server->e_ctx = NULL;
         server->d_ctx = NULL;
     }
-    server->buf->len = 0;
-    server->buf->idx = 0;
+
+    balloc(server->buf, BUF_SIZE);
+
+    ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
+    ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
+
     return server;
 }
 
@@ -605,7 +611,7 @@ static void close_and_free_server(EV_P_ server_t *server)
 static void accept_cb(EV_P_ ev_io *w, int revents)
 {
     struct listen_ctx *listener = (struct listen_ctx *)w;
-    int serverfd = accept(listener->fd, NULL, NULL);
+    int serverfd                = accept(listener->fd, NULL, NULL);
     if (serverfd == -1) {
         ERROR("accept");
         return;
@@ -617,7 +623,7 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
-    int index = rand() % listener->remote_num;
+    int index                    = rand() % listener->remote_num;
     struct sockaddr *remote_addr = listener->remote_addr[index];
 
     int remotefd = socket(remote_addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
@@ -652,8 +658,8 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     server_t *server = new_server(serverfd, listener->method);
     remote_t *remote = new_remote(remotefd, listener->timeout);
     server->destaddr = listener->tunnel_addr;
-    server->remote = remote;
-    remote->server = server;
+    server->remote   = remote;
+    remote->server   = server;
 
     connect(remotefd, remote_addr, get_sockaddr_len(remote_addr));
     // listen to remote connected event
@@ -663,18 +669,17 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
 
 int main(int argc, char **argv)
 {
-
     int i, c;
-    int pid_flags = 0;
-    char *user = NULL;
+    int pid_flags    = 0;
+    char *user       = NULL;
     char *local_port = NULL;
     char *local_addr = NULL;
-    char *password = NULL;
-    char *timeout = NULL;
-    char *method = NULL;
-    char *pid_path = NULL;
-    char *conf_path = NULL;
-    char *iface = NULL;
+    char *password   = NULL;
+    char *timeout    = NULL;
+    char *method     = NULL;
+    char *pid_path   = NULL;
+    char *conf_path  = NULL;
+    char *iface      = NULL;
 
     int remote_num = 0;
     ss_addr_t remote_addr[MAX_REMOTE_NUM];
@@ -695,7 +700,7 @@ int main(int argc, char **argv)
         switch (c) {
         case 's':
             if (remote_num < MAX_REMOTE_NUM) {
-                remote_addr[remote_num].host = optarg;
+                remote_addr[remote_num].host   = optarg;
                 remote_addr[remote_num++].port = NULL;
             }
             break;
@@ -710,7 +715,7 @@ int main(int argc, char **argv)
             break;
         case 'f':
             pid_flags = 1;
-            pid_path = optarg;
+            pid_path  = optarg;
             break;
         case 't':
             timeout = optarg;
@@ -768,9 +773,8 @@ int main(int argc, char **argv)
         jconf_t *conf = read_jconf(conf_path);
         if (remote_num == 0) {
             remote_num = conf->remote_num;
-            for (i = 0; i < remote_num; i++) {
+            for (i = 0; i < remote_num; i++)
                 remote_addr[i] = conf->remote_addr[i];
-            }
         }
         if (remote_port == NULL) {
             remote_port = conf->remote_port;
@@ -840,7 +844,7 @@ int main(int argc, char **argv)
     // Setup proxy context
     struct listen_ctx listen_ctx;
     listen_ctx.tunnel_addr = tunnel_addr;
-    listen_ctx.remote_num = remote_num;
+    listen_ctx.remote_num  = remote_num;
     listen_ctx.remote_addr = malloc(sizeof(struct sockaddr *) * remote_num);
     for (i = 0; i < remote_num; i++) {
         char *host = remote_addr[i].host;
@@ -854,8 +858,8 @@ int main(int argc, char **argv)
         listen_ctx.remote_addr[i] = (struct sockaddr *)storage;
     }
     listen_ctx.timeout = atoi(timeout);
-    listen_ctx.iface = iface;
-    listen_ctx.method = m;
+    listen_ctx.iface   = iface;
+    listen_ctx.method  = m;
 
     struct ev_loop *loop = EV_DEFAULT;
 
@@ -904,4 +908,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-
