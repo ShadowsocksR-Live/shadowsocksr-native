@@ -681,13 +681,12 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             server->auth     = 1;
         }
 
-        server->buf->len -= offset;
-
-        if (server->buf->len < 0) {
+        if (server->buf->len < offset) {
             report_addr(server->fd);
             close_and_free_server(EV_A_ server);
             return;
         } else {
+            server->buf->len -= offset;
             memmove(server->buf->array, server->buf->array + offset, server->buf->len);
         }
 
