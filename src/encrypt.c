@@ -1241,7 +1241,7 @@ int ss_decrypt_all(buffer_t *cipher, int method, int auth)
         static buffer_t tmp = { 0 };
         brealloc(&tmp, cipher->len, cipher->capacity);
         buffer_t *plain = &tmp;
-        plain->len = cipher->len;
+        plain->len = cipher->len - iv_len;
 
         uint8_t iv[MAX_IV_LENGTH];
         memcpy(iv, cipher->array, iv_len);
