@@ -256,10 +256,10 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             // insert shadowsocks header
             if (!remote->direct) {
                 // SSR beg
-                if (remote->server->protocol_plugin) {
-                    obfs_class *protocol_plugin = remote->server->protocol_plugin;
+                if (server->protocol_plugin) {
+                    obfs_class *protocol_plugin = server->protocol_plugin;
                     if (protocol_plugin->client_pre_encrypt) {
-                        r = protocol_plugin->client_pre_encrypt(remote->server->protocol, &remote->buf, r, &remote->buf_capacity);
+                        r = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf, r, &remote->buf_capacity);
                     }
                 }
 #ifdef ANDROID
@@ -275,10 +275,10 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     return;
                 }
 
-                if (remote->server->obfs_plugin) {
-                    obfs_class *obfs_plugin = remote->server->obfs_plugin;
+                if (server->obfs_plugin) {
+                    obfs_class *obfs_plugin = server->obfs_plugin;
                     if (obfs_plugin->client_encode) {
-                        r = obfs_plugin->client_encode(remote->server->obfs, &remote->buf, r, &remote->buf_capacity);
+                        r = obfs_plugin->client_encode(server->obfs, &remote->buf, r, &remote->buf_capacity);
                     }
                 }
                 // SSR end
@@ -688,11 +688,11 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
 
     if (!remote->direct) {
         // SSR beg
-        if (remote->server->obfs_plugin) {
-            obfs_class *obfs_plugin = remote->server->obfs_plugin;
+        if (server->obfs_plugin) {
+            obfs_class *obfs_plugin = server->obfs_plugin;
             if (obfs_plugin->client_decode) {
                 int needsendback;
-                r = obfs_plugin->client_decode(remote->server->obfs, &server->buf, r, &server->buf_capacity, &needsendback);
+                r = obfs_plugin->client_decode(server->obfs, &server->buf, r, &server->buf_capacity, &needsendback);
                 if (r < 0) {
                     LOGE("client_decode");
                     close_and_free_remote(EV_A_ remote);
@@ -713,10 +713,10 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
             close_and_free_server(EV_A_ server);
             return;
         }
-        if (remote->server->protocol_plugin) {
-            obfs_class *protocol_plugin = remote->server->protocol_plugin;
+        if (server->protocol_plugin) {
+            obfs_class *protocol_plugin = server->protocol_plugin;
             if (protocol_plugin->client_post_decrypt) {
-                r = protocol_plugin->client_post_decrypt(remote->server->protocol, &server->buf, r, &server->buf_capacity);
+                r = protocol_plugin->client_post_decrypt(server->protocol, &server->buf, r, &server->buf_capacity);
                 if (r < 0) {
                     LOGE("client_post_decrypt");
                     close_and_free_remote(EV_A_ remote);
@@ -1069,10 +1069,10 @@ int main(int argc, char **argv)
     USE_TTY();
 
 #ifdef ANDROID
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:P:o:M:uvVA", // SSR
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:P:o:G:uvVA", // SSR
                             long_options, &option_index)) != -1) {
 #else
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:P:o:M:uvA", // SSR
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:P:o:G:uvA", // SSR
                             long_options, &option_index)) != -1) {
 #endif
         switch (c) {
@@ -1116,7 +1116,7 @@ int main(int argc, char **argv)
         case 'o':
             obfs = optarg;
             break;
-        case 'M':
+        case 'G':
             obfs_param = optarg;
             break;
         // SSR end

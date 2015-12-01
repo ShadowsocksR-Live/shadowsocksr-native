@@ -191,19 +191,19 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     // SSR beg
-    if (remote->server->protocol_plugin) {
-        obfs_class *protocol_plugin = remote->server->protocol_plugin;
+    if (server->protocol_plugin) {
+        obfs_class *protocol_plugin = server->protocol_plugin;
         if (protocol_plugin->client_pre_encrypt) {
-            r = protocol_plugin->client_pre_encrypt(remote->server->protocol, &remote->buf, r, &remote->buf_capacity);
+            r = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf, r, &remote->buf_capacity);
         }
     }
 
     remote->buf = ss_encrypt(&remote->buf_capacity, remote->buf, &r, server->e_ctx);
 
-    if (remote->server->obfs_plugin) {
-        obfs_class *obfs_plugin = remote->server->obfs_plugin;
+    if (server->obfs_plugin) {
+        obfs_class *obfs_plugin = server->obfs_plugin;
         if (obfs_plugin->client_encode) {
-            r = obfs_plugin->client_encode(remote->server->obfs, &remote->buf, r, &remote->buf_capacity);
+            r = obfs_plugin->client_encode(server->obfs, &remote->buf, r, &remote->buf_capacity);
         }
     }
     // SSR end
@@ -238,7 +238,6 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         ev_io_start(EV_A_ & remote->send_ctx->io);
         return;
     }
-
 }
 
 static void server_send_cb(EV_P_ ev_io *w, int revents)
@@ -318,11 +317,11 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     // SSR beg
-    if (remote->server->obfs_plugin) {
-        obfs_class *obfs_plugin = remote->server->obfs_plugin;
+    if (server->obfs_plugin) {
+        obfs_class *obfs_plugin = server->obfs_plugin;
         if (obfs_plugin->client_decode) {
             int needsendback;
-            r = obfs_plugin->client_decode(remote->server->obfs, &server->buf, r, &server->buf_capacity, &needsendback);
+            r = obfs_plugin->client_decode(server->obfs, &server->buf, r, &server->buf_capacity, &needsendback);
             if (r < 0) {
                 LOGE("client_decode");
                 close_and_free_remote(EV_A_ remote);
@@ -341,10 +340,10 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         close_and_free_server(EV_A_ server);
         return;
     }
-    if (remote->server->protocol_plugin) {
-        obfs_class *protocol_plugin = remote->server->protocol_plugin;
+    if (server->protocol_plugin) {
+        obfs_class *protocol_plugin = server->protocol_plugin;
         if (protocol_plugin->client_post_decrypt) {
-            r = protocol_plugin->client_post_decrypt(remote->server->protocol, &server->buf, r, &server->buf_capacity);
+            r = protocol_plugin->client_post_decrypt(server->protocol, &server->buf, r, &server->buf_capacity);
             if (r < 0) {
                 LOGE("client_post_decrypt");
                 close_and_free_remote(EV_A_ remote);
@@ -400,6 +399,7 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
 
             // send destaddr
             char *ss_addr_to_send = malloc(BUF_SIZE);
+            ssize_t ss_addr_to_send_capacity = BUF_SIZE;
             ssize_t addr_len = 0;
             if (AF_INET6 == server->destaddr.ss_family) { // IPv6
                 ss_addr_to_send[addr_len++] = 4;          //Type 4 is IPv6 address
@@ -432,8 +432,26 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
                 addr_len += ONETIMEAUTH_BYTES;
             }
 
-            ss_addr_to_send = ss_encrypt(&remote->buf_capacity, ss_addr_to_send, &addr_len,
+
+            // SSR beg
+            if (server->protocol_plugin) {
+                obfs_class *protocol_plugin = server->protocol_plugin;
+                if (protocol_plugin->client_pre_encrypt) {
+                    addr_len = protocol_plugin->client_pre_encrypt(server->protocol, &ss_addr_to_send, addr_len, &ss_addr_to_send_capacity);
+                }
+            }
+
+            ss_addr_to_send = ss_encrypt(&ss_addr_to_send_capacity, ss_addr_to_send, &addr_len,
                                          server->e_ctx);
+
+            if (server->obfs_plugin) {
+                obfs_class *obfs_plugin = server->obfs_plugin;
+                if (obfs_plugin->client_encode) {
+                    addr_len = obfs_plugin->client_encode(server->obfs, &ss_addr_to_send, addr_len, &ss_addr_to_send_capacity);
+                }
+            }
+            // SSR end
+
             if (ss_addr_to_send == NULL) {
                 LOGE("invalid password or cipher");
                 close_and_free_remote(EV_A_ remote);
@@ -736,7 +754,7 @@ int main(int argc, char **argv)
 
     opterr = 0;
 
-    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:c:b:a:P:o:M:uUvA")) != -1) { // SSR
+    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:c:b:a:P:o:G:uUvA")) != -1) { // SSR
         switch (c) {
         case 's':
             if (remote_num < MAX_REMOTE_NUM) {
@@ -770,7 +788,7 @@ int main(int argc, char **argv)
         case 'o':
             obfs = optarg;
             break;
-        case 'M':
+        case 'G':
             obfs_param = optarg;
             break;
         // SSR end
