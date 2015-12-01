@@ -66,11 +66,11 @@ void ss_sha1_process(ss_sha1_context *ctx, const unsigned char data[64])
 
 #define S(x, n) ((x << n) | ((x & 0xFFFFFFFF) >> (32 - n)))
 
-#define R(t)                                           \
-    (                                                  \
-        temp = W[(t - 3) & 0x0F] ^ W[(t - 8) & 0x0F] ^ \
-               W[(t - 14) & 0x0F] ^ W[t & 0x0F],      \
-        (W[t & 0x0F] = S(temp, 1))                   \
+#define R(t)                                             \
+    (                                                    \
+        temp = W[(t - 3) & 0x0F] ^ W[(t - 8) & 0x0F] ^   \
+               W[(t - 14) & 0x0F] ^ W[t & 0x0F],         \
+        (W[t & 0x0F] = S(temp, 1))                       \
     )
 
 #define P(a, b, c, d, e, x)                              \
