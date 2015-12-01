@@ -690,6 +690,11 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     remote->server = server;
     server->destaddr = destaddr;
 
+    if (verbose) {
+        int port = ((struct sockaddr_in*)&destaddr)->sin_port;
+        port = (uint16_t)(port >> 8 | port << 8);
+        LOGI("connect to %s:%d", inet_ntoa(((struct sockaddr_in*)&destaddr)->sin_addr), port);
+    }
     // SSR beg
     remote->remote_index = index;
     server->obfs_plugin = new_obfs_class(listener->obfs_name);
