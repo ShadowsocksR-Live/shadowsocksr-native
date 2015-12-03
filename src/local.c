@@ -258,7 +258,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             // insert shadowsocks header
             if (!remote->direct) {
 #ifdef ANDROID
-                tx += remote->buf_len;
+                tx += remote->buf->len;
 #endif
                 int err = ss_encrypt(remote->buf, server->e_ctx);
 
