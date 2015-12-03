@@ -173,6 +173,8 @@ char * ss_decrypt(ssize_t *p_buf_size, char *ciphertext, ssize_t *len,
 void enc_ctx_init(int method, struct enc_ctx *ctx, int enc);
 int enc_init(const char *pass, const char *method);
 int enc_get_iv_len(void);
+uint8_t* enc_get_key(void);
+int enc_get_key_len(void);
 void cipher_context_release(cipher_ctx_t *evp);
 unsigned char *enc_md5(const unsigned char *d, size_t n, unsigned char *md);
 

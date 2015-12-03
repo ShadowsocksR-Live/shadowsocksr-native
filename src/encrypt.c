@@ -298,6 +298,16 @@ int enc_get_iv_len()
     return enc_iv_len;
 }
 
+uint8_t* enc_get_key()
+{
+    return enc_key;
+}
+
+int enc_get_key_len()
+{
+    return enc_key_len;
+}
+
 unsigned char *enc_md5(const unsigned char *d, size_t n, unsigned char *md)
 {
 #if defined(USE_CRYPTO_OPENSSL)

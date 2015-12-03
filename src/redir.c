@@ -718,6 +718,10 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     _server_info.port = _server_info.port >> 8 | _server_info.port << 8;
     _server_info.param = listener->obfs_param;
     _server_info.g_data = listener->list_obfs_global[remote->remote_index];
+    _server_info.iv = server->e_ctx->evp.iv;
+    _server_info.iv_len = enc_get_iv_len();
+    _server_info.key = enc_get_key();
+    _server_info.key_len = enc_get_key_len();
     _server_info.tcp_mss = 1440;
 
     if (server->obfs_plugin)
