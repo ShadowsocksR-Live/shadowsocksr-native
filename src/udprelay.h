@@ -29,7 +29,7 @@
 #include "encrypt.h"
 #include "jconf.h"
 
-#ifdef UDPRELAY_REMOTE
+#ifdef MODULE_REMOTE
 #include "resolv.h"
 #endif
 
@@ -49,19 +49,19 @@ typedef struct server_ctx {
     int timeout;
     const char *iface;
     struct cache *conn_cache;
-#ifdef UDPRELAY_LOCAL
+#ifdef MODULE_LOCAL
     const struct sockaddr *remote_addr;
     int remote_addr_len;
-#ifdef UDPRELAY_TUNNEL
+#ifdef MODULE_TUNNEL
     ss_addr_t tunnel_addr;
 #endif
 #endif
-#ifdef UDPRELAY_REMOTE
+#ifdef MODULE_REMOTE
     struct ev_loop *loop;
 #endif
 } server_ctx_t;
 
-#ifdef UDPRELAY_REMOTE
+#ifdef MODULE_REMOTE
 typedef struct query_ctx {
     struct ResolvQuery *query;
     struct sockaddr_storage src_addr;

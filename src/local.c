@@ -467,7 +467,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     LOGI("connect to %s:%s", host, port);
                 }
 
-                if ((acl && (request->atyp == 1 || request->atyp == 4) && acl_contains_ip(host))) {
+                if ((acl && (request->atyp == 1 || request->atyp == 4) && acl_match_ip(host))) {
                     if (verbose) {
                         LOGI("bypass %s:%s", host, port);
                     }
@@ -990,7 +990,7 @@ int main(int argc, char **argv)
                 fast_open = 1;
             } else if (option_index == 1) {
                 LOGI("initialize acl...");
-                acl = !init_acl(optarg);
+                acl = !init_acl(optarg, BLACK_LIST);
             }
             break;
         case 's':
@@ -1266,7 +1266,7 @@ int start_ss_local_server(profile_t profile)
     USE_LOGFILE(log);
 
     if (profile.acl != NULL) {
-        acl = !init_acl(profile.acl);
+        acl = !init_acl(profile.acl, BLACK_LIST);
     }
 
     if (local_addr == NULL) {

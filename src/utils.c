@@ -192,22 +192,28 @@ void usage()
     printf(
         "  maintained by Max Lv <max.c.lv@gmail.com> and Linus Yang <laokongzi@gmail.com>\n\n");
     printf("  usage:\n\n");
-    printf("    ss-[local|redir|server|tunnel|manager]\n");
+#ifdef MODULE_LOCAL
+    printf("    ss-local\n");
+#elif MODULE_REMOTE
+    printf("    ss-server\n");
+#elif MODULE_TUNNEl
+    printf("    ss-tunnel\n");
+#elif MODULE_REDIR
+    printf("    ss-redir\n");
+#elif MODULE_MANAGER
+    printf("    ss-manager\n");
+#endif
     printf("\n");
     printf(
-        "       -s <server_host>           host name or ip address of your remote server\n");
-    printf("\n");
+        "       -s <server_host>           Host name or ip address of your remote server.\n");
     printf(
-        "       -p <server_port>           port number of your remote server\n");
-    printf("\n");
+        "       -p <server_port>           Port number of your remote server.\n");
     printf(
-        "       -l <local_port>            port number of your local server\n");
-    printf("\n");
+        "       -l <local_port>            Port number of your local server.\n");
     printf(
-        "       -k <password>              password of your remote server\n");
-    printf("\n");
+        "       -k <password>              Password of your remote server.\n");
     printf(
-        "       [-m <encrypt_method>]      encrypt method: table, rc4, rc4-md5,\n");
+        "       -m <encrypt_method>        Encrypt method: table, rc4, rc4-md5,\n");
     printf(
         "                                  aes-128-cfb, aes-192-cfb, aes-256-cfb,\n");
     printf(
@@ -215,76 +221,69 @@ void usage()
     printf(
         "                                  camellia-256-cfb, cast5-cfb, des-cfb, idea-cfb,\n");
     printf(
-        "                                  rc2-cfb, seed-cfb, salsa20 and chacha20\n");
+        "                                  rc2-cfb, seed-cfb, salsa20 and chacha20.\n");
     printf("\n");
     printf(
-        "       [-f <pid_file>]            the file path to store pid\n");
+        "       [-f <pid_file>]            The file path to store pid.\n");
+    printf(
+        "       [-t <timeout>]             Socket timeout in seconds.\n");
+    printf(
+        "       [-c <config_file>]         The path to config file.\n");
+#ifndef MODULE_REDIR
+    printf(
+        "       [-i <interface>]           Network interface to bind.\n");
+#endif
+#ifndef MODULE_REMOTE
+    printf(
+        "       [-b <local_address>]       Local address to bind.\n");
+#endif
     printf("\n");
     printf(
-        "       [-t <timeout>]             socket timeout in seconds\n");
+        "       [-u]                       Enable UDP relay,\n");
+#ifdef MODULE_REDIR
+    printf(
+        "                                  TPROXY is required in redir mode.\n");
+#endif
+#ifndef MODULE_LOCAL
+    printf(
+        "       [-U]                       Enable UDP relay and disable TCP relay.\n");
+#endif
+    printf(
+        "       [-A]                       Enable onetime authentication.\n");
+#ifdef MODULE_REMOTE
+    printf(
+        "       [-w]                       Enable white list mode (when ACL enabled).\n");
+#endif
+    printf("\n");
+#ifdef MODULE_TUNNEl
+    printf(
+        "       [-L <addr>:<port>]         Destination server address and port\n");
+    printf(
+        "                                  for local port forwarding.\n");
+#endif
+#ifdef MODULE_REMOTE
+    printf(
+        "       [-d <addr>]                Name servers for internal DNS resolver.\n");
+#endif
+#if defined(MODULE_REMOTE) || defined(MODULE_LOCAL)
+    printf(
+        "       [--fast-open]              Enable TCP fast open.\n");
+    printf(
+        "                                  with Linux kernel > 3.7.0.\n");
+    printf(
+        "       [--acl <acl_file>]         Path to ACL (Access Control List).\n");
+#endif
+#if defined(MODULE_REMOTE) || defined(MODULE_MANAGER)
+    printf(
+        "       [--manager-address <addr>] UNIX domain socket address.\n");
+#endif
+#ifdef MODULE_MANAGER
+    printf(
+        "       [--executable <path>]      Path to the executable of ss-server.\n");
+#endif
     printf("\n");
     printf(
-        "       [-c <config_file>]         the path to config file\n");
-    printf("\n");
-    printf(
-        "       [-i <interface>]           network interface to bind,\n");
-    printf(
-        "                                  not available in redir mode\n");
-    printf("\n");
-    printf(
-        "       [-b <local_address>]       local address to bind,\n");
-    printf(
-        "                                  not available in server mode\n");
-    printf("\n");
-    printf(
-        "       [-u]                       enable UDP relay,\n");
-    printf(
-        "                                  TPROXY is required in redir mode\n");
-    printf("\n");
-    printf(
-        "       [-U]                       enable UDP relay and disable TCP relay,\n");
-    printf(
-        "                                  not available in local mode\n");
-    printf("\n");
-    printf(
-        "       [-A]                       enable onetime authentication\n");
-    printf("\n");
-    printf(
-        "       [-L <addr>:<port>]         specify destination server address and port\n");
-    printf(
-        "                                  for local port forwarding,\n");
-    printf(
-        "                                  only available in tunnel mode\n");
-    printf("\n");
-    printf(
-        "       [-d <addr>]                setup name servers for internal DNS resolver,\n");
-    printf(
-        "                                  only available in server mode\n");
-    printf("\n");
-    printf(
-        "       [--fast-open]              enable TCP fast open,\n");
-    printf(
-        "                                  only available in local and server mode,\n");
-    printf(
-        "                                  with Linux kernel > 3.7.0\n");
-    printf("\n");
-    printf(
-        "       [--acl <acl_file>]         config file of ACL (Access Control List)\n");
-    printf(
-        "                                  only available in local and server mode\n");
-    printf("\n");
-    printf(
-        "       [--manager-address <addr>] UNIX domain socket address\n");
-    printf(
-        "                                  only available in server and manager mode\n");
-    printf("\n");
-    printf(
-        "       [--executable <path>]      path to the executable of ss-server\n");
-    printf(
-        "                                  only available in manager mode\n");
-    printf("\n");
-    printf(
-        "       [-v]                       verbose mode\n");
+        "       [-v]                       Verbose mode\n");
     printf("\n");
 }
 

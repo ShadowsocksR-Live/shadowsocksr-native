@@ -53,10 +53,14 @@
 #define TCP_AND_UDP  1
 #define UDP_ONLY     3
 
+#if defined(MODULE_TUNNEL) || defined(MODULE_REDIR)
+#define MODULE_LOCAL
+#endif
+
 int init_udprelay(const char *server_host, const char *server_port,
-#ifdef UDPRELAY_LOCAL
+#ifdef MODULE_LOCAL
                   const struct sockaddr *remote_addr, const int remote_addr_len,
-#ifdef UDPRELAY_TUNNEL
+#ifdef MODULE_TUNNEL
                   const ss_addr_t tunnel_addr,
 #endif
 #endif

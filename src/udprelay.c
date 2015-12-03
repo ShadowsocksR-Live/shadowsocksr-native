@@ -61,15 +61,15 @@
 #include "cache.h"
 #include "udprelay.h"
 
-#ifdef UDPRELAY_REMOTE
+#ifdef MODULE_REMOTE
 #define MAX_UDP_CONN_NUM 512
 #else
 #define MAX_UDP_CONN_NUM 256
 #endif
 
-#ifdef UDPRELAY_REMOTE
-#ifdef UDPRELAY_LOCAL
-#error "UDPRELAY_REMOTE and UDPRELAY_LOCAL should not be both defined"
+#ifdef MODULE_REMOTE
+#ifdef MODULE_
+#error "MODULE_REMOTE and MODULE_LOCAL should not be both defined"
 #endif
 #endif
 
@@ -88,7 +88,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents);
 
 static char *hash_key(const int af, const struct sockaddr_storage *addr);
-#ifdef UDPRELAY_REMOTE
+#ifdef MODULE_REMOTE
 static void query_resolve_cb(struct sockaddr *addr, void *data);
 #endif
 static void close_and_free_remote(EV_P_ remote_ctx_t *ctx);
@@ -96,7 +96,7 @@ static remote_ctx_t *new_remote(int fd, server_ctx_t *server_ctx);
 
 extern int verbose;
 extern int vpn;
-#ifdef UDPRELAY_REMOTE
+#ifdef MODULE_REMOTE
 extern uint64_t tx;
 extern uint64_t rx;
 #endif
@@ -129,7 +129,7 @@ static int setinterface(int socket_fd, const char *interface_name)
 
 #endif
 
-#if defined(UDPRELAY_REMOTE) && defined(SO_BROADCAST)
+#if defined(MODULE_REMOTE) && defined(SO_BROADCAST)
 static int set_broadcast(int socket_fd)
 {
     int opt = 1;
@@ -147,7 +147,7 @@ static int set_nosigpipe(int socket_fd)
 
 #endif
 
-#ifdef UDPRELAY_REDIR
+#ifdef MODULE_REDIR
 
 #ifndef IP_TRANSPARENT
 #define IP_TRANSPARENT       19
@@ -191,7 +191,7 @@ static char *hash_key(const int af, const struct sockaddr_storage *addr)
     return key;
 }
 
-#if defined(UDPRELAY_REDIR) || defined(UDPRELAY_REMOTE)
+#if defined(MODULE_REDIR) || defined(MODULE_REMOTE)
 static int construct_udprealy_header(const struct sockaddr_storage *in_addr,
                                      char *addr_header)
 {
@@ -439,7 +439,7 @@ int create_server_socket(const char *host, const char *port)
         set_nosigpipe(server_sock);
 #endif
 
-#ifdef UDPRELAY_REDIR
+#ifdef MODULE_REDIR
         if (setsockopt(server_sock, SOL_IP, IP_TRANSPARENT, &opt, sizeof(opt))) {
             FATAL("[udp] setsockopt IP_TRANSPARENT");
         }
@@ -496,7 +496,7 @@ server_ctx_t *new_server_ctx(int fd)
     return ctx;
 }
 
-#ifdef UDPRELAY_REMOTE
+#ifdef MODULE_REMOTE
 struct query_ctx *new_query_ctx(char *buf, size_t len)
 {
     struct query_ctx *ctx = malloc(sizeof(struct query_ctx));
@@ -548,7 +548,7 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
     cache_remove(remote_ctx->server_ctx->conn_cache, key, HASH_KEY_LEN);
 }
 
-#ifdef UDPRELAY_REMOTE
+#ifdef MODULE_REMOTE
 static void query_resolve_cb(struct sockaddr *addr, void *data)
 {
     struct query_ctx *query_ctx = (struct query_ctx *)data;
@@ -666,14 +666,14 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         LOGE("[udp] possible ip fragment, size: %d", (int)buf->len);
     }
 
-#ifdef UDPRELAY_LOCAL
+#ifdef MODULE_LOCAL
     int err = ss_decrypt_all(buf, server_ctx->method, 0);
     if (err) {
         // drop the packet silently
         goto CLEAN_UP;
     }
 
-#ifdef UDPRELAY_REDIR
+#ifdef MODULE_REDIR
     struct sockaddr_storage dst_addr;
     memset(&dst_addr, 0, sizeof(struct sockaddr_storage));
     int len = parse_udprealy_header(buf->array, buf->len, NULL, NULL, NULL, &dst_addr);
@@ -695,7 +695,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     // server may return using a different address type other than the type we
     // have used during sending
 
-#if defined(UDPRELAY_TUNNEL) || defined(UDPRELAY_REDIR)
+#if defined(MODULE_TUNNEL) || defined(MODULE_REDIR)
     // Construct packet
     buf->len -= len;
     memmove(buf->array, buf->array + len, buf->len);
@@ -708,7 +708,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
 #endif
 #endif
 
-#ifdef UDPRELAY_REMOTE
+#ifdef MODULE_REMOTE
 
     rx += buf->len;
 
@@ -736,7 +736,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
 
     size_t remote_src_addr_len = get_sockaddr_len((struct sockaddr *)&remote_ctx->src_addr);
 
-#ifdef UDPRELAY_REDIR
+#ifdef MODULE_REDIR
     size_t remote_dst_addr_len = get_sockaddr_len((struct sockaddr *)&dst_addr);
 
     int src_fd = socket(remote_ctx->src_addr.ss_family, SOCK_DGRAM, 0);
@@ -801,7 +801,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     socklen_t src_addr_len = sizeof(struct sockaddr_storage);
     unsigned int offset    = 0;
 
-#ifdef UDPRELAY_REDIR
+#ifdef MODULE_REDIR
     char control_buffer[64] = { 0 };
     struct msghdr msg;
     struct iovec iov[1];
@@ -846,7 +846,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         LOGI("[udp] server receive a packet");
     }
 
-#ifdef UDPRELAY_REMOTE
+#ifdef MODULE_REMOTE
 
     tx += buf->len;
 
@@ -857,8 +857,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 #endif
 
-#ifdef UDPRELAY_LOCAL
-#if !defined(UDPRELAY_TUNNEL) && !defined(UDPRELAY_REDIR)
+#ifdef MODULE_LOCAL
+#if !defined(MODULE_TUNNEL) && !defined(MODULE_REDIR)
     uint8_t frag = *(uint8_t *)(buf->array + 2);
     offset += 3;
 #endif
@@ -913,7 +913,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
      *
      */
 
-#ifdef UDPRELAY_REDIR
+#ifdef MODULE_REDIR
     char addr_header[256] = { 0 };
     int addr_header_len   = construct_udprealy_header(&dst_addr, addr_header);
 
@@ -930,7 +930,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     char *key = hash_key(dst_addr.ss_family, &src_addr);
 
-#elif UDPRELAY_TUNNEL
+#elif MODULE_TUNNEL
 
     char addr_header[256] = { 0 };
     char *host            = server_ctx->tunnel_addr.host;
@@ -1023,7 +1023,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     if (remote_ctx == NULL) {
         if (verbose) {
-#ifdef UDPRELAY_REDIR
+#ifdef MODULE_REDIR
             char src[SS_ADDRSTRLEN];
             char dst[SS_ADDRSTRLEN];
             strcpy(src, get_addr_str((struct sockaddr *)&src_addr));
@@ -1036,7 +1036,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         }
     } else {
         if (verbose) {
-#ifdef UDPRELAY_REDIR
+#ifdef MODULE_REDIR
             char src[SS_ADDRSTRLEN];
             char dst[SS_ADDRSTRLEN];
             strcpy(src, get_addr_str((struct sockaddr *)&src_addr));
@@ -1049,9 +1049,9 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         }
     }
 
-#ifdef UDPRELAY_LOCAL
+#ifdef MODULE_LOCAL
 
-#if !defined(UDPRELAY_TUNNEL) && !defined(UDPRELAY_REDIR)
+#if !defined(MODULE_TUNNEL) && !defined(MODULE_REDIR)
     if (frag) {
         LOGE("[udp] drop a message since frag is not 0, but %d", frag);
         goto CLEAN_UP;
@@ -1236,9 +1236,9 @@ void free_cb(void *element)
 }
 
 int init_udprelay(const char *server_host, const char *server_port,
-#ifdef UDPRELAY_LOCAL
+#ifdef MODULE_LOCAL
                   const struct sockaddr *remote_addr, const int remote_addr_len,
-#ifdef UDPRELAY_TUNNEL
+#ifdef MODULE_TUNNEL
                   const ss_addr_t tunnel_addr,
 #endif
 #endif
@@ -1262,7 +1262,7 @@ int init_udprelay(const char *server_host, const char *server_port,
     setnonblocking(serverfd);
 
     server_ctx_t *server_ctx = new_server_ctx(serverfd);
-#ifdef UDPRELAY_REMOTE
+#ifdef MODULE_REMOTE
     server_ctx->loop = loop;
 #endif
     server_ctx->auth       = auth;
@@ -1270,10 +1270,10 @@ int init_udprelay(const char *server_host, const char *server_port,
     server_ctx->method     = method;
     server_ctx->iface      = iface;
     server_ctx->conn_cache = conn_cache;
-#ifdef UDPRELAY_LOCAL
+#ifdef MODULE_LOCAL
     server_ctx->remote_addr     = remote_addr;
     server_ctx->remote_addr_len = remote_addr_len;
-#ifdef UDPRELAY_TUNNEL
+#ifdef MODULE_TUNNEL
     server_ctx->tunnel_addr = tunnel_addr;
 #endif
 #endif

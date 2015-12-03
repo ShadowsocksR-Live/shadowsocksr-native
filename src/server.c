@@ -107,6 +107,7 @@ static void server_resolve_cb(struct sockaddr *addr, void *data);
 
 int verbose = 0;
 
+static int white_list = 0;
 static int acl  = 0;
 static int mode = TCP_ONLY;
 static int auth = 0;
@@ -214,14 +215,14 @@ static void free_connections(struct ev_loop *loop)
     }
 }
 
-static void report_addr(int fd)
+static char *get_peer_name(int fd)
 {
+    static char peer_name[INET6_ADDRSTRLEN] = { 0 };
     struct sockaddr_storage addr;
     socklen_t len = sizeof addr;
     memset(&addr, 0, len);
     int err = getpeername(fd, (struct sockaddr *)&addr, &len);
     if (err == 0) {
-        char peer_name[INET6_ADDRSTRLEN] = { 0 };
         if (addr.ss_family == AF_INET) {
             struct sockaddr_in *s = (struct sockaddr_in *)&addr;
             dns_ntop(AF_INET, &s->sin_addr, peer_name, INET_ADDRSTRLEN);
@@ -229,6 +230,17 @@ static void report_addr(int fd)
             struct sockaddr_in6 *s = (struct sockaddr_in6 *)&addr;
             dns_ntop(AF_INET6, &s->sin6_addr, peer_name, INET6_ADDRSTRLEN);
         }
+    } else {
+        return NULL;
+    }
+    return peer_name;
+}
+
+static void report_addr(int fd)
+{
+    char *peer_name;
+    peer_name = get_peer_name(fd);
+    if (peer_name != NULL) {
         LOGE("failed to handshake with %s", peer_name);
     }
 }
@@ -650,14 +662,6 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             return;
         }
 
-        if (acl && !need_query && acl_contains_ip(host)) {
-            if (verbose) {
-                LOGI("Access denied to %s", host);
-            }
-            close_and_free_server(EV_A_ server);
-            return;
-        }
-
         port = (*(uint16_t *)(server->buf->array + offset));
 
         offset += 2;
@@ -671,8 +675,19 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             size_t len = server->buf->len;
             server->buf->len = offset + ONETIMEAUTH_BYTES;
             if (ss_onetimeauth_verify(server->buf, server->d_ctx->evp.iv)) {
-                LOGE("authentication error %d", atyp);
-                report_addr(server->fd);
+                char *peer_name = get_peer_name(server->fd);
+                if (peer_name) {
+                    LOGE("authentication error from %s", peer_name);
+                    if (acl) {
+                        if (acl_get_mode() == BLACK_LIST) {
+                            acl_add_ip(peer_name);
+                            LOGE("add %s to the black list", peer_name);
+                        } else {
+                            acl_remove_ip(peer_name);
+                            LOGE("remove %s from the white list", peer_name);
+                        }
+                    }
+                }
                 close_and_free_server(EV_A_ server);
                 return;
             }
@@ -823,25 +838,6 @@ static void server_resolve_cb(struct sockaddr *addr, void *data)
     } else {
         if (verbose) {
             LOGI("udns resolved");
-        }
-
-        if (acl) {
-            char host[INET6_ADDRSTRLEN] = { 0 };
-            if (addr->sa_family == AF_INET) {
-                struct sockaddr_in *s = (struct sockaddr_in *)addr;
-                dns_ntop(AF_INET, &s->sin_addr, host, INET_ADDRSTRLEN);
-            } else if (addr->sa_family == AF_INET6) {
-                struct sockaddr_in6 *s = (struct sockaddr_in6 *)addr;
-                dns_ntop(AF_INET6, &s->sin6_addr, host, INET6_ADDRSTRLEN);
-            }
-
-            if (acl_contains_ip(host)) {
-                if (verbose) {
-                    LOGI("Access denied to %s", host);
-                }
-                close_and_free_server(EV_A_ server);
-                return;
-            }
         }
 
         struct addrinfo info;
@@ -1218,13 +1214,22 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
         ERROR("accept");
         return;
     }
-    setnonblocking(serverfd);
+
+    if (acl) {
+        char *peer_name = get_peer_name(serverfd);
+        if (peer_name != NULL && acl_match_ip(peer_name)) {
+            if (verbose) LOGI("Access denied from %s", peer_name);
+            close(serverfd);
+            return;
+        }
+    }
 
     int opt = 1;
     setsockopt(serverfd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
     setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
+    setnonblocking(serverfd);
 
     if (verbose) {
         LOGI("accept a connection");
@@ -1245,6 +1250,7 @@ int main(int argc, char **argv)
     char *method    = NULL;
     char *pid_path  = NULL;
     char *conf_path = NULL;
+    char *acl_path  = NULL;
     char *iface     = NULL;
 
     int server_num = 0;
@@ -1265,7 +1271,7 @@ int main(int argc, char **argv)
 
     USE_TTY();
 
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:c:i:d:a:uUvA",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:c:i:d:a:uUvAw",
                             long_options, &option_index)) != -1)
         switch (c) {
         case 0:
@@ -1273,7 +1279,8 @@ int main(int argc, char **argv)
                 fast_open = 1;
             } else if (option_index == 1) {
                 LOGI("initialize acl...");
-                acl = !init_acl(optarg);
+                acl = 1;
+                acl_path = optarg;
             } else if (option_index == 2) {
                 manager_address = optarg;
             }
@@ -1325,12 +1332,17 @@ int main(int argc, char **argv)
         case 'A':
             auth = 1;
             break;
+        case 'w':
+            white_list = 1;
+            break;
         }
 
     if (opterr) {
         usage();
         exit(EXIT_FAILURE);
     }
+
+    acl = acl ? !init_acl(acl_path, white_list) : 0;
 
     if (argc == 1) {
         if (conf_path == NULL) {

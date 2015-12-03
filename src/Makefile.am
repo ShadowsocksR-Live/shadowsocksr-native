@@ -77,9 +77,10 @@ ss_tunnel_LDADD += $(top_builddir)/libudns/libudns.la
 ss_server_LDADD += $(top_builddir)/libudns/libudns.la
 endif
 
-ss_local_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_LOCAL
-ss_tunnel_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_LOCAL -DUDPRELAY_TUNNEL
-ss_server_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_REMOTE
+ss_local_CFLAGS = $(AM_CFLAGS) -DMODULE_LOCAL
+ss_tunnel_CFLAGS = $(AM_CFLAGS) -DMODULE_TUNNEL
+ss_server_CFLAGS = $(AM_CFLAGS) -DMODULE_REMOTE
+ss_manager_CFLAGS = $(AM_CFLAGS) -DMODULE_MANAGER
 
 if BUILD_WINCOMPAT
 ss_local_SOURCES += win32.c
@@ -97,7 +98,7 @@ ss_redir_SOURCES = utils.c \
 				   udprelay.c \
 				   hmac-sha1.c \
                    redir.c
-ss_redir_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_REDIR -DUDPRELAY_LOCAL
+ss_redir_CFLAGS = $(AM_CFLAGS) -DMODULE_REDIR
 ss_redir_LDADD = $(SS_COMMON_LIBS)
 if USE_SYSTEM_SHARED_LIB
 ss_redir_LDADD += -ludns
