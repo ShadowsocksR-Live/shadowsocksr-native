@@ -550,7 +550,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
          */
 
         /*
-         * Shadowsocks TCP Request's Chunk Authentication (Optional, no hash check for response's payload):
+         * Shadowsocks Request's Chunk Authentication for TCP Relay's payload
+         * (No chunk authentication for response's payload):
          *
          *    +------+-----------+-------------+------+
          *    | LEN  | HMAC-SHA1 |    DATA     |      ...
