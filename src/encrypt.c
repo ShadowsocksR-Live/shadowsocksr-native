@@ -195,6 +195,15 @@ static const int supported_ciphers_key_size[CIPHER_NUM] = {
     0, 16, 16, 16, 24, 32, 16, 16, 24, 32, 16, 8, 16, 16, 16, 32, 32
 };
 
+static int safe_memcmp(const void *s1, const void *s2, size_t n)
+{
+    const unsigned char *_s1 = (const unsigned char *)s1;
+    const unsigned char *_s2 = (const unsigned char *)s2;
+    int ret = 0, i;
+    for (i = 0; i < n; i++) ret |= _s1[i] ^ _s2[i];
+    return !!ret;
+}
+
 int balloc(buffer_t *ptr, size_t capacity)
 {
     memset(ptr, 0, sizeof(buffer_t));
@@ -1084,7 +1093,7 @@ int ss_onetimeauth_verify(buffer_t *buf, uint8_t *iv)
     ss_sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, len, hash);
 #endif
 
-    return memcmp(buf->array + len, hash, ONETIMEAUTH_BYTES);
+    return safe_memcmp(buf->array + len, hash, ONETIMEAUTH_BYTES);
 }
 
 int ss_encrypt_all(buffer_t *plain, int method, int auth)
@@ -1535,7 +1544,7 @@ int ss_check_hash(buffer_t *buf, chunk_t *chunk, enc_ctx_t *ctx)
                          (uint8_t *)chunk->buf->array + AUTH_BYTES, chunk->len, hash);
 #endif
 
-            if (memcmp(hash, chunk->buf->array + CLEN_BYTES, ONETIMEAUTH_BYTES) != 0) {
+            if (safe_memcmp(hash, chunk->buf->array + CLEN_BYTES, ONETIMEAUTH_BYTES) != 0) {
                 return 0;
             }
 
