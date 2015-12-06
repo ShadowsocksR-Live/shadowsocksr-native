@@ -245,6 +245,24 @@ static void report_addr(int fd)
     }
 }
 
+int setfastopen(int fd)
+{
+    int s = 0;
+#ifdef TCP_FASTOPEN
+    if (fast_open) {
+        int opt = 1;
+        s = setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN, &opt, sizeof(opt));
+        if (s == -1) {
+            if (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT) {
+                LOGE("fast open is not supported on this platform");
+            } else {
+                ERROR("setsockopt");
+            }
+        }
+    }
+#endif
+    return s;
+}
 #ifndef __MINGW32__
 int setnonblocking(int fd)
 {
@@ -334,21 +352,6 @@ int create_and_bind(const char *host, const char *port)
 #ifdef SO_NOSIGPIPE
         setsockopt(listen_sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
-#ifdef TCP_FASTOPEN
-        if (fast_open) {
-            opt = 5;
-            int r = setsockopt(listen_sock, IPPROTO_TCP, TCP_FASTOPEN, &opt,
-                               sizeof(opt));
-            if (r == -1) {
-                if (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT) {
-                    LOGE("fast open is not supported on this platform");
-                } else {
-                    ERROR("setsockopt");
-                }
-            }
-        }
-#endif
-
         s = bind(listen_sock, rp->ai_addr, rp->ai_addrlen);
         if (s == 0) {
             /* We managed to bind successfully! */
@@ -404,9 +407,27 @@ static remote_t *connect_to_remote(struct addrinfo *res,
 
 #ifdef TCP_FASTOPEN
     if (fast_open) {
+#ifdef __APPLE__
+        ((struct sockaddr_in*)(res->ai_addr))->sin_len = sizeof(struct sockaddr_in);
+        sa_endpoints_t endpoints;
+        bzero((char*)&endpoints, sizeof(endpoints));
+        endpoints.sae_dstaddr = res->ai_addr;
+        endpoints.sae_dstaddrlen = res->ai_addrlen;
+
+        struct iovec iov;
+        iov.iov_base = server->buf->array + server->buf->idx;
+        iov.iov_len = server->buf->len;
+        size_t len;
+        int s = connectx(sockfd, &endpoints, SAE_ASSOCID_ANY, CONNECT_DATA_IDEMPOTENT,
+                         &iov, 1, &len, NULL);
+        if (s == 0) {
+            s = len;
+        }
+#else
         ssize_t s = sendto(sockfd, server->buf->array + server->buf->idx,
                            server->buf->len, MSG_FASTOPEN, res->ai_addr,
                            res->ai_addrlen);
+#endif
         if (s == -1) {
             if (errno == EINPROGRESS || errno == EAGAIN
                 || errno == EWOULDBLOCK) {
@@ -1488,6 +1509,7 @@ int main(int argc, char **argv)
             if (listen(listenfd, SSMAXCONN) == -1) {
                 FATAL("listen() error");
             }
+            setfastopen(listenfd);
             setnonblocking(listenfd);
             listen_ctx_t *listen_ctx = &listen_ctx_list[index];
 
