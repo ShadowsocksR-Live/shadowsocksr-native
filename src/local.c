@@ -294,8 +294,26 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     ev_timer_start(EV_A_ & remote->send_ctx->watcher);
                 } else {
 #ifdef TCP_FASTOPEN
+#ifdef __APPLE__
+                    ((struct sockaddr_in*)&(remote->addr))->sin_len = sizeof(struct sockaddr_in);
+                    sa_endpoints_t endpoints;
+                    bzero((char*)&endpoints, sizeof(endpoints));
+                    endpoints.sae_dstaddr = (struct sockaddr*)&(remote->addr);
+                    endpoints.sae_dstaddrlen = remote->addr_len;
+
+                    struct iovec iov;
+                    iov.iov_base = remote->buf->array;
+                    iov.iov_len = remote->buf->len;
+                    size_t len;
+                    int s = connectx(remote->fd, &endpoints, SAE_ASSOCID_ANY, CONNECT_DATA_IDEMPOTENT,
+                            &iov, 1, &len, NULL);
+                    if (s == 0) {
+                        s = len;
+                    }
+#else
                     int s = sendto(remote->fd, remote->buf->array, remote->buf->len, MSG_FASTOPEN,
                                    (struct sockaddr *)&(remote->addr), remote->addr_len);
+#endif
                     if (s == -1) {
                         if (errno == EINPROGRESS) {
                             // in progress, wait until connected
