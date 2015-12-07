@@ -250,7 +250,11 @@ int setfastopen(int fd)
     int s = 0;
 #ifdef TCP_FASTOPEN
     if (fast_open) {
+#ifdef __APPLE__
         int opt = 1;
+#else
+        int opt = 5;
+#endif
         s = setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN, &opt, sizeof(opt));
         if (s == -1) {
             if (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT) {
@@ -760,7 +764,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 server->stage = 4;
 
-                // listen to remote connected event
+                // waiting on remote connected event
                 ev_io_stop(EV_A_ & server_recv_ctx->io);
                 ev_io_start(EV_A_ & remote->send_ctx->io);
             }

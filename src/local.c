@@ -324,8 +324,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                         } else {
                             ERROR("sendto");
                             if (errno == ENOTCONN) {
-                                LOGE(
-                                    "fast open is not supported on this platform");
+                                LOGE( "fast open is not supported on this platform");
                                 // just turn it off
                                 fast_open = 0;
                             }
@@ -333,7 +332,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                             close_and_free_server(EV_A_ server);
                             return;
                         }
-                    } else if (s < remote->buf->len) {
+                    } else if (s <= remote->buf->len) {
                         remote->buf->len -= s;
                         remote->buf->idx  = s;
                     }
