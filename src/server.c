@@ -446,7 +446,7 @@ static remote_t *connect_to_remote(struct addrinfo *res,
             } else {
                 ERROR("sendto");
             }
-        } else if (s < server->buf->len) {
+        } else if (s <= server->buf->len) {
             server->buf->idx += s;
             server->buf->len -= s;
         } else {
