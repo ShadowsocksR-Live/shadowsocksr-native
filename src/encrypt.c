@@ -35,6 +35,7 @@
 #elif defined(USE_CRYPTO_POLARSSL)
 
 #include <polarssl/md5.h>
+#include <polarssl/sha1.h>
 #include <polarssl/entropy.h>
 #include <polarssl/ctr_drbg.h>
 #include <polarssl/version.h>
@@ -1071,7 +1072,7 @@ int ss_onetimeauth(buffer_t *buf, uint8_t *iv)
 #elif defined(USE_CRYPTO_MBEDTLS)
     mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, buf->len, (uint8_t *)hash);
 #else
-    md_hmac(md_info_from_type(POLARSSL_MD_SHA1), auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, buf->len, (uint8_t *)hash);
+    sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, buf->len, (uint8_t *)hash);
 #endif
 
     memcpy(buf->array + buf->len, hash, ONETIMEAUTH_BYTES);
@@ -1093,7 +1094,7 @@ int ss_onetimeauth_verify(buffer_t *buf, uint8_t *iv)
 #elif defined(USE_CRYPTO_MBEDTLS)
     mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, len, hash);
 #else
-    md_hmac(md_info_from_type(POLARSSL_MD_SHA1), auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, len, hash);
+    sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, len, hash);
 #endif
 
     return safe_memcmp(buf->array + len, hash, ONETIMEAUTH_BYTES);
@@ -1546,8 +1547,8 @@ int ss_check_hash(buffer_t *buf, chunk_t *chunk, enc_ctx_t *ctx)
             mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), key, enc_iv_len + sizeof(uint32_t),
                             (uint8_t *)chunk->buf->array + AUTH_BYTES, chunk->len, hash);
 #else
-            md_hmac(md_info_from_type(POLARSSL_MD_SHA1), key, enc_iv_len + sizeof(uint32_t),
-                         (uint8_t *)chunk->buf->array + AUTH_BYTES, chunk->len, hash);
+            sha1_hmac(key, enc_iv_len + sizeof(uint32_t),
+                      (uint8_t *)chunk->buf->array + AUTH_BYTES, chunk->len, hash);
 #endif
 
             if (safe_memcmp(hash, chunk->buf->array + CLEN_BYTES, ONETIMEAUTH_BYTES) != 0) {
@@ -1587,7 +1588,7 @@ int ss_gen_hash(buffer_t *buf, uint32_t *counter, enc_ctx_t *ctx)
 #elif defined(USE_CRYPTO_MBEDTLS)
     mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), key, enc_iv_len + sizeof(uint32_t), (uint8_t *)buf->array, blen, hash);
 #else
-    md_hmac(md_info_from_type(POLARSSL_MD_SHA1), key, enc_iv_len + sizeof(uint32_t), (uint8_t *)buf->array, blen, hash);
+    sha1_hmac(key, enc_iv_len + sizeof(uint32_t), (uint8_t *)buf->array, blen, hash);
 #endif
 
     memmove(buf->array + AUTH_BYTES, buf->array, blen);
