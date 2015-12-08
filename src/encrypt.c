@@ -72,7 +72,6 @@
 #include <arpa/inet.h>
 #endif
 
-#include "hmac-sha1.h"
 #include "cache.h"
 #include "encrypt.h"
 #include "utils.h"
@@ -1072,7 +1071,7 @@ int ss_onetimeauth(buffer_t *buf, uint8_t *iv)
 #elif defined(USE_CRYPTO_MBEDTLS)
     mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, buf->len, (uint8_t *)hash);
 #else
-    ss_sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, buf->len, (uint8_t *)hash);
+    md_hmac(md_info_from_type(POLARSSL_MD_SHA1), auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, buf->len, (uint8_t *)hash);
 #endif
 
     memcpy(buf->array + buf->len, hash, ONETIMEAUTH_BYTES);
@@ -1094,7 +1093,7 @@ int ss_onetimeauth_verify(buffer_t *buf, uint8_t *iv)
 #elif defined(USE_CRYPTO_MBEDTLS)
     mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, len, hash);
 #else
-    ss_sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, len, hash);
+    md_hmac(md_info_from_type(POLARSSL_MD_SHA1), auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, len, hash);
 #endif
 
     return safe_memcmp(buf->array + len, hash, ONETIMEAUTH_BYTES);
@@ -1547,7 +1546,7 @@ int ss_check_hash(buffer_t *buf, chunk_t *chunk, enc_ctx_t *ctx)
             mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), key, enc_iv_len + sizeof(uint32_t),
                             (uint8_t *)chunk->buf->array + AUTH_BYTES, chunk->len, hash);
 #else
-            ss_sha1_hmac(key, enc_iv_len + sizeof(uint32_t),
+            md_hmac(md_info_from_type(POLARSSL_MD_SHA1), key, enc_iv_len + sizeof(uint32_t),
                          (uint8_t *)chunk->buf->array + AUTH_BYTES, chunk->len, hash);
 #endif
 
@@ -1588,7 +1587,7 @@ int ss_gen_hash(buffer_t *buf, uint32_t *counter, enc_ctx_t *ctx)
 #elif defined(USE_CRYPTO_MBEDTLS)
     mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), key, enc_iv_len + sizeof(uint32_t), (uint8_t *)buf->array, blen, hash);
 #else
-    ss_sha1_hmac(key, enc_iv_len + sizeof(uint32_t), (uint8_t *)buf->array, blen, hash);
+    md_hmac(md_info_from_type(POLARSSL_MD_SHA1), key, enc_iv_len + sizeof(uint32_t), (uint8_t *)buf->array, blen, hash);
 #endif
 
     memmove(buf->array + AUTH_BYTES, buf->array, blen);
