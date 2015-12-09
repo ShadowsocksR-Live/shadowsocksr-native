@@ -818,8 +818,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     msg.msg_iov     = iov;
     msg.msg_iovlen  = 1;
 
-    ssize_t buf_len = recvmsg(server_ctx->fd, &msg, 0);
-    if (buf_len == -1) {
+    buf->len = recvmsg(server_ctx->fd, &msg, 0);
+    if (buf->len == -1) {
         ERROR("[udp] server_recvmsg");
         goto CLEAN_UP;
     }
