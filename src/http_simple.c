@@ -48,7 +48,7 @@ void http_simple_encode_head(http_simple_local_data *local, char *data, int data
     local->encode_buffer[pos * 3] = 0;
 }
 
-int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength, ssize_t* capacity) {
+int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength, size_t* capacity) {
     char *encryptdata = *pencryptdata;
     http_simple_local_data *local = (http_simple_local_data*)self->l_data;
     if (local->has_sent_header) {
@@ -98,7 +98,7 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength, s
     return outlength;
 }
 
-int http_simple_client_decode(obfs *self, char **pencryptdata, int datalength, ssize_t* capacity, int *needsendback) {
+int http_simple_client_decode(obfs *self, char **pencryptdata, int datalength, size_t* capacity, int *needsendback) {
     char *encryptdata = *pencryptdata;
     http_simple_local_data *local = (http_simple_local_data*)self->l_data;
     *needsendback = 0;
