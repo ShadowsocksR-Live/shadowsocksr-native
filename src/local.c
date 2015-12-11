@@ -262,9 +262,6 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                         r = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf, r, &remote->buf_capacity);
                     }
                 }
-#ifdef ANDROID
-                tx += r;
-#endif
                 remote->buf = ss_encrypt(&remote->buf_capacity, remote->buf, &r,
                                          server->e_ctx);
 
@@ -282,6 +279,9 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     }
                 }
                 // SSR end
+#ifdef ANDROID
+                tx += r;
+#endif
             }
 
             if (!remote->send_ctx->connected) {
@@ -691,6 +691,9 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     if (!remote->direct) {
+#ifdef ANDROID
+        rx += r;
+#endif
         // SSR beg
         if (server->obfs_plugin) {
             obfs_class *obfs_plugin = server->obfs_plugin;
@@ -707,9 +710,6 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         }
         if ( r == 0 )
             return;
-#ifdef ANDROID
-        rx += r;
-#endif
         server->buf = ss_decrypt(&server->buf_capacity, server->buf, &r, server->d_ctx);
         if (server->buf == NULL) {
             LOGE("remote invalid password or cipher");
