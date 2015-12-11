@@ -32,7 +32,7 @@
 
 #include "common.h"
 
-struct listen_ctx {
+typedef struct listen_ctx {
     ev_io io;
     char *iface;
     int remote_num;
@@ -47,20 +47,17 @@ struct listen_ctx {
     char *obfs_param;
     void **list_protocol_global;
     void **list_obfs_global;
-};
+} listen_ctx_t;
 
-struct server_ctx {
+typedef struct server_ctx {
     ev_io io;
     int connected;
     struct server *server;
-};
+} server_ctx_t;
 
-struct server {
+typedef struct server {
     int fd;
-    ssize_t buf_len;
-    ssize_t buf_idx;
-    char *buf; // server send from, remote recv into
-    ssize_t buf_capacity;
+    buffer_t *buf;
     char stage;
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;
@@ -76,22 +73,19 @@ struct server {
     obfs *obfs;
     obfs_class *protocol_plugin;
     obfs_class *obfs_plugin;
-};
+} server_t;
 
-struct remote_ctx {
+typedef struct remote_ctx {
     ev_io io;
     ev_timer watcher;
     int connected;
     struct remote *remote;
-};
+} remote_ctx_t;
 
-struct remote {
+typedef struct remote {
     int fd;
-    ssize_t buf_len;
-    ssize_t buf_idx;
+    buffer_t *buf;
     int direct;
-    char *buf; // remote send from, server recv into
-    ssize_t buf_capacity;
     struct remote_ctx *recv_ctx;
     struct remote_ctx *send_ctx;
     struct server *server;
@@ -101,6 +95,6 @@ struct remote {
 
     // SSR
     int remote_index;
-};
+} remote_t;
 
 #endif // _LOCAL_H

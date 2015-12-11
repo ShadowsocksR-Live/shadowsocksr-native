@@ -80,7 +80,7 @@ int auth_simple_pack_auth_data(auth_simple_global_data *global, char *data, int 
     return out_size;
 }
 
-int auth_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength, ssize_t* capacity) {
+int auth_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength, size_t* capacity) {
     char *plaindata = *pplaindata;
     auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
     char * out_buffer = (char*)malloc(datalength * 2 + 64);
@@ -118,7 +118,7 @@ int auth_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength
     return len;
 }
 
-int auth_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalength, ssize_t* capacity) {
+int auth_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalength, size_t* capacity) {
     char *plaindata = *pplaindata;
     auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
     uint8_t * recv_buffer = (uint8_t *)local->recv_buffer;
@@ -192,12 +192,12 @@ int auth_sha1_pack_auth_data(auth_simple_global_data *global, server_info *serve
     memmove(outdata + data_offset + 8, &global->connection_id, 4);
     memmove(outdata + data_offset + 12, data, datalength);
     char hash[ONETIMEAUTH_BYTES * 2];
-    ss_onetimeauth(hash, outdata, out_size - 10, server->iv);
+    ss_sha1_hmac(hash, outdata, out_size - 10, server->iv);
     memcpy(outdata + out_size - 10, hash, ONETIMEAUTH_BYTES);
     return out_size;
 }
 
-int auth_sha1_client_pre_encrypt(obfs *self, char **pplaindata, int datalength, ssize_t* capacity) {
+int auth_sha1_client_pre_encrypt(obfs *self, char **pplaindata, int datalength, size_t* capacity) {
     char *plaindata = *pplaindata;
     auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
     char * out_buffer = (char*)malloc(datalength * 2 + 256);
@@ -235,7 +235,7 @@ int auth_sha1_client_pre_encrypt(obfs *self, char **pplaindata, int datalength, 
     return len;
 }
 
-int auth_sha1_client_post_decrypt(obfs *self, char **pplaindata, int datalength, ssize_t* capacity) {
+int auth_sha1_client_post_decrypt(obfs *self, char **pplaindata, int datalength, size_t* capacity) {
     char *plaindata = *pplaindata;
     auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
     uint8_t * recv_buffer = (uint8_t *)local->recv_buffer;

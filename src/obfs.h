@@ -55,20 +55,20 @@ typedef struct obfs_class {
     int (*client_pre_encrypt)(obfs *self,
             char **pplaindata,
             int datalength,
-            ssize_t* capacity);
+            size_t* capacity);
     int (*client_encode)(obfs *self,
             char **pencryptdata,
             int datalength,
-            ssize_t* capacity);
+            size_t* capacity);
     int (*client_decode)(obfs *self,
             char **pencryptdata,
             int datalength,
-            ssize_t* capacity,
+            size_t* capacity,
             int *needsendback);
     int (*client_post_decrypt)(obfs *self,
             char **pplaindata,
             int datalength,
-            ssize_t* capacity);
+            size_t* capacity);
 }obfs_class;
 
 obfs_class * new_obfs_class(char *plugin_name);
