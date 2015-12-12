@@ -217,8 +217,8 @@ int brealloc(buffer_t *ptr, size_t len, size_t capacity)
     int real_capacity = max(len, capacity);
     if (ptr->capacity < real_capacity) {
         ptr->array = realloc(ptr->array, real_capacity);
+        ptr->capacity = real_capacity;
     }
-    ptr->capacity = real_capacity;
     return real_capacity;
 }
 
