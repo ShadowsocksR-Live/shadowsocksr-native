@@ -52,8 +52,7 @@ build_triplet = @build@
 host_triplet = @host@
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in $(srcdir)/libsodium.pc.in \
-	$(top_srcdir)/configure \
+	$(srcdir)/Makefile.in $(top_srcdir)/configure \
 	$(top_srcdir)/src/libsodium/include/sodium/version.h.in \
 	AUTHORS ChangeLog THANKS build-aux/config.guess \
 	build-aux/config.sub build-aux/depcomp build-aux/install-sh \
@@ -71,8 +70,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
-CONFIG_CLEAN_FILES = libsodium.pc \
-	src/libsodium/include/sodium/version.h
+CONFIG_CLEAN_FILES = src/libsodium/include/sodium/version.h
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_GEN = $(am__v_GEN_@AM_V@)
 am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
@@ -157,6 +155,13 @@ CCASDEPMODE = @CCASDEPMODE@
 CCASFLAGS = @CCASFLAGS@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CFLAGS_AESNI = @CFLAGS_AESNI@
+CFLAGS_MMX = @CFLAGS_MMX@
+CFLAGS_PCLMUL = @CFLAGS_PCLMUL@
+CFLAGS_SSE2 = @CFLAGS_SSE2@
+CFLAGS_SSE3 = @CFLAGS_SSE3@
+CFLAGS_SSE41 = @CFLAGS_SSE41@
+CFLAGS_SSSE3 = @CFLAGS_SSSE3@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CWFLAGS = @CWFLAGS@
@@ -175,6 +180,7 @@ EXEEXT = @EXEEXT@
 FGREP = @FGREP@
 GREP = @GREP@
 HAVE_AMD64_ASM_V = @HAVE_AMD64_ASM_V@
+HAVE_AVX_ASM_V = @HAVE_AVX_ASM_V@
 HAVE_CPUID_V = @HAVE_CPUID_V@
 HAVE_TI_MODE_V = @HAVE_TI_MODE_V@
 INSTALL = @INSTALL@
@@ -220,6 +226,7 @@ SODIUM_LIBRARY_VERSION = @SODIUM_LIBRARY_VERSION@
 SODIUM_LIBRARY_VERSION_MAJOR = @SODIUM_LIBRARY_VERSION_MAJOR@
 SODIUM_LIBRARY_VERSION_MINOR = @SODIUM_LIBRARY_VERSION_MINOR@
 STRIP = @STRIP@
+TEST_LDFLAGS = @TEST_LDFLAGS@
 VERSION = @VERSION@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -284,8 +291,6 @@ EXTRA_DIST = \
 	THANKS
 
 SUBDIRS = \
-	dist-build \
-	msvc-scripts \
 	src
 
 all: all-recursive
@@ -325,8 +330,6 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	$(am__cd) $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
 $(am__aclocal_m4_deps):
-libsodium.pc: $(top_builddir)/config.status $(srcdir)/libsodium.pc.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
 src/libsodium/include/sodium/version.h: $(top_builddir)/config.status $(top_srcdir)/src/libsodium/include/sodium/version.h.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 
