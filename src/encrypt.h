@@ -119,7 +119,7 @@ typedef struct {
 #endif
 
 #define SODIUM_BLOCK_SIZE   64
-#define CIPHER_NUM          17
+#define CIPHER_NUM          18
 
 #define NONE                -1
 #define TABLE               0
@@ -139,6 +139,7 @@ typedef struct {
 #define SEED_CFB            14
 #define SALSA20             15
 #define CHACHA20            16
+#define CHACHA20IETF        17
 
 #define ONETIMEAUTH_FLAG 0x10
 #define ADDRTYPE_MASK 0xF

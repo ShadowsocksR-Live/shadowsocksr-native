@@ -117,7 +117,8 @@ static const char *supported_ciphers[CIPHER_NUM] = {
     "rc2-cfb",
     "seed-cfb",
     "salsa20",
-    "chacha20"
+    "chacha20",
+    "chacha20-ietf"
 };
 
 #ifdef USE_CRYPTO_POLARSSL
@@ -138,7 +139,8 @@ static const char *supported_ciphers_polarssl[CIPHER_NUM] = {
     CIPHER_UNSUPPORTED,
     CIPHER_UNSUPPORTED,
     "salsa20",
-    "chacha20"
+    "chacha20",
+    "chacha20-ietf"
 };
 #endif
 
@@ -160,7 +162,8 @@ static const char *supported_ciphers_mbedtls[CIPHER_NUM] = {
     CIPHER_UNSUPPORTED,
     CIPHER_UNSUPPORTED,
     "salsa20",
-    "chacha20"
+    "chacha20",
+    "chacha20-ietf"
 };
 #endif
 
@@ -182,17 +185,18 @@ static const CCAlgorithm supported_ciphers_applecc[CIPHER_NUM] = {
     kCCAlgorithmRC2,
     kCCAlgorithmInvalid,
     kCCAlgorithmInvalid,
+    kCCAlgorithmInvalid,
     kCCAlgorithmInvalid
 };
 
 #endif
 
 static const int supported_ciphers_iv_size[CIPHER_NUM] = {
-    0, 0, 16, 16, 16, 16, 8, 16, 16, 16, 8, 8, 8, 8, 16, 8, 8
+    0, 0, 16, 16, 16, 16, 8, 16, 16, 16, 8, 8, 8, 8, 16, 8, 8, 12
 };
 
 static const int supported_ciphers_key_size[CIPHER_NUM] = {
-    0, 16, 16, 16, 24, 32, 16, 16, 24, 32, 16, 8, 16, 16, 16, 32, 32
+    0, 16, 16, 16, 24, 32, 16, 16, 24, 32, 16, 8, 16, 16, 16, 32, 32, 32
 };
 
 static int safe_memcmp(const void *s1, const void *s2, size_t n)
@@ -242,6 +246,8 @@ static int crypto_stream_xor_ic(uint8_t *c, const uint8_t *m, uint64_t mlen,
         return crypto_stream_salsa20_xor_ic(c, m, mlen, n, ic, k);
     case CHACHA20:
         return crypto_stream_chacha20_xor_ic(c, m, mlen, n, ic, k);
+    case CHACHA20IETF:
+        return crypto_stream_chacha20_ietf_xor_ic(c, m, mlen, n, (uint32_t)ic, k);
     }
     // always return 0
     return 0;
@@ -1424,7 +1430,7 @@ void enc_key_init(int method, const char *pass)
     cipher_kt_t *cipher;
     cipher_kt_t cipher_info;
 
-    if (method == SALSA20 || method == CHACHA20) {
+    if (method == SALSA20 || method == CHACHA20 || method == CHACHA20IETF) {
         if (sodium_init() == -1) {
             FATAL("Failed to initialize sodium");
         }
