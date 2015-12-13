@@ -1,20 +1,19 @@
+#include "api.h"
 
-#include "crypto_stream_aes128ctr.h"
-
-int crypto_stream_aes128ctr(
+int crypto_stream(
         unsigned char *out,
         unsigned long long outlen,
         const unsigned char *n,
         const unsigned char *k
         )
 {
-    unsigned char d[crypto_stream_aes128ctr_BEFORENMBYTES];
-    crypto_stream_aes128ctr_beforenm(d, k);
-    crypto_stream_aes128ctr_afternm(out, outlen, n, d);
+    unsigned char d[crypto_stream_BEFORENMBYTES];
+    crypto_stream_beforenm(d, k);
+    crypto_stream_afternm(out, outlen, n, d);
     return 0;
 }
 
-int crypto_stream_aes128ctr_xor(
+int crypto_stream_xor(
         unsigned char *out,
         const unsigned char *in,
         unsigned long long inlen,
@@ -22,8 +21,8 @@ int crypto_stream_aes128ctr_xor(
         const unsigned char *k
         )
 {
-    unsigned char d[crypto_stream_aes128ctr_BEFORENMBYTES];
-    crypto_stream_aes128ctr_beforenm(d, k);
-    crypto_stream_aes128ctr_xor_afternm(out, in, inlen, n, d);
+    unsigned char d[crypto_stream_BEFORENMBYTES];
+    crypto_stream_beforenm(d, k);
+    crypto_stream_xor_afternm(out, in, inlen, n, d);
     return 0;
 }

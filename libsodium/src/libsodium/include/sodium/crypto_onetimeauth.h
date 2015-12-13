@@ -14,8 +14,6 @@ extern "C" {
 #endif
 
 typedef crypto_onetimeauth_poly1305_state crypto_onetimeauth_state;
-SODIUM_EXPORT
-size_t  crypto_onetimeauth_statebytes(void);
 
 #define crypto_onetimeauth_BYTES crypto_onetimeauth_poly1305_BYTES
 SODIUM_EXPORT
@@ -35,8 +33,7 @@ int crypto_onetimeauth(unsigned char *out, const unsigned char *in,
 
 SODIUM_EXPORT
 int crypto_onetimeauth_verify(const unsigned char *h, const unsigned char *in,
-                              unsigned long long inlen, const unsigned char *k)
-            __attribute__ ((warn_unused_result));
+                              unsigned long long inlen, const unsigned char *k);
 
 SODIUM_EXPORT
 int crypto_onetimeauth_init(crypto_onetimeauth_state *state,

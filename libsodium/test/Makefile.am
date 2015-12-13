@@ -2,4 +2,4 @@ SUBDIRS = \
 	default
 
 EXTRA_DIST = \
-	quirks/quirks.h
+	quirks/windows/windows-quirks.h

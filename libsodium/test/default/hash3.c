@@ -2,8 +2,8 @@
 #define TEST_NAME "hash3"
 #include "cmptest.h"
 
-static unsigned char x[] = "testing\n";
-static unsigned char h[crypto_hash_BYTES];
+unsigned char x[] = "testing\n";
+unsigned char h[crypto_hash_BYTES];
 
 int main(void)
 {

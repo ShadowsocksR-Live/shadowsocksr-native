@@ -3,10 +3,10 @@
 #include "cmptest.h"
 
 /* "Test Case 2" from RFC 4231 */
-static unsigned char key[32] = "Jefe";
-static unsigned char c[] = "what do ya want for nothing?";
+unsigned char key[32] = "Jefe";
+unsigned char c[] = "what do ya want for nothing?";
 
-static unsigned char a[64];
+unsigned char a[64];
 
 int main(void)
 {

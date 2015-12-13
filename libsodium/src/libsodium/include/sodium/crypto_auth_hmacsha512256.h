@@ -12,6 +12,8 @@
 extern "C" {
 #endif
 
+typedef struct crypto_auth_hmacsha512_state crypto_auth_hmacsha512256_state;
+
 #define crypto_auth_hmacsha512256_BYTES 32U
 SODIUM_EXPORT
 size_t crypto_auth_hmacsha512256_bytes(void);
@@ -28,14 +30,7 @@ SODIUM_EXPORT
 int crypto_auth_hmacsha512256_verify(const unsigned char *h,
                                      const unsigned char *in,
                                      unsigned long long inlen,
-                                     const unsigned char *k)
-            __attribute__ ((warn_unused_result));
-
-/* ------------------------------------------------------------------------- */
-
-typedef crypto_auth_hmacsha512_state crypto_auth_hmacsha512256_state;
-SODIUM_EXPORT
-size_t crypto_auth_hmacsha512256_statebytes(void);
+                                     const unsigned char *k);
 
 SODIUM_EXPORT
 int crypto_auth_hmacsha512256_init(crypto_auth_hmacsha512256_state *state,

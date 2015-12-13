@@ -30,15 +30,7 @@
 #ifndef crypto_scrypt_H
 #define crypto_scrypt_H
 
-#include <limits.h>
 #include <stdint.h>
-#include <stddef.h>
-
-#if SIZE_MAX > 0xffffffffULL
-# define ARCH_BITS 64
-#else
-# define ARCH_BITS 32
-#endif
 
 #define crypto_pwhash_scryptsalsa208sha256_STRPREFIXBYTES 14
 #define crypto_pwhash_scryptsalsa208sha256_STRSETTINGBYTES 57
@@ -53,11 +45,6 @@ typedef struct {
 	void * base, * aligned;
 	size_t size;
 } escrypt_region_t;
-
-typedef union {
-	uint64_t d[8];
-	uint32_t w[16];
-} escrypt_block_t;
 
 typedef escrypt_region_t escrypt_local_t;
 

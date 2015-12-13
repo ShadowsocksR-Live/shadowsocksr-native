@@ -9,12 +9,7 @@
 #include <string.h>
 
 #include "sodium.h"
-#include "quirks.h"
 
-#ifdef __EMSCRIPTEN__
-# undef TEST_SRCDIR
-# define TEST_SRCDIR "/test-data"
-#endif
 #ifndef TEST_SRCDIR
 # define TEST_SRCDIR "."
 #endif
@@ -27,11 +22,8 @@
 # define rand(X) arc4random(X)
 #endif
 
-int xmain(void);
-
-#ifndef BROWSER_TESTS
-
 FILE *fp_res;
+int   xmain(void);
 
 int main(void)
 {
@@ -64,24 +56,6 @@ int main(void)
 
 #undef  printf
 #define printf(...) fprintf(fp_res, __VA_ARGS__)
-
-#else
-
-int main(void)
-{
-    if (sodium_init() != 0) {
-        return 99;
-    }
-    if (xmain() != 0) {
-        return 99;
-    }
-    printf("--- SUCCESS ---\n");
-
-    return 0;
-}
-
-#endif
-
 #define main xmain
 
 #endif

@@ -1,20 +1,17 @@
 
 #include <limits.h>
-#include <stdint.h>
 #include <string.h>
 
+#include "api.h"
 #include "crypto_hash_sha512.h"
-#include "crypto_sign_ed25519.h"
 #include "crypto_verify_32.h"
 #include "ge.h"
 #include "sc.h"
 #include "utils.h"
 
 int
-crypto_sign_ed25519_verify_detached(const unsigned char *sig,
-                                    const unsigned char *m,
-                                    unsigned long long mlen,
-                                    const unsigned char *pk)
+crypto_sign_verify_detached(const unsigned char *sig, const unsigned char *m,
+                            unsigned long long mlen, const unsigned char *pk)
 {
     crypto_hash_sha512_state hs;
     unsigned char h[64];
@@ -46,35 +43,28 @@ crypto_sign_ed25519_verify_detached(const unsigned char *sig,
     ge_double_scalarmult_vartime(&R, h, &A, sig + 32);
     ge_tobytes(rcheck, &R);
 
-    return crypto_verify_32(rcheck, sig) | (-(rcheck == sig)) |
+    return crypto_verify_32(rcheck, sig) | (-(rcheck - sig == 0)) |
            sodium_memcmp(sig, rcheck, 32);
 }
 
 int
-crypto_sign_ed25519_open(unsigned char *m, unsigned long long *mlen_p,
-                         const unsigned char *sm, unsigned long long smlen,
-                         const unsigned char *pk)
+crypto_sign_open(unsigned char *m, unsigned long long *mlen,
+                 const unsigned char *sm, unsigned long long smlen,
+                 const unsigned char *pk)
 {
-    unsigned long long mlen;
-
     if (smlen < 64 || smlen > SIZE_MAX) {
         goto badsig;
     }
-    mlen = smlen - 64;
-    if (crypto_sign_ed25519_verify_detached(sm, sm + 64, mlen, pk) != 0) {
-        memset(m, 0, mlen);
+    if (crypto_sign_verify_detached(sm, sm + 64, smlen - 64, pk) != 0) {
+        memset(m, 0, smlen - 64);
         goto badsig;
     }
-    if (mlen_p != NULL) {
-        *mlen_p = mlen;
-    }
-    memmove(m, sm + 64, mlen);
+    *mlen = smlen - 64;
+    memmove(m, sm + 64, *mlen);
 
     return 0;
 
 badsig:
-    if (mlen_p != NULL) {
-        *mlen_p = 0;
-    }
+    *mlen = 0;
     return -1;
 }

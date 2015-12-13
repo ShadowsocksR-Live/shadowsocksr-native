@@ -9,8 +9,7 @@ extern "C" {
 #endif
 
 SODIUM_EXPORT
-int sodium_init(void)
-            __attribute__ ((warn_unused_result));
+int sodium_init(void);
 
 #ifdef __cplusplus
 }

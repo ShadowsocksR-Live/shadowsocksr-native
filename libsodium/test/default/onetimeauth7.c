@@ -1,16 +1,18 @@
 
+#include "windows/windows-quirks.h"
+
 #define TEST_NAME "onetimeauth7"
 #include "cmptest.h"
 
-static unsigned char key[32];
-static unsigned char c[1000];
-static unsigned char a[16];
+unsigned char key[32];
+unsigned char c[10000];
+unsigned char a[16];
 
 int main(void)
 {
     int clen;
 
-    for (clen = 0; clen < 1000; ++clen) {
+    for (clen = 0; clen < 10000; ++clen) {
         randombytes_buf(key, sizeof key);
         randombytes_buf(c, clen);
         crypto_onetimeauth(a, c, clen, key);

@@ -27,8 +27,7 @@ int crypto_scalarmult_base(unsigned char *q, const unsigned char *n);
 
 SODIUM_EXPORT
 int crypto_scalarmult(unsigned char *q, const unsigned char *n,
-                      const unsigned char *p)
-            __attribute__ ((warn_unused_result));
+                      const unsigned char *p);
 
 #ifdef __cplusplus
 }

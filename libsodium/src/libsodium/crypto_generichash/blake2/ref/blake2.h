@@ -18,18 +18,22 @@
 #include <stdint.h>
 
 #include "crypto_generichash_blake2b.h"
-#include "export.h"
 
-#define blake2b_init_param               crypto_generichash_blake2b__init_param
-#define blake2b_init                     crypto_generichash_blake2b__init
-#define blake2b_init_salt_personal       crypto_generichash_blake2b__init_salt_personal
-#define blake2b_init_key                 crypto_generichash_blake2b__init_key
-#define blake2b_init_key_salt_personal   crypto_generichash_blake2b__init_key_salt_personal
-#define blake2b_update                   crypto_generichash_blake2b__update
-#define blake2b_final                    crypto_generichash_blake2b__final
-#define blake2b                          crypto_generichash_blake2b__blake2b
-#define blake2b_salt_personal            crypto_generichash_blake2b__blake2b_salt_personal
-#define blake2b_pick_best_implementation crypto_generichash_blake2b__pick_best_implementation
+#define blake2b_init_param             crypto_generichash_blake2b__init_param
+#define blake2b_init                   crypto_generichash_blake2b__init
+#define blake2b_init_salt_personal     crypto_generichash_blake2b__init_salt_personal
+#define blake2b_init_key               crypto_generichash_blake2b__init_key
+#define blake2b_init_key_salt_personal crypto_generichash_blake2b__init_key_salt_personal
+#define blake2b_update                 crypto_generichash_blake2b__update
+#define blake2b_final                  crypto_generichash_blake2b__final
+#define blake2b                        crypto_generichash_blake2b__blake2b
+#define blake2b_salt_personal          crypto_generichash_blake2b__blake2b_salt_personal
+
+#if defined(_MSC_VER)
+#define ALIGN(x) __declspec(align(x))
+#else
+#define ALIGN(x) __attribute__((aligned(x)))
+#endif
 
 #if defined(__cplusplus)
 extern "C" {
@@ -53,12 +57,7 @@ extern "C" {
     BLAKE2B_PERSONALBYTES = 16
   };
 
-#if defined(__IBMC__) || defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-# pragma pack(1)
-#else
-# pragma pack(push, 1)
-#endif
-
+#pragma pack(push, 1)
   typedef struct blake2s_param_
   {
     uint8_t  digest_length; // 1
@@ -74,7 +73,7 @@ extern "C" {
     uint8_t  personal[BLAKE2S_PERSONALBYTES];  // 32
   } blake2s_param;
 
-CRYPTO_ALIGN( 64 ) typedef struct blake2s_state_
+  ALIGN( 64 ) typedef struct blake2s_state_
   {
     uint32_t h[8];
     uint32_t t[2];
@@ -102,7 +101,7 @@ CRYPTO_ALIGN( 64 ) typedef struct blake2s_state_
 #ifndef DEFINE_BLAKE2B_STATE
 typedef crypto_generichash_blake2b_state blake2b_state;
 #else
-CRYPTO_ALIGN( 64 ) typedef struct blake2b_state_
+  ALIGN( 64 ) typedef struct blake2b_state_
   {
     uint64_t h[8];
     uint64_t t[2];
@@ -128,12 +127,7 @@ CRYPTO_ALIGN( 64 ) typedef struct blake2b_state_
     uint8_t buf[4 * BLAKE2B_BLOCKBYTES];
     size_t  buflen;
   } blake2bp_state;
-
-#if defined(__IBMC__) || defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-# pragma pack()
-#else
-# pragma pack(pop)
-#endif
+#pragma pack(pop)
 
   // Streaming API
   int blake2s_init( blake2s_state *S, const uint8_t outlen );
@@ -175,14 +169,9 @@ CRYPTO_ALIGN( 64 ) typedef struct blake2b_state_
     return blake2b( out, in, key, outlen, inlen, keylen );
   }
 
-  typedef int ( *blake2b_compress_fn )( blake2b_state *S, const uint8_t block[BLAKE2B_BLOCKBYTES] );
-  int blake2b_pick_best_implementation(void);
-  int blake2b_compress_ref( blake2b_state *S, const uint8_t block[BLAKE2B_BLOCKBYTES] );
-  int blake2b_compress_ssse3( blake2b_state *S, const uint8_t block[BLAKE2B_BLOCKBYTES] );
-  int blake2b_compress_sse41( blake2b_state *S, const uint8_t block[BLAKE2B_BLOCKBYTES] );
-
 #if defined(__cplusplus)
 }
 #endif
 
 #endif
+
