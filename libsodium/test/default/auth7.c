@@ -1,18 +1,16 @@
 
-#include "windows/windows-quirks.h"
-
 #define TEST_NAME "auth7"
 #include "cmptest.h"
 
-unsigned char key[32];
-unsigned char c[10000];
-unsigned char a[64];
+static unsigned char key[32];
+static unsigned char c[600];
+static unsigned char a[64];
 
 int main(void)
 {
     int clen;
 
-    for (clen = 0; clen < 10000; ++clen) {
+    for (clen = 0; clen < sizeof c; ++clen) {
         randombytes_buf(key, sizeof key);
         randombytes_buf(c, clen);
         crypto_auth_hmacsha512(a, c, clen, key);

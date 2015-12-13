@@ -2,6 +2,8 @@
 EXTRA_DIST = \
 	cmptest.h \
 	wintest.bat \
+	pre.js.inc \
+	aead_aes256gcm.exp \
 	aead_chacha20poly1305.exp \
 	auth.exp \
 	auth2.exp \
@@ -15,6 +17,7 @@ EXTRA_DIST = \
 	box8.exp \
 	box_easy.exp \
 	box_easy2.exp \
+	box_seal.exp \
 	box_seed.exp \
 	chacha20.exp \
 	core1.exp \
@@ -61,6 +64,7 @@ EXTRA_DIST = \
 	verify1.exp
 
 DISTCLEANFILES = \
+	aead_aes256gcm.res \
 	aead_chacha20poly1305.res \
 	auth.res \
 	auth2.res \
@@ -74,6 +78,7 @@ DISTCLEANFILES = \
 	box8.res \
 	box_easy.res \
 	box_easy2.res \
+	box_seal.res \
 	box_seed.res \
 	chacha20.res \
 	core1.res \
@@ -119,6 +124,124 @@ DISTCLEANFILES = \
 	stream4.res \
 	verify1.res
 
+if NATIVECLIENT
+CLEANFILES = \
+	aead_aes256gcm.final \
+	aead_chacha20poly1305.final \
+	auth.final \
+	auth2.final \
+	auth3.final \
+	auth5.final \
+	auth6.final \
+	auth7.final \
+	box.final \
+	box2.final \
+	box7.final \
+	box8.final \
+	box_easy.final \
+	box_easy2.final \
+	box_seal.final \
+	box_seed.final \
+	chacha20.final \
+	core1.final \
+	core2.final \
+	core3.final \
+	core4.final \
+	core5.final \
+	core6.final \
+	ed25519_convert.final \
+	generichash.final \
+	generichash2.final \
+	generichash3.final \
+	hash.final \
+	hash2.final \
+	hash3.final \
+	onetimeauth.final \
+	onetimeauth2.final \
+	onetimeauth7.final \
+	pwhash.final \
+	pwhash_scrypt_ll.final \
+	randombytes.final \
+	scalarmult.final \
+	scalarmult2.final \
+	scalarmult5.final \
+	scalarmult6.final \
+	scalarmult7.final \
+	secretbox.final \
+	secretbox2.final \
+	secretbox7.final \
+	secretbox8.final \
+	secretbox_easy.final \
+	secretbox_easy2.final \
+	shorthash.final \
+	sign.final \
+	sodium_core.final \
+	sodium_utils.final \
+	sodium_version.final \
+	stream.final \
+	stream2.final \
+	stream3.final \
+	stream4.final \
+	verify1.final \
+	aead_aes256gcm.nexe \
+	aead_chacha20poly1305.nexe \
+	auth.nexe \
+	auth2.nexe \
+	auth3.nexe \
+	auth5.nexe \
+	auth6.nexe \
+	auth7.nexe \
+	box.nexe \
+	box2.nexe \
+	box7.nexe \
+	box8.nexe \
+	box_easy.nexe \
+	box_easy2.nexe \
+	box_seal.nexe \
+	box_seed.nexe \
+	chacha20.nexe \
+	core1.nexe \
+	core2.nexe \
+	core3.nexe \
+	core4.nexe \
+	core5.nexe \
+	core6.nexe \
+	ed25519_convert.nexe \
+	generichash.nexe \
+	generichash2.nexe \
+	generichash3.nexe \
+	hash.nexe \
+	hash2.nexe \
+	hash3.nexe \
+	onetimeauth.nexe \
+	onetimeauth2.nexe \
+	onetimeauth7.nexe \
+	pwhash.nexe \
+	pwhash_scrypt_ll.nexe \
+	randombytes.nexe \
+	scalarmult.nexe \
+	scalarmult2.nexe \
+	scalarmult5.nexe \
+	scalarmult6.nexe \
+	scalarmult7.nexe \
+	secretbox.nexe \
+	secretbox2.nexe \
+	secretbox7.nexe \
+	secretbox8.nexe \
+	secretbox_easy.nexe \
+	secretbox_easy2.nexe \
+	shorthash.nexe \
+	sign.nexe \
+	sodium_core.nexe \
+	sodium_utils.nexe \
+	sodium_version.nexe \
+	stream.nexe \
+	stream2.nexe \
+	stream3.nexe \
+	stream4.nexe \
+	verify1.nexe
+endif
+
 AM_CPPFLAGS = \
 	-DTEST_SRCDIR=\"@srcdir@\" \
 	-I$(top_srcdir)/src/libsodium/include \
@@ -127,7 +250,10 @@ AM_CPPFLAGS = \
 	-I$(top_builddir)/src/libsodium/include/sodium \
 	-I$(top_srcdir)/test/quirks
 
+AM_LDFLAGS = @TEST_LDFLAGS@
+
 TESTS_TARGETS = \
+	aead_aes256gcm \
 	aead_chacha20poly1305 \
 	auth \
 	auth2 \
@@ -141,6 +267,7 @@ TESTS_TARGETS = \
 	box8 \
 	box_easy \
 	box_easy2 \
+	box_seal \
 	box_seed \
 	chacha20 \
 	core1 \
@@ -176,8 +303,6 @@ TESTS_TARGETS = \
 	sign \
 	sodium_core \
 	sodium_utils \
-	sodium_utils2 \
-	sodium_utils3 \
 	sodium_version \
 	stream \
 	stream2 \
@@ -185,12 +310,23 @@ TESTS_TARGETS = \
 	stream4 \
 	verify1
 
+if !EMSCRIPTEN
+if !NATIVECLIENT
+TESTS_TARGETS += \
+	sodium_utils2 \
+	sodium_utils3
+endif
+endif
+
 check_PROGRAMS = $(TESTS_TARGETS)
 
 TESTS = $(TESTS_TARGETS)
 
 TESTS_LDADD = \
 	${top_builddir}/src/libsodium/libsodium.la
+
+aead_aes256gcm_SOURCE                 = cmptest.h aead_aes256gcm.c
+aead_aes256gcm_LDADD                  = $(TESTS_LDADD)
 
 aead_chacha20poly1305_SOURCE          = cmptest.h aead_chacha20poly1305.c
 aead_chacha20poly1305_LDADD           = $(TESTS_LDADD)
@@ -204,13 +340,13 @@ auth2_LDADD               = $(TESTS_LDADD)
 auth3_SOURCE              = cmptest.h auth3.c
 auth3_LDADD               = $(TESTS_LDADD)
 
-auth5_SOURCE              = cmptest.h auth5.c windows/windows-quirks.h
+auth5_SOURCE              = cmptest.h auth5.c quirks.h
 auth5_LDADD               = $(TESTS_LDADD)
 
-auth6_SOURCE              = cmptest.h auth6.c windows/windows-quirks.h
+auth6_SOURCE              = cmptest.h auth6.c quirks.h
 auth6_LDADD               = $(TESTS_LDADD)
 
-auth7_SOURCE              = cmptest.h auth7.c windows/windows-quirks.h
+auth7_SOURCE              = cmptest.h auth7.c quirks.h
 auth7_LDADD               = $(TESTS_LDADD)
 
 box_SOURCE                = cmptest.h box.c
@@ -230,6 +366,9 @@ box_easy_LDADD            = $(TESTS_LDADD)
 
 box_easy2_SOURCE          = cmptest.h box_easy2.c
 box_easy2_LDADD           = $(TESTS_LDADD)
+
+box_seal_SOURCE           = cmptest.h box_seal.c
+box_seal_LDADD            = $(TESTS_LDADD)
 
 box_seed_SOURCE           = cmptest.h box_seed.c
 box_seed_LDADD            = $(TESTS_LDADD)
@@ -359,5 +498,9 @@ stream4_LDADD             = $(TESTS_LDADD)
 
 verify1_SOURCE            = cmptest.h verify1.c
 verify1_LDADD             = $(TESTS_LDADD)
+
+if NATIVECLIENT
+LOG_COMPILER = ./nacl-test-wrapper.sh
+endif
 
 verify: check

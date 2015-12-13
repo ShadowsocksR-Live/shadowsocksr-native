@@ -2,7 +2,8 @@
 #define TEST_NAME "generichash2"
 #include "cmptest.h"
 
-int main(void)
+int
+main(void)
 {
 #define MAXLEN 64
     crypto_generichash_state st;
@@ -10,6 +11,7 @@ int main(void)
         k[crypto_generichash_KEYBYTES_MAX];
     size_t h, i, j;
 
+    assert(crypto_generichash_statebytes() >= sizeof st);
     for (h = 0; h < crypto_generichash_KEYBYTES_MAX; ++h)
         k[h] = h;
 

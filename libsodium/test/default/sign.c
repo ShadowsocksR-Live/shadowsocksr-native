@@ -1079,6 +1079,11 @@ int main(void)
 
     memset(sig, 0, sizeof sig);
     for (i = 0U; i < (sizeof test_data) / (sizeof test_data[0]); i++) {
+#ifdef BROWSER_TESTS
+        if (i % 128U != 127U) {
+            continue;
+        }
+#endif
         memcpy(skpk, test_data[i].sk, crypto_sign_SEEDBYTES);
         memcpy(skpk + crypto_sign_SEEDBYTES, test_data[i].pk,
                crypto_sign_PUBLICKEYBYTES);
@@ -1091,7 +1096,7 @@ int main(void)
             printf("signature failure: [%u]\n", i);
             continue;
         }
-        if (crypto_sign_open(m, &mlen, sm, smlen, test_data[i].pk) != 0) {
+        if (crypto_sign_open(m, NULL, sm, smlen, test_data[i].pk) != 0) {
             printf("crypto_sign_open() failure: [%u]\n", i);
             continue;
         }

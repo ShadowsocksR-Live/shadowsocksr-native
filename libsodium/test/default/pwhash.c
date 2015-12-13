@@ -2,6 +2,10 @@
 #define TEST_NAME "pwhash"
 #include "cmptest.h"
 
+#define OUT_LEN 128
+#define OPSLIMIT 1000000
+#define MEMLIMIT 10000000
+
 static void tv(void)
 {
     static struct {
@@ -267,11 +271,13 @@ static void tv3(void)
 
     do {
         out = (char *) sodium_malloc(strlen(tests[i].out) + 1U);
+        assert(out != NULL);
         memcpy(out, tests[i].out, strlen(tests[i].out) + 1U);
         passwd = (char *) sodium_malloc(strlen(tests[i].passwd) + 1U);
+        assert(passwd != NULL);
         memcpy(passwd, tests[i].passwd, strlen(tests[i].passwd) + 1U);
-        if (crypto_pwhash_scryptsalsa208sha256_str_verify(
-                out, passwd, strlen(passwd)) != 0) {
+        if (crypto_pwhash_scryptsalsa208sha256_str_verify
+            (out, passwd, strlen(passwd)) != 0) {
             printf("pwhash_str failure: [%u]\n", (unsigned int)i);
         }
         sodium_free(out);
@@ -279,20 +285,24 @@ static void tv3(void)
     } while (++i < (sizeof tests) / (sizeof tests[0]));
 }
 
-#define OUT_LEN 128
-#define OPSLIMIT 1000000
-#define MEMLIMIT 10000000
-
 int main(void)
 {
-    char        str_out[crypto_pwhash_scryptsalsa208sha256_STRBYTES];
-    char        str_out2[crypto_pwhash_scryptsalsa208sha256_STRBYTES];
-    const char *salt = "[<~A 32-bytes salt for scrypt~>]";
+    char       *str_out;
+    char       *str_out2;
+    char       *salt;
     const char *passwd = "Correct Horse Battery Staple";
 
     tv();
     tv2();
     tv3();
+    salt = (char *)
+        sodium_malloc(crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
+    str_out = (char *)
+        sodium_malloc(crypto_pwhash_scryptsalsa208sha256_STRBYTES);
+    str_out2 = (char *)
+        sodium_malloc(crypto_pwhash_scryptsalsa208sha256_STRBYTES);
+    memcpy(salt, "[<~A 32-bytes salt for scrypt~>]",
+           crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
     if (crypto_pwhash_scryptsalsa208sha256_str(str_out, passwd, strlen(passwd),
                                                OPSLIMIT, MEMLIMIT) != 0) {
         printf("pwhash_str failure\n");
@@ -319,6 +329,7 @@ int main(void)
     }
     str_out[14]--;
 
+    assert(str_out[crypto_pwhash_scryptsalsa208sha256_STRBYTES - 1U] == 0);
     assert(crypto_pwhash_scryptsalsa208sha256_saltbytes() > 0U);
     assert(crypto_pwhash_scryptsalsa208sha256_strbytes() > 1U);
     assert(crypto_pwhash_scryptsalsa208sha256_strbytes() >
@@ -327,6 +338,10 @@ int main(void)
     assert(crypto_pwhash_scryptsalsa208sha256_memlimit_interactive() > 0U);
     assert(crypto_pwhash_scryptsalsa208sha256_opslimit_sensitive() > 0U);
     assert(crypto_pwhash_scryptsalsa208sha256_memlimit_sensitive() > 0U);
+
+    sodium_free(salt);
+    sodium_free(str_out);
+    sodium_free(str_out2);
 
     printf("OK\n");
 

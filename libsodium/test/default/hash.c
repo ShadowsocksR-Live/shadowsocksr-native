@@ -2,9 +2,9 @@
 #define TEST_NAME "hash"
 #include "cmptest.h"
 
-unsigned char x[] = "testing\n";
-unsigned char x2[] = "The Conscience of a Hacker is a small essay written January 8, 1986 by a computer security hacker who went by the handle of The Mentor, who belonged to the 2nd generation of Legion of Doom.";
-unsigned char h[crypto_hash_BYTES];
+static unsigned char x[] = "testing\n";
+static unsigned char x2[] = "The Conscience of a Hacker is a small essay written January 8, 1986 by a computer security hacker who went by the handle of The Mentor, who belonged to the 2nd generation of Legion of Doom.";
+static unsigned char h[crypto_hash_BYTES];
 
 int main(void)
 {
@@ -36,6 +36,8 @@ int main(void)
     assert(crypto_hash_sha256_bytes() > 0U);
     assert(crypto_hash_sha512_bytes() >= crypto_hash_sha256_bytes());
     assert(crypto_hash_sha512_bytes() == crypto_hash_bytes());
+    assert(crypto_hash_sha256_statebytes() == sizeof(crypto_hash_sha256_state));
+    assert(crypto_hash_sha512_statebytes() == sizeof(crypto_hash_sha512_state));
 
     return 0;
 }
