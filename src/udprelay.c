@@ -667,7 +667,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
 #ifdef MODULE_LOCAL
-    int err = ss_decrypt_all(buf, server_ctx->method, 0);
+    int err = ss_decrypt_all(buf, server_ctx->method, 0, BUF_SIZE);
     if (err) {
         // drop the packet silently
         goto CLEAN_UP;
@@ -727,7 +727,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     memcpy(buf->array, addr_header, addr_header_len);
     buf->len += addr_header_len;
 
-    int err = ss_encrypt_all(buf, server_ctx->method, 0);
+    int err = ss_encrypt_all(buf, server_ctx->method, 0, BUF_SIZE);
     if (err) {
         // drop the packet silently
         goto CLEAN_UP;
@@ -850,7 +850,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     tx += buf->len;
 
-    int err = ss_decrypt_all(buf, server_ctx->method, server_ctx->auth);
+    int err = ss_decrypt_all(buf, server_ctx->method, server_ctx->auth, BUF_SIZE);
     if (err) {
         // drop the packet silently
         goto CLEAN_UP;
@@ -1113,7 +1113,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         buf->array[0] |= ONETIMEAUTH_FLAG;
     }
 
-    int err = ss_encrypt_all(buf, server_ctx->method, server_ctx->auth);
+    int err = ss_encrypt_all(buf, server_ctx->method, server_ctx->auth, BUF_SIZE);
 
     if (err) {
         // drop the packet silently

@@ -170,10 +170,10 @@ typedef struct enc_ctx {
     cipher_ctx_t evp;
 } enc_ctx_t;
 
-int ss_encrypt_all(buffer_t *plaintext, int method, int auth);
-int ss_decrypt_all(buffer_t *ciphertext, int method, int auth);
-int ss_encrypt(buffer_t *plaintext, enc_ctx_t *ctx);
-int ss_decrypt(buffer_t *ciphertext, enc_ctx_t *ctx);
+int ss_encrypt_all(buffer_t *plaintext, int method, int auth, size_t capacity);
+int ss_decrypt_all(buffer_t *ciphertext, int method, int auth, size_t capacity);
+int ss_encrypt(buffer_t *plaintext, enc_ctx_t *ctx, size_t capacity);
+int ss_decrypt(buffer_t *ciphertext, enc_ctx_t *ctx, size_t capacity);
 
 void enc_ctx_init(int method, enc_ctx_t *ctx, int enc);
 int enc_init(const char *pass, const char *method);
@@ -181,11 +181,11 @@ int enc_get_iv_len(void);
 void cipher_context_release(cipher_ctx_t *evp);
 unsigned char *enc_md5(const unsigned char *d, size_t n, unsigned char *md);
 
-int ss_onetimeauth(buffer_t *buf, uint8_t *iv);
+int ss_onetimeauth(buffer_t *buf, uint8_t *iv, size_t capacity);
 int ss_onetimeauth_verify(buffer_t *buf, uint8_t *iv);
 
-int ss_check_hash(buffer_t *buf, chunk_t *chunk, enc_ctx_t *ctx);
-int ss_gen_hash(buffer_t *buf, uint32_t *counter, enc_ctx_t *ctx);
+int ss_check_hash(buffer_t *buf, chunk_t *chunk, enc_ctx_t *ctx, size_t capacity);
+int ss_gen_hash(buffer_t *buf, uint32_t *counter, enc_ctx_t *ctx, size_t capacity);
 
 int balloc(buffer_t *ptr, size_t capacity);
 int brealloc(buffer_t *ptr, size_t len, size_t capacity);

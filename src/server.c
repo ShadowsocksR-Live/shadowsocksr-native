@@ -520,7 +520,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         buf->len = r;
     }
 
-    int err = ss_decrypt(buf, server->d_ctx);
+    int err = ss_decrypt(buf, server->d_ctx, BUF_SIZE);
 
     if (err) {
         LOGE("invalid password or cipher");
@@ -532,7 +532,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     // handshake and transmit data
     if (server->stage == 5) {
-        if (server->auth && !ss_check_hash(remote->buf, server->chunk, server->d_ctx)) {
+        if (server->auth && !ss_check_hash(remote->buf, server->chunk, server->d_ctx, BUF_SIZE)) {
             LOGE("hash error");
             report_addr(server->fd);
             close_and_free_server(EV_A_ server);
@@ -735,7 +735,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             LOGI("connect to: %s:%d", host, ntohs(port));
         }
 
-        if (server->auth && !ss_check_hash(server->buf, server->chunk, server->d_ctx)) {
+        if (server->auth && !ss_check_hash(server->buf, server->chunk, server->d_ctx, BUF_SIZE)) {
             LOGE("hash error");
             report_addr(server->fd);
             close_and_free_server(EV_A_ server);
@@ -945,7 +945,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     rx += r;
 
     server->buf->len = r;
-    int err = ss_encrypt(server->buf, server->e_ctx);
+    int err = ss_encrypt(server->buf, server->e_ctx, BUF_SIZE);
 
     if (err) {
         LOGE("invalid password or cipher");
@@ -1161,7 +1161,7 @@ static server_t *new_server(int fd, listen_ctx_t *listener)
     server->chunk = (chunk_t *)malloc(sizeof(chunk_t));
     memset(server->chunk, 0, sizeof(chunk_t));
     server->chunk->buf = malloc(sizeof(buffer_t));
-    balloc(server->chunk->buf, BUF_SIZE);
+    memset(server->chunk->buf, 0, sizeof(buffer_t));
 
     cork_dllist_add(&connections, &server->entries);
 

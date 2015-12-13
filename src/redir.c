@@ -187,10 +187,10 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     remote->buf->len = r;
 
     if (auth) {
-        ss_gen_hash(remote->buf, &remote->counter, server->e_ctx);
+        ss_gen_hash(remote->buf, &remote->counter, server->e_ctx, BUF_SIZE);
     }
 
-    int err = ss_encrypt(remote->buf, server->e_ctx);
+    int err = ss_encrypt(remote->buf, server->e_ctx, BUF_SIZE);
 
     if (err) {
         LOGE("invalid password or cipher");
@@ -300,7 +300,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
 
     server->buf->len = r;
 
-    int err = ss_decrypt(server->buf, server->d_ctx);
+    int err = ss_decrypt(server->buf, server->d_ctx, BUF_SIZE);
     if (err) {
         LOGE("invalid password or cipher");
         close_and_free_remote(EV_A_ remote);
@@ -376,10 +376,10 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
 
             if (auth) {
                 abuf->array[0] |= ONETIMEAUTH_FLAG;
-                ss_onetimeauth(abuf, server->e_ctx->evp.iv);
+                ss_onetimeauth(abuf, server->e_ctx->evp.iv, BUF_SIZE);
             }
 
-            int err = ss_encrypt(abuf, server->e_ctx);
+            int err = ss_encrypt(abuf, server->e_ctx, BUF_SIZE);
             if (err) {
                 bfree(abuf);
                 LOGE("invalid password or cipher");
