@@ -84,6 +84,9 @@ int verbose = 0;
 
 static int mode = TCP_ONLY;
 static int auth = 0;
+#ifdef HAVE_SETRLIMIT
+static int nofile = 0;
+#endif
 
 int getdestaddr(int fd, struct sockaddr_storage *destaddr)
 {
@@ -636,7 +639,7 @@ int main(int argc, char **argv)
 
     opterr = 0;
 
-    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:c:b:a:uUvA")) != -1)
+    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:c:b:a:n:uUvA")) != -1)
         switch (c) {
         case 's':
             if (remote_num < MAX_REMOTE_NUM) {
@@ -671,6 +674,9 @@ int main(int argc, char **argv)
             break;
         case 'a':
             user = optarg;
+            break;
+        case 'n':
+            nofile = atoi(optarg);
             break;
         case 'u':
             mode = TCP_AND_UDP;
@@ -725,6 +731,21 @@ int main(int argc, char **argv)
         if (auth == 0) {
             auth = conf->auth;
         }
+#ifdef HAVE_SETRLIMIT
+        if (nofile == 0) {
+            nofile = conf->nofile;
+        }
+        /*
+         * no need to check the return value here since we will show
+         * the user an error message if setrlimit(2) fails
+         */
+        if (nofile > 1024) {
+            if (verbose) {
+                LOGI("setting NOFILE to %d", nofile);
+            }
+            set_nofile(nofile);
+        }
+#endif
     }
 
     if (remote_num == 0 || remote_port == NULL ||

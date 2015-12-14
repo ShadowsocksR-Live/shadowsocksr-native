@@ -1297,7 +1297,7 @@ int main(int argc, char **argv)
 
     USE_TTY();
 
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:c:i:d:a:uUvAw",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:c:i:d:a:n:uUvAw",
                             long_options, &option_index)) != -1)
         switch (c) {
         case 0:
@@ -1345,6 +1345,9 @@ int main(int argc, char **argv)
             break;
         case 'a':
             user = optarg;
+            break;
+        case 'n':
+            nofile = atoi(optarg);
             break;
         case 'u':
             mode = TCP_AND_UDP;
@@ -1411,7 +1414,7 @@ int main(int argc, char **argv)
          * no need to check the return value here since we will show
          * the user an error message if setrlimit(2) fails
          */
-        if (nofile) {
+        if (nofile > 1024) {
             if (verbose) {
                 LOGI("setting NOFILE to %d", nofile);
             }

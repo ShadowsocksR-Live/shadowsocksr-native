@@ -992,10 +992,10 @@ int main(int argc, char **argv)
     USE_TTY();
 
 #ifdef ANDROID
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:uvVA",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:uvVA",
                             long_options, &option_index)) != -1) {
 #else
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:uvA",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:uvA",
                             long_options, &option_index)) != -1) {
 #endif
         switch (c) {
@@ -1043,6 +1043,9 @@ int main(int argc, char **argv)
             break;
         case 'a':
             user = optarg;
+            break;
+        case 'n':
+            nofile = atoi(optarg);
             break;
         case 'u':
             mode = TCP_AND_UDP;
@@ -1110,7 +1113,7 @@ int main(int argc, char **argv)
          * no need to check the return value here since we will show
          * the user an error message if setrlimit(2) fails
          */
-        if (nofile) {
+        if (nofile > 1024) {
             if (verbose) {
                 LOGI("setting NOFILE to %d", nofile);
             }
