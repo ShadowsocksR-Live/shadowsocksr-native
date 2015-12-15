@@ -747,9 +747,11 @@ int main(int argc, char **argv)
         case 'a':
             user = optarg;
             break;
+#ifdef HAVE_SETRLIMIT
         case 'n':
             nofile = atoi(optarg);
             break;
+#endif
         case 'v':
             verbose = 1;
             break;

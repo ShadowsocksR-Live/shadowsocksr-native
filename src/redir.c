@@ -675,9 +675,11 @@ int main(int argc, char **argv)
         case 'a':
             user = optarg;
             break;
+#ifdef HAVE_SETRLIMIT
         case 'n':
             nofile = atoi(optarg);
             break;
+#endif
         case 'u':
             mode = TCP_AND_UDP;
             break;

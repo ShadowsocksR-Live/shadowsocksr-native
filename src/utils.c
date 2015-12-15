@@ -233,7 +233,7 @@ void usage()
         "       [-c <config_file>]         The path to config file.\n");
 #ifdef HAVE_SETRLIMIT
     printf(
-        "       [-n <number>]              Max number of open files, only available on Linux.\n");
+        "       [-n <number>]              Max number of open files.\n");
 #endif
 #ifndef MODULE_REDIR
     printf(
