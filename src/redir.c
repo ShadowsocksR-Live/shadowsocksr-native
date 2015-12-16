@@ -765,7 +765,7 @@ int main(int argc, char **argv)
 
     opterr = 0;
 
-    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:c:b:a:P:o:G:uUvA")) != -1) { // SSR
+    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:c:b:a:P:o:G:g:uUvA")) != -1) { // SSR
         switch (c) {
         case 's':
             if (remote_num < MAX_REMOTE_NUM) {
@@ -800,6 +800,8 @@ int main(int argc, char **argv)
             obfs = optarg;
             break;
         case 'G':
+            break;
+        case 'g':
             obfs_param = optarg;
             break;
         // SSR end

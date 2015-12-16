@@ -1100,7 +1100,7 @@ int main(int argc, char **argv)
     USE_TTY();
 
 #ifdef ANDROID
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:P:o:G:uvVA", // SSR
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:P:o:G:g:uvVA", // SSR
                             long_options, &option_index)) != -1) {
 #else
     while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:P:o:G:uvA", // SSR
@@ -1148,6 +1148,8 @@ int main(int argc, char **argv)
             obfs = optarg;
             break;
         case 'G':
+            break;
+        case 'g':
             obfs_param = optarg;
             break;
         // SSR end
