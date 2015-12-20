@@ -267,8 +267,6 @@ AC_CHECK_LIB(socket, connect)
 dnl Checks for library functions.
 AC_CHECK_FUNCS([malloc memset socket])
 
-ACX_PTHREAD
-
 AX_PTHREAD([
         AC_DEFINE(HAVE_PTHREAD, 1,
           [Define if you have POSIX threads libraries and header files.])
