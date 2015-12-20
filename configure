@@ -15553,9 +15553,8 @@ if test x"$ax_pthread_ok" = xyes; then
 
 $as_echo "#define HAVE_PTHREAD 1" >>confdefs.h
 
-        CLIBS="$PTHREAD_LIBS $LIBS"
+        LIBS="$PTHREAD_LIBS $LIBS"
         CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-        LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
         CC="$PTHREAD_CC"
         :
 else
