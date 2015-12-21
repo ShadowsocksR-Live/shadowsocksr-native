@@ -15550,16 +15550,12 @@ test -n "$PTHREAD_CC" || PTHREAD_CC="$CC"
 # Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
 if test x"$ax_pthread_ok" = xyes; then
 
-
 $as_echo "#define HAVE_PTHREAD 1" >>confdefs.h
 
-        LIBS="$PTHREAD_LIBS $LIBS"
-        CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-        CC="$PTHREAD_CC"
         :
 else
         ax_pthread_ok=no
-        as_fn_error $? "No pthread support on this machine" "$LINENO" 5
+        as_fn_error $? "Can not find pthreads.  This is required." "$LINENO" 5
 fi
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'

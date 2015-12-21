@@ -267,13 +267,7 @@ AC_CHECK_LIB(socket, connect)
 dnl Checks for library functions.
 AC_CHECK_FUNCS([malloc memset socket])
 
-AX_PTHREAD([
-        AC_DEFINE(HAVE_PTHREAD, 1,
-          [Define if you have POSIX threads libraries and header files.])
-        LIBS="$PTHREAD_LIBS $LIBS"
-        CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-        CC="$PTHREAD_CC"],
-        AC_MSG_ERROR([No pthread support on this machine]))
+AX_PTHREAD(, AC_MSG_ERROR(Can not find pthreads.  This is required.))
 
 AM_COND_IF([USE_SYSTEM_SHARED_LIB],
   [],
