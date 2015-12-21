@@ -150,7 +150,7 @@ $(which ss-server) -s example.com -m aes-256-cfb -c /path/to/config.json
 
     # Connect to the socket. Using netcat-openbsd as an example.
     # You should use scripts or other programs for further management.
-    nc -Uu /tmp/ss.socket
+    nc -Uu /tmp/manager.sock
 
 After that, you may communicate with \*(Ma(1) as described above in the
 \fBPROTOCOL\fR section.
