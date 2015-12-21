@@ -35,7 +35,7 @@ ss-tunnel \- shadowsocks tools for local port forwarding, libev port
     [\fB\-s\fR \fIserver_host\fR] [\fB\-p\fR \fIserver_port\fR]    [\fB\-l\fR \fIlocal_port\fR]
     [\fB\-k\fR \fIpassword\fR]    [\fB\-m\fR \fIencrypt_method\fR] [\fB\-f\fR \fIpid_file\fR]
     [\fB\-t\fR \fItimeout\fR]     [\fB\-c\fR \fIconfig_file\fR]    [\fB\-i\fR \fIinterface\fR]
-    [\fB\-b\fR \fIlocal_addr\fR]  [\fB\-a\fR \fIuser_name\fR]
+    [\fB\-b\fR \fIlocal_addr\fR]  [\fB\-a\fR \fIuser_name\fR]      [\fB\-n\fR \fInofile\fR]
     [\fB\-L\fR \fIaddr\fR:\fIport\fR]
 
 .SH DESCRIPTION
@@ -80,6 +80,11 @@ Set the socket timeout in seconds. The default value is 10.
 .TP
 .B \-c \fIconfig_file\fP
 Use a configuration file.
+.TP
+.B \-n \fInofile\fP
+Specify max number of open files.
+
+Only avaliable on Linux.
 .TP
 .B \-i \fIinterface\fP
 Specify network interface to bind.
