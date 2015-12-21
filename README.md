@@ -144,7 +144,8 @@ su -c 'yum install shadowsocks-libev'
 sudo pacman -S shadowsocks-libev
 ```
 
-Please refer to downstream `PKGBUILD` file for any extra modifications.
+Please refer to downstream [PKGBUILD](https://projects.archlinux.org/svntogit/community.git/tree/trunk?h=packages/shadowsocks-libev)
+script for extra modifications.
 
 ### Linux
 
@@ -256,6 +257,9 @@ make && make install
 
 ## Usage
 
+For a detailed and complete list of all supported arguments, you may refer to the
+man pages of the applications, respectively.
+
 ```
     ss-[local|redir|server|tunnel]
 
@@ -271,7 +275,8 @@ make && make install
                                   aes-128-cfb, aes-192-cfb, aes-256-cfb,
                                   bf-cfb, camellia-128-cfb, camellia-192-cfb,
                                   camellia-256-cfb, cast5-cfb, des-cfb, idea-cfb,
-                                  rc2-cfb, seed-cfb, salsa20 and chacha20
+                                  rc2-cfb, seed-cfb, salsa20 ,chacha20 and
+                                  chacha20-ietf
 
        [-f <pid_file>]            the file path to store pid
 
