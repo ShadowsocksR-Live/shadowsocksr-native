@@ -74,7 +74,7 @@ CAST5-CFB, DES-CFB, IDEA-CFB, RC2-CFB and SEED-CFB.
 To build against mbedTLS, specify `--with-crypto-library=mbedtls`
 and `--with-mbedtls=/path/to/mbedtls` when running `./configure`.
 
-Please not that we do **NOT** officially support mbedTLS right now,
+Please note that we do **NOT** officially support mbedTLS right now,
 and you should use it at your own risk.
 
 Windows users will need extra work when compiling mbedTLS library,
