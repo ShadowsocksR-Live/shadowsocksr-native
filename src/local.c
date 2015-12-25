@@ -172,6 +172,10 @@ int create_and_bind(const char *addr, const char *port)
 #ifdef SO_NOSIGPIPE
         setsockopt(listen_sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
+        int err = set_reuseport(listen_sock);
+        if (err == 0) {
+            LOGI("tcp port reuse enabled");
+        }
 
         s = bind(listen_sock, rp->ai_addr, rp->ai_addrlen);
         if (s == 0) {
@@ -235,7 +239,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             // continue to wait for recv
             return;
         } else {
-            ERROR("server_recv_cb_recv");
+            if (verbose) ERROR("server_recv_cb_recv");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
@@ -254,7 +258,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             }
 
             if (!remote->direct && remote->send_ctx->connected && auth) {
-                ss_gen_hash(remote->buf, &remote->counter, server->e_ctx);
+                ss_gen_hash(remote->buf, &remote->counter, server->e_ctx, BUF_SIZE);
             }
 
             // insert shadowsocks header
@@ -266,7 +270,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                         remote->buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
                     }
                 }
-                int err = ss_encrypt(remote->buf, server->e_ctx);
+                int err = ss_encrypt(remote->buf, server->e_ctx, BUF_SIZE);
 
                 if (err) {
                     LOGE("server invalid password or cipher");
@@ -554,7 +558,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 if (!remote->direct) {
                     if (auth) {
                         abuf->array[0] |= ONETIMEAUTH_FLAG;
-                        ss_onetimeauth(abuf, server->e_ctx->evp.iv);
+                        ss_onetimeauth(abuf, server->e_ctx->evp.iv, BUF_SIZE);
                     }
 
                     brealloc(remote->buf, buf->len + abuf->len, BUF_SIZE);
@@ -563,7 +567,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
                     if (buf->len > 0) {
                         if (auth) {
-                            ss_gen_hash(buf, &remote->counter, server->e_ctx);
+                            ss_gen_hash(buf, &remote->counter, server->e_ctx, BUF_SIZE);
                         }
                         memcpy(remote->buf->array + abuf->len, buf->array, buf->len);
                     }
@@ -743,7 +747,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
             }
         }
         if (server->buf->len > 0) {
-            int err = ss_decrypt(server->buf, server->d_ctx);
+        int err = ss_decrypt(server->buf, server->d_ctx, BUF_SIZE);
             if (err) {
                 LOGE("remote invalid password or cipher");
                 close_and_free_remote(EV_A_ remote);
@@ -1177,6 +1181,11 @@ int main(int argc, char **argv)
         case 'a':
             user = optarg;
             break;
+#ifdef HAVE_SETRLIMIT
+        case 'n':
+            nofile = atoi(optarg);
+            break;
+#endif
         case 'u':
             mode = TCP_AND_UDP;
             break;
@@ -1258,7 +1267,7 @@ int main(int argc, char **argv)
          * no need to check the return value here since we will show
          * the user an error message if setrlimit(2) fails
          */
-        if (nofile) {
+        if (nofile > 1024) {
             if (verbose) {
                 LOGI("setting NOFILE to %d", nofile);
             }

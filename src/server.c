@@ -102,8 +102,9 @@ static void free_remote(remote_t *remote);
 static void close_and_free_remote(EV_P_ remote_t *remote);
 static void free_server(server_t *server);
 static void close_and_free_server(EV_P_ server_t *server);
-
 static void server_resolve_cb(struct sockaddr *addr, void *data);
+
+static size_t parse_header_len(const char atyp, const char *data, size_t offset);
 
 int verbose = 0;
 
@@ -213,6 +214,24 @@ static void free_connections(struct ev_loop *loop)
         close_and_free_server(loop, server);
         close_and_free_remote(loop, remote);
     }
+}
+
+static size_t parse_header_len(const char atyp, const char *data, size_t offset)
+{
+    size_t len = 0;
+    if ((atyp & ADDRTYPE_MASK) == 1) {
+        // IP V4
+        len += sizeof(struct in_addr);
+    } else if ((atyp & ADDRTYPE_MASK) == 3) {
+        // Domain name
+        uint8_t name_len = *(uint8_t *)(data + offset);
+        len += name_len + 1;
+    } else if ((atyp & ADDRTYPE_MASK) == 4) {
+        // IP V6
+        len += sizeof(struct in6_addr);
+    }
+    len += 2;
+    return len;
 }
 
 static char *get_peer_name(int fd)
@@ -356,6 +375,11 @@ int create_and_bind(const char *host, const char *port)
 #ifdef SO_NOSIGPIPE
         setsockopt(listen_sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
+        int err = set_reuseport(listen_sock);
+        if (err == 0) {
+            LOGI("port reuse enabled");
+        }
+
         s = bind(listen_sock, rp->ai_addr, rp->ai_addrlen);
         if (s == 0) {
             /* We managed to bind successfully! */
@@ -520,7 +544,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         buf->len = r;
     }
 
-    int err = ss_decrypt(buf, server->d_ctx);
+    int err = ss_decrypt(buf, server->d_ctx, BUF_SIZE);
 
     if (err) {
         LOGE("invalid password or cipher");
@@ -532,7 +556,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     // handshake and transmit data
     if (server->stage == 5) {
-        if (server->auth && !ss_check_hash(remote->buf, server->chunk, server->d_ctx)) {
+        if (server->auth && !ss_check_hash(remote->buf, server->chunk, server->d_ctx, BUF_SIZE)) {
             LOGE("hash error");
             report_addr(server->fd);
             close_and_free_server(EV_A_ server);
@@ -597,6 +621,39 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         struct sockaddr_storage storage;
         memset(&info, 0, sizeof(struct addrinfo));
         memset(&storage, 0, sizeof(struct sockaddr_storage));
+
+        if (auth || (atyp & ONETIMEAUTH_FLAG)) {
+            size_t header_len = parse_header_len(atyp, server->buf->array, offset);
+            size_t len        = server->buf->len;
+
+            if (len < offset + header_len + ONETIMEAUTH_BYTES) {
+                report_addr(server->fd);
+                close_and_free_server(EV_A_ server);
+                return;
+            }
+
+            server->buf->len = offset + header_len + ONETIMEAUTH_BYTES;
+            if (ss_onetimeauth_verify(server->buf, server->d_ctx->evp.iv)) {
+                char *peer_name = get_peer_name(server->fd);
+                if (peer_name) {
+                    LOGE("authentication error from %s", peer_name);
+                    if (acl) {
+                        if (acl_get_mode() == BLACK_LIST) {
+                            acl_add_ip(peer_name);
+                            LOGE("add %s to the black list", peer_name);
+                        } else {
+                            acl_remove_ip(peer_name);
+                            LOGE("remove %s from the white list", peer_name);
+                        }
+                    }
+                }
+                close_and_free_server(EV_A_ server);
+                return;
+            }
+
+            server->buf->len = len;
+            server->auth     = 1;
+        }
 
         // get remote addr and port
         if ((atyp & ADDRTYPE_MASK) == 1) {
@@ -692,34 +749,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
         offset += 2;
 
-        if (auth || (atyp & ONETIMEAUTH_FLAG)) {
-            if (server->buf->len < offset + ONETIMEAUTH_BYTES) {
-                report_addr(server->fd);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
-            size_t len = server->buf->len;
-            server->buf->len = offset + ONETIMEAUTH_BYTES;
-            if (ss_onetimeauth_verify(server->buf, server->d_ctx->evp.iv)) {
-                char *peer_name = get_peer_name(server->fd);
-                if (peer_name) {
-                    LOGE("authentication error from %s", peer_name);
-                    if (acl) {
-                        if (acl_get_mode() == BLACK_LIST) {
-                            acl_add_ip(peer_name);
-                            LOGE("add %s to the black list", peer_name);
-                        } else {
-                            acl_remove_ip(peer_name);
-                            LOGE("remove %s from the white list", peer_name);
-                        }
-                    }
-                }
-                close_and_free_server(EV_A_ server);
-                return;
-            }
-            server->buf->len = len;
-            offset          += ONETIMEAUTH_BYTES;
-            server->auth     = 1;
+        if (server->auth) {
+            offset += ONETIMEAUTH_BYTES;
         }
 
         if (server->buf->len < offset) {
@@ -735,7 +766,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             LOGI("connect to: %s:%d", host, ntohs(port));
         }
 
-        if (server->auth && !ss_check_hash(server->buf, server->chunk, server->d_ctx)) {
+        if (server->auth && !ss_check_hash(server->buf, server->chunk, server->d_ctx, BUF_SIZE)) {
             LOGE("hash error");
             report_addr(server->fd);
             close_and_free_server(EV_A_ server);
@@ -945,7 +976,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     rx += r;
 
     server->buf->len = r;
-    int err = ss_encrypt(server->buf, server->e_ctx);
+    int err = ss_encrypt(server->buf, server->e_ctx, BUF_SIZE);
 
     if (err) {
         LOGE("invalid password or cipher");
@@ -1161,7 +1192,7 @@ static server_t *new_server(int fd, listen_ctx_t *listener)
     server->chunk = (chunk_t *)malloc(sizeof(chunk_t));
     memset(server->chunk, 0, sizeof(chunk_t));
     server->chunk->buf = malloc(sizeof(buffer_t));
-    balloc(server->chunk->buf, BUF_SIZE);
+    memset(server->chunk->buf, 0, sizeof(buffer_t));
 
     cork_dllist_add(&connections, &server->entries);
 
@@ -1297,7 +1328,7 @@ int main(int argc, char **argv)
 
     USE_TTY();
 
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:c:i:d:a:uUvAw",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:c:i:d:a:n:uUvAw",
                             long_options, &option_index)) != -1)
         switch (c) {
         case 0:
@@ -1346,6 +1377,11 @@ int main(int argc, char **argv)
         case 'a':
             user = optarg;
             break;
+#ifdef HAVE_SETRLIMIT
+        case 'n':
+            nofile = atoi(optarg);
+            break;
+#endif
         case 'u':
             mode = TCP_AND_UDP;
             break;
@@ -1411,7 +1447,7 @@ int main(int argc, char **argv)
          * no need to check the return value here since we will show
          * the user an error message if setrlimit(2) fails
          */
-        if (nofile) {
+        if (nofile > 1024) {
             if (verbose) {
                 LOGI("setting NOFILE to %d", nofile);
             }
