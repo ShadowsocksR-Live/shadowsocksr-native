@@ -1088,6 +1088,23 @@ int ss_sha1_hmac(char *auth, char *msg, int msg_len, uint8_t *iv)
     return 0;
 }
 
+int ss_sha1_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len)
+{
+    uint8_t hash[ONETIMEAUTH_BYTES * 2];
+
+#if defined(USE_CRYPTO_OPENSSL)
+    HMAC(EVP_sha1(), auth_key, key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash, NULL);
+#elif defined(USE_CRYPTO_MBEDTLS)
+    mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), auth_key, key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash);
+#else
+    ss_sha1_hmac(auth_key, key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash);
+#endif
+
+    memcpy(auth, hash, ONETIMEAUTH_BYTES);
+
+    return 0;
+}
+
 int ss_onetimeauth(buffer_t *buf, uint8_t *iv)
 {
     uint8_t hash[ONETIMEAUTH_BYTES * 2];

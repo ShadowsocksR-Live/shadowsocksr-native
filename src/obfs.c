@@ -3,13 +3,15 @@
 
 #include "obfs.h"
 
+int rand_bytes(uint8_t *output, int len);
+#define OBFS_HMAC_SHA1_LEN 10
+
 #include "obfsutil.c"
 #include "crc32.c"
 #include "http_simple.c"
+#include "tls1.0_session.c"
 #include "verify.c"
 #include "auth.c"
-
-
 
 void * init_data() {
     return malloc(1);
@@ -47,6 +49,17 @@ obfs_class * new_obfs_class(char *plugin_name)
 
         plugin->client_encode = http_simple_client_encode;
         plugin->client_decode = http_simple_client_decode;
+
+        return plugin;
+    } else if (strcmp(plugin_name, "tls1.0_session_auth") == 0) {
+        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
+        plugin->init_data = tls10_session_auth_init_data;
+        plugin->new_obfs = tls10_session_auth_new_obfs;
+        plugin->set_server_info = set_server_info;
+        plugin->dispose = tls10_session_auth_dispose;
+
+        plugin->client_encode = tls10_session_auth_client_encode;
+        plugin->client_decode = tls10_session_auth_client_decode;
 
         return plugin;
     } else if (strcmp(plugin_name, "verify_simple") == 0) {

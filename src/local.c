@@ -730,14 +730,26 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
                     close_and_free_server(EV_A_ server);
                     return;
                 }
+                if (needsendback) {
+                    size_t capacity = BUF_SIZE;
+                    char *buf = (char*)malloc(capacity);
+                    obfs_class *obfs_plugin = server->obfs_plugin;
+                    if (obfs_plugin->client_encode) {
+                        int len = obfs_plugin->client_encode(server->obfs, &buf, 0, &capacity);
+                        send(remote->fd, buf, len, 0);
+                    }
+                    free(buf);
+                }
             }
         }
-        int err = ss_decrypt(server->buf, server->d_ctx);
-        if (err) {
-            LOGE("remote invalid password or cipher");
-            close_and_free_remote(EV_A_ remote);
-            close_and_free_server(EV_A_ server);
-            return;
+        if (server->buf->len > 0) {
+            int err = ss_decrypt(server->buf, server->d_ctx);
+            if (err) {
+                LOGE("remote invalid password or cipher");
+                close_and_free_remote(EV_A_ remote);
+                close_and_free_server(EV_A_ server);
+                return;
+            }
         }
         if (server->protocol_plugin) {
             obfs_class *protocol_plugin = server->protocol_plugin;

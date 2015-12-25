@@ -3,8 +3,6 @@
 
 static int auth_simple_pack_unit_size = 2000;
 
-int rand_bytes(uint8_t *output, int len);
-
 typedef struct auth_simple_global_data {
     uint8_t local_client_id[4];
     uint32_t connection_id;
@@ -175,7 +173,7 @@ int auth_sha1_pack_data(char *data, int datalength, char *outdata) {
 int auth_sha1_pack_auth_data(auth_simple_global_data *global, server_info *server, char *data, int datalength, char *outdata) {
     unsigned char rand_len = (xorshift128plus() & 0x7F) + 1;
     int data_offset = rand_len + 4 + 2;
-    int out_size = data_offset + datalength + 12 + 10;
+    int out_size = data_offset + datalength + 12 + OBFS_HMAC_SHA1_LEN;
     fillcrc32to((unsigned char *)server->key, server->key_len, (unsigned char *)outdata);
     outdata[4] = out_size >> 8;
     outdata[5] = out_size;
@@ -192,8 +190,8 @@ int auth_sha1_pack_auth_data(auth_simple_global_data *global, server_info *serve
     memmove(outdata + data_offset + 8, &global->connection_id, 4);
     memmove(outdata + data_offset + 12, data, datalength);
     char hash[ONETIMEAUTH_BYTES * 2];
-    ss_sha1_hmac(hash, outdata, out_size - 10, server->iv);
-    memcpy(outdata + out_size - 10, hash, ONETIMEAUTH_BYTES);
+    ss_sha1_hmac(hash, outdata, out_size - OBFS_HMAC_SHA1_LEN, server->iv);
+    memcpy(outdata + out_size - OBFS_HMAC_SHA1_LEN, hash, OBFS_HMAC_SHA1_LEN);
     return out_size;
 }
 
