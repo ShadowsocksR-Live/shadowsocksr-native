@@ -1006,7 +1006,11 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     char *addr_header = buf->array + offset;
+#ifdef MODULE_LOCAL
+    char *key         = hash_key(server_ctx->remote_addr->sa_family, &src_addr);
+#else
     char *key         = hash_key(dst_addr.ss_family, &src_addr);
+#endif
 #endif
 
     struct cache *conn_cache = server_ctx->conn_cache;
