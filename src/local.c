@@ -1116,10 +1116,10 @@ int main(int argc, char **argv)
     USE_TTY();
 
 #ifdef ANDROID
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:P:o:G:g:uvVA", // SSR
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:P:o:G:g:uvVA", // SSR
                             long_options, &option_index)) != -1) {
 #else
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:P:o:G:uvA", // SSR
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:P:o:G:uvA", // SSR
                             long_options, &option_index)) != -1) {
 #endif
         switch (c) {
