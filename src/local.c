@@ -1277,6 +1277,7 @@ int start_ss_local_server(profile_t profile)
     int local_port    = profile.local_port;
     int timeout       = profile.timeout;
 
+    auth      = profile.auth;
     mode      = profile.mode;
     fast_open = profile.fast_open;
     verbose   = profile.verbose;
