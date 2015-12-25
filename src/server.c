@@ -356,6 +356,11 @@ int create_and_bind(const char *host, const char *port)
 #ifdef SO_NOSIGPIPE
         setsockopt(listen_sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
+        int err = set_reuseport(listen_sock);
+        if (err == 0) {
+            LOGI("port reuse enabled");
+        }
+
         s = bind(listen_sock, rp->ai_addr, rp->ai_addrlen);
         if (s == 0) {
             /* We managed to bind successfully! */

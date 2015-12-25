@@ -139,6 +139,10 @@ int create_and_bind(const char *addr, const char *port)
 #ifdef SO_NOSIGPIPE
         setsockopt(listen_sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
+        int err = set_reuseport(listen_sock);
+        if (err == 0) {
+            LOGI("tcp port reuse enabled");
+        }
 
         s = bind(listen_sock, rp->ai_addr, rp->ai_addrlen);
         if (s == 0) {

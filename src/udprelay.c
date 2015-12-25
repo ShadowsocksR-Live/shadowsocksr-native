@@ -438,6 +438,10 @@ int create_server_socket(const char *host, const char *port)
 #ifdef SO_NOSIGPIPE
         set_nosigpipe(server_sock);
 #endif
+        int err = set_reuseport(server_sock);
+        if (err == 0) {
+            LOGI("udp port reuse enabled");
+        }
 
 #ifdef MODULE_REDIR
         if (setsockopt(server_sock, SOL_IP, IP_TRANSPARENT, &opt, sizeof(opt))) {
