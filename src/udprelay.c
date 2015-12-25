@@ -572,7 +572,7 @@ static void query_resolve_cb(struct sockaddr *addr, void *data)
 
         // Lookup in the conn cache
         if (remote_ctx == NULL) {
-            char *key = hash_key(0, &query_ctx->src_addr);
+            char *key = hash_key(AF_UNSPEC, &query_ctx->src_addr);
             cache_lookup(query_ctx->server_ctx->conn_cache, key, HASH_KEY_LEN, (void *)&remote_ctx);
         }
 
@@ -617,7 +617,7 @@ static void query_resolve_cb(struct sockaddr *addr, void *data)
             } else {
                 if (!cache_hit) {
                     // Add to conn cache
-                    char *key = hash_key(0, &remote_ctx->src_addr);
+                    char *key = hash_key(AF_UNSPEC, &remote_ctx->src_addr);
                     cache_insert(query_ctx->server_ctx->conn_cache, key, HASH_KEY_LEN, (void *)remote_ctx);
                     ev_io_start(EV_A_ & remote_ctx->io);
                     ev_timer_start(EV_A_ & remote_ctx->watcher);
@@ -932,8 +932,6 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     memcpy(buf->array, addr_header, addr_header_len);
     buf->len += addr_header_len;
 
-    char *key = hash_key(dst_addr.ss_family, &src_addr);
-
 #elif MODULE_TUNNEL
 
     char addr_header[256] = { 0 };
@@ -988,8 +986,6 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     memcpy(buf->array, addr_header, addr_header_len);
     buf->len += addr_header_len;
 
-    char *key = hash_key(ip.version == 4 ? AF_INET : AF_INET6, &src_addr);
-
 #else
 
     char host[256] = { 0 };
@@ -1006,11 +1002,12 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     char *addr_header = buf->array + offset;
-#ifdef MODULE_LOCAL
-    char *key         = hash_key(server_ctx->remote_addr->sa_family, &src_addr);
-#else
-    char *key         = hash_key(dst_addr.ss_family, &src_addr);
 #endif
+
+#ifdef MODULE_LOCAL
+    char *key = hash_key(server_ctx->remote_addr->sa_family, &src_addr);
+#else
+    char *key = hash_key(dst_addr.ss_family, &src_addr);
 #endif
 
     struct cache *conn_cache = server_ctx->conn_cache;
