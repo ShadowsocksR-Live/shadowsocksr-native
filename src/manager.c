@@ -362,6 +362,9 @@ static void manager_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     char *action = get_action(buf, r);
+    if (action == NULL) {
+        return;
+    }
 
     if (strcmp(action, "add") == 0) {
         struct server *server = get_server(buf, r);
