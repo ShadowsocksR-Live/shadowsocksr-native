@@ -1086,7 +1086,7 @@ int ss_sha1_hmac(char *auth, char *msg, int msg_len, uint8_t *iv)
 #elif defined(USE_CRYPTO_MBEDTLS)
     mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash);
 #else
-    ss_sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash);
+    sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash);
 #endif
 
     memcpy(auth, hash, ONETIMEAUTH_BYTES);
@@ -1103,7 +1103,7 @@ int ss_sha1_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key,
 #elif defined(USE_CRYPTO_MBEDTLS)
     mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), auth_key, key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash);
 #else
-    ss_sha1_hmac(auth_key, key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash);
+    sha1_hmac(auth_key, key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash);
 #endif
 
     memcpy(auth, hash, ONETIMEAUTH_BYTES);
