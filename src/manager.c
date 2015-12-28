@@ -211,14 +211,12 @@ static struct server *get_server(char *buf, int len)
 {
     char *data = get_data(buf, len);
     char error_buf[512];
-    struct server *server = (struct server *)malloc(sizeof(struct server));
 
     if (data == NULL) {
         LOGE("No data found");
         return NULL;
     }
 
-    memset(server, 0, sizeof(struct server));
     json_settings settings = { 0 };
     json_value *obj        = json_parse_ex(&settings, data, strlen(data), error_buf);
 
@@ -227,6 +225,8 @@ static struct server *get_server(char *buf, int len)
         return NULL;
     }
 
+    struct server *server = (struct server *)malloc(sizeof(struct server));
+    memset(server, 0, sizeof(struct server));
     if (obj->type == json_object) {
         int i = 0;
         for (i = 0; i < obj->u.object.length; i++) {
@@ -244,8 +244,7 @@ static struct server *get_server(char *buf, int len)
                 }
             } else {
                 LOGE("invalid data: %s", data);
-                json_value_free(obj);
-                return NULL;
+                break;
             }
         }
     }
