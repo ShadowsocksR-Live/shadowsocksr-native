@@ -205,10 +205,8 @@ static void stat_update_cb(EV_P_ ev_timer *watcher, int revents)
 
 static void free_connections(struct ev_loop *loop)
 {
-    struct cork_dllist_item *curr;
-    for (curr = cork_dllist_start(&connections);
-         !cork_dllist_is_end(&connections, curr);
-         curr = curr->next) {
+    struct cork_dllist_item *curr, *next;
+    cork_dllist_foreach_void (&connections, curr, next) {
         server_t *server = cork_container_of(curr, server_t, entries);
         remote_t *remote = server->remote;
         close_and_free_server(loop, server);
