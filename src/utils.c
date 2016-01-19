@@ -196,7 +196,7 @@ void usage()
     printf("    ss-local\n");
 #elif MODULE_REMOTE
     printf("    ss-server\n");
-#elif MODULE_TUNNEl
+#elif MODULE_TUNNEL
     printf("    ss-tunnel\n");
 #elif MODULE_REDIR
     printf("    ss-redir\n");
@@ -261,7 +261,7 @@ void usage()
         "       [-w]                       Enable white list mode (when ACL enabled).\n");
 #endif
     printf("\n");
-#ifdef MODULE_TUNNEl
+#ifdef MODULE_TUNNEL
     printf(
         "       [-L <addr>:<port>]         Destination server address and port\n");
     printf(
