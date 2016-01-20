@@ -18,7 +18,7 @@ $ docker --version
 ## Build docker image
 
 ```bash
-$ curl -sSL https://github.com/shadowsocks/shadowsocks-libev/blob/master/docker/alpine/Dockerfile | docker build -t shadowsocks-libev .
+$ curl -sSL https://github.com/shadowsocks/shadowsocks-libev/raw/master/docker/alpine/Dockerfile | docker build -t shadowsocks-libev .
 $ docker images
 ```
 
@@ -56,7 +56,7 @@ It is highly recommended that you setup a directory tree to make things easy to 
 ```bash
 $ mkdir -p ~/fig/shadowsocks/
 $ cd ~/fig/shadowsocks/
-$ curl -sSLO https://github.com/shadowsocks/shadowsocks-libev/blob/master/docker/alpine/docker-compose.yml
+$ curl -sSLO https://github.com/shadowsocks/shadowsocks-libev/raw/master/docker/alpine/docker-compose.yml
 $ docker-compose up -d
 $ docker-compose ps
 ```
