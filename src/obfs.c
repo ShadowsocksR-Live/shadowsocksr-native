@@ -95,6 +95,17 @@ obfs_class * new_obfs_class(char *plugin_name)
         plugin->client_post_decrypt = auth_sha1_client_post_decrypt;
 
         return plugin;
+    } else if (strcmp(plugin_name, "auth_sha1_v2") == 0) {
+        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
+        plugin->init_data = auth_simple_init_data;
+        plugin->new_obfs = auth_simple_new_obfs;
+        plugin->set_server_info = set_server_info;
+        plugin->dispose = auth_simple_dispose;
+
+        plugin->client_pre_encrypt = auth_sha1_v2_client_pre_encrypt;
+        plugin->client_post_decrypt = auth_sha1_v2_client_post_decrypt;
+
+        return plugin;
     }
     return NULL;
 }
