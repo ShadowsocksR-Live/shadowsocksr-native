@@ -72,7 +72,8 @@ int protect_socket(int fd)
     strncpy(addr.sun_path, path, sizeof(addr.sun_path) - 1);
 
     if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-        LOGE("[android] connect() failed: %s (socket fd = %d)\n", strerror(errno), sock);
+        LOGE("[android] connect() failed: %s (socket fd = %d), path: %s\n",
+                strerror(errno), sock, path);
         close(sock);
         return -1;
     }
@@ -113,14 +114,15 @@ int send_traffic_stat(uint64_t tx, uint64_t rx)
     setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv, sizeof(struct timeval));
 
     char path[256];
-    sprintf(path, "%s/protect_path", prefix);
+    sprintf(path, "%s/stat_path", prefix);
 
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, path, sizeof(addr.sun_path) - 1);
 
     if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-        LOGE("[android] connect() failed: %s (socket fd = %d)\n", strerror(errno), sock);
+        LOGE("[android] connect() failed: %s (socket fd = %d), path: %s\n",
+                strerror(errno), sock, path);
         close(sock);
         return -1;
     }

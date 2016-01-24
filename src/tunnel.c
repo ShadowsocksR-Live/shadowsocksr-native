@@ -701,7 +701,7 @@ int main(int argc, char **argv)
     USE_TTY();
 
 #ifdef ANDROID
-    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:n:uUvVAP")) != -1) {
+    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:n:P:uUvVA")) != -1) {
 #else
     while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:n:uUvA")) != -1) {
 #endif
