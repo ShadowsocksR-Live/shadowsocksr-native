@@ -197,6 +197,12 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         ss_gen_hash(remote->buf, &remote->counter, server->e_ctx, BUF_SIZE);
     }
 
+    if (!remote->send_ctx->connected) {
+        ev_io_stop(EV_A_ & server_recv_ctx->io);
+        ev_io_start(EV_A_ & remote->send_ctx->io);
+        return;
+    }
+
     int err = ss_encrypt(remote->buf, server->e_ctx, BUF_SIZE);
 
     if (err) {
@@ -351,6 +357,7 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
         if (r == 0) {
             remote_send_ctx->connected = 1;
             ev_io_stop(EV_A_ & remote_send_ctx->io);
+            ev_io_stop(EV_A_ & server->recv_ctx->io);
             ev_timer_stop(EV_A_ & remote_send_ctx->watcher);
 
             // send destaddr
@@ -386,30 +393,22 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
                 ss_onetimeauth(abuf, server->e_ctx->evp.iv, BUF_SIZE);
             }
 
-            int err = ss_encrypt(abuf, server->e_ctx, BUF_SIZE);
+            brealloc(remote->buf, remote->buf->len + abuf->len, BUF_SIZE);
+            memmove(remote->buf->array + abuf->len, remote->buf->array, remote->buf->len);
+            memcpy(remote->buf->array, abuf->array, abuf->len);
+            remote->buf->len += abuf->len;
+            bfree(abuf);
+
+            int err = ss_encrypt(remote->buf, server->e_ctx, BUF_SIZE);
             if (err) {
-                bfree(abuf);
                 LOGE("invalid password or cipher");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
                 return;
             }
 
-            int s = send(remote->fd, abuf->array, abuf->len, 0);
-
-            bfree(abuf);
-
-            if (s < abuf->len) {
-                LOGE("failed to send addr");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
-
-            ev_io_start(EV_A_ & server->recv_ctx->io);
             ev_io_start(EV_A_ & remote->recv_ctx->io);
 
-            return;
         } else {
             ERROR("getpeername");
             // not connected
@@ -417,36 +416,36 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
             close_and_free_server(EV_A_ server);
             return;
         }
+    }
+
+    if (remote->buf->len == 0) {
+        // close and free
+        close_and_free_remote(EV_A_ remote);
+        close_and_free_server(EV_A_ server);
+        return;
     } else {
-        if (remote->buf->len == 0) {
-            // close and free
-            close_and_free_remote(EV_A_ remote);
-            close_and_free_server(EV_A_ server);
+        // has data to send
+        ssize_t s = send(remote->fd, remote->buf->array + remote->buf->idx,
+                remote->buf->len, 0);
+        if (s < 0) {
+            if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                ERROR("send");
+                // close and free
+                close_and_free_remote(EV_A_ remote);
+                close_and_free_server(EV_A_ server);
+            }
+            return;
+        } else if (s < remote->buf->len) {
+            // partly sent, move memory, wait for the next time to send
+            remote->buf->len -= s;
+            remote->buf->idx += s;
             return;
         } else {
-            // has data to send
-            ssize_t s = send(remote->fd, remote->buf->array + remote->buf->idx,
-                             remote->buf->len, 0);
-            if (s < 0) {
-                if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                    ERROR("send");
-                    // close and free
-                    close_and_free_remote(EV_A_ remote);
-                    close_and_free_server(EV_A_ server);
-                }
-                return;
-            } else if (s < remote->buf->len) {
-                // partly sent, move memory, wait for the next time to send
-                remote->buf->len -= s;
-                remote->buf->idx += s;
-                return;
-            } else {
-                // all sent out, wait for reading
-                remote->buf->len = 0;
-                remote->buf->idx = 0;
-                ev_io_stop(EV_A_ & remote_send_ctx->io);
-                ev_io_start(EV_A_ & server->recv_ctx->io);
-            }
+            // all sent out, wait for reading
+            remote->buf->len = 0;
+            remote->buf->idx = 0;
+            ev_io_stop(EV_A_ & remote_send_ctx->io);
+            ev_io_start(EV_A_ & server->recv_ctx->io);
         }
     }
 }
@@ -621,6 +620,7 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     connect(remotefd, remote_addr, get_sockaddr_len(remote_addr));
     // listen to remote connected event
     ev_io_start(EV_A_ & remote->send_ctx->io);
+    ev_io_start(EV_A_ & server->recv_ctx->io);
     ev_timer_start(EV_A_ & remote->send_ctx->watcher);
 }
 
