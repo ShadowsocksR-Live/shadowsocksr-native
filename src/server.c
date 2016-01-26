@@ -238,6 +238,7 @@ static char *get_peer_name(int fd)
     struct sockaddr_storage addr;
     socklen_t len = sizeof addr;
     memset(&addr, 0, len);
+    memset(peer_name, 0, INET6_ADDRSTRLEN);
     int err = getpeername(fd, (struct sockaddr *)&addr, &len);
     if (err == 0) {
         if (addr.ss_family == AF_INET) {
