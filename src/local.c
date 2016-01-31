@@ -200,7 +200,7 @@ int create_and_bind(const char *addr, const char *port)
 static void free_connections(struct ev_loop *loop)
 {
     struct cork_dllist_item *curr, *next;
-    cork_dllist_foreach_void (&connections, curr, next) {
+    cork_dllist_foreach_void(&connections, curr, next) {
         server_t *server = cork_container_of(curr, server_t, entries);
         remote_t *remote = server->remote;
         close_and_free_server(loop, server);
@@ -236,7 +236,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             // continue to wait for recv
             return;
         } else {
-            if (verbose) ERROR("server_recv_cb_recv");
+            if (verbose)
+                ERROR("server_recv_cb_recv");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
@@ -298,15 +299,15 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 } else {
 #ifdef TCP_FASTOPEN
 #ifdef __APPLE__
-                    ((struct sockaddr_in*)&(remote->addr))->sin_len = sizeof(struct sockaddr_in);
+                    ((struct sockaddr_in *)&(remote->addr))->sin_len = sizeof(struct sockaddr_in);
                     sa_endpoints_t endpoints;
-                    bzero((char*)&endpoints, sizeof(endpoints));
-                    endpoints.sae_dstaddr = (struct sockaddr*)&(remote->addr);
+                    bzero((char *)&endpoints, sizeof(endpoints));
+                    endpoints.sae_dstaddr    = (struct sockaddr *)&(remote->addr);
                     endpoints.sae_dstaddrlen = remote->addr_len;
 
                     int s = connectx(remote->fd, &endpoints, SAE_ASSOCID_ANY,
-                            CONNECT_RESUME_ON_READ_WRITE | CONNECT_DATA_IDEMPOTENT,
-                            NULL, 0, NULL, NULL);
+                                     CONNECT_RESUME_ON_READ_WRITE | CONNECT_DATA_IDEMPOTENT,
+                                     NULL, 0, NULL, NULL);
                     if (s == 0) {
                         s = send(remote->fd, remote->buf->array, remote->buf->len, 0);
                     }
@@ -324,7 +325,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                         } else {
                             ERROR("sendto");
                             if (errno == ENOTCONN) {
-                                LOGE( "fast open is not supported on this platform");
+                                LOGE("fast open is not supported on this platform");
                                 // just turn it off
                                 fast_open = 0;
                             }

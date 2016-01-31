@@ -408,7 +408,6 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
             }
 
             ev_io_start(EV_A_ & remote->recv_ctx->io);
-
         } else {
             ERROR("getpeername");
             // not connected
@@ -426,7 +425,7 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
     } else {
         // has data to send
         ssize_t s = send(remote->fd, remote->buf->array + remote->buf->idx,
-                remote->buf->len, 0);
+                         remote->buf->len, 0);
         if (s < 0) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
                 ERROR("send");

@@ -109,9 +109,9 @@ static size_t parse_header_len(const char atyp, const char *data, size_t offset)
 int verbose = 0;
 
 static int white_list = 0;
-static int acl  = 0;
-static int mode = TCP_ONLY;
-static int auth = 0;
+static int acl        = 0;
+static int mode       = TCP_ONLY;
+static int auth       = 0;
 
 static int fast_open = 0;
 #ifdef HAVE_SETRLIMIT
@@ -206,7 +206,7 @@ static void stat_update_cb(EV_P_ ev_timer *watcher, int revents)
 static void free_connections(struct ev_loop *loop)
 {
     struct cork_dllist_item *curr, *next;
-    cork_dllist_foreach_void (&connections, curr, next) {
+    cork_dllist_foreach_void(&connections, curr, next) {
         server_t *server = cork_container_of(curr, server_t, entries);
         remote_t *remote = server->remote;
         close_and_free_server(loop, server);
@@ -285,6 +285,7 @@ int setfastopen(int fd)
 #endif
     return s;
 }
+
 #ifndef __MINGW32__
 int setnonblocking(int fd)
 {
@@ -435,15 +436,15 @@ static remote_t *connect_to_remote(struct addrinfo *res,
 #ifdef TCP_FASTOPEN
     if (fast_open) {
 #ifdef __APPLE__
-        ((struct sockaddr_in*)(res->ai_addr))->sin_len = sizeof(struct sockaddr_in);
+        ((struct sockaddr_in *)(res->ai_addr))->sin_len = sizeof(struct sockaddr_in);
         sa_endpoints_t endpoints;
-        bzero((char*)&endpoints, sizeof(endpoints));
-        endpoints.sae_dstaddr = res->ai_addr;
+        bzero((char *)&endpoints, sizeof(endpoints));
+        endpoints.sae_dstaddr    = res->ai_addr;
         endpoints.sae_dstaddrlen = res->ai_addrlen;
 
         struct iovec iov;
         iov.iov_base = server->buf->array + server->buf->idx;
-        iov.iov_len = server->buf->len;
+        iov.iov_len  = server->buf->len;
         size_t len;
         int s = connectx(sockfd, &endpoints, SAE_ASSOCID_ANY, CONNECT_DATA_IDEMPOTENT,
                          &iov, 1, &len, NULL);
@@ -1274,7 +1275,8 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     if (acl) {
         char *peer_name = get_peer_name(serverfd);
         if (peer_name != NULL && acl_match_ip(peer_name)) {
-            if (verbose) LOGI("Access denied from %s", peer_name);
+            if (verbose)
+                LOGI("Access denied from %s", peer_name);
             close(serverfd);
             return;
         }
@@ -1335,7 +1337,7 @@ int main(int argc, char **argv)
                 fast_open = 1;
             } else if (option_index == 1) {
                 LOGI("initialize acl...");
-                acl = 1;
+                acl      = 1;
                 acl_path = optarg;
             } else if (option_index == 2) {
                 manager_address = optarg;

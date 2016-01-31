@@ -203,8 +203,9 @@ static int safe_memcmp(const void *s1, const void *s2, size_t n)
 {
     const unsigned char *_s1 = (const unsigned char *)s1;
     const unsigned char *_s2 = (const unsigned char *)s2;
-    int ret = 0, i;
-    for (i = 0; i < n; i++) ret |= _s1[i] ^ _s2[i];
+    int ret                  = 0, i;
+    for (i = 0; i < n; i++)
+        ret |= _s1[i] ^ _s2[i];
     return !!ret;
 }
 
@@ -220,7 +221,7 @@ int brealloc(buffer_t *ptr, size_t len, size_t capacity)
 {
     int real_capacity = max(len, capacity);
     if (ptr->capacity < real_capacity) {
-        ptr->array = realloc(ptr->array, real_capacity);
+        ptr->array    = realloc(ptr->array, real_capacity);
         ptr->capacity = real_capacity;
     }
     return real_capacity;
@@ -1076,7 +1077,9 @@ int ss_onetimeauth(buffer_t *buf, uint8_t *iv, size_t capacity)
 #if defined(USE_CRYPTO_OPENSSL)
     HMAC(EVP_sha1(), auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, buf->len, (uint8_t *)hash, NULL);
 #elif defined(USE_CRYPTO_MBEDTLS)
-    mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, buf->len, (uint8_t *)hash);
+    mbedtls_md_hmac(mbedtls_md_info_from_type(
+                        MBEDTLS_MD_SHA1), auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, buf->len,
+                    (uint8_t *)hash);
 #else
     sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, buf->len, (uint8_t *)hash);
 #endif
@@ -1098,7 +1101,8 @@ int ss_onetimeauth_verify(buffer_t *buf, uint8_t *iv)
 #if defined(USE_CRYPTO_OPENSSL)
     HMAC(EVP_sha1(), auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, len, hash, NULL);
 #elif defined(USE_CRYPTO_MBEDTLS)
-    mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, len, hash);
+    mbedtls_md_hmac(mbedtls_md_info_from_type(
+                        MBEDTLS_MD_SHA1), auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, len, hash);
 #else
     sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)buf->array, len, hash);
 #endif
@@ -1592,7 +1596,8 @@ int ss_gen_hash(buffer_t *buf, uint32_t *counter, enc_ctx_t *ctx, size_t capacit
 #if defined(USE_CRYPTO_OPENSSL)
     HMAC(EVP_sha1(), key, enc_iv_len + sizeof(uint32_t), (uint8_t *)buf->array, blen, hash, NULL);
 #elif defined(USE_CRYPTO_MBEDTLS)
-    mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), key, enc_iv_len + sizeof(uint32_t), (uint8_t *)buf->array, blen, hash);
+    mbedtls_md_hmac(mbedtls_md_info_from_type(
+                        MBEDTLS_MD_SHA1), key, enc_iv_len + sizeof(uint32_t), (uint8_t *)buf->array, blen, hash);
 #else
     sha1_hmac(key, enc_iv_len + sizeof(uint32_t), (uint8_t *)buf->array, blen, hash);
 #endif

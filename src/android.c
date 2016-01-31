@@ -73,7 +73,7 @@ int protect_socket(int fd)
 
     if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
         LOGE("[android] connect() failed: %s (socket fd = %d), path: %s\n",
-                strerror(errno), sock, path);
+             strerror(errno), sock, path);
         close(sock);
         return -1;
     }
@@ -122,7 +122,7 @@ int send_traffic_stat(uint64_t tx, uint64_t rx)
 
     if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
         LOGE("[android] connect() failed: %s (socket fd = %d), path: %s\n",
-                strerror(errno), sock, path);
+             strerror(errno), sock, path);
         close(sock);
         return -1;
     }
