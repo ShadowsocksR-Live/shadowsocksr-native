@@ -56,6 +56,8 @@ define Package/shadowsocks-libev/conffiles
 /etc/shadowsocks.json
 endef
 
+CONFIGURE_ARGS += --disable-ssp
+
 ifeq ($(BUILD_VARIANT),polarssl)
 	CONFIGURE_ARGS += --with-crypto-library=polarssl
 endif
