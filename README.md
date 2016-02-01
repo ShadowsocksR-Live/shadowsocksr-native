@@ -9,7 +9,7 @@ It is a port of [Shadowsocks](https://github.com/shadowsocks/shadowsocks)
 created by [@clowwindy](https://github.com/clowwindy), which is maintained by
 [@madeye](https://github.com/madeye) and [@linusyang](https://github.com/linusyang).
 
-Current version: 2.4.3 | [Changelog](debian/changelog)
+Current version: 2.4.5 | [Changelog](debian/changelog)
 
 Travis CI: [![Travis CI](https://travis-ci.org/shadowsocks/shadowsocks-libev.svg?branch=master)](https://travis-ci.org/shadowsocks/shadowsocks-libev) | Jenkins Matrix: [![Jenkins](https://jenkins.shadowvpn.org/buildStatus/icon?job=Shadowsocks-libev)](https://jenkins.shadowvpn.org/job/Shadowsocks-libev/)
 
@@ -39,6 +39,9 @@ refer to the [Wiki page](https://github.com/shadowsocks/shadowsocks/wiki/Feature
     + [Configure and start the service](#configure-and-start-the-service)
 - [Fedora & RHEL](#fedora--rhel)
     + [Install from repository](#install-from-repository-1)
+- [OpenSUSE](#opensuse)
+    + [Install from repository](#install-from-repository-2)
+    + [Build from source](#build-from-source)
 - [Archlinux](#archlinux)
 - [Directly build and install on UNIX-like system](#linux)
 - [FreeBSD](#freebsd)
@@ -188,6 +191,31 @@ or `yum`:
 ```bash
 su -c 'yum update'
 su -c 'yum install shadowsocks-libev'
+```
+### OpenSUSE
+
+#### Install from repository
+Use the following command to install from repository.
+
+```bash
+sudo zypper install shadowsocks-libev
+```
+
+#### Build from source
+You should install `zlib-devel` and `libopenssl-devel` first.
+
+```bash
+sudo zypper update
+sudo zypper install zlib-devel libopenssl-devel
+```
+
+Then download the source package and compile.
+
+```bash
+git clone https://github.com/shadowsocks/shadowsocks-libev.git
+cd shadowsocks-libev
+./configure && make
+sudo make install
 ```
 
 ### Archlinux

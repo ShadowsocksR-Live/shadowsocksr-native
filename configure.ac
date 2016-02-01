@@ -2,7 +2,7 @@ dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.67])
-AC_INIT([shadowsocks-libev], [2.4.3], [max.c.lv@gmail.com])
+AC_INIT([shadowsocks-libev], [2.4.5], [max.c.lv@gmail.com])
 AC_CONFIG_SRCDIR([src/encrypt.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(auto)
@@ -126,6 +126,12 @@ case $host in
     ;;
 esac
 
+dnl Checks for pthread
+AX_PTHREAD([LIBS="$PTHREAD_LIBS $LIBS"
+            CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+            CC="$PTHREAD_CC"], AC_MSG_ERROR(Can not find pthreads.  This is required.))
+
+dnl Checks for stack protector
 GGL_CHECK_STACK_PROTECTOR([has_stack_protector=yes], [has_stack_protector=no])
 # XXX - disable -fstack-protector due to missing libssp_nonshared
 case "$host_os" in
@@ -266,8 +272,6 @@ AC_CHECK_LIB(socket, connect)
 
 dnl Checks for library functions.
 AC_CHECK_FUNCS([malloc memset socket])
-
-AX_PTHREAD(, AC_MSG_ERROR(Can not find pthreads.  This is required.))
 
 AM_COND_IF([USE_SYSTEM_SHARED_LIB],
   [],

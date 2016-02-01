@@ -1256,7 +1256,7 @@ int init_udprelay(const char *server_host, const char *server_port,
     struct cache *conn_cache;
     cache_create(&conn_cache, MAX_UDP_CONN_NUM, free_cb);
 
-    //////////////////////////////////////////////////
+    // ////////////////////////////////////////////////
     // Setup server context
 
     // Bind to port

@@ -85,6 +85,7 @@ int vpn        = 0;
 uint64_t tx    = 0;
 uint64_t rx    = 0;
 ev_tstamp last = 0;
+char *prefix;
 #endif
 
 #include "obfs.c" // I don't want to modify makefile
@@ -200,10 +201,8 @@ int create_and_bind(const char *addr, const char *port)
 
 static void free_connections(struct ev_loop *loop)
 {
-    struct cork_dllist_item *curr;
-    for (curr = cork_dllist_start(&connections);
-         !cork_dllist_is_end(&connections, curr);
-         curr = curr->next) {
+    struct cork_dllist_item *curr, *next;
+    cork_dllist_foreach_void(&connections, curr, next) {
         server_t *server = cork_container_of(curr, server_t, entries);
         remote_t *remote = server->remote;
         close_and_free_server(loop, server);
@@ -239,7 +238,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             // continue to wait for recv
             return;
         } else {
-            if (verbose) ERROR("server_recv_cb_recv");
+            if (verbose)
+                ERROR("server_recv_cb_recv");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
@@ -316,15 +316,15 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 } else {
 #ifdef TCP_FASTOPEN
 #ifdef __APPLE__
-                    ((struct sockaddr_in*)&(remote->addr))->sin_len = sizeof(struct sockaddr_in);
+                    ((struct sockaddr_in *)&(remote->addr))->sin_len = sizeof(struct sockaddr_in);
                     sa_endpoints_t endpoints;
-                    bzero((char*)&endpoints, sizeof(endpoints));
-                    endpoints.sae_dstaddr = (struct sockaddr*)&(remote->addr);
+                    bzero((char *)&endpoints, sizeof(endpoints));
+                    endpoints.sae_dstaddr    = (struct sockaddr *)&(remote->addr);
                     endpoints.sae_dstaddrlen = remote->addr_len;
 
                     int s = connectx(remote->fd, &endpoints, SAE_ASSOCID_ANY,
-                            CONNECT_RESUME_ON_READ_WRITE | CONNECT_DATA_IDEMPOTENT,
-                            NULL, 0, NULL, NULL);
+                                     CONNECT_RESUME_ON_READ_WRITE | CONNECT_DATA_IDEMPOTENT,
+                                     NULL, 0, NULL, NULL);
                     if (s == 0) {
                         s = send(remote->fd, remote->buf->array, remote->buf->len, 0);
                     }
@@ -342,7 +342,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                         } else {
                             ERROR("sendto");
                             if (errno == ENOTCONN) {
-                                LOGE( "fast open is not supported on this platform");
+                                LOGE("fast open is not supported on this platform");
                                 // just turn it off
                                 fast_open = 0;
                             }
@@ -1116,10 +1116,10 @@ int main(int argc, char **argv)
     USE_TTY();
 
 #ifdef ANDROID
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:P:o:G:g:uvVA", // SSR
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:P:O:o:G:g:uvVA", // SSR
                             long_options, &option_index)) != -1) {
 #else
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:P:o:G:uvA", // SSR
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:P:O:o:G:uvA", // SSR
                             long_options, &option_index)) != -1) {
 #endif
         switch (c) {
@@ -1154,7 +1154,7 @@ int main(int argc, char **argv)
             timeout = optarg;
             break;
         // SSR beg
-        case 'P':
+        case 'O':
             protocol = optarg;
             break;
         case 'm':
@@ -1198,6 +1198,9 @@ int main(int argc, char **argv)
 #ifdef ANDROID
         case 'V':
             vpn = 1;
+            break;
+        case 'P':
+            prefix = optarg;
             break;
 #endif
         }
@@ -1446,6 +1449,7 @@ int start_ss_local_server(profile_t profile)
     int local_port    = profile.local_port;
     int timeout       = profile.timeout;
 
+    auth      = profile.auth;
     mode      = profile.mode;
     fast_open = profile.fast_open;
     verbose   = profile.verbose;

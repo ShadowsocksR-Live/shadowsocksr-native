@@ -1,3 +1,17 @@
+shadowsocks-libev (2.4.5-1) unstable; urgency=low
+
+  * Fix build issues on OpenWRT.
+  * Reduce the latency of redir mode.
+
+ -- Max Lv <max.c.lv@gmail.com>  Mon, 01 Feb 2016 13:22:50 +0800
+
+shadowsocks-libev (2.4.4-1) unstable; urgency=low
+
+  * Fix a potential memory leak.
+  * Fix some compiler related issues.
+
+ -- Max Lv <max.c.lv@gmail.com>  Wed, 13 Jan 2016 11:50:12 +0800
+
 shadowsocks-libev (2.4.3-1) unstable; urgency=high
 
   * Refine the buffer allocation.

@@ -65,7 +65,7 @@ int auth_simple_pack_auth_data(auth_simple_global_data *global, char *data, int 
     outdata[2] = rand_len;
     ++global->connection_id;
     if (global->connection_id > 0xFF000000) {
-        rand_bytes(global->local_client_id, 4);
+        rand_bytes(global->local_client_id, 8);
         rand_bytes((uint8_t*)&global->connection_id, 4);
         global->connection_id &= 0xFFFFFF;
     }
@@ -180,7 +180,7 @@ int auth_sha1_pack_auth_data(auth_simple_global_data *global, server_info *serve
     outdata[6] = rand_len;
     ++global->connection_id;
     if (global->connection_id > 0xFF000000) {
-        rand_bytes(global->local_client_id, 4);
+        rand_bytes(global->local_client_id, 8);
         rand_bytes((uint8_t*)&global->connection_id, 4);
         global->connection_id &= 0xFFFFFF;
     }
@@ -276,7 +276,7 @@ int auth_sha1_client_post_decrypt(obfs *self, char **pplaindata, int datalength,
 }
 
 int auth_sha1_v2_pack_data(char *data, int datalength, char *outdata) {
-    unsigned char rand_len = datalength > 1400 ? 1 : datalength > 400 ? (xorshift128plus() & 0x7F) + 1 : (xorshift128plus() & 0x3FF) + 1;
+    unsigned char rand_len = datalength > 1300 ? 1 : datalength > 400 ? (xorshift128plus() & 0x7F) + 1 : (xorshift128plus() & 0x3FF) + 1;
     if (datalength > 1400) rand_len = 1;
     int out_size = rand_len + datalength + 6;
     outdata[0] = out_size >> 8;
@@ -297,7 +297,7 @@ int auth_sha1_v2_pack_data(char *data, int datalength, char *outdata) {
 }
 
 int auth_sha1_v2_pack_auth_data(auth_simple_global_data *global, server_info *server, char *data, int datalength, char *outdata) {
-    unsigned char rand_len = datalength > 1400 ? 1 : datalength > 400 ? (xorshift128plus() & 0x7F) + 1 : (xorshift128plus() & 0x3FF) + 1;
+    unsigned char rand_len = datalength > 1300 ? 1 : datalength > 400 ? (xorshift128plus() & 0x7F) + 1 : (xorshift128plus() & 0x3FF) + 1;
     int data_offset = rand_len + 4 + 2;
     int out_size = data_offset + datalength + 12 + OBFS_HMAC_SHA1_LEN;
     const char* salt = "auth_sha1_v2";
@@ -321,7 +321,7 @@ int auth_sha1_v2_pack_auth_data(auth_simple_global_data *global, server_info *se
     }
     ++global->connection_id;
     if (global->connection_id > 0xFF000000) {
-        rand_bytes(global->local_client_id, 4);
+        rand_bytes(global->local_client_id, 8);
         rand_bytes((uint8_t*)&global->connection_id, 4);
         global->connection_id &= 0xFFFFFF;
     }
