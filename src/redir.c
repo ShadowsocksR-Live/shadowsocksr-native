@@ -480,7 +480,7 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
             if (server->obfs_plugin) {
                 obfs_class *obfs_plugin = server->obfs_plugin;
                 if (obfs_plugin->client_encode) {
-                    abuf->len = obfs_plugin->client_encode(server->obfs, &abuf->array, abuf->len, &abuf->capacity);
+                    remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
                 }
             }
             // SSR end
