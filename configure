@@ -15545,9 +15545,9 @@ test -n "$PTHREAD_CC" || PTHREAD_CC="$CC"
 
 # Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
 if test x"$ax_pthread_ok" = xyes; then
-
-$as_echo "#define HAVE_PTHREAD 1" >>confdefs.h
-
+        LIBS="$PTHREAD_LIBS $LIBS"
+            CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+            CC="$PTHREAD_CC"
         :
 else
         ax_pthread_ok=no
