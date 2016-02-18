@@ -48,8 +48,8 @@ get_att_val()
     fi
 }
 
-get_att_val version "2.4.1"
-get_att_val format "tar.xz"
+get_att_val version "2.4.5"
+get_att_val format "tar.gz"
 
 name="shadowsocks-libev"
 spec_name="shadowsocks-libev.spec"
