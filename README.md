@@ -93,6 +93,8 @@ in the system during compilation and linking.
 
 #### Install from repository
 
+**Note: The repository doesn't always contain the latest version. Please build from source if you want the latest version (see below)**
+
 Add GPG public key:
 
 ```bash
