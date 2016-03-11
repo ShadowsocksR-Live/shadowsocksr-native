@@ -607,6 +607,16 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
+    //Enable TCP keepalive feature
+    int keepAlive = 1;
+    int keepIdle = 40;
+    int keepInterval = 20;
+    int keepCount = 5;
+    setsockopt(remotefd, SOL_SOCKET, SO_KEEPALIVE, (void*)&keepAlive, sizeof(keepAlive));
+    setsockopt(remotefd, SOL_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle));
+    setsockopt(remotefd, SOL_TCP, TCP_KEEPINTVL, (void*)&keepInterval, sizeof(keepInterval));
+    setsockopt(remotefd, SOL_TCP, TCP_KEEPCNT, (void*)&keepCount, sizeof(keepCount));
+    
     // Setup
     setnonblocking(remotefd);
 
