@@ -639,11 +639,9 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     LOGE("authentication error from %s", peer_name);
                     if (acl) {
                         if (acl_get_mode() == BLACK_LIST) {
+                            // Auto ban enabled only in black list mode
                             acl_add_ip(peer_name);
                             LOGE("add %s to the black list", peer_name);
-                        } else {
-                            acl_remove_ip(peer_name);
-                            LOGE("remove %s from the white list", peer_name);
                         }
                     }
                 }
