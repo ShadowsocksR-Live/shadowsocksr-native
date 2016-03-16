@@ -199,11 +199,11 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         ss_gen_hash(remote->buf, &remote->counter, server->e_ctx, BUF_SIZE);
     }
 
-    if (!remote->send_ctx->connected) {
+    /* if (!remote->send_ctx->connected) {
         ev_io_stop(EV_A_ & server_recv_ctx->io);
         ev_io_start(EV_A_ & remote->send_ctx->io);
         return;
-    }
+    } //*/
 
     // SSR beg
     if (server->protocol_plugin) {
@@ -418,7 +418,7 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
         if (r == 0) {
             remote_send_ctx->connected = 1;
             ev_io_stop(EV_A_ & remote_send_ctx->io);
-            ev_io_stop(EV_A_ & server->recv_ctx->io);
+            //ev_io_stop(EV_A_ & server->recv_ctx->io);
             ev_timer_stop(EV_A_ & remote_send_ctx->watcher);
 
             // send destaddr
@@ -755,7 +755,7 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     connect(remotefd, remote_addr, get_sockaddr_len(remote_addr));
     // listen to remote connected event
     ev_io_start(EV_A_ & remote->send_ctx->io);
-    ev_io_start(EV_A_ & server->recv_ctx->io);
+    //ev_io_start(EV_A_ & server->recv_ctx->io);
     ev_timer_start(EV_A_ & remote->send_ctx->watcher);
 }
 
