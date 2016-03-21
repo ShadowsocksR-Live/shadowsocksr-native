@@ -24,6 +24,7 @@ RUN rm -rf $BASEDIR/shadowsocks-libev\
 
 # Port in the config file won't take affect. Instead we'll use 8388.
 EXPOSE $PORT
+EXPOSE $SERVER_PORT/udp
 
 # Override the host and port in the config file.
 ADD entrypoint /
