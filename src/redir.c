@@ -336,7 +336,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         if (obfs_plugin->client_decode) {
             int needsendback;
             server->buf->len = obfs_plugin->client_decode(server->obfs, &server->buf->array, server->buf->len, &server->buf->capacity, &needsendback);
-            if (server->buf->len < 0) {
+            if ((int)server->buf->len < 0) {
                 LOGE("client_decode");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
@@ -369,7 +369,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         obfs_class *protocol_plugin = server->protocol_plugin;
         if (protocol_plugin->client_post_decrypt) {
             server->buf->len = protocol_plugin->client_post_decrypt(server->protocol, &server->buf->array, server->buf->len, &server->buf->capacity);
-            if (server->buf->len < 0) {
+            if ((int)server->buf->len < 0) {
                 LOGE("client_post_decrypt");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
