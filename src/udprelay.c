@@ -605,6 +605,8 @@ static void query_resolve_cb(struct sockaddr *addr, void *data)
         }
 
         if (remote_ctx != NULL) {
+            memcpy(&remote_ctx->dst_addr, addr, sizeof(struct sockaddr_storage));
+            
             size_t addr_len = get_sockaddr_len(addr);
             int s           = sendto(remote_ctx->fd, query_ctx->buf->array, query_ctx->buf->len,
                                      0, addr, addr_len);
@@ -1150,6 +1152,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             if (dst_addr.ss_family != AF_INET && dst_addr.ss_family != AF_INET6) {
                 need_query = 1;
             }
+        } else {
+            memcpy(&dst_addr,&remote_ctx->dst_addr,sizeof(struct sockaddr_storage));
         }
     } else {
         if (dst_addr.ss_family == AF_INET || dst_addr.ss_family == AF_INET6) {
