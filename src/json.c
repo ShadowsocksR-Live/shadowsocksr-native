@@ -28,7 +28,6 @@
  */
 
 #include "json.h"
-#include "mm-wrapper.h"
 
 #ifdef _MSC_VER
 #ifndef _CRT_SECURE_NO_WARNINGS
@@ -91,12 +90,12 @@ typedef struct {
 
 static void *default_alloc(size_t size, int zero, void *user_data)
 {
-    return zero ? calloc(1, size) : SS_SAFEMALLOC(size);
+    return zero ? calloc(1, size) : ss_malloc(size);
 }
 
 static void default_free(void *ptr, void *user_data)
 {
-    SS_SAFEFREE(ptr);
+    ss_free(ptr);
 }
 
 static void *json_alloc(json_state *state, unsigned long size, int zero)
