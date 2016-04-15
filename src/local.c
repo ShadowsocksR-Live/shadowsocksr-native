@@ -66,7 +66,6 @@
 #include "socks5.h"
 #include "acl.h"
 #include "local.h"
-#include "mm-wrapper.h"
 
 #ifndef EAGAIN
 #define EAGAIN EWOULDBLOCK
@@ -224,7 +223,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     ssize_t r;
     errno = 0;
-    r = recv(server->fd, buf->array, BUF_SIZE, 0);
+    r     = recv(server->fd, buf->array, BUF_SIZE, 0);
 
     if (r == 0) {
         // connection closed
@@ -775,13 +774,13 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
 static remote_t *new_remote(int fd, int timeout)
 {
     remote_t *remote;
-    remote = SS_SAFEMALLOC(sizeof(remote_t));
+    remote = ss_malloc(sizeof(remote_t));
 
     memset(remote, 0, sizeof(remote_t));
 
-    remote->buf                 = SS_SAFEMALLOC(sizeof(buffer_t));
-    remote->recv_ctx            = SS_SAFEMALLOC(sizeof(remote_ctx_t));
-    remote->send_ctx            = SS_SAFEMALLOC(sizeof(remote_ctx_t));
+    remote->buf                 = ss_malloc(sizeof(buffer_t));
+    remote->recv_ctx            = ss_malloc(sizeof(remote_ctx_t));
+    remote->send_ctx            = ss_malloc(sizeof(remote_ctx_t));
     remote->recv_ctx->connected = 0;
     remote->send_ctx->connected = 0;
     remote->fd                  = fd;
@@ -807,11 +806,11 @@ static void free_remote(remote_t *remote)
     }
     if (remote->buf != NULL) {
         bfree(remote->buf);
-        SS_SAFEFREE(remote->buf);
+        ss_free(remote->buf);
     }
-    SS_SAFEFREE(remote->recv_ctx);
-    SS_SAFEFREE(remote->send_ctx);
-    SS_SAFEFREE(remote);
+    ss_free(remote->recv_ctx);
+    ss_free(remote->send_ctx);
+    ss_free(remote);
 }
 
 static void close_and_free_remote(EV_P_ remote_t *remote)
@@ -829,13 +828,13 @@ static void close_and_free_remote(EV_P_ remote_t *remote)
 static server_t *new_server(int fd, int method)
 {
     server_t *server;
-    server = SS_SAFEMALLOC(sizeof(server_t));
+    server = ss_malloc(sizeof(server_t));
 
     memset(server, 0, sizeof(server_t));
 
-    server->recv_ctx            = SS_SAFEMALLOC(sizeof(server_ctx_t));
-    server->send_ctx            = SS_SAFEMALLOC(sizeof(server_ctx_t));
-    server->buf                 = SS_SAFEMALLOC(sizeof(buffer_t));
+    server->recv_ctx            = ss_malloc(sizeof(server_ctx_t));
+    server->send_ctx            = ss_malloc(sizeof(server_ctx_t));
+    server->buf                 = ss_malloc(sizeof(buffer_t));
     server->recv_ctx->connected = 0;
     server->send_ctx->connected = 0;
     server->fd                  = fd;
@@ -843,8 +842,8 @@ static server_t *new_server(int fd, int method)
     server->send_ctx->server    = server;
 
     if (method) {
-        server->e_ctx = SS_SAFEMALLOC(sizeof(struct enc_ctx));
-        server->d_ctx = SS_SAFEMALLOC(sizeof(struct enc_ctx));
+        server->e_ctx = ss_malloc(sizeof(struct enc_ctx));
+        server->d_ctx = ss_malloc(sizeof(struct enc_ctx));
         enc_ctx_init(method, server->e_ctx, 1);
         enc_ctx_init(method, server->d_ctx, 0);
     } else {
@@ -871,19 +870,19 @@ static void free_server(server_t *server)
     }
     if (server->e_ctx != NULL) {
         cipher_context_release(&server->e_ctx->evp);
-        SS_SAFEFREE(server->e_ctx);
+        ss_free(server->e_ctx);
     }
     if (server->d_ctx != NULL) {
         cipher_context_release(&server->d_ctx->evp);
-        SS_SAFEFREE(server->d_ctx);
+        ss_free(server->d_ctx);
     }
     if (server->buf != NULL) {
         bfree(server->buf);
-        SS_SAFEFREE(server->buf);
+        ss_free(server->buf);
     }
-    SS_SAFEFREE(server->recv_ctx);
-    SS_SAFEFREE(server->send_ctx);
-    SS_SAFEFREE(server);
+    ss_free(server->recv_ctx);
+    ss_free(server->send_ctx);
+    ss_free(server);
 }
 
 static void close_and_free_server(EV_P_ server_t *server)
@@ -1189,12 +1188,12 @@ int main(int argc, char **argv)
     // Setup proxy context
     listen_ctx_t listen_ctx;
     listen_ctx.remote_num  = remote_num;
-    listen_ctx.remote_addr = SS_SAFEMALLOC(sizeof(struct sockaddr *) * remote_num);
+    listen_ctx.remote_addr = ss_malloc(sizeof(struct sockaddr *) * remote_num);
     for (i = 0; i < remote_num; i++) {
         char *host = remote_addr[i].host;
         char *port = remote_addr[i].port == NULL ? remote_port :
                      remote_addr[i].port;
-        struct sockaddr_storage *storage = SS_SAFEMALLOC(sizeof(struct sockaddr_storage));
+        struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
         memset(storage, 0, sizeof(struct sockaddr_storage));
         if (get_sockaddr(host, port, storage, 1) == -1) {
             FATAL("failed to resolve the provided hostname");
@@ -1257,8 +1256,8 @@ int main(int argc, char **argv)
     }
 
     for (i = 0; i < remote_num; i++)
-        SS_SAFEFREE(listen_ctx.remote_addr[i]);
-    SS_SAFEFREE(listen_ctx.remote_addr);
+        ss_free(listen_ctx.remote_addr[i]);
+    ss_free(listen_ctx.remote_addr);
 
 #ifdef __MINGW32__
     winsock_cleanup();
@@ -1324,7 +1323,7 @@ int start_ss_local_server(profile_t profile)
     LOGI("initialize ciphers... %s", method);
     int m = enc_init(password, method);
 
-    struct sockaddr_storage *storage = SS_SAFEMALLOC(sizeof(struct sockaddr_storage));
+    struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
     memset(storage, 0, sizeof(struct sockaddr_storage));
     if (get_sockaddr(remote_host, remote_port_str, storage, 1) == -1) {
         return -1;
@@ -1335,7 +1334,7 @@ int start_ss_local_server(profile_t profile)
     listen_ctx_t listen_ctx;
 
     listen_ctx.remote_num     = 1;
-    listen_ctx.remote_addr    = SS_SAFEMALLOC(sizeof(struct sockaddr *));
+    listen_ctx.remote_addr    = ss_malloc(sizeof(struct sockaddr *));
     listen_ctx.remote_addr[0] = (struct sockaddr *)storage;
     listen_ctx.timeout        = timeout;
     listen_ctx.method         = m;
@@ -1388,7 +1387,7 @@ int start_ss_local_server(profile_t profile)
     free_connections(loop);
     close(listen_ctx.fd);
 
-    SS_SAFEFREE(listen_ctx.remote_addr);
+    ss_free(listen_ctx.remote_addr);
 
 #ifdef __MINGW32__
     winsock_cleanup();

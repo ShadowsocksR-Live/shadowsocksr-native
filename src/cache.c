@@ -27,8 +27,9 @@
 
 #include <errno.h>
 #include <stdlib.h>
+
 #include "cache.h"
-#include "mm-wrapper.h"
+#include "utils.h"
 
 #ifdef __MINGW32__
 #include "win32.h"
@@ -92,12 +93,12 @@ int cache_delete(struct cache *cache, int keep_data)
                     cache->free_cb(entry->data);
                 }
             }
-            SS_SAFEFREE(entry->key);
-            SS_SAFEFREE(entry);
+            ss_free(entry->key);
+            ss_free(entry);
         }
     }
 
-    SS_SAFEFREE(cache);
+    ss_free(cache);
     return 0;
 }
 
@@ -130,11 +131,11 @@ int cache_remove(struct cache *cache, char *key, size_t key_len)
             if (cache->free_cb) {
                 cache->free_cb(tmp->data);
             } else {
-                SS_SAFEFREE(tmp->data);
+                ss_free(tmp->data);
             }
         }
-        SS_SAFEFREE(tmp->key);
-        SS_SAFEFREE(tmp);
+        ss_free(tmp->key);
+        ss_free(tmp);
     }
 
     return 0;
@@ -230,7 +231,7 @@ int cache_insert(struct cache *cache, char *key, size_t key_len, void *data)
         return ENOMEM;
     }
 
-    entry->key = SS_SAFEMALLOC(key_len);
+    entry->key = ss_malloc(key_len);
     memcpy(entry->key, key, key_len);
     entry->data = data;
     HASH_ADD_KEYPTR(hh, cache->entries, entry->key, key_len, entry);
@@ -242,11 +243,11 @@ int cache_insert(struct cache *cache, char *key, size_t key_len, void *data)
                 if (cache->free_cb) {
                     cache->free_cb(entry->data);
                 } else {
-                    SS_SAFEFREE(entry->data);
+                    ss_free(entry->data);
                 }
             }
-            SS_SAFEFREE(entry->key);
-            SS_SAFEFREE(entry);
+            ss_free(entry->key);
+            ss_free(entry);
             break;
         }
     }

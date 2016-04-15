@@ -103,7 +103,7 @@ int run_as(const char *user)
              * which returns its result in a statically allocated buffer and
              * cannot be considered thread safe. */
             errno = 0;
-            err = getpwnam_r(user, &pwdbuf, buf, buflen, &pwd);
+            err   = getpwnam_r(user, &pwdbuf, buf, buflen, &pwd);
 
             if (err == 0 && pwd) {
                 /* setgid first, because we may not be allowed to do it anymore after setuid */
