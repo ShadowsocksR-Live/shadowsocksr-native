@@ -11,6 +11,7 @@ int rand_bytes(uint8_t *output, int len);
 #include "crc32.c"
 #include "http_simple.c"
 #include "tls1.0_session.c"
+#include "tls1.2_ticket.c"
 #include "verify.c"
 #include "auth.c"
 
@@ -61,6 +62,17 @@ obfs_class * new_obfs_class(char *plugin_name)
 
         plugin->client_encode = tls10_session_auth_client_encode;
         plugin->client_decode = tls10_session_auth_client_decode;
+
+        return plugin;
+    } else if (strcmp(plugin_name, "tls1.2_ticket_auth") == 0) {
+        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
+        plugin->init_data = tls12_ticket_auth_init_data;
+        plugin->new_obfs = tls12_ticket_auth_new_obfs;
+        plugin->set_server_info = set_server_info;
+        plugin->dispose = tls12_ticket_auth_dispose;
+
+        plugin->client_encode = tls12_ticket_auth_client_encode;
+        plugin->client_decode = tls12_ticket_auth_client_decode;
 
         return plugin;
     } else if (strcmp(plugin_name, "verify_simple") == 0) {
