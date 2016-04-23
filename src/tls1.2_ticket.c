@@ -97,13 +97,38 @@ int tls12_ticket_auth_client_encode(obfs *self, char **pencryptdata, int datalen
 
     if (local->handshake_status == 0) {
 #define CSTR_DECL(name, len, str) const char* name = str; const int len = sizeof str;
-        CSTR_DECL(tls_data, tls_data_len, "\x00\x1c\xc0\x2b\xc0\x2f\xcc\xa9\xcc\xa8\xcc\x14\xcc\x13\xc0\x0a\xc0\x14\xc0\x09\xc0\x13\x00\x9c\x00\x35\x00\x2f\x00\x0a\x01\x00"
+        CSTR_DECL(tls_data1, tls_data1_len, "\x00\x1c\xc0\x2b\xc0\x2f\xcc\xa9\xcc\xa8\xcc\x14\xcc\x13\xc0\x0a\xc0\x14\xc0\x09\xc0\x13\x00\x9c\x00\x35\x00\x2f\x00\x0a\x01\x00"
                 "\xff\x01\x00\x01\x00"
-                "\x00\x00\x00\x05\x00\x03\x00\x00\x00" // empty sni
-                "\x00\x17\x00\x00\x00\x23\x00\xd0"
-                "\x00\x0d\x00\x16\x00\x14\x06\x01\x06\x03\x05\x01\x05\x03\x04\x01\x04\x03\x03\x01\x03\x03\x02\x01\x02\x03\x00\x05\x00\x05\x01\x00\x00\x00\x00\x00\x12\x00\x00\x75\x50\x00\x00\x00\x0b\x00\x02\x01\x00\x00\x0a\x00\x06\x00\x04\x00\x17\x00\x18"
+                );
+        CSTR_DECL(tls_data2, tls_data2_len, "\x00\x17\x00\x00\x00\x23\x00\xd0");
+        CSTR_DECL(tls_data3, tls_data3_len, "\x00\x0d\x00\x16\x00\x14\x06\x01\x06\x03\x05\x01\x05\x03\x04\x01\x04\x03\x03\x01\x03\x03\x02\x01\x02\x03\x00\x05\x00\x05\x01\x00\x00\x00\x00\x00\x12\x00\x00\x75\x50\x00\x00\x00\x0b\x00\x02\x01\x00\x00\x0a\x00\x06\x00\x04\x00\x17\x00\x18"
                 //"00150066000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" // padding
                 );
+        char tls_data[2048], tls_data_len = 0;
+        memcpy(tls_data, tls_data1, tls_data1_len);
+        tls_data_len += tls_data1_len;
+
+        char sni[256] = {0};
+        if (self->server.param && strlen(self->server.param) == 0)
+            self->server.param = NULL;
+        sprintf(sni, "%s", (self->server.param ? self->server.param : self->server.host));
+        int sni_len = strlen(sni);
+        if (sni_len > 0 && sni[sni_len - 1] >= '0' && sni[sni_len - 1] <= '9')
+            sni_len = 0;
+        tls_data[tls_data_len + 2] = (sni_len + 5) >> 8;
+        tls_data[tls_data_len + 3] = (sni_len + 5);
+        tls_data[tls_data_len + 4] = (sni_len + 3) >> 8;
+        tls_data[tls_data_len + 5] = (sni_len + 3);
+        tls_data[tls_data_len + 7] = sni_len >> 8;
+        tls_data[tls_data_len + 8] = sni_len;
+        memcpy(tls_data + tls_data_len + 9, sni, sni_len);
+        tls_data_len += 9 + sni_len;
+        memcpy(tls_data + tls_data_len, tls_data2, tls_data2_len);
+        tls_data_len += tls_data2_len;
+        rand_bytes((uint8_t*)(tls_data + tls_data_len), 208);
+        memcpy(tls_data + tls_data_len, tls_data3, tls_data3_len);
+        tls_data_len += tls_data3_len;
+
         datalength = 11 + 32 + 1 + 32 + tls_data_len;
         out_buffer = (char*)malloc(datalength);
         char *pdata = out_buffer + datalength - tls_data_len;
