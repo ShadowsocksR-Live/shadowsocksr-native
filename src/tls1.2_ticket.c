@@ -96,7 +96,7 @@ int tls12_ticket_auth_client_encode(obfs *self, char **pencryptdata, int datalen
     local->send_buffer_size += datalength + 5;
 
     if (local->handshake_status == 0) {
-#define CSTR_DECL(name, len, str) const char* name = str; const int len = sizeof str;
+#define CSTR_DECL(name, len, str) const char* name = str; const int len = sizeof(str) - 1;
         CSTR_DECL(tls_data0, tls_data0_len, "\x00\x1c\xc0\x2b\xc0\x2f\xcc\xa9\xcc\xa8\xcc\x14\xcc\x13\xc0\x0a\xc0\x14\xc0\x09\xc0\x13\x00\x9c\x00\x35\x00\x2f\x00\x0a\x01\x00"
                 );
         CSTR_DECL(tls_data1, tls_data1_len, "\xff\x01\x00\x01\x00"
@@ -114,7 +114,6 @@ int tls12_ticket_auth_client_encode(obfs *self, char **pencryptdata, int datalen
         if (self->server.param && strlen(self->server.param) == 0)
             self->server.param = NULL;
         sprintf(sni, "%s", (self->server.param ? self->server.param : self->server.host));
-        LOGI("%s", sni);
         int sni_len = strlen(sni);
         if (sni_len > 0 && sni[sni_len - 1] >= '0' && sni[sni_len - 1] <= '9')
             sni_len = 0;
@@ -132,6 +131,7 @@ int tls12_ticket_auth_client_encode(obfs *self, char **pencryptdata, int datalen
         memcpy(tls_data + tls_data_len, tls_data2, tls_data2_len);
         tls_data_len += tls_data2_len;
         rand_bytes(tls_data + tls_data_len, 208);
+        tls_data_len += 208;
         memcpy(tls_data + tls_data_len, tls_data3, tls_data3_len);
         tls_data_len += tls_data3_len;
 
@@ -143,8 +143,8 @@ int tls12_ticket_auth_client_encode(obfs *self, char **pencryptdata, int datalen
         pdata[-1] = tls_data_len;
         pdata[-2] = tls_data_len >> 8;
         pdata -= 2; len += 2;
-        memcpy(pdata -= tls_data0_len, tls_data0, tls_data0_len);
-        len += tls_data0_len;
+        memcpy(pdata - tls_data0_len, tls_data0, tls_data0_len);
+        pdata -= tls_data0_len; len += tls_data0_len;
         memcpy(pdata - 32, global->local_client_id, 32);
         pdata -= 32; len += 32;
         pdata[-1] = 0x20;
