@@ -891,7 +891,7 @@ int main(int argc, char **argv)
 #endif
 
     // Setup keys
-    LOGI("initialize ciphers... %s", method);
+    LOGI("initializing ciphers... %s", method);
     int m = enc_init(password, method);
 
     // Setup proxy context

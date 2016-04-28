@@ -1007,7 +1007,7 @@ int main(int argc, char **argv)
             if (option_index == 0) {
                 fast_open = 1;
             } else if (option_index == 1) {
-                LOGI("initialize acl...");
+                LOGI("initializing acl...");
                 acl = !init_acl(optarg, BLACK_LIST);
             } else if (option_index == 2) {
                 usage();
@@ -1188,7 +1188,7 @@ int main(int argc, char **argv)
     ev_signal_start(EV_DEFAULT, &sigterm_watcher);
 
     // Setup keys
-    LOGI("initialize ciphers... %s", method);
+    LOGI("initializing ciphers... %s", method);
     int m = enc_init(password, method);
 
     // Setup proxy context
@@ -1326,7 +1326,7 @@ int start_ss_local_server(profile_t profile)
     ev_signal_start(EV_DEFAULT, &sigterm_watcher);
 
     // Setup keys
-    LOGI("initialize ciphers... %s", method);
+    LOGI("initializing ciphers... %s", method);
     int m = enc_init(password, method);
 
     struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));

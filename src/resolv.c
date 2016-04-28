@@ -82,9 +82,12 @@ static struct sockaddr *choose_ipv4_first(struct ResolvQuery *);
 static struct sockaddr *choose_ipv6_first(struct ResolvQuery *);
 static struct sockaddr *choose_any(struct ResolvQuery *);
 
-int resolv_init(struct ev_loop *loop, char **nameservers, int nameserver_num)
+int resolv_init(struct ev_loop *loop, char **nameservers, int nameserver_num, int ipv6first)
 {
-    resolv_mode = MODE_IPV4_FIRST;
+    if (ipv6first)
+        resolv_mode = MODE_IPV6_FIRST;
+    else
+        resolv_mode = MODE_IPV4_FIRST;
 
     struct dns_ctx *ctx = &dns_defctx;
     if (nameservers == NULL) {

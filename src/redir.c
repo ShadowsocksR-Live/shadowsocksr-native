@@ -834,7 +834,7 @@ int main(int argc, char **argv)
     signal(SIGABRT, SIG_IGN);
 
     // Setup keys
-    LOGI("initialize ciphers... %s", method);
+    LOGI("initializing ciphers... %s", method);
     int m = enc_init(password, method);
 
     // Setup proxy context
