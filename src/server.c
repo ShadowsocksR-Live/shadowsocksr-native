@@ -416,9 +416,14 @@ static remote_t *connect_to_remote(struct addrinfo *res,
     remote_t *remote = new_remote(sockfd);
 
     // setup remote socks
-    setnonblocking(sockfd);
-    if (bind_to_address(sockfd, bind_address) == -1)
-        ERROR("bind_to_address");
+
+    if (setnonblocking(sockfd) == -1)
+        ERROR("setnonblocking");
+
+    if (bind_address != NULL)
+        if (bind_to_address(sockfd, bind_address) == -1)
+            ERROR("bind_to_address");
+
 #ifdef SET_INTERFACE
     if (iface) {
         if (setinterface(sockfd, iface) == -1)
