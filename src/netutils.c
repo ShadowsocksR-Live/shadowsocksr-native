@@ -92,12 +92,12 @@ int bind_to_address(int socket_fd, const char *host)
                 struct sockaddr_in *addr = (struct sockaddr_in *)&storage;
                 dns_pton(AF_INET, host, &addr->sin_addr);
                 addr->sin_family = AF_INET;
-                return bind(socket_fd, addr, sizeof(struct sockaddr_in));
+                return bind(socket_fd, (struct sockaddr *)addr, sizeof(struct sockaddr_in));
             } else if (ip.version == 6) {
                 struct sockaddr_in6 *addr = (struct sockaddr_in6 *)&storage;
                 dns_pton(AF_INET6, host, &addr->sin6_addr);
                 addr->sin6_family = AF_INET6;
-                return bind(socket_fd, addr, sizeof(struct sockaddr_in6));
+                return bind(socket_fd, (struct sockaddr *)addr, sizeof(struct sockaddr_in6));
             }
         }
     }
