@@ -1171,7 +1171,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 #endif
 #ifdef SET_INTERFACE
                 if (server_ctx->iface) {
-                    if (setinterface(remotefd, server_ctx->iface) == -1);
+                    if (setinterface(remotefd, server_ctx->iface) == -1)
                         ERROR("setinterface");
                 }
 #endif
