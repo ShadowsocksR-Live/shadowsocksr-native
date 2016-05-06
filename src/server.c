@@ -431,7 +431,8 @@ static remote_t *connect_to_remote(struct addrinfo *res,
     setnonblocking(sockfd);
 #ifdef SET_INTERFACE
     if (iface) {
-        setinterface(sockfd, iface);
+        if (setinterface(sockfd, iface) == -1)
+            ERROR("setinterface");
     }
 #endif
 

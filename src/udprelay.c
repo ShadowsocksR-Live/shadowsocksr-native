@@ -589,7 +589,8 @@ static void query_resolve_cb(struct sockaddr *addr, void *data)
 #endif
 #ifdef SET_INTERFACE
                 if (query_ctx->server_ctx->iface) {
-                    setinterface(remotefd, query_ctx->server_ctx->iface);
+                    if (setinterface(remotefd, query_ctx->server_ctx->iface) == -1)
+                        ERROR("setinterface");
                 }
 #endif
                 remote_ctx                  = new_remote(remotefd, query_ctx->server_ctx);
@@ -1089,7 +1090,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 #endif
 #ifdef SET_INTERFACE
         if (server_ctx->iface) {
-            setinterface(remotefd, server_ctx->iface);
+            if (setinterface(remotefd, server_ctx->iface) == -1)
+                ERROR("setinterface");
         }
 #endif
 
@@ -1169,7 +1171,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 #endif
 #ifdef SET_INTERFACE
                 if (server_ctx->iface) {
-                    setinterface(remotefd, server_ctx->iface);
+                    if (setinterface(remotefd, server_ctx->iface) == -1);
+                        ERROR("setinterface");
                 }
 #endif
                 remote_ctx                  = new_remote(remotefd, server_ctx);

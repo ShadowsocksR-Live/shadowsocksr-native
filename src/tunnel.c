@@ -660,7 +660,8 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     setnonblocking(remotefd);
 #ifdef SET_INTERFACE
     if (listener->iface) {
-        setinterface(remotefd, listener->iface);
+        if (setinterface(remotefd, listener->iface) == -1)
+            ERROR("setinterface");
     }
 #endif
 

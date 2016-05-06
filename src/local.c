@@ -919,7 +919,8 @@ static remote_t *create_remote(listen_ctx_t *listener,
     setnonblocking(remotefd);
 #ifdef SET_INTERFACE
     if (listener->iface) {
-        setinterface(remotefd, listener->iface);
+        if (setinterface(remotefd, listener->iface) == -1)
+            ERROR("setinterface");
     }
 #endif
 
