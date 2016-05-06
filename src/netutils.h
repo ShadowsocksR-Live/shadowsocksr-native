@@ -32,6 +32,12 @@ size_t get_sockaddr_len(struct sockaddr *addr);
 ssize_t get_sockaddr(char *host, char *port, struct sockaddr_storage *storage, int block);
 int set_reuseport(int socket);
 
+#ifdef SET_INTERFACE
+int setinterface(int socket_fd, const char *interface_name);
+#endif
+
+int bind_to_address(int socket_fd, const char *address);
+
 /**
  * Compare two sockaddrs. Imposes an ordering on the addresses.
  * Compares address and port.

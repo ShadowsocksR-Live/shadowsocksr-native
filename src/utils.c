@@ -243,10 +243,8 @@ void usage()
     printf(
         "       [-i <interface>]           Network interface to bind.\n");
 #endif
-#ifndef MODULE_REMOTE
     printf(
         "       [-b <local_address>]       Local address to bind.\n");
-#endif
     printf("\n");
     printf(
         "       [-u]                       Enable UDP relay,\n");

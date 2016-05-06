@@ -116,19 +116,6 @@ static int setnonblocking(int fd)
 
 #endif
 
-#ifdef SET_INTERFACE
-static int setinterface(int socket_fd, const char *interface_name)
-{
-    struct ifreq interface;
-    memset(&interface, 0, sizeof(interface));
-    strncpy(interface.ifr_name, interface_name, IFNAMSIZ);
-    int res = setsockopt(socket_fd, SOL_SOCKET, SO_BINDTODEVICE, &interface,
-                         sizeof(struct ifreq));
-    return res;
-}
-
-#endif
-
 #if defined(MODULE_REMOTE) && defined(SO_BROADCAST)
 static int set_broadcast(int socket_fd)
 {

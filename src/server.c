@@ -121,6 +121,7 @@ static int nofile = 0;
 static int remote_conn = 0;
 static int server_conn = 0;
 
+static char *bind_address    = NULL;
 static char *server_port     = NULL;
 static char *manager_address = NULL;
 uint64_t tx                  = 0;
@@ -300,19 +301,6 @@ int setnonblocking(int fd)
 
 #endif
 
-#ifdef SET_INTERFACE
-int setinterface(int socket_fd, const char *interface_name)
-{
-    struct ifreq interface;
-    memset(&interface, 0, sizeof(interface));
-    strncpy(interface.ifr_name, interface_name, IFNAMSIZ);
-    int res = setsockopt(socket_fd, SOL_SOCKET, SO_BINDTODEVICE, &interface,
-                         sizeof(struct ifreq));
-    return res;
-}
-
-#endif
-
 int create_and_bind(const char *host, const char *port)
 {
     struct addrinfo hints;
@@ -429,6 +417,7 @@ static remote_t *connect_to_remote(struct addrinfo *res,
 
     // setup remote socks
     setnonblocking(sockfd);
+    bind_to_address(sockfd, bind_address);
 #ifdef SET_INTERFACE
     if (iface) {
         if (setinterface(sockfd, iface) == -1)
@@ -1329,7 +1318,7 @@ int main(int argc, char **argv)
 
     USE_TTY();
 
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:c:i:d:a:n:huUvAw6",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:b:c:i:d:a:n:huUvAw6",
                             long_options, &option_index)) != -1) {
         switch (c) {
         case 0:
@@ -1350,6 +1339,9 @@ int main(int argc, char **argv)
             if (server_num < MAX_REMOTE_NUM) {
                 server_host[server_num++] = optarg;
             }
+            break;
+        case 'b':
+            bind_address = optarg;
             break;
         case 'p':
             server_port = optarg;
