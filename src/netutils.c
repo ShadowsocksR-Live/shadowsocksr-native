@@ -82,18 +82,22 @@ int setinterface(int socket_fd, const char *interface_name)
 }
 #endif
 
-int bind_to_address(int socket_fd, const char *address)
+int bind_to_address(int socket_fd, const char *host)
 {
-    if (address != NULL) {
+    if (host != NULL) {
         struct cork_ip ip;
-        struct sockaddr_storage addr;
-        if (cork_ip_init(&ip, address) != -1) {
+        struct sockaddr_storage storage;
+        if (cork_ip_init(&ip, host) != -1) {
             if (ip.version == 4) {
-                dns_pton(AF_INET, address, &addr);
-                return bind(socket_fd, (struct sockaddr_in *)&addr, sizeof(struct sockaddr_in));
+                struct sockaddr_in *addr = (struct sockaddr_in *)&storage;
+                dns_pton(AF_INET, host, &addr->sin_addr);
+                addr->sin_family = AF_INET;
+                return bind(socket_fd, addr, sizeof(struct sockaddr_in));
             } else if (ip.version == 6) {
-                dns_pton(AF_INET6, address, &addr);
-                return bind(socket_fd, (struct sockaddr_in6 *)&addr, sizeof(struct sockaddr_in6));
+                struct sockaddr_in6 *addr = (struct sockaddr_in6 *)&storage;
+                dns_pton(AF_INET6, host, &addr->sin6_addr);
+                addr->sin6_family = AF_INET6;
+                return bind(socket_fd, addr, sizeof(struct sockaddr_in6));
             }
         }
     }

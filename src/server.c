@@ -417,7 +417,8 @@ static remote_t *connect_to_remote(struct addrinfo *res,
 
     // setup remote socks
     setnonblocking(sockfd);
-    bind_to_address(sockfd, bind_address);
+    if (bind_to_address(sockfd, bind_address) == -1)
+        ERROR("bind_to_address");
 #ifdef SET_INTERFACE
     if (iface) {
         if (setinterface(sockfd, iface) == -1)
