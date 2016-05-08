@@ -205,7 +205,7 @@ case $host in
     #include <netinet/in.h>
     #endif
     #if HAVE_LINUX_IF_H
-    #include <net/if.h>
+    #include <linux/if.h>
     #endif
     #if HAVE_SYS_SOCKET_H
     #include <sys/socket.h>
