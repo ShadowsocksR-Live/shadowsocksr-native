@@ -3,7 +3,7 @@ Section: net
 Priority: extra
 Maintainer: Max Lv <max.c.lv@gmail.com>
 Build-Depends: debhelper (>= 9), dh-systemd (>= 1.5), pkg-config, libssl-dev (>= 0.9.8), autotools-dev, mime-support, gawk
-Standards-Version: 3.9.6
+Standards-Version: 3.9.8
 Homepage: http://www.shadowsocks.org
 Vcs-Git: https://github.com/shadowsocks/shadowsocks-libev.git
 Vcs-Browser: https://github.com/shadowsocks/shadowsocks-libev
@@ -42,15 +42,3 @@ Description: lightweight and secure socks5 proxy (development files)
  embedded devices and low end boxes.
  .
  This package provides C header files for the libraries.
-
-Package: libshadowsocks-dbg
-Architecture: any
-Section: debug
-Priority: extra
-Breaks: shadowsocks-libev (<< 2.4.0)
-Depends: libshadowsocks1 (= ${binary:Version}), ${misc:Depends}
-Description: debugging symbols for the libshadowsocks1 library
- Shadowsocks-libev is a lightweight and secure socks5 proxy for
- embedded devices and low end boxes.
- .
- This package contains the debugging symbols for libshadowsocks1.
