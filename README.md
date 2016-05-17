@@ -148,7 +148,7 @@ section below.
 cd shadowsocks-libev
 sudo apt-get install build-essential autoconf libtool libssl-dev \
     gawk debhelper dh-systemd init-system-helpers pkg-config
-dpkg-buildpackage -us -uc -i
+dpkg-buildpackage -b -us -uc -i
 cd ..
 sudo dpkg -i shadowsocks-libev*.deb
 ```
