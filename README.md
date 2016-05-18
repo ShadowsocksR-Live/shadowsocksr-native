@@ -63,17 +63,8 @@ try `configure --help`.
 There are three crypto libraries available:
 
 - OpenSSL (**default**)
-- PolarSSL
-- mbedTLS (__NOT__ officially supported)
-
-##### PolarSSL
-
-To build against PolarSSL, specify `--with-crypto-library=polarssl`
-and `--with-polarssl=/path/to/polarssl` when running `./configure`.
-
-* PolarSSL __1.2.5 or newer__ is required. Currently, PolarSSL does __NOT__ support
-CAST5-CFB, DES-CFB, IDEA-CFB, RC2-CFB and SEED-CFB.
-* RC4 is only support by PolarSSL __1.3.0 or above__.
+- mbedTLS
+- PolarSSL (Deprecated)
 
 ##### mbedTLS
 To build against mbedTLS, specify `--with-crypto-library=mbedtls`
@@ -84,6 +75,15 @@ and you should use it at your own risk.
 
 Windows users will need extra work when compiling mbedTLS library,
 see [this issue](https://github.com/shadowsocks/shadowsocks-libev/issues/422) for detail info.
+
+##### PolarSSL (Deprecated)
+
+To build against PolarSSL, specify `--with-crypto-library=polarssl`
+and `--with-polarssl=/path/to/polarssl` when running `./configure`.
+
+* PolarSSL __1.2.5 or newer__ is required. Currently, PolarSSL does __NOT__ support
+CAST5-CFB, DES-CFB, IDEA-CFB, RC2-CFB and SEED-CFB.
+* RC4 is only support by PolarSSL __1.3.0 or above__.
 
 #### Using shared library from system
 
