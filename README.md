@@ -17,9 +17,7 @@ Travis CI: [![Travis CI](https://travis-ci.org/shadowsocks/shadowsocks-libev.svg
 
 Shadowsocks-libev is written in pure C and only depends on
 [libev](http://software.schmorp.de/pkg/libev.html) and
-[OpenSSL](http://www.openssl.org/) or [PolarSSL](https://polarssl.org/).
-The use of [mbedTLS](https://tls.mbed.org/) is added but still for testing, and
-it is not officially supported yet.
+[OpenSSL](http://www.openssl.org/) or [mbedTLS](https://tls.mbed.org/) or [PolarSSL](https://polarssl.org/).
 
 In normal usage, the memory footprint is about 600KB and the CPU utilization is
 no more than 5% on a low-end router (Buffalo WHR-G300N V2 with a 400MHz MIPS CPU,
@@ -27,7 +25,6 @@ no more than 5% on a low-end router (Buffalo WHR-G300N V2 with a 400MHz MIPS CPU
 
 For a full list of feature comparison between different versions of shadowsocks,
 refer to the [Wiki page](https://github.com/shadowsocks/shadowsocks/wiki/Feature-Comparison-across-Different-Versions).
-
 
 ## Installation
 
@@ -69,9 +66,6 @@ There are three crypto libraries available:
 ##### mbedTLS
 To build against mbedTLS, specify `--with-crypto-library=mbedtls`
 and `--with-mbedtls=/path/to/mbedtls` when running `./configure`.
-
-Please note that we do **NOT** officially support mbedTLS right now,
-and you should use it at your own risk.
 
 Windows users will need extra work when compiling mbedTLS library,
 see [this issue](https://github.com/shadowsocks/shadowsocks-libev/issues/422) for detail info.
