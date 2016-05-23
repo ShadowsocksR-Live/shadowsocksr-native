@@ -85,6 +85,7 @@ ss_tunnel_SOURCES += win32.c
 endif
 
 if BUILD_REDIRECTOR
+bin_SCRIPTS = ss-nat
 bin_PROGRAMS += ss-redir
 ss_redir_SOURCES = utils.c \
                    jconf.c \
