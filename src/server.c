@@ -488,7 +488,7 @@ static remote_t *connect_to_remote(struct addrinfo *res,
             return NULL;
         }
 
-        *connected = r != 0;
+        *connected = r == 0;
     }
 
     return remote;
