@@ -96,7 +96,8 @@ static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents);
 static remote_t *new_remote(int fd);
 static server_t *new_server(int fd, listen_ctx_t *listener);
 static remote_t *connect_to_remote(struct addrinfo *res,
-                                   server_t *server);
+                                   server_t *server,
+                                   int *connected);
 
 static void free_remote(remote_t *remote);
 static void close_and_free_remote(EV_P_ remote_t *remote);
@@ -392,7 +393,8 @@ int create_and_bind(const char *host, const char *port)
 }
 
 static remote_t *connect_to_remote(struct addrinfo *res,
-                                   server_t *server)
+                                   server_t *server,
+                                   int *connected)
 {
     int sockfd;
 #ifdef SET_INTERFACE
@@ -462,9 +464,8 @@ static remote_t *connect_to_remote(struct addrinfo *res,
             } else if (errno == EOPNOTSUPP || errno == EPROTONOSUPPORT ||
                        errno == ENOPROTOOPT) {
                 // Disable fast open as it's not supported
-                fast_open = false;
+                fast_open = 0;
                 LOGE("fast open is not supported on this platform");
-                connect(sockfd, res->ai_addr, res->ai_addrlen);
             } else {
                 ERROR("sendto");
             }
@@ -475,9 +476,20 @@ static remote_t *connect_to_remote(struct addrinfo *res,
             server->buf->idx = 0;
             server->buf->len = 0;
         }
-    } else
+    }
 #endif
-    connect(sockfd, res->ai_addr, res->ai_addrlen);
+
+    if (!fast_open) {
+        int r = connect(sockfd, res->ai_addr, res->ai_addrlen);
+
+        if (r < 0 && errno != EINPROGRESS) {
+            ERROR("connect");
+            close(sockfd);
+            return NULL;
+        }
+
+        *connected = r != 0;
+    }
 
     return remote;
 }
@@ -773,7 +785,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         }
 
         if (!need_query) {
-            remote_t *remote = connect_to_remote(&info, server);
+            int connected = 0;
+            remote_t *remote = connect_to_remote(&info, server, &connected);
 
             if (remote == NULL) {
                 LOGE("connect error");
@@ -794,9 +807,13 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 server->stage = 4;
 
-                // waiting on remote connected event
-                ev_io_stop(EV_A_ & server_recv_ctx->io);
-                ev_io_start(EV_A_ & remote->send_ctx->io);
+                if (connected) {
+                    remote_send_cb(EV_A_ & remote->send_ctx->io, 0);
+                } else {
+                    // waiting on remote connected event
+                    ev_io_stop(EV_A_ & server_recv_ctx->io);
+                    ev_io_start(EV_A_ & remote->send_ctx->io);
+                }
             }
         } else {
             server->stage = 4;
@@ -910,7 +927,8 @@ static void server_resolve_cb(struct sockaddr *addr, void *data)
             info.ai_addrlen = sizeof(struct sockaddr_in6);
         }
 
-        remote_t *remote = connect_to_remote(&info, server);
+        int connected = 0;
+        remote_t *remote = connect_to_remote(&info, server, &connected);
 
         if (remote == NULL) {
             LOGE("connect error");
@@ -929,8 +947,12 @@ static void server_resolve_cb(struct sockaddr *addr, void *data)
                 server->buf->idx = 0;
             }
 
-            // listen to remote connected event
-            ev_io_start(EV_A_ & remote->send_ctx->io);
+            if (connected) {
+                remote_send_cb(EV_A_ & remote->send_ctx->io, 0);
+            } else {
+                // listen to remote connected event
+                ev_io_start(EV_A_ & remote->send_ctx->io);
+            }
         }
     }
 }

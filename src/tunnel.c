@@ -658,10 +658,23 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     server->remote   = remote;
     remote->server   = server;
 
-    connect(remotefd, remote_addr, get_sockaddr_len(remote_addr));
-    // listen to remote connected event
-    ev_io_start(EV_A_ & remote->send_ctx->io);
-    ev_timer_start(EV_A_ & remote->send_ctx->watcher);
+    int r = connect(remotefd, remote_addr, get_sockaddr_len(remote_addr));
+
+    if (r < 0 && errno != EINPROGRESS) {
+        ERROR("connect");
+        close_and_free_remote(EV_A_ remote);
+        close_and_free_server(EV_A_ server);
+        return;
+    }
+
+    if (r == 0) {
+        if (verbose) LOGI("connected immediately");
+        remote_send_cb(EV_A_ & remote->send_ctx->io, 0);
+    } else {
+        // listen to remote connected event
+        ev_io_start(EV_A_ & remote->send_ctx->io);
+        ev_timer_start(EV_A_ & remote->send_ctx->watcher);
+    }
 }
 
 int main(int argc, char **argv)

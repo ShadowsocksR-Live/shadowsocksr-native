@@ -276,12 +276,25 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 if (!fast_open || remote->direct) {
                     // connecting, wait until connected
-                    connect(remote->fd, (struct sockaddr *)&(remote->addr), remote->addr_len);
+                    int r = connect(remote->fd, (struct sockaddr *)&(remote->addr), remote->addr_len);
 
-                    // wait on remote connected event
-                    ev_io_stop(EV_A_ & server_recv_ctx->io);
-                    ev_io_start(EV_A_ & remote->send_ctx->io);
-                    ev_timer_start(EV_A_ & remote->send_ctx->watcher);
+                    if (r < 0 && errno != EINPROGRESS) {
+                        ERROR("connect");
+                        close_and_free_remote(EV_A_ remote);
+                        close_and_free_server(EV_A_ server);
+                        return;
+                    }
+
+                    if (r == 0) {
+                        if (verbose) LOGI("connected immediately");
+                        remote_send_cb(EV_A_ & remote->send_ctx->io, 0);
+                    } else {
+                        // wait on remote connected event
+                        ev_io_stop(EV_A_ & server_recv_ctx->io);
+                        ev_io_start(EV_A_ & remote->send_ctx->io);
+                        ev_timer_start(EV_A_ & remote->send_ctx->watcher);
+                    }
+
                 } else {
 #ifdef TCP_FASTOPEN
 #ifdef __APPLE__
