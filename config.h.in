@@ -3,6 +3,9 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
+/* errno for incomplete non-blocking connect(2) */
+#undef CONNECT_IN_PROGRESS
+
 /* Override libev default fd conversion macro. */
 #undef EV_FD_TO_WIN32_HANDLE
 

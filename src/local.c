@@ -278,7 +278,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     // connecting, wait until connected
                     int r = connect(remote->fd, (struct sockaddr *)&(remote->addr), remote->addr_len);
 
-                    if (r < 0 && errno != EINPROGRESS) {
+                    if (r < 0 && errno != CONNECT_IN_PROGRESS) {
                         ERROR("connect");
                         close_and_free_remote(EV_A_ remote);
                         close_and_free_server(EV_A_ server);
@@ -315,7 +315,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                                    (struct sockaddr *)&(remote->addr), remote->addr_len);
 #endif
                     if (s == -1) {
-                        if (errno == EINPROGRESS) {
+                        if (errno == CONNECT_IN_PROGRESS) {
                             // in progress, wait until connected
                             remote->buf->idx = 0;
                             ev_io_stop(EV_A_ & server_recv_ctx->io);

@@ -192,9 +192,11 @@ AC_CHECK_HEADERS([net/if.h], [], [],
 
 case $host in
   *-mingw*)
+    AC_DEFINE([CONNECT_IN_PROGRESS], [WSAEWOULDBLOCK], [errno for incomplete non-blocking connect(2)])
     AC_CHECK_HEADERS([windows.h winsock2.h ws2tcpip.h], [], [AC_MSG_ERROR([Missing MinGW headers])], [])
     ;;
   *-linux*)
+    AC_DEFINE([CONNECT_IN_PROGRESS], [EINPROGRESS], [errno for incomplete non-blocking connect(2)])
     dnl Checks for netfilter headers
     AC_CHECK_HEADERS([linux/if.h linux/netfilter_ipv4.h linux/netfilter_ipv6/ip6_tables.h],
                      [], [AC_MSG_ERROR([Missing netfilter headers])],
@@ -216,6 +218,7 @@ case $host in
     ;;
   *)
     # These are POSIX-like systems using BSD-like sockets API.
+    AC_DEFINE([CONNECT_IN_PROGRESS], [EINPROGRESS], [errno for incomplete non-blocking connect(2)])
     ;;
 esac
 

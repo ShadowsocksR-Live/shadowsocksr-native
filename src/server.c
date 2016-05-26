@@ -457,7 +457,7 @@ static remote_t *connect_to_remote(struct addrinfo *res,
                            res->ai_addrlen);
 #endif
         if (s == -1) {
-            if (errno == EINPROGRESS || errno == EAGAIN
+            if (errno == CONNECT_IN_PROGRESS || errno == EAGAIN
                 || errno == EWOULDBLOCK) {
                 // The remote server doesn't support tfo or it's the first connection to the server.
                 // It will automatically fall back to conventional TCP.
@@ -482,7 +482,7 @@ static remote_t *connect_to_remote(struct addrinfo *res,
     if (!fast_open) {
         int r = connect(sockfd, res->ai_addr, res->ai_addrlen);
 
-        if (r < 0 && errno != EINPROGRESS) {
+        if (r < 0 && errno != CONNECT_IN_PROGRESS) {
             ERROR("connect");
             close(sockfd);
             return NULL;

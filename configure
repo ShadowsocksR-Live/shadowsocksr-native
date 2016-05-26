@@ -14438,6 +14438,9 @@ done
 
 case $host in
   *-mingw*)
+
+$as_echo "#define CONNECT_IN_PROGRESS WSAEWOULDBLOCK" >>confdefs.h
+
     for ac_header in windows.h winsock2.h ws2tcpip.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
@@ -14455,6 +14458,9 @@ done
 
     ;;
   *-linux*)
+
+$as_echo "#define CONNECT_IN_PROGRESS EINPROGRESS" >>confdefs.h
+
         for ac_header in linux/if.h linux/netfilter_ipv4.h linux/netfilter_ipv6/ip6_tables.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
@@ -14488,6 +14494,9 @@ done
     ;;
   *)
     # These are POSIX-like systems using BSD-like sockets API.
+
+$as_echo "#define CONNECT_IN_PROGRESS EINPROGRESS" >>confdefs.h
+
     ;;
 esac
 
