@@ -145,10 +145,6 @@ static char *construct_command_line(struct manager_ctx *manager, struct server *
         int len = strlen(cmd);
         snprintf(cmd + len, BUF_SIZE - len, " -u");
     }
-    if (manager->mode == TCP_AND_UDP) {
-        int len = strlen(cmd);
-        snprintf(cmd + len, BUF_SIZE - len, " -u");
-    }
     if (manager->auth) {
         int len = strlen(cmd);
         snprintf(cmd + len, BUF_SIZE - len, " -A");
