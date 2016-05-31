@@ -11,7 +11,7 @@ created by [@clowwindy](https://github.com/clowwindy), which is maintained by
 
 Current version: 2.4.6 | [Changelog](debian/changelog)
 
-Travis CI: [![Travis CI](https://travis-ci.org/shadowsocks/shadowsocks-libev.svg?branch=master)](https://travis-ci.org/shadowsocks/shadowsocks-libev) | Jenkins Matrix: [![Jenkins](https://jenkins.shadowvpn.org/buildStatus/icon?job=Shadowsocks-libev)](https://jenkins.shadowvpn.org/job/Shadowsocks-libev/)
+Travis CI: [![Travis CI](https://travis-ci.org/shadowsocks/shadowsocks-libev.svg?branch=master)](https://travis-ci.org/shadowsocks/shadowsocks-libev)
 
 ## Features
 
