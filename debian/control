@@ -17,7 +17,7 @@ Description: lightweight and secure socks5 proxy
  Shadowsocks-libev is a lightweight and secure socks5 proxy for
  embedded devices and low end boxes.
 
-Package: libshadowsocks1
+Package: libshadowsocks-libev1
 Architecture: any
 Multi-Arch: same
 Section: libs
@@ -31,7 +31,7 @@ Description: lightweight and secure socks5 proxy (shared library)
  .
  This package provides shared libraries.
 
-Package: libshadowsocks-dev
+Package: libshadowsocks-libev-dev
 Architecture: any
 Section: libdevel
 Priority: extra
