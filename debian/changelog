@@ -1,3 +1,10 @@
+shadowsocks-libev (2.4.7-1) unstable; urgency=low
+
+  * Add ss-nat, a helper script to set up NAT rules for ss-redir.
+  * Fix several issues for debian package.
+
+ -- Max Lv <max.c.lv@gmail.com>  Wed, 1 Jun 2016 18:21:45 +0800
+
 shadowsocks-libev (2.4.6-1) unstable; urgency=low
 
   * Update manual pages.
