@@ -16,7 +16,7 @@ After=network.target
 Type=simple
 EnvironmentFile=/etc/default/shadowsocks-libev
 User=root
-Group=$GROUP
+#Group=$GROUP
 LimitNOFILE=$MAXFD
 ExecStart=/usr/bin/ss-server -a $USER -c $CONFFILE $DAEMON_ARGS
 
