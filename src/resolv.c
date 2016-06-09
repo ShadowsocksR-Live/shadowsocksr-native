@@ -46,6 +46,7 @@
 
 #include "resolv.h"
 #include "utils.h"
+#include "netutils.h"
 
 /*
  * Implement DNS resolution interface using libudns
@@ -105,6 +106,17 @@ int resolv_init(struct ev_loop *loop, char **nameservers, int nameserver_num, in
     int sockfd = dns_open(ctx);
     if (sockfd < 0) {
         FATAL("Failed to open DNS resolver socket");
+    }
+
+    if (nameserver_num == 1 && nameservers != NULL) {
+        if (strncmp("127.0.0.1", nameservers[0], 9)
+                || strncmp("::1",  nameservers[0], 3)) {
+            if (verbose) {
+                LOGI("bind UDP resolver to %s", nameservers[0]);
+            }
+            if (bind_to_address(sockfd, nameservers[0]) == -1)
+                ERROR("bind_to_address");
+        }
     }
 
 #ifdef __MINGW32__
