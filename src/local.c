@@ -418,7 +418,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 close_and_free_server(EV_A_ server);
                 return;
             } else {
-                char host[256], port[16];
+                char host[257], port[16];
 
                 buffer_t ss_addr_to_send;
                 buffer_t *abuf = &ss_addr_to_send;

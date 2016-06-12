@@ -240,7 +240,7 @@ static int parse_udprealy_header(const char *buf, const size_t buf_len,
         uint8_t name_len = *(uint8_t *)(buf + offset);
         if (name_len + 4 <= buf_len) {
             if (storage != NULL) {
-                char tmp[256] = { 0 };
+                char tmp[257] = { 0 };
                 struct cork_ip ip;
                 memcpy(tmp, buf + offset + 1, name_len);
                 if (cork_ip_init(&ip, tmp) != -1) {
@@ -710,7 +710,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
 
     rx += buf->len;
 
-    char addr_header_buf[256];
+    char addr_header_buf[512];
     char *addr_header   = remote_ctx->addr_header;
     int addr_header_len = remote_ctx->addr_header_len;
 
@@ -915,7 +915,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
      */
 
 #ifdef MODULE_REDIR
-    char addr_header[256] = { 0 };
+    char addr_header[512] = { 0 };
     int addr_header_len   = construct_udprealy_header(&dst_addr, addr_header);
 
     if (addr_header_len == 0) {
@@ -931,7 +931,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
 #elif MODULE_TUNNEL
 
-    char addr_header[256] = { 0 };
+    char addr_header[512] = { 0 };
     char *host            = server_ctx->tunnel_addr.host;
     char *port            = server_ctx->tunnel_addr.port;
     uint16_t port_num     = (uint16_t)atoi(port);
@@ -985,7 +985,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
 #else
 
-    char host[256] = { 0 };
+    char host[257] = { 0 };
     char port[64]  = { 0 };
     struct sockaddr_storage dst_addr;
     memset(&dst_addr, 0, sizeof(struct sockaddr_storage));

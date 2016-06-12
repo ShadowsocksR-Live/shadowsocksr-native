@@ -66,7 +66,7 @@ int init_acl(const char *path, int mode)
         return -1;
     }
 
-    char line[256];
+    char line[257];
     while (!feof(f))
         if (fgets(line, 256, f)) {
             // Trim the newline
@@ -75,7 +75,7 @@ int init_acl(const char *path, int mode)
                 line[len - 1] = '\0';
             }
 
-            char host[256];
+            char host[257];
             int cidr;
             parse_addr_cidr(line, host, &cidr);
 

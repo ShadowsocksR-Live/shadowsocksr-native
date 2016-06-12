@@ -104,6 +104,7 @@ static void close_and_free_remote(EV_P_ remote_t *remote);
 static void free_server(server_t *server);
 static void close_and_free_server(EV_P_ server_t *server);
 static void server_resolve_cb(struct sockaddr *addr, void *data);
+static void query_free_cb(void *data);
 
 static size_t parse_header_len(const char atyp, const char *data, size_t offset);
 
@@ -625,7 +626,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         int offset     = 0;
         int need_query = 0;
         char atyp      = server->buf->array[offset++];
-        char host[256] = { 0 };
+        char host[257] = { 0 };
         uint16_t port  = 0;
         struct addrinfo info;
         struct sockaddr_storage storage;
@@ -816,9 +817,13 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 }
             }
         } else {
+            query_t *query = (query_t *)ss_malloc(sizeof(query_t));
+            query->server = server;
+            snprintf(query->hostname, 256, "%s", host);
+
             server->stage = 4;
-            server->query = resolv_query(host, server_resolve_cb, NULL, server,
-                                         port);
+            server->query = resolv_query(host, server_resolve_cb,
+                    query_free_cb, query, port);
 
             ev_io_stop(EV_A_ & server_recv_ctx->io);
         }
@@ -898,19 +903,27 @@ static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents)
     close_and_free_server(EV_A_ server);
 }
 
+static void query_free_cb(void *data)
+{
+    if (data != NULL) {
+        ss_free(data);
+    }
+}
+
 static void server_resolve_cb(struct sockaddr *addr, void *data)
 {
-    server_t *server     = (server_t *)data;
+    query_t *query       = (query_t *)data;
+    server_t *server     = query->server;
     struct ev_loop *loop = server->listen_ctx->loop;
 
     server->query = NULL;
 
     if (addr == NULL) {
-        LOGE("unable to resolve");
+        LOGE("unable to resolve %s", query->hostname);
         close_and_free_server(EV_A_ server);
     } else {
         if (verbose) {
-            LOGI("udns resolved");
+            LOGI("successfully resolved %s", query->hostname);
         }
 
         struct addrinfo info;
