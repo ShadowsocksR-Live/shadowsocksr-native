@@ -77,6 +77,26 @@ extern "C" {
  */
 int start_ss_local_server(profile_t profile);
 
+/*
+ * Stop the current shadowsocks local server.
+ *
+ * If failed, -1 is returned. Otherwise 0 is returned.
+ *
+ * This function is not thread safe. It's usable only if the server started
+ * in the same process.
+ */
+int stop_ss_local_server();
+
+/*
+ * Get the state of the current shadowsocks local server.
+ *
+ * If running, 1 is returned. Otherwise, 0 is returned.
+ *
+ * This function is not thread safe. It's usable only if the server started
+ * in the same process.
+ */
+int is_ss_local_server_running();
+
 #ifdef __cplusplus
 }
 #endif
