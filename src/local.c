@@ -940,9 +940,6 @@ static void signal_cb(EV_P_ ev_signal *w, int revents)
         switch (w->signum) {
         case SIGINT:
         case SIGTERM:
-#ifndef __MINGW32__
-        case SIGUSR1:
-#endif
             ev_unloop(EV_A_ EVUNLOOP_ALL);
         }
     }
@@ -1284,27 +1281,6 @@ int main(int argc, char **argv)
 
 #else
 
-static int running = 0;
-static ev_timer state_watcher;
-
-static void state_timeout_cb(EV_P_ ev_timer *watcher, int revents)
-{
-    if (!running) {
-        ev_timer_stop(EV_A_ watcher);
-        ev_unloop(EV_A_ EVUNLOOP_ALL);
-    }
-}
-
-int stop_ss_local_server() {
-    int ret = running ? 0 : -1;
-    running = 0;
-    return ret;
-}
-
-int is_ss_local_server_running() {
-    return running;
-}
-
 int start_ss_local_server(profile_t profile)
 {
     srand(time(NULL));
@@ -1352,12 +1328,6 @@ int start_ss_local_server(profile_t profile)
     ev_signal_init(&sigterm_watcher, signal_cb, SIGTERM);
     ev_signal_start(EV_DEFAULT, &sigint_watcher);
     ev_signal_start(EV_DEFAULT, &sigterm_watcher);
-
-#ifndef __MINGW32__
-    struct ev_signal sigusr1_watcher;
-    ev_signal_init(&sigusr1_watcher, signal_cb, SIGUSR1);
-    ev_signal_start(EV_DEFAULT, &sigusr1_watcher);
-#endif
 
     // Setup keys
     LOGI("initializing ciphers... %s", method);
@@ -1410,10 +1380,6 @@ int start_ss_local_server(profile_t profile)
 
     // Init connections
     cork_dllist_init(&connections);
-
-    // Init state watcher
-    ev_timer_init(&state_watcher, state_timeout_cb, 1, 1);
-    ev_timer_start(loop, &state_watcher);
 
     // Enter the loop
     ev_run(loop, 0);
