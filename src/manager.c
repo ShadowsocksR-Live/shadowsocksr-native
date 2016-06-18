@@ -376,7 +376,7 @@ static void manager_recv_cb(EV_P_ ev_io *w, int revents)
         add_server(manager, server);
 
         char msg[3] = "ok";
-        if (sendto(manager->fd, msg, 3, 0, (struct sockaddr *)&claddr, len) != 3) {
+        if (sendto(manager->fd, msg, 2, 0, (struct sockaddr *)&claddr, len) != 2) {
             ERROR("add_sendto");
         }
     } else if (strcmp(action, "remove") == 0) {
@@ -394,7 +394,7 @@ static void manager_recv_cb(EV_P_ ev_io *w, int revents)
         ss_free(server);
 
         char msg[3] = "ok";
-        if (sendto(manager->fd, msg, 3, 0, (struct sockaddr *)&claddr, len) != 3) {
+        if (sendto(manager->fd, msg, 2, 0, (struct sockaddr *)&claddr, len) != 2) {
             ERROR("remove_sendto");
         }
     } else if (strcmp(action, "stat") == 0) {
@@ -423,8 +423,8 @@ static void manager_recv_cb(EV_P_ ev_io *w, int revents)
             size_t pos            = strlen(buf);
             if (pos > BUF_SIZE / 2) {
                 buf[pos - 1] = '}';
-                if (sendto(manager->fd, buf, pos + 1, 0, (struct sockaddr *)&claddr, len)
-                    != pos + 1) {
+                if (sendto(manager->fd, buf, pos, 0, (struct sockaddr *)&claddr, len)
+                    != pos) {
                     ERROR("ping_sendto");
                 }
                 memset(buf, 0, BUF_SIZE);
@@ -438,10 +438,11 @@ static void manager_recv_cb(EV_P_ ev_io *w, int revents)
             buf[pos - 1] = '}';
         } else {
             buf[pos] = '}';
+            pos++;
         }
 
-        if (sendto(manager->fd, buf, pos + 1, 0, (struct sockaddr *)&claddr, len)
-            != pos + 1) {
+        if (sendto(manager->fd, buf, pos, 0, (struct sockaddr *)&claddr, len)
+            != pos) {
             ERROR("ping_sendto");
         }
     }
@@ -450,7 +451,7 @@ static void manager_recv_cb(EV_P_ ev_io *w, int revents)
 
 ERROR_MSG:
     strcpy(buf, "err");
-    if (sendto(manager->fd, buf, 4, 0, (struct sockaddr *)&claddr, len) != 4) {
+    if (sendto(manager->fd, buf, 3, 0, (struct sockaddr *)&claddr, len) != 3) {
         ERROR("error_sendto");
     }
 }
