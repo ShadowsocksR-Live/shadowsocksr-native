@@ -37,6 +37,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <limits.h>
+#include <dirent.h>
 
 #ifndef __MINGW32__
 #include <netdb.h>
@@ -291,6 +292,25 @@ static void add_server(struct manager_ctx *manager, struct server *server)
     if (system(cmd) == -1) {
         ERROR("add_server_system");
     }
+}
+
+static void kill_server(char *prefix, char *pid_file)
+{
+    char path[PATH_MAX];
+    int pid;
+    snprintf(path, PATH_MAX, "%s/%s", prefix, pid_file);
+    FILE *f = fopen(path, "r");
+    if (f == NULL) {
+        if (verbose) {
+            LOGE("unable to open pid file");
+        }
+        return;
+    }
+    if (fscanf(f, "%d", &pid) != EOF) {
+        kill(pid, SIGTERM);
+    }
+    fclose(f);
+    remove(path);
 }
 
 static void stop_server(char *prefix, char *port)
@@ -770,6 +790,23 @@ int main(int argc, char **argv)
     if (err != 0 && errno != EEXIST) {
         ERROR("mkdir");
         FATAL("unable to create working directory");
+    }
+
+    // Clean up all existed processes
+    DIR *dp;
+    struct dirent *ep;
+    dp = opendir(working_dir);
+    if (dp != NULL) {
+        while ((ep = readdir(dp)) != NULL) {
+            size_t len = strlen(ep->d_name);
+            if (strcmp(ep->d_name + len - 3, "pid") == 0) {
+                kill_server(working_dir, ep->d_name);
+                if (verbose) LOGI("kill %s", ep->d_name);
+            }
+        }
+        closedir (dp);
+    } else {
+        FATAL("Couldn't open the directory");
     }
 
     server_table = cork_string_hash_table_new(MAX_PORT_NUM, 0);
