@@ -1192,6 +1192,7 @@ int main(int argc, char **argv)
     signal(SIGPIPE, SIG_IGN);
     signal(SIGABRT, SIG_IGN);
     signal(SIGINT,  resolve_int_cb);
+    signal(SIGTERM, resolve_int_cb);
 #endif
 
     // Setup keys

@@ -897,6 +897,7 @@ int main(int argc, char **argv)
     signal(SIGPIPE, SIG_IGN);
     signal(SIGABRT, SIG_IGN);
     signal(SIGINT,  signal_cb);
+    signal(SIGTERM, signal_cb);
 #endif
 
     // Setup keys
