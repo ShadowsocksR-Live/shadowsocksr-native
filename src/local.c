@@ -80,6 +80,8 @@
 #endif
 
 int verbose = 0;
+int keep_resolving = 1;
+
 #ifdef ANDROID
 int vpn        = 0;
 uint64_t tx    = 0;
@@ -969,6 +971,10 @@ void accept_cb(EV_P_ ev_io *w, int revents)
     ev_io_start(EV_A_ & server->recv_ctx->io);
 }
 
+void resolve_int_cb(int dummy) {
+    keep_resolving = 0;
+}
+
 #ifndef LIB_ONLY
 int main(int argc, char **argv)
 {
@@ -1185,14 +1191,8 @@ int main(int argc, char **argv)
     // ignore SIGPIPE
     signal(SIGPIPE, SIG_IGN);
     signal(SIGABRT, SIG_IGN);
+    signal(SIGINT,  resolve_int_cb);
 #endif
-
-    struct ev_signal sigint_watcher;
-    struct ev_signal sigterm_watcher;
-    ev_signal_init(&sigint_watcher, signal_cb, SIGINT);
-    ev_signal_init(&sigterm_watcher, signal_cb, SIGTERM);
-    ev_signal_start(EV_DEFAULT, &sigint_watcher);
-    ev_signal_start(EV_DEFAULT, &sigterm_watcher);
 
     // Setup keys
     LOGI("initializing ciphers... %s", method);
@@ -1216,6 +1216,15 @@ int main(int argc, char **argv)
     listen_ctx.timeout = atoi(timeout);
     listen_ctx.iface   = iface;
     listen_ctx.method  = m;
+
+    // Setup signal handler
+    struct ev_signal sigint_watcher;
+    struct ev_signal sigterm_watcher;
+    ev_signal_init(&sigint_watcher, signal_cb, SIGINT);
+    ev_signal_init(&sigterm_watcher, signal_cb, SIGTERM);
+    ev_signal_start(EV_DEFAULT, &sigint_watcher);
+    ev_signal_start(EV_DEFAULT, &sigterm_watcher);
+
 
     struct ev_loop *loop = EV_DEFAULT;
 

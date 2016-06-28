@@ -54,6 +54,10 @@
 
 extern int verbose;
 
+#if defined(MODULE_LOCAL)
+extern int keep_resolving;
+#endif
+
 int set_reuseport(int socket)
 {
     int opt = 1;
@@ -136,7 +140,11 @@ ssize_t get_sockaddr(char *host, char *port, struct sockaddr_storage *storage, i
 
         for (i = 1; i < 8; i++) {
             err = getaddrinfo(host, port, &hints, &result);
-            if (!block || !err) {
+#if defined(MODULE_LOCAL)
+            if (!keep_resolving)
+                break;
+#endif
+            if ((!block || !err)) {
                 break;
             } else {
                 sleep(pow(2, i));

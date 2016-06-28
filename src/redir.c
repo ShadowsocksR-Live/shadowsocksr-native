@@ -83,6 +83,7 @@ static void free_server(server_t *server);
 static void close_and_free_server(EV_P_ server_t *server);
 
 int verbose = 0;
+int keep_resolving = 1;
 
 static int mode = TCP_ONLY;
 static int auth = 0;
@@ -669,6 +670,11 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     ev_io_start(EV_A_ & server->recv_ctx->io);
 }
 
+void signal_cb(int dummy) {
+    keep_resolving = 0;
+    exit(-1);
+}
+
 int main(int argc, char **argv)
 {
     int i, c;
@@ -846,6 +852,7 @@ int main(int argc, char **argv)
     // ignore SIGPIPE
     signal(SIGPIPE, SIG_IGN);
     signal(SIGABRT, SIG_IGN);
+    signal(SIGINT,  signal_cb);
 
     // Setup keys
     LOGI("initializing ciphers... %s", method);
