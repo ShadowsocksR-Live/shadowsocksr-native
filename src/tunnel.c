@@ -843,6 +843,12 @@ int main(int argc, char **argv)
         if (auth == 0) {
             auth = conf->auth;
         }
+        if (tunnel_addr_str == NULL) {
+            tunnel_addr_str = conf->tunnel_address;
+        }
+        if (mode == TCP_ONLY) {
+            mode = conf->mode;
+        }
 #ifdef HAVE_SETRLIMIT
         if (nofile == 0) {
             nofile = conf->nofile;
