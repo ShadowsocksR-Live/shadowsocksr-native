@@ -307,7 +307,7 @@ AC_CONFIG_FILES([ shadowsocks-libev.pc
                  libcork/Makefile
                  libipset/Makefile
                  src/Makefile
-                 Doc/Makefile])
+                 doc/Makefile])
 AM_COND_IF([USE_SYSTEM_SHARED_LIB],
   [],
   [AC_CONFIG_FILES([libudns/Makefile

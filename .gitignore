@@ -6,7 +6,7 @@ libev/Makefile
 libudns/Makefile
 libcork/Makefile
 libipset/Makefile
-Doc/Makefile
+doc/Makefile
 autom4te.cache/
 /config.h
 config.log
@@ -38,9 +38,9 @@ libsodium/src/libsodium/include/sodium/version.h
 *.swp
 
 # Documentation files
-Doc/*.gz
-Doc/*.xml
-Doc/*.html
+doc/*.gz
+doc/*.xml
+doc/*.html
 
 #	Do not edit the following section
 # 	Edit Compile Debug Document Distribute

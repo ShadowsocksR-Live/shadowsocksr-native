@@ -322,6 +322,7 @@ ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AR = @AR@
+ASCIIDOC = @ASCIIDOC@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
@@ -334,6 +335,7 @@ CPPFLAGS = @CPPFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DISABLE_DOCUMENTATION = @DISABLE_DOCUMENTATION@
 DLLTOOL = @DLLTOOL@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
@@ -344,6 +346,7 @@ EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
 GREP = @GREP@
+GZIP = @GZIP@
 INET_NTOP_LIB = @INET_NTOP_LIB@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
@@ -362,6 +365,7 @@ MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
+MV = @MV@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
@@ -380,11 +384,13 @@ PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_LIBS = @PTHREAD_LIBS@
 RANLIB = @RANLIB@
+RM = @RM@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 VERSION = @VERSION@
+XMLTO = @XMLTO@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -453,14 +459,14 @@ ss_local_SOURCES = utils.c jconf.c json.c encrypt.c udprelay.c cache.c \
 ss_tunnel_SOURCES = utils.c jconf.c json.c encrypt.c udprelay.c \
 	cache.c netutils.c tunnel.c $(am__append_12)
 ss_server_SOURCES = utils.c \
-					netutils.c \
+                    netutils.c \
                     jconf.c \
                     json.c \
                     encrypt.c \
-					udprelay.c \
-					cache.c \
-					acl.c \
-					resolv.c \
+                    udprelay.c \
+                    cache.c \
+                    acl.c \
+                    resolv.c \
                     server.c
 
 ss_manager_SOURCES = utils.c \
@@ -481,9 +487,9 @@ ss_manager_CFLAGS = $(AM_CFLAGS) -DMODULE_MANAGER
 @BUILD_REDIRECTOR_TRUE@                   jconf.c \
 @BUILD_REDIRECTOR_TRUE@                   json.c \
 @BUILD_REDIRECTOR_TRUE@                   encrypt.c \
-@BUILD_REDIRECTOR_TRUE@				   netutils.c \
-@BUILD_REDIRECTOR_TRUE@				   cache.c \
-@BUILD_REDIRECTOR_TRUE@				   udprelay.c \
+@BUILD_REDIRECTOR_TRUE@                   netutils.c \
+@BUILD_REDIRECTOR_TRUE@                   cache.c \
+@BUILD_REDIRECTOR_TRUE@                   udprelay.c \
 @BUILD_REDIRECTOR_TRUE@                   redir.c
 
 @BUILD_REDIRECTOR_TRUE@ss_redir_CFLAGS = $(AM_CFLAGS) -DMODULE_REDIR

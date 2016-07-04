@@ -157,7 +157,7 @@ section below.
 ``` bash
 cd shadowsocks-libev
 sudo apt-get install build-essential autoconf libtool libssl-dev \
-    gawk debhelper dh-systemd init-system-helpers pkg-config
+    gawk debhelper dh-systemd init-system-helpers pkg-config asciidoc
 dpkg-buildpackage -b -us -uc -i
 cd ..
 sudo dpkg -i shadowsocks-libev*.deb
@@ -259,7 +259,7 @@ For Unix-like systems, especially Debian-based systems,
 e.g. Ubuntu, Debian or Linux Mint, you can build the binary like this:
 
 ```bash
-sudo apt-get install build-essential autoconf libtool libssl-dev
+sudo apt-get install build-essential autoconf libtool libssl-dev asciidoc
 ./configure && make
 sudo make install
 ```

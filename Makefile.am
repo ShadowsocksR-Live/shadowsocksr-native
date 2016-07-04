@@ -1,7 +1,7 @@
 if USE_SYSTEM_SHARED_LIB
-SUBDIRS = libcork libipset src Doc
+SUBDIRS = libcork libipset src doc
 else
-SUBDIRS = libsodium libcork libipset libudns libev src Doc
+SUBDIRS = libsodium libcork libipset libudns libev src doc
 endif
 
 ACLOCAL_AMFLAGS = -I m4
