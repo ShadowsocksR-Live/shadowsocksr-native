@@ -78,6 +78,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@ENABLE_DOCUMENTATION_TRUE@am__append_1 = doc
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
@@ -251,7 +252,6 @@ CPPFLAGS = @CPPFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
-DISABLE_DOCUMENTATION = @DISABLE_DOCUMENTATION@
 DLLTOOL = @DLLTOOL@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
@@ -361,8 +361,10 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-@USE_SYSTEM_SHARED_LIB_FALSE@SUBDIRS = libsodium libcork libipset libudns libev src doc
-@USE_SYSTEM_SHARED_LIB_TRUE@SUBDIRS = libcork libipset src doc
+@USE_SYSTEM_SHARED_LIB_FALSE@SUBDIRS = libsodium libcork libipset \
+@USE_SYSTEM_SHARED_LIB_FALSE@	libudns libev src $(am__append_1)
+@USE_SYSTEM_SHARED_LIB_TRUE@SUBDIRS = libcork libipset src \
+@USE_SYSTEM_SHARED_LIB_TRUE@	$(am__append_1)
 ACLOCAL_AMFLAGS = -I m4
 pkgconfiglibdir = $(libdir)/pkgconfig
 pkgconfiglib_DATA = shadowsocks-libev.pc
@@ -421,8 +423,8 @@ distclean-hdr:
 	-rm -f config.h stamp-h1
 shadowsocks-libev.pc: $(top_builddir)/config.status $(srcdir)/shadowsocks-libev.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-doc/Makefile: $(top_builddir)/config.status $(top_srcdir)/doc/Makefile.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
+@ENABLE_DOCUMENTATION_TRUE@doc/Makefile: $(top_builddir)/config.status $(top_srcdir)/doc/Makefile.in
+@ENABLE_DOCUMENTATION_TRUE@	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:
 	-rm -f *.lo
