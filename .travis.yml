@@ -6,6 +6,7 @@ addons:
     apt:
         packages:
             - asciidoc
+            - xmlto
 script: "./configure && make"
 branches:
     only:
