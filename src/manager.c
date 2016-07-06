@@ -152,7 +152,7 @@ static char *construct_command_line(struct manager_ctx *manager, struct server *
     }
     if (manager->fast_open) {
         int len = strlen(cmd);
-        snprintf(cmd + len, BUF_SIZE - len, " --fast_open");
+        snprintf(cmd + len, BUF_SIZE - len, " --fast-open");
     }
     for (i = 0; i < manager->nameserver_num; i++) {
         int len = strlen(cmd);
