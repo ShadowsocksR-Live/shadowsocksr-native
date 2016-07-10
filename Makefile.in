@@ -83,13 +83,12 @@ subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
 	$(srcdir)/config.h.in $(srcdir)/shadowsocks-libev.pc.in \
-	$(top_srcdir)/doc/Makefile.in AUTHORS COPYING INSTALL \
-	auto/ar-lib auto/compile auto/config.guess auto/config.sub \
-	auto/depcomp auto/install-sh auto/missing auto/ltmain.sh \
-	$(top_srcdir)/auto/ar-lib $(top_srcdir)/auto/compile \
-	$(top_srcdir)/auto/config.guess $(top_srcdir)/auto/config.sub \
-	$(top_srcdir)/auto/install-sh $(top_srcdir)/auto/ltmain.sh \
-	$(top_srcdir)/auto/missing
+	AUTHORS COPYING INSTALL auto/ar-lib auto/compile \
+	auto/config.guess auto/config.sub auto/depcomp auto/install-sh \
+	auto/missing auto/ltmain.sh $(top_srcdir)/auto/ar-lib \
+	$(top_srcdir)/auto/compile $(top_srcdir)/auto/config.guess \
+	$(top_srcdir)/auto/config.sub $(top_srcdir)/auto/install-sh \
+	$(top_srcdir)/auto/ltmain.sh $(top_srcdir)/auto/missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_pthread.m4 \
 	$(top_srcdir)/m4/ax_tls.m4 $(top_srcdir)/m4/inet_ntop.m4 \
@@ -105,7 +104,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
-CONFIG_CLEAN_FILES = shadowsocks-libev.pc doc/Makefile
+CONFIG_CLEAN_FILES = shadowsocks-libev.pc
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -423,8 +422,6 @@ distclean-hdr:
 	-rm -f config.h stamp-h1
 shadowsocks-libev.pc: $(top_builddir)/config.status $(srcdir)/shadowsocks-libev.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-@ENABLE_DOCUMENTATION_TRUE@doc/Makefile: $(top_builddir)/config.status $(top_srcdir)/doc/Makefile.in
-@ENABLE_DOCUMENTATION_TRUE@	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:
 	-rm -f *.lo
