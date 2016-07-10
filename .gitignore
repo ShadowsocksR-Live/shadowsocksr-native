@@ -38,6 +38,8 @@ libsodium/src/libsodium/include/sodium/version.h
 *.swp
 
 # Documentation files
+doc/*.1
+doc/*.8
 doc/*.gz
 doc/*.xml
 doc/*.html
