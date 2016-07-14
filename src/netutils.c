@@ -91,6 +91,7 @@ int bind_to_address(int socket_fd, const char *host)
     if (host != NULL) {
         struct cork_ip ip;
         struct sockaddr_storage storage;
+        memset(&storage, 0, sizeof(storage));
         if (cork_ip_init(&ip, host) != -1) {
             if (ip.version == 4) {
                 struct sockaddr_in *addr = (struct sockaddr_in *)&storage;

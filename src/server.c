@@ -415,6 +415,7 @@ static remote_t *connect_to_remote(struct addrinfo *res,
 #ifdef SO_NOSIGPIPE
     setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
+    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
     remote_t *remote = new_remote(sockfd);
 
