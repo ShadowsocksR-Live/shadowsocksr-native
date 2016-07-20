@@ -1,3 +1,10 @@
+shadowsocks-libev (2.4.8-1) unstable; urgency=low
+
+  * Update manual pages with asciidoc.
+  * Fix issues of bind_address option.
+
+ -- Max Lv <max.c.lv@gmail.com>  Wed, 20 Jul 2016 09:25:50 +0800
+
 shadowsocks-libev (2.4.7-1) unstable; urgency=low
 
   * Add ss-nat, a helper script to set up NAT rules for ss-redir.
