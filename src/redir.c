@@ -677,6 +677,8 @@ void signal_cb(int dummy) {
 
 int main(int argc, char **argv)
 {
+    srand(time(NULL));
+
     int i, c;
     int pid_flags    = 0;
     char *user       = NULL;
