@@ -55,7 +55,7 @@ html-local: $(MAN_HTML)
 	    -aversion=$(VERSION) $(ASCIIDOC_EXTRA) -o $@ $<
 
 %.html: %.asciidoc
-	$(AM_V_GEN)$(ASCIIDOC) -b html -d article -f asciidoc.conf \
+	$(AM_V_GEN)$(ASCIIDOC) -b html4 -d article -f asciidoc.conf \
 		-aversion=$(VERSION) $(ASCIIDOC_EXTRA) -o $@ $<
 
 doc_DATA = $(MAN_HTML)
