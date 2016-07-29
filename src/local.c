@@ -692,20 +692,22 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
             server->buf->idx = 0;
             ev_io_stop(EV_A_ & remote_recv_ctx->io);
             ev_io_start(EV_A_ & server->send_ctx->io);
-            return;
         } else {
             ERROR("remote_recv_cb_send");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
-            return;
         }
     } else if (s < (int)(server->buf->len)) {
         server->buf->len -= s;
         server->buf->idx  = s;
         ev_io_stop(EV_A_ & remote_recv_ctx->io);
         ev_io_start(EV_A_ & server->send_ctx->io);
-        return;
     }
+
+    // Disable TCP_NODELAY after the first response are sent
+    int opt = 0;
+    setsockopt(server->fd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
+    setsockopt(remote->fd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
 }
 
 static void remote_send_cb(EV_P_ ev_io *w, int revents)
