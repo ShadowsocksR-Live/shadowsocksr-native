@@ -33,7 +33,6 @@ refer to the [Wiki page](https://github.com/shadowsocks/shadowsocks/wiki/Feature
 - [Debian & Ubuntu](#debian--ubuntu)
     + [Install from repository](#install-from-repository)
       - [Official repository](#official-repository)
-      - [Unofficial repository](#unofficial-repository)
     + [Build deb package from source](#build-deb-package-from-source)
     + [Configure and start the service](#configure-and-start-the-service)
 - [Fedora & RHEL](#fedora--rhel)
@@ -100,35 +99,6 @@ Using official repository for Debian unstable:
 ```bash
 sudo apt update
 sudo apt install shadowsocks-libev
-```
-
-**NOTE**: You may need to uninstall any unofficial debian packages for `shadowsocks-libev`
-to install this one from Debian official repository if you encounter any problem.
-
-##### Unofficial repository
-
-Add GPG public key:
-
-```bash
-wget -O- http://shadowsocks.org/debian/1D27208A.gpg | sudo apt-key add -
-```
-
-Add either of the following lines to your /etc/apt/sources.list:
-
-```
-# Ubuntu 14.04 or above
-deb http://shadowsocks.org/ubuntu trusty main
-
-# Debian Wheezy, Ubuntu 12.04 or any distribution with libssl > 1.0.1
-deb http://shadowsocks.org/debian wheezy main
-
-```
-
-Then:
-
-``` bash
-sudo apt-get update
-sudo apt-get install shadowsocks-libev
 ```
 
 #### Build deb package from source
