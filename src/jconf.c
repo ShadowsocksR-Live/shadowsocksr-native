@@ -1,7 +1,7 @@
 /*
  * jconf.c - Parse the JSON format config file
  *
- * Copyright (C) 2013 - 2015, Max Lv <max.c.lv@gmail.com>
+ * Copyright (C) 2013 - 2016, Max Lv <max.c.lv@gmail.com>
  *
  * This file is part of the shadowsocks-libev.
  * shadowsocks-libev is free software; you can redistribute it and/or modify
@@ -49,10 +49,8 @@ static char *to_string(const json_value *value)
 
 void free_addr(ss_addr_t *addr)
 {
-    free(addr->host);
-    free(addr->port);
-    addr->host = NULL;
-    addr->port = NULL;
+    ss_free(addr->host);
+    ss_free(addr->port);
 }
 
 void parse_addr(const char *str, ss_addr_t *addr)
@@ -117,7 +115,7 @@ jconf_t *read_jconf(const char *file)
         FATAL("Too large config file.");
     }
 
-    buf = malloc(pos + 1);
+    buf = ss_malloc(pos + 1);
     if (buf == NULL) {
         FATAL("No enough memory.");
     }
@@ -130,7 +128,7 @@ jconf_t *read_jconf(const char *file)
 
     buf[pos] = '\0'; // end of string
 
-    json_settings settings = { 0 };
+    json_settings settings = { 0UL, 0, NULL, NULL, NULL };
     char error_buf[512];
     obj = json_parse_ex(&settings, buf, pos, error_buf);
 
@@ -139,7 +137,7 @@ jconf_t *read_jconf(const char *file)
     }
 
     if (obj->type == json_object) {
-        int i, j;
+        unsigned int i, j;
         for (i = 0; i < obj->u.object.length; i++) {
             char *name        = obj->u.object.values[i].name;
             json_value *value = obj->u.object.values[i].value;
@@ -199,13 +197,28 @@ jconf_t *read_jconf(const char *file)
                 conf.nofile = value->u.integer;
             } else if (strcmp(name, "nameserver") == 0) {
                 conf.nameserver = to_string(value);
+            } else if (strcmp(name, "tunnel_address") == 0) {
+                conf.tunnel_address = to_string(value);
+            } else if (strcmp(name, "mode") == 0) {
+                char *mode_str = to_string(value);
+
+                if (strcmp(mode_str, "tcp_only") == 0)
+                    conf.mode = TCP_ONLY;
+                else if (strcmp(mode_str, "tcp_and_udp") == 0)
+                    conf.mode = TCP_AND_UDP;
+                else if (strcmp(mode_str, "udp_only") == 0)
+                    conf.mode = UDP_ONLY;
+                else
+                    LOGI("ignore unknown mode: %s, use tcp_only as fallback",
+                         mode_str);
+                free(mode_str);
             }
         }
     } else {
         FATAL("Invalid config file");
     }
 
-    free(buf);
+    ss_free(buf);
     json_value_free(obj);
     return &conf;
 }

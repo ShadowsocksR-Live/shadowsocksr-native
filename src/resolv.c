@@ -46,6 +46,7 @@
 
 #include "resolv.h"
 #include "utils.h"
+#include "netutils.h"
 
 /*
  * Implement DNS resolution interface using libudns
@@ -82,9 +83,12 @@ static struct sockaddr *choose_ipv4_first(struct ResolvQuery *);
 static struct sockaddr *choose_ipv6_first(struct ResolvQuery *);
 static struct sockaddr *choose_any(struct ResolvQuery *);
 
-int resolv_init(struct ev_loop *loop, char **nameservers, int nameserver_num)
+int resolv_init(struct ev_loop *loop, char **nameservers, int nameserver_num, int ipv6first)
 {
-    resolv_mode = MODE_IPV4_FIRST;
+    if (ipv6first)
+        resolv_mode = MODE_IPV6_FIRST;
+    else
+        resolv_mode = MODE_IPV4_FIRST;
 
     struct dns_ctx *ctx = &dns_defctx;
     if (nameservers == NULL) {
@@ -102,6 +106,17 @@ int resolv_init(struct ev_loop *loop, char **nameservers, int nameserver_num)
     int sockfd = dns_open(ctx);
     if (sockfd < 0) {
         FATAL("Failed to open DNS resolver socket");
+    }
+
+    if (nameserver_num == 1 && nameservers != NULL) {
+        if (strncmp("127.0.0.1", nameservers[0], 9)
+                || strncmp("::1",  nameservers[0], 3)) {
+            if (verbose) {
+                LOGI("bind UDP resolver to %s", nameservers[0]);
+            }
+            if (bind_to_address(sockfd, nameservers[0]) == -1)
+                ERROR("bind_to_address");
+        }
     }
 
 #ifdef __MINGW32__
@@ -146,7 +161,7 @@ struct ResolvQuery *resolv_query(const char *hostname, void (*client_cb)(struct 
     /*
      * Wrap udns's call back in our own
      */
-    struct ResolvQuery *cb_data = malloc(sizeof(struct ResolvQuery));
+    struct ResolvQuery *cb_data = ss_malloc(sizeof(struct ResolvQuery));
     if (cb_data == NULL) {
         LOGE("Failed to allocate memory for DNS query callback data.");
         return NULL;
@@ -184,8 +199,7 @@ struct ResolvQuery *resolv_query(const char *hostname, void (*client_cb)(struct 
         if (cb_data->client_free_cb != NULL) {
             cb_data->client_free_cb(cb_data->client_cb_data);
         }
-        free(cb_data);
-        cb_data = NULL;
+        ss_free(cb_data);
     }
 
     return cb_data;
@@ -200,15 +214,14 @@ void resolv_cancel(struct ResolvQuery *query_handle)
          i++)
         if (cb_data->queries[i] != NULL) {
             dns_cancel(ctx, cb_data->queries[i]);
-            free(cb_data->queries[i]);
-            cb_data->queries[i] = NULL;
+            ss_free(cb_data->queries[i]);
         }
 
     if (cb_data->client_free_cb != NULL) {
         cb_data->client_free_cb(cb_data->client_cb_data);
     }
 
-    free(cb_data);
+    ss_free(cb_data);
 }
 
 /*
@@ -235,10 +248,10 @@ static void dns_query_v4_cb(struct dns_ctx *ctx, struct dns_rr_a4 *result, void 
             LOGI("IPv4 resolv: %s", dns_strerror(dns_status(ctx)));
         }
     } else if (result->dnsa4_nrr > 0) {
-        struct sockaddr **new_responses = realloc(cb_data->responses,
-                                                  (cb_data->response_count +
-                                                   result->dnsa4_nrr) *
-                                                  sizeof(struct sockaddr *));
+        struct sockaddr **new_responses = ss_realloc(cb_data->responses,
+                                                     (cb_data->response_count +
+                                                      result->dnsa4_nrr) *
+                                                     sizeof(struct sockaddr *));
         if (new_responses == NULL) {
             LOGE("Failed to allocate memory for additional DNS responses");
         } else {
@@ -263,7 +276,7 @@ static void dns_query_v4_cb(struct dns_ctx *ctx, struct dns_rr_a4 *result, void 
         }
     }
 
-    free(result);
+    ss_free(result);
     cb_data->queries[0] = NULL; /* mark A query as being completed */
 
     /* Once all queries have completed, call client callback */
@@ -281,10 +294,10 @@ static void dns_query_v6_cb(struct dns_ctx *ctx, struct dns_rr_a6 *result, void 
             LOGI("IPv6 resolv: %s", dns_strerror(dns_status(ctx)));
         }
     } else if (result->dnsa6_nrr > 0) {
-        struct sockaddr **new_responses = realloc(cb_data->responses,
-                                                  (cb_data->response_count +
-                                                   result->dnsa6_nrr) *
-                                                  sizeof(struct sockaddr *));
+        struct sockaddr **new_responses = ss_realloc(cb_data->responses,
+                                                     (cb_data->response_count +
+                                                      result->dnsa6_nrr) *
+                                                     sizeof(struct sockaddr *));
         if (new_responses == NULL) {
             LOGE("Failed to allocate memory for additional DNS responses");
         } else {
@@ -309,7 +322,7 @@ static void dns_query_v6_cb(struct dns_ctx *ctx, struct dns_rr_a6 *result, void 
         }
     }
 
-    free(result);
+    ss_free(result);
     cb_data->queries[1] = NULL; /* mark AAAA query as being completed */
 
     /* Once all queries have completed, call client callback */
@@ -336,13 +349,13 @@ static void process_client_callback(struct ResolvQuery *cb_data)
     cb_data->client_cb(best_address, cb_data->client_cb_data);
 
     for (int i = 0; i < cb_data->response_count; i++)
-        free(cb_data->responses[i]);
+        ss_free(cb_data->responses[i]);
 
-    free(cb_data->responses);
+    ss_free(cb_data->responses);
     if (cb_data->client_free_cb != NULL) {
         cb_data->client_free_cb(cb_data->client_cb_data);
     }
-    free(cb_data);
+    ss_free(cb_data);
 }
 
 static struct sockaddr *choose_ipv4_first(struct ResolvQuery *cb_data)

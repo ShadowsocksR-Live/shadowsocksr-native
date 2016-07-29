@@ -28,31 +28,31 @@ endif
 ss_local_SOURCES = utils.c \
                    jconf.c \
                    json.c \
-				   encrypt.c \
-				   udprelay.c \
-				   cache.c \
-				   acl.c \
-				   netutils.c \
-				   local.c
+                   encrypt.c \
+                   udprelay.c \
+                   cache.c \
+                   acl.c \
+                   netutils.c \
+                   local.c
 
 ss_tunnel_SOURCES = utils.c \
-					jconf.c \
-					json.c \
-					encrypt.c \
-					udprelay.c \
-					cache.c \
-					netutils.c \
-					tunnel.c
-
-ss_server_SOURCES = utils.c \
-					netutils.c \
                     jconf.c \
                     json.c \
                     encrypt.c \
-					udprelay.c \
-					cache.c \
-					acl.c \
-					resolv.c \
+                    udprelay.c \
+                    cache.c \
+                    netutils.c \
+                    tunnel.c
+
+ss_server_SOURCES = utils.c \
+                    netutils.c \
+                    jconf.c \
+                    json.c \
+                    encrypt.c \
+                    udprelay.c \
+                    cache.c \
+                    acl.c \
+                    resolv.c \
                     server.c
 
 ss_manager_SOURCES = utils.c \
@@ -85,14 +85,15 @@ ss_tunnel_SOURCES += win32.c
 endif
 
 if BUILD_REDIRECTOR
+bin_SCRIPTS = ss-nat
 bin_PROGRAMS += ss-redir
 ss_redir_SOURCES = utils.c \
                    jconf.c \
                    json.c \
                    encrypt.c \
-				   netutils.c \
-				   cache.c \
-				   udprelay.c \
+                   netutils.c \
+                   cache.c \
+                   udprelay.c \
                    redir.c
 ss_redir_CFLAGS = $(AM_CFLAGS) -DMODULE_REDIR
 ss_redir_LDADD = $(SS_COMMON_LIBS)
@@ -103,9 +104,9 @@ ss_redir_LDADD += $(top_builddir)/libudns/libudns.la
 endif
 endif
 
-lib_LTLIBRARIES = libshadowsocks.la
-libshadowsocks_la_SOURCES = $(ss_local_SOURCES)
-libshadowsocks_la_CFLAGS = $(ss_local_CFLAGS) -DLIB_ONLY
-libshadowsocks_la_LDFLAGS = -version-info $(VERSION_INFO)
-libshadowsocks_la_LIBADD = $(ss_local_LDADD)
+lib_LTLIBRARIES = libshadowsocks-libev.la
+libshadowsocks_libev_la_SOURCES = $(ss_local_SOURCES)
+libshadowsocks_libev_la_CFLAGS = $(ss_local_CFLAGS) -DLIB_ONLY
+libshadowsocks_libev_la_LDFLAGS = -version-info $(VERSION_INFO)
+libshadowsocks_libev_la_LIBADD = $(ss_local_LDADD)
 include_HEADERS = shadowsocks.h

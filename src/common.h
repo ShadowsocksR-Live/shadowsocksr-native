@@ -1,7 +1,7 @@
 /*
  * common.h - Provide global definitions
  *
- * Copyright (C) 2013 - 2015, Max Lv <max.c.lv@gmail.com>
+ * Copyright (C) 2013 - 2016, Max Lv <max.c.lv@gmail.com>
  *
  * This file is part of the shadowsocks-libev.
  * shadowsocks-libev is free software; you can redistribute it and/or modify
@@ -48,10 +48,6 @@
 #ifndef SOL_TCP
 #define SOL_TCP IPPROTO_TCP
 #endif
-
-#define TCP_ONLY     0
-#define TCP_AND_UDP  1
-#define UDP_ONLY     3
 
 #if defined(MODULE_TUNNEL) || defined(MODULE_REDIR)
 #define MODULE_LOCAL

@@ -1,7 +1,7 @@
 /*
  * shadowsocks.h - Header files of library interfaces
  *
- * Copyright (C) 2013 - 2015, Max Lv <max.c.lv@gmail.com>
+ * Copyright (C) 2013 - 2016, Max Lv <max.c.lv@gmail.com>
  *
  * This file is part of the shadowsocks-libev.
  * shadowsocks-libev is free software; you can redistribute it and/or modify
@@ -83,5 +83,7 @@ int start_ss_local_server(profile_t profile);
 
 // To stop the service on posix system, just kill the daemon process
 // kill(pid, SIGKILL);
+// Otherwise, If you start the service in a thread, you may need to send a signal SIGUSER1 to the thread.
+// pthread_kill(pthread_t, SIGUSR1);
 
 #endif // _SHADOWSOCKS_H

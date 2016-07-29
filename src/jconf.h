@@ -1,7 +1,7 @@
 /*
- * server.c - Define the config data structure
+ * jconf.h - Define the config data structure
  *
- * Copyright (C) 2013 - 2015, Max Lv <max.c.lv@gmail.com>
+ * Copyright (C) 2013 - 2016, Max Lv <max.c.lv@gmail.com>
  *
  * This file is part of the shadowsocks-libev.
  * shadowsocks-libev is free software; you can redistribute it and/or modify
@@ -28,6 +28,11 @@
 #define MAX_DNS_NUM 4
 #define MAX_CONNECT_TIMEOUT 10
 #define MIN_UDP_TIMEOUT 10
+
+#define TCP_ONLY     0
+#define TCP_AND_UDP  1
+#define UDP_ONLY     3
+
 
 typedef struct {
     char *host;
@@ -57,6 +62,8 @@ typedef struct {
     int fast_open;
     int nofile;
     char *nameserver;
+    char *tunnel_address;
+    int mode;
 } jconf_t;
 
 jconf_t *read_jconf(const char *file);

@@ -1,7 +1,7 @@
 /*
  * android.c - Setup IPC for shadowsocks-android
  *
- * Copyright (C) 2013 - 2015, Max Lv <max.c.lv@gmail.com>
+ * Copyright (C) 2013 - 2016, Max Lv <max.c.lv@gmail.com>
  *
  * This file is part of the shadowsocks-libev.
  *
@@ -64,7 +64,7 @@ int protect_socket(int fd)
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval));
     setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv, sizeof(struct timeval));
 
-    char path[256];
+    char path[257];
     sprintf(path, "%s/protect_path", prefix);
 
     memset(&addr, 0, sizeof(addr));
@@ -113,7 +113,7 @@ int send_traffic_stat(uint64_t tx, uint64_t rx)
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval));
     setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv, sizeof(struct timeval));
 
-    char path[256];
+    char path[257];
     sprintf(path, "%s/stat_path", prefix);
 
     memset(&addr, 0, sizeof(addr));

@@ -1,7 +1,7 @@
 /*
  * tunnel.c - Setup a local port forwarding through remote shadowsocks server
  *
- * Copyright (C) 2013 - 2015, Max Lv <max.c.lv@gmail.com>
+ * Copyright (C) 2013 - 2016, Max Lv <max.c.lv@gmail.com>
  *
  * This file is part of the shadowsocks-libev.
  *
@@ -28,6 +28,7 @@
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #ifndef __MINGW32__
 #include <errno.h>
@@ -89,7 +90,9 @@ static void close_and_free_server(EV_P_ server_t *server);
 int vpn = 0;
 char *prefix;
 #endif
+
 int verbose = 0;
+int keep_resolving = 1;
 
 static int mode = TCP_ONLY;
 static int auth = 0;
@@ -105,19 +108,6 @@ static int setnonblocking(int fd)
         flags = 0;
     }
     return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-}
-
-#endif
-
-#ifdef SET_INTERFACE
-int setinterface(int socket_fd, const char *interface_name)
-{
-    struct ifreq interface;
-    memset(&interface, 0, sizeof(interface));
-    strncpy(interface.ifr_name, interface_name, IFNAMSIZ);
-    int res = setsockopt(socket_fd, SOL_SOCKET, SO_BINDTODEVICE, &interface,
-                         sizeof(struct ifreq));
-    return res;
 }
 
 #endif
@@ -500,13 +490,13 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
 static remote_t *new_remote(int fd, int timeout)
 {
     remote_t *remote;
-    remote = malloc(sizeof(remote_t));
+    remote = ss_malloc(sizeof(remote_t));
 
     memset(remote, 0, sizeof(remote_t));
 
-    remote->buf                 = malloc(sizeof(buffer_t));
-    remote->recv_ctx            = malloc(sizeof(remote_ctx_t));
-    remote->send_ctx            = malloc(sizeof(remote_ctx_t));
+    remote->buf                 = ss_malloc(sizeof(buffer_t));
+    remote->recv_ctx            = ss_malloc(sizeof(remote_ctx_t));
+    remote->send_ctx            = ss_malloc(sizeof(remote_ctx_t));
     remote->fd                  = fd;
     remote->recv_ctx->remote    = remote;
     remote->recv_ctx->connected = 0;
@@ -531,11 +521,11 @@ static void free_remote(remote_t *remote)
         }
         if (remote->buf) {
             bfree(remote->buf);
-            free(remote->buf);
+            ss_free(remote->buf);
         }
-        free(remote->recv_ctx);
-        free(remote->send_ctx);
-        free(remote);
+        ss_free(remote->recv_ctx);
+        ss_free(remote->send_ctx);
+        ss_free(remote);
     }
 }
 
@@ -554,10 +544,10 @@ static server_t *new_server(int fd, int method)
 {
     server_t *server;
 
-    server                      = malloc(sizeof(server_t));
-    server->buf                 = malloc(sizeof(buffer_t));
-    server->recv_ctx            = malloc(sizeof(server_ctx_t));
-    server->send_ctx            = malloc(sizeof(server_ctx_t));
+    server                      = ss_malloc(sizeof(server_t));
+    server->buf                 = ss_malloc(sizeof(buffer_t));
+    server->recv_ctx            = ss_malloc(sizeof(server_ctx_t));
+    server->send_ctx            = ss_malloc(sizeof(server_ctx_t));
     server->fd                  = fd;
     server->recv_ctx->server    = server;
     server->recv_ctx->connected = 0;
@@ -565,8 +555,8 @@ static server_t *new_server(int fd, int method)
     server->send_ctx->connected = 0;
 
     if (method) {
-        server->e_ctx = malloc(sizeof(struct enc_ctx));
-        server->d_ctx = malloc(sizeof(struct enc_ctx));
+        server->e_ctx = ss_malloc(sizeof(struct enc_ctx));
+        server->d_ctx = ss_malloc(sizeof(struct enc_ctx));
         enc_ctx_init(method, server->e_ctx, 1);
         enc_ctx_init(method, server->d_ctx, 0);
     } else {
@@ -590,19 +580,19 @@ static void free_server(server_t *server)
         }
         if (server->e_ctx != NULL) {
             cipher_context_release(&server->e_ctx->evp);
-            free(server->e_ctx);
+            ss_free(server->e_ctx);
         }
         if (server->d_ctx != NULL) {
             cipher_context_release(&server->d_ctx->evp);
-            free(server->d_ctx);
+            ss_free(server->d_ctx);
         }
         if (server->buf) {
             bfree(server->buf);
-            free(server->buf);
+            ss_free(server->buf);
         }
-        free(server->recv_ctx);
-        free(server->send_ctx);
-        free(server);
+        ss_free(server->recv_ctx);
+        ss_free(server->send_ctx);
+        ss_free(server);
     }
 }
 
@@ -659,7 +649,8 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     setnonblocking(remotefd);
 #ifdef SET_INTERFACE
     if (listener->iface) {
-        setinterface(remotefd, listener->iface);
+        if (setinterface(remotefd, listener->iface) == -1)
+            ERROR("setinterface");
     }
 #endif
 
@@ -669,14 +660,34 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     server->remote   = remote;
     remote->server   = server;
 
-    connect(remotefd, remote_addr, get_sockaddr_len(remote_addr));
-    // listen to remote connected event
-    ev_io_start(EV_A_ & remote->send_ctx->io);
-    ev_timer_start(EV_A_ & remote->send_ctx->watcher);
+    int r = connect(remotefd, remote_addr, get_sockaddr_len(remote_addr));
+
+    if (r < 0 && errno != CONNECT_IN_PROGRESS) {
+        ERROR("connect");
+        close_and_free_remote(EV_A_ remote);
+        close_and_free_server(EV_A_ server);
+        return;
+    }
+
+    if (r == 0) {
+        if (verbose) LOGI("connected immediately");
+        remote_send_cb(EV_A_ & remote->send_ctx->io, 0);
+    } else {
+        // listen to remote connected event
+        ev_io_start(EV_A_ & remote->send_ctx->io);
+        ev_timer_start(EV_A_ & remote->send_ctx->watcher);
+    }
+}
+
+void signal_cb(int dummy) {
+    keep_resolving = 0;
+    exit(-1);
 }
 
 int main(int argc, char **argv)
 {
+    srand(time(NULL));
+
     int i, c;
     int pid_flags    = 0;
     char *user       = NULL;
@@ -696,16 +707,30 @@ int main(int argc, char **argv)
     ss_addr_t tunnel_addr = { .host = NULL, .port = NULL };
     char *tunnel_addr_str = NULL;
 
+    int option_index                    = 0;
+    static struct option long_options[] = {
+        { "help", no_argument, 0, 0 },
+        {      0,           0, 0, 0 }
+    };
+
     opterr = 0;
 
     USE_TTY();
 
 #ifdef ANDROID
-    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:n:P:uUvVA")) != -1) {
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:n:P:huUvVA",
+                            long_options, &option_index)) != -1) {
 #else
-    while ((c = getopt(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:n:uUvA")) != -1) {
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:n:huUvA",
+                            long_options, &option_index)) != -1) {
 #endif
         switch (c) {
+        case 0:
+            if (option_index == 0) {
+                usage();
+                exit(EXIT_SUCCESS);
+            }
+            break;
         case 's':
             if (remote_num < MAX_REMOTE_NUM) {
                 remote_addr[remote_num].host   = optarg;
@@ -760,6 +785,9 @@ int main(int argc, char **argv)
         case 'v':
             verbose = 1;
             break;
+        case 'h':
+            usage();
+            exit(EXIT_SUCCESS);
         case 'A':
             auth = 1;
             break;
@@ -771,6 +799,10 @@ int main(int argc, char **argv)
             prefix = optarg;
             break;
 #endif
+        case '?':
+            // The option character is not recognized.
+            opterr = 1;
+            break;
         }
     }
 
@@ -812,6 +844,12 @@ int main(int argc, char **argv)
         }
         if (auth == 0) {
             auth = conf->auth;
+        }
+        if (tunnel_addr_str == NULL) {
+            tunnel_addr_str = conf->tunnel_address;
+        }
+        if (mode == TCP_ONLY) {
+            mode = conf->mode;
         }
 #ifdef HAVE_SETRLIMIT
         if (nofile == 0) {
@@ -866,22 +904,24 @@ int main(int argc, char **argv)
     // ignore SIGPIPE
     signal(SIGPIPE, SIG_IGN);
     signal(SIGABRT, SIG_IGN);
+    signal(SIGINT,  signal_cb);
+    signal(SIGTERM, signal_cb);
 #endif
 
     // Setup keys
-    LOGI("initialize ciphers... %s", method);
+    LOGI("initializing ciphers... %s", method);
     int m = enc_init(password, method);
 
     // Setup proxy context
     struct listen_ctx listen_ctx;
     listen_ctx.tunnel_addr = tunnel_addr;
     listen_ctx.remote_num  = remote_num;
-    listen_ctx.remote_addr = malloc(sizeof(struct sockaddr *) * remote_num);
+    listen_ctx.remote_addr = ss_malloc(sizeof(struct sockaddr *) * remote_num);
     for (i = 0; i < remote_num; i++) {
         char *host = remote_addr[i].host;
         char *port = remote_addr[i].port == NULL ? remote_port :
                      remote_addr[i].port;
-        struct sockaddr_storage *storage = malloc(sizeof(struct sockaddr_storage));
+        struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
         memset(storage, 0, sizeof(struct sockaddr_storage));
         if (get_sockaddr(host, port, storage, 1) == -1) {
             FATAL("failed to resolve the provided hostname");

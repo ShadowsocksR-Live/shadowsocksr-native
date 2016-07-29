@@ -2,14 +2,14 @@ dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.67])
-AC_INIT([shadowsocks-libev], [2.4.5], [max.c.lv@gmail.com])
+AC_INIT([shadowsocks-libev], [2.4.8], [max.c.lv@gmail.com])
 AC_CONFIG_SRCDIR([src/encrypt.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(auto)
 AC_CONFIG_MACRO_DIR([m4])
 AC_USE_SYSTEM_EXTENSIONS
 
-AM_INIT_AUTOMAKE([subdir-objects foreign -Wall -Werror])
+AM_INIT_AUTOMAKE([subdir-objects foreign -Wno-gnu -Werror])
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AM_MAINTAINER_MODE
@@ -45,6 +45,21 @@ AC_ARG_WITH(
   [with_crypto_library="openssl"]
 )
 
+AC_ARG_ENABLE([documentation],
+  AS_HELP_STRING([--disable-documentation], [do not build documentation]),
+  [disable_documentation=true],
+  [disable_documentation=false])
+AM_CONDITIONAL([ENABLE_DOCUMENTATION], [test x$disable_documentation = xfalse])
+
+AM_COND_IF([ENABLE_DOCUMENTATION], [
+  AC_PATH_PROG([ASCIIDOC], [asciidoc], [asciidoc])
+  AC_PATH_PROG([XMLTO], [xmlto], [xmlto])
+  AC_PATH_PROG([GZIP], [gzip], [gzip])
+  AC_PATH_PROG([RM], [rm], [rm])
+  AC_PATH_PROG([MV], [mv], [mv])
+  AC_PROG_SED
+])
+
 dnl Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
@@ -55,7 +70,9 @@ AC_PROG_MAKE_SET
 AC_LANG_SOURCE
 
 dnl Checks for libev
-m4_include([libev/libev.m4])
+AM_COND_IF([USE_SYSTEM_SHARED_LIB],
+  [],
+  [m4_include([libev/libev.m4])])
 
 dnl Add library for mingw
 case $host in
@@ -190,9 +207,11 @@ AC_CHECK_HEADERS([net/if.h], [], [],
 
 case $host in
   *-mingw*)
+    AC_DEFINE([CONNECT_IN_PROGRESS], [WSAEWOULDBLOCK], [errno for incomplete non-blocking connect(2)])
     AC_CHECK_HEADERS([windows.h winsock2.h ws2tcpip.h], [], [AC_MSG_ERROR([Missing MinGW headers])], [])
     ;;
   *-linux*)
+    AC_DEFINE([CONNECT_IN_PROGRESS], [EINPROGRESS], [errno for incomplete non-blocking connect(2)])
     dnl Checks for netfilter headers
     AC_CHECK_HEADERS([linux/if.h linux/netfilter_ipv4.h linux/netfilter_ipv6/ip6_tables.h],
                      [], [AC_MSG_ERROR([Missing netfilter headers])],
@@ -205,7 +224,7 @@ case $host in
     #include <netinet/in.h>
     #endif
     #if HAVE_LINUX_IF_H
-    #include <net/if.h>
+    #include <linux/if.h>
     #endif
     #if HAVE_SYS_SOCKET_H
     #include <sys/socket.h>
@@ -214,6 +233,7 @@ case $host in
     ;;
   *)
     # These are POSIX-like systems using BSD-like sockets API.
+    AC_DEFINE([CONNECT_IN_PROGRESS], [EINPROGRESS], [errno for incomplete non-blocking connect(2)])
     ;;
 esac
 
@@ -273,6 +293,10 @@ AC_CHECK_LIB(socket, connect)
 dnl Checks for library functions.
 AC_CHECK_FUNCS([malloc memset socket])
 
+dnl Add define for libudns to enable IPv6 support
+dnl This is an option defined in the origin configure script
+AC_DEFINE([HAVE_IPv6], [1], [Enable IPv6 support in libudns])
+
 AM_COND_IF([USE_SYSTEM_SHARED_LIB],
   [],
   [AC_CONFIG_SUBDIRS([libsodium])])
@@ -281,7 +305,14 @@ AC_CONFIG_FILES([ shadowsocks-libev.pc
                  Makefile
                  libcork/Makefile
                  libipset/Makefile
-                 libudns/Makefile
-                 libev/Makefile
                  src/Makefile])
+AM_COND_IF([USE_SYSTEM_SHARED_LIB],
+  [],
+  [AC_CONFIG_FILES([libudns/Makefile
+                 libev/Makefile])])
+
+AM_COND_IF([ENABLE_DOCUMENTATION],
+  [AC_CONFIG_FILES([doc/Makefile])
+])
+
 AC_OUTPUT

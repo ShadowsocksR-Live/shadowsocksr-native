@@ -3,6 +3,9 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
+/* errno for incomplete non-blocking connect(2) */
+#undef CONNECT_IN_PROGRESS
+
 /* Override libev default fd conversion macro. */
 #undef EV_FD_TO_WIN32_HANDLE
 
@@ -66,6 +69,9 @@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
+
+/* Enable IPv6 support in libudns */
+#undef HAVE_IPv6
 
 /* Define to 1 if you have the `kqueue' function. */
 #undef HAVE_KQUEUE
