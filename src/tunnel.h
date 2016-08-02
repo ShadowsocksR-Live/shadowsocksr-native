@@ -25,6 +25,7 @@
 
 #include <ev.h>
 #include "encrypt.h"
+#include "obfs.h"
 #include "jconf.h"
 
 #include "common.h"
@@ -38,6 +39,13 @@ typedef struct listen_ctx {
     int timeout;
     int fd;
     struct sockaddr **remote_addr;
+
+    // SSR
+    char *protocol_name;
+    char *obfs_name;
+    char *obfs_param;
+    void **list_protocol_global;
+    void **list_obfs_global;
 } listen_ctx_t;
 
 typedef struct server_ctx {
@@ -56,6 +64,12 @@ typedef struct server {
     struct server_ctx *send_ctx;
     struct remote *remote;
     ss_addr_t destaddr;
+
+    // SSR
+    obfs *protocol;
+    obfs *obfs;
+    obfs_class *protocol_plugin;
+    obfs_class *obfs_plugin;
 } server_t;
 
 typedef struct remote_ctx {
@@ -73,6 +87,9 @@ typedef struct remote {
     struct remote_ctx *send_ctx;
     struct server *server;
     uint32_t counter;
+
+    // SSR
+    int remote_index;
 } remote_t;
 
 #endif // _TUNNEL_H

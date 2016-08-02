@@ -750,20 +750,6 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
         return;
     }
 
-    if (r == 0) {
-        if (verbose) LOGI("connected immediately");
-        remote_send_cb(EV_A_ & remote->send_ctx->io, 0);
-    } else {
-        // listen to remote connected event
-        ev_io_start(EV_A_ & remote->send_ctx->io);
-        ev_timer_start(EV_A_ & remote->send_ctx->watcher);
-    }
-
-    if (verbose) {
-        int port = ((struct sockaddr_in*)&destaddr)->sin_port;
-        port = (uint16_t)(port >> 8 | port << 8);
-        LOGI("connect to %s:%d", inet_ntoa(((struct sockaddr_in*)&destaddr)->sin_addr), port);
-    }
     // SSR beg
     remote->remote_index = index;
     server->obfs_plugin = new_obfs_class(listener->obfs_name);
@@ -802,6 +788,21 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     if (server->protocol_plugin)
         server->protocol_plugin->set_server_info(server->protocol, &_server_info);
     // SSR end
+
+    if (r == 0) {
+        if (verbose) LOGI("connected immediately");
+        remote_send_cb(EV_A_ & remote->send_ctx->io, 0);
+    } else {
+        // listen to remote connected event
+        ev_io_start(EV_A_ & remote->send_ctx->io);
+        ev_timer_start(EV_A_ & remote->send_ctx->watcher);
+    }
+
+    if (verbose) {
+        int port = ((struct sockaddr_in*)&destaddr)->sin_port;
+        port = (uint16_t)(port >> 8 | port << 8);
+        LOGI("connect to %s:%d", inet_ntoa(((struct sockaddr_in*)&destaddr)->sin_addr), port);
+    }
 
     // listen to remote connected event
     ev_io_start(EV_A_ & remote->send_ctx->io);
