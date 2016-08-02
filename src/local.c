@@ -547,7 +547,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 _server_info.iv_len = enc_get_iv_len();
                 _server_info.key = enc_get_key();
                 _server_info.key_len = enc_get_key_len();
-                _server_info.tcp_mss = 1440;
+                _server_info.tcp_mss = 1460;
 
                 if (server->obfs_plugin)
                     server->obfs_plugin->set_server_info(server->obfs, &_server_info);

@@ -490,10 +490,16 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
                 }
             }
 
-            brealloc(remote->buf, remote->buf->len + abuf->len, BUF_SIZE);
-            memmove(remote->buf->array + abuf->len, remote->buf->array, remote->buf->len);
-            memcpy(remote->buf->array, abuf->array, abuf->len);
-            remote->buf->len += abuf->len;
+            if (remote->buf->len > 0) {
+                brealloc(remote->buf, remote->buf->len + abuf->len, BUF_SIZE);
+                memmove(remote->buf->array + abuf->len, remote->buf->array, remote->buf->len);
+                memcpy(remote->buf->array, abuf->array, abuf->len);
+                remote->buf->len += abuf->len;
+            } else {
+                brealloc(remote->buf, abuf->len, BUF_SIZE);
+                memcpy(remote->buf->array, abuf->array, abuf->len);
+                remote->buf->len = abuf->len;
+            }
             bfree(abuf);
 
             int err = ss_encrypt(remote->buf, server->e_ctx, BUF_SIZE);
@@ -519,6 +525,8 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
                 close_and_free_server(EV_A_ server);
                 return;
             }
+            remote->buf->len = 0;
+            remote->buf->idx = 0;
             // SSR end
 
             ev_io_start(EV_A_ & remote->recv_ctx->io);
@@ -789,7 +797,7 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     _server_info.iv_len = enc_get_iv_len();
     _server_info.key = enc_get_key();
     _server_info.key_len = enc_get_key_len();
-    _server_info.tcp_mss = 1440;
+    _server_info.tcp_mss = 1460;
 
     if (server->obfs_plugin)
         server->obfs_plugin->set_server_info(server->obfs, &_server_info);

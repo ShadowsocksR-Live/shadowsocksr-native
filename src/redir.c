@@ -222,12 +222,6 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         ss_gen_hash(remote->buf, &remote->counter, server->e_ctx, BUF_SIZE);
     }
 
-    /* if (!remote->send_ctx->connected) {
-        ev_io_stop(EV_A_ & server_recv_ctx->io);
-        ev_io_start(EV_A_ & remote->send_ctx->io);
-        return;
-    } //*/
-
     // SSR beg
     if (server->protocol_plugin) {
         obfs_class *protocol_plugin = server->protocol_plugin;
@@ -251,6 +245,12 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         }
     }
     // SSR end
+
+    if (!remote->send_ctx->connected) {
+        ev_io_stop(EV_A_ & server_recv_ctx->io);
+        ev_io_start(EV_A_ & remote->send_ctx->io);
+        return;
+    }
 
     int s = send(remote->fd, remote->buf->array, remote->buf->len, 0);
 
@@ -486,10 +486,16 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
                 }
             }
 
-            brealloc(remote->buf, remote->buf->len + abuf->len, BUF_SIZE);
-            memmove(remote->buf->array + abuf->len, remote->buf->array, remote->buf->len);
-            memcpy(remote->buf->array, abuf->array, abuf->len);
-            remote->buf->len += abuf->len;
+            if (remote->buf->len > 0) {
+                brealloc(remote->buf, remote->buf->len + abuf->len, BUF_SIZE);
+                memmove(remote->buf->array + abuf->len, remote->buf->array, remote->buf->len);
+                memcpy(remote->buf->array, abuf->array, abuf->len);
+                remote->buf->len += abuf->len;
+            } else {
+                brealloc(remote->buf, abuf->len, BUF_SIZE);
+                memcpy(remote->buf->array, abuf->array, abuf->len);
+                remote->buf->len = abuf->len;
+            }
             bfree(abuf);
 
             int err = ss_encrypt(remote->buf, server->e_ctx, BUF_SIZE);
@@ -777,7 +783,7 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     _server_info.iv_len = enc_get_iv_len();
     _server_info.key = enc_get_key();
     _server_info.key_len = enc_get_key_len();
-    _server_info.tcp_mss = 1440;
+    _server_info.tcp_mss = 1460;
 
     if (server->obfs_plugin)
         server->obfs_plugin->set_server_info(server->obfs, &_server_info);
