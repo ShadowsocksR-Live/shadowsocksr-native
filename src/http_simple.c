@@ -54,6 +54,10 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength, s
     if (local->has_sent_header) {
         return datalength;
     }
+    char hosts[1024];
+    char * phost[128];
+    int host_num = 0;
+    int pos;
     char hostport[128];
     int head_size = self->server.head_len + (xorshift128plus() & 0x3F);
     int outlength;
@@ -63,10 +67,18 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength, s
     http_simple_encode_head(local, encryptdata, head_size);
     if (self->server.param && strlen(self->server.param) == 0)
         self->server.param = NULL;
+    strncpy(hosts, self->server.param ? self->server.param : self->server.host, sizeof hosts);
+    phost[host_num++] = hosts;
+    for (pos = 0; hosts[pos]; ++pos) {
+        if (hosts[pos] == ',') {
+            phost[host_num++] = &hosts[pos + 1];
+        }
+    }
+    host_num = xorshift128plus() % host_num;
     if (self->server.port == 80)
-        sprintf(hostport, "%s", (self->server.param ? self->server.param : self->server.host));
+        sprintf(hostport, "%s", phost[host_num]);
     else
-        sprintf(hostport, "%s:%d", (self->server.param ? self->server.param : self->server.host), self->server.port);
+        sprintf(hostport, "%s:%d", phost[host_num], self->server.port);
     sprintf(out_buffer,
             "GET /%s HTTP/1.1\r\n"
             "Host: %s\r\n"
