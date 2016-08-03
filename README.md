@@ -460,8 +460,8 @@ ss-server -s 0.0.0.0 -p 8399 -k passwd -m chacha20 -u &
 
 ```bash
 client_linux_amd64 -l 127.0.0.1:29900 -r <server_ip>:8388 --crypt none --mtu 1400 --sndwnd 2048 --rcvwnd 2048 &
-ss-local -s 127.0.0.1 -p 29900 -k test -m chacha20 -l 1080 -b 0.0.0.0 &
-ss-local -s <server_ip> -p 8399 -k test -m chacha20 -l 1080 -U -b 0.0.0.0
+ss-local -s 127.0.0.1 -p 29900 -k passwd -m chacha20 -l 1080 -b 0.0.0.0 &
+ss-local -s <server_ip> -p 8399 -k passwd -m chacha20 -l 1080 -U -b 0.0.0.0
 ```
 
 ## Security Tips
