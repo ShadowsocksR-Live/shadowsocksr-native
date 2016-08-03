@@ -309,6 +309,8 @@ void usage()
     printf(
         "       [--executable <path>]      Path to the executable of ss-server.\n");
 #endif
+    printf(
+        "       [--mtu <MTU>]              MTU of your network interface.\n");
     printf("\n");
     printf(
         "       [-v]                       Verbose mode.\n");

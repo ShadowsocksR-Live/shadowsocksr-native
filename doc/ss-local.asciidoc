@@ -12,7 +12,7 @@ SYNOPSIS
  [-s <server_host>] [-p <server_port>] [-l <local_port>]
  [-k <password>] [-m <encrypt_method>] [-f <pid_file>] [-t <timeout>]
  [-c <config_file>] [-b <interface>] [-a <user_name>]
- [-n <nofile>] [--fast-open] [--acl <acl_config>]
+ [-n <nofile>] [--fast-open] [--acl <acl_config>] [--mtu <MTU>]
 
 DESCRIPTION
 -----------
@@ -101,6 +101,9 @@ Only available with Linux kernel > 3.7.0.
 
 --acl <acl_config>::
 Enable ACL (Access Control List) and specify config file.
+
+--mtu <MTU>::
+Specify the MTU of your network interface.
 
 -v::
 Enable verbose mode.

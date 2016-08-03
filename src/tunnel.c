@@ -692,6 +692,7 @@ int main(int argc, char **argv)
 
     int i, c;
     int pid_flags    = 0;
+    int  mtu         = 0;
     char *user       = NULL;
     char *local_port = NULL;
     char *local_addr = NULL;
@@ -711,8 +712,9 @@ int main(int argc, char **argv)
 
     int option_index                    = 0;
     static struct option long_options[] = {
-        { "help", no_argument, 0, 0 },
-        {      0,           0, 0, 0 }
+        { "mtu",  required_argument, 0, 0 },
+        { "help", no_argument,       0, 0 },
+        {      0,           0,       0, 0 }
     };
 
     opterr = 0;
@@ -729,6 +731,9 @@ int main(int argc, char **argv)
         switch (c) {
         case 0:
             if (option_index == 0) {
+                mtu = atoi(optarg);
+                LOGI("Set MTU to %d", mtu);
+            } else if (option_index == 1) {
                 usage();
                 exit(EXIT_SUCCESS);
             }
@@ -959,7 +964,7 @@ int main(int argc, char **argv)
         LOGI("UDP relay enabled");
         init_udprelay(local_addr, local_port, listen_ctx.remote_addr[0],
                       get_sockaddr_len(listen_ctx.remote_addr[0]),
-                      tunnel_addr, m, auth, listen_ctx.timeout, iface);
+                      tunnel_addr, mtu, m, auth, listen_ctx.timeout, iface);
     }
 
     if (mode == UDP_ONLY) {

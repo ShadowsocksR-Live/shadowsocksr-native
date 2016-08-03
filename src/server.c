@@ -1338,6 +1338,7 @@ int main(int argc, char **argv)
 {
     int i, c;
     int pid_flags   = 0;
+    int mtu         = 0;
     char *user      = NULL;
     char *password  = NULL;
     char *timeout   = NULL;
@@ -1358,6 +1359,7 @@ int main(int argc, char **argv)
         { "fast-open"      , no_argument      , 0, 0 },
         { "acl"            , required_argument, 0, 0 },
         { "manager-address", required_argument, 0, 0 },
+        { "mtu"            , required_argument, 0, 0 },
         { "help"           , no_argument      , 0, 0 },
         {                 0,                 0, 0, 0 }
     };
@@ -1379,6 +1381,9 @@ int main(int argc, char **argv)
             } else if (option_index == 2) {
                 manager_address = optarg;
             } else if (option_index == 3) {
+                mtu = atoi(optarg);
+                LOGI("Set MTU to %d", mtu);
+            } else if (option_index == 4) {
                 usage();
                 exit(EXIT_SUCCESS);
             }
@@ -1636,8 +1641,8 @@ int main(int argc, char **argv)
 
         // Setup UDP
         if (mode != TCP_ONLY) {
-            init_udprelay(server_host[index], server_port, m, auth, atoi(timeout),
-                          iface);
+            init_udprelay(server_host[index], server_port, mtu, m,
+                    auth, atoi(timeout), iface);
         }
 
         LOGI("listening at %s:%s", host ? host : "*", server_port);

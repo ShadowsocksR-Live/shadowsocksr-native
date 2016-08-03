@@ -13,7 +13,6 @@ config.log
 config.status
 libtool
 pid
-ss.*
 src/ss-*
 !src/ss-nat
 stamp-h1

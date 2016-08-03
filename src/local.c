@@ -982,6 +982,7 @@ int main(int argc, char **argv)
 {
     int i, c;
     int pid_flags    = 0;
+    int  mtu         = 0;
     char *user       = NULL;
     char *local_port = NULL;
     char *local_addr = NULL;
@@ -1002,6 +1003,7 @@ int main(int argc, char **argv)
     static struct option long_options[] = {
         { "fast-open", no_argument      , 0, 0 },
         { "acl"      , required_argument, 0, 0 },
+        { "mtu"      , required_argument, 0, 0 },
         { "help"     , no_argument      , 0, 0 },
         {           0,                 0, 0, 0 }
     };
@@ -1025,6 +1027,9 @@ int main(int argc, char **argv)
                 LOGI("initializing acl...");
                 acl = !init_acl(optarg, BLACK_LIST);
             } else if (option_index == 2) {
+                mtu = atoi(optarg);
+                LOGI("Set MTU to %d", mtu);
+            } else if (option_index == 3) {
                 usage();
                 exit(EXIT_SUCCESS);
             }
@@ -1258,7 +1263,7 @@ int main(int argc, char **argv)
     if (mode != TCP_ONLY) {
         LOGI("udprelay enabled");
         init_udprelay(local_addr, local_port, listen_ctx.remote_addr[0],
-                      get_sockaddr_len(listen_ctx.remote_addr[0]), m, auth, listen_ctx.timeout, iface);
+                      get_sockaddr_len(listen_ctx.remote_addr[0]), mtu, m, auth, listen_ctx.timeout, iface);
     }
 
     LOGI("listening at %s:%s", local_addr, local_port);
@@ -1318,6 +1323,7 @@ int start_ss_local_server(profile_t profile)
     int remote_port   = profile.remote_port;
     int local_port    = profile.local_port;
     int timeout       = profile.timeout;
+    int mtu           = 0;
 
     auth      = profile.auth;
     mode      = profile.mode;
@@ -1406,7 +1412,7 @@ int start_ss_local_server(profile_t profile)
         LOGI("udprelay enabled");
         struct sockaddr *addr = (struct sockaddr *)storage;
         init_udprelay(local_addr, local_port_str, addr,
-                      get_sockaddr_len(addr), m, auth, timeout, NULL);
+                      get_sockaddr_len(addr), mtu, m, auth, timeout, NULL);
     }
 
     LOGI("listening at %s:%s", local_addr, local_port_str);
