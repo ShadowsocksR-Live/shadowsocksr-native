@@ -272,10 +272,8 @@ void usage()
     printf(
         "                                  TPROXY is required in redir mode.\n");
 #endif
-#ifndef MODULE_LOCAL
     printf(
         "       [-U]                       Enable UDP relay and disable TCP relay.\n");
-#endif
     printf(
         "       [-A]                       Enable onetime authentication.\n");
 #ifdef MODULE_REMOTE

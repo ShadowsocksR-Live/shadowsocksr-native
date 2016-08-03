@@ -445,6 +445,25 @@ The latest shadowsocks-libev has provided a *redir* mode. You can configure your
     # Start the shadowsocks-redir
     root@Wrt:~# ss-redir -u -c /etc/config/shadowsocks.json -f /var/run/shadowsocks.pid
 
+## Shadowsocks over KCP
+
+It's quite easy to use shadowsocks and [KCP](https://github.com/skywind3000/kcp) together with [kcptun](https://github.com/xtaci/kcptun).
+
+### Setup your server
+
+```bash
+server_linux_amd64 -l :8388 -t 127.0.0.1:8399 --crypt none --mtu 1400 --sndwnd 2048 --rcvwnd 2048 &
+ss-server -s 0.0.0.0 -p 8399 -k passwd -m chacha20 -u &
+```
+
+### Setup your client
+
+```bash
+client_linux_amd64 -l 127.0.0.1:29900 -r <server_ip>:8388 --crypt none --mtu 1400 --sndwnd 2048 --rcvwnd 2048 &
+ss-local -s 127.0.0.1 -p 29900 -k test -m chacha20 -l 1080 -b 0.0.0.0 &
+ss-local -s <server_ip> -p 8399 -k test -m chacha20 -l 1080 -U -b 0.0.0.0
+```
+
 ## Security Tips
 
 Although shadowsocks-libev can handle thousands of concurrent connections nicely, we still recommend

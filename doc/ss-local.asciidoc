@@ -88,6 +88,9 @@ Specify local address to bind.
 -u::
 Enable UDP relay.
 
+-U::
+Enable UDP relay and disable TCP relay.
+
 -A::
 Enable onetime authentication.
 
