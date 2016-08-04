@@ -33,7 +33,6 @@
 #define TCP_AND_UDP  1
 #define UDP_ONLY     3
 
-
 typedef struct {
     char *host;
     char *port;
@@ -61,6 +60,8 @@ typedef struct {
     char *nameserver;
     char *tunnel_address;
     int mode;
+    int mtu;
+    int mptcp;
 } jconf_t;
 
 jconf_t *read_jconf(const char *file);

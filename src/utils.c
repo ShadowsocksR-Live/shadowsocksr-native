@@ -311,6 +311,8 @@ void usage()
 #endif
     printf(
         "       [--mtu <MTU>]              MTU of your network interface.\n");
+    printf(
+        "       [--mptcp]                  Enable Multipath TCP on MPTCP Kernel.\n");
     printf("\n");
     printf(
         "       [-v]                       Verbose mode.\n");

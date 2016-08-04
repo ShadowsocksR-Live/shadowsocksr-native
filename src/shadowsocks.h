@@ -38,6 +38,8 @@ typedef struct {
     int fast_open;        // enable tcp fast open
     int mode;             // enable udp relay
     int auth;             // enable one-time authentication
+    int mtu;              // MTU of interface
+    int mptcp;            // enable multipath TCP
     int verbose;          // verbose mode
 } profile_t;
 

@@ -303,7 +303,7 @@ int setnonblocking(int fd)
 
 #endif
 
-int create_and_bind(const char *host, const char *port)
+int create_and_bind(const char *host, const char *port, int mptcp)
 {
     struct addrinfo hints;
     struct addrinfo *result, *rp, *ipv4v6bindall;
@@ -372,6 +372,13 @@ int create_and_bind(const char *host, const char *port)
             LOGI("port reuse enabled");
         }
 
+        if (mptcp == 1) {
+            int err = setsockopt(listen_sock, SOL_TCP, MPTCP_ENABLED, &opt, sizeof(opt));
+            if (err == -1) {
+                ERROR("failed to enable multipath TCP");
+            }
+        }
+
         s = bind(listen_sock, rp->ai_addr, rp->ai_addrlen);
         if (s == 0) {
             /* We managed to bind successfully! */
@@ -404,7 +411,7 @@ static remote_t *connect_to_remote(struct addrinfo *res,
 
     // initialize remote socks
     sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if (sockfd < 0) {
+    if (sockfd == -1) {
         ERROR("socket");
         close(sockfd);
         return NULL;
@@ -484,7 +491,7 @@ static remote_t *connect_to_remote(struct addrinfo *res,
     if (!fast_open) {
         int r = connect(sockfd, res->ai_addr, res->ai_addrlen);
 
-        if (r < 0 && errno != CONNECT_IN_PROGRESS) {
+        if (r == -1 && errno != CONNECT_IN_PROGRESS) {
             ERROR("connect");
             close(sockfd);
             return NULL;
@@ -859,7 +866,7 @@ static void server_send_cb(EV_P_ ev_io *w, int revents)
         // has data to send
         ssize_t s = send(server->fd, server->buf->array + server->buf->idx,
                          server->buf->len, 0);
-        if (s < 0) {
+        if (s == -1) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
                 ERROR("server_send_send");
                 close_and_free_remote(EV_A_ remote);
@@ -995,7 +1002,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
-    } else if (r < 0) {
+    } else if (r == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             // no data
             // continue to wait for recv
@@ -1338,6 +1345,7 @@ int main(int argc, char **argv)
 {
     int i, c;
     int pid_flags   = 0;
+    int mptcp       = 0;
     int mtu         = 0;
     char *user      = NULL;
     char *password  = NULL;
@@ -1360,6 +1368,7 @@ int main(int argc, char **argv)
         { "acl"            , required_argument, 0, 0 },
         { "manager-address", required_argument, 0, 0 },
         { "mtu"            , required_argument, 0, 0 },
+        { "mptcp"          , no_argument      , 0, 0 },
         { "help"           , no_argument      , 0, 0 },
         {                 0,                 0, 0, 0 }
     };
@@ -1382,8 +1391,11 @@ int main(int argc, char **argv)
                 manager_address = optarg;
             } else if (option_index == 3) {
                 mtu = atoi(optarg);
-                LOGI("Set MTU to %d", mtu);
+                LOGI("set MTU to %d", mtu);
             } else if (option_index == 4) {
+                mptcp = 1;
+                LOGI("enable multipath TCP");
+            } else if (option_index == 5) {
                 usage();
                 exit(EXIT_SUCCESS);
             }
@@ -1496,6 +1508,12 @@ int main(int argc, char **argv)
         }
         if (mode == TCP_ONLY) {
             mode = conf->mode;
+        }
+        if (mtu == 0) {
+            mtu = conf->mtu;
+        }
+        if (mptcp == 0) {
+            mptcp = conf->mptcp;
         }
 #ifdef TCP_FASTOPEN
         if (fast_open == 0) {
@@ -1617,8 +1635,8 @@ int main(int argc, char **argv)
         if (mode != UDP_ONLY) {
             // Bind to port
             int listenfd;
-            listenfd = create_and_bind(host, server_port);
-            if (listenfd < 0) {
+            listenfd = create_and_bind(host, server_port, mptcp);
+            if (listenfd == -1) {
                 FATAL("bind() error");
             }
             if (listen(listenfd, SSMAXCONN) == -1) {

@@ -218,7 +218,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
-    } else if (r < 0) {
+    } else if (r == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             // no data
             // continue to wait for recv
@@ -280,7 +280,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     // connecting, wait until connected
                     int r = connect(remote->fd, (struct sockaddr *)&(remote->addr), remote->addr_len);
 
-                    if (r < 0 && errno != CONNECT_IN_PROGRESS) {
+                    if (r == -1 && errno != CONNECT_IN_PROGRESS) {
                         ERROR("connect");
                         close_and_free_remote(EV_A_ remote);
                         close_and_free_server(EV_A_ server);
@@ -587,7 +587,7 @@ static void server_send_cb(EV_P_ ev_io *w, int revents)
         // has data to send
         ssize_t s = send(server->fd, server->buf->array + server->buf->idx,
                          server->buf->len, 0);
-        if (s < 0) {
+        if (s == -1) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
                 ERROR("server_send_cb_send");
                 close_and_free_remote(EV_A_ remote);
@@ -656,7 +656,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
-    } else if (r < 0) {
+    } else if (r == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             // no data
             // continue to wait for recv
@@ -750,7 +750,7 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
         // has data to send
         ssize_t s = send(remote->fd, remote->buf->array + remote->buf->idx,
                          remote->buf->len, 0);
-        if (s < 0) {
+        if (s == -1) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
                 ERROR("remote_send_cb_send");
                 // close and free
@@ -911,7 +911,7 @@ static remote_t *create_remote(listen_ctx_t *listener,
 
     int remotefd = socket(remote_addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
 
-    if (remotefd < 0) {
+    if (remotefd == -1) {
         ERROR("socket");
         return NULL;
     }
@@ -921,6 +921,13 @@ static remote_t *create_remote(listen_ctx_t *listener,
 #ifdef SO_NOSIGPIPE
     setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
+
+    if (listener->mptcp == 1) {
+        int err = setsockopt(remotefd, SOL_TCP, MPTCP_ENABLED, &opt, sizeof(opt));
+        if (err == -1) {
+            ERROR("failed to enable multipath TCP");
+        }
+    }
 
     // Setup
     setnonblocking(remotefd);
@@ -982,7 +989,8 @@ int main(int argc, char **argv)
 {
     int i, c;
     int pid_flags    = 0;
-    int  mtu         = 0;
+    int mtu          = 0;
+    int mptcp        = 0;
     char *user       = NULL;
     char *local_port = NULL;
     char *local_addr = NULL;
@@ -1004,6 +1012,7 @@ int main(int argc, char **argv)
         { "fast-open", no_argument      , 0, 0 },
         { "acl"      , required_argument, 0, 0 },
         { "mtu"      , required_argument, 0, 0 },
+        { "mptcp"    , no_argument      , 0, 0 },
         { "help"     , no_argument      , 0, 0 },
         {           0,                 0, 0, 0 }
     };
@@ -1028,8 +1037,11 @@ int main(int argc, char **argv)
                 acl = !init_acl(optarg, BLACK_LIST);
             } else if (option_index == 2) {
                 mtu = atoi(optarg);
-                LOGI("Set MTU to %d", mtu);
+                LOGI("set MTU to %d", mtu);
             } else if (option_index == 3) {
+                mptcp = 1;
+                LOGI("enable multipath TCP");
+            } else if (option_index == 4) {
                 usage();
                 exit(EXIT_SUCCESS);
             }
@@ -1150,6 +1162,12 @@ int main(int argc, char **argv)
         if (mode == TCP_ONLY) {
             mode = conf->mode;
         }
+        if (mtu == 0) {
+            mtu = conf->mtu;
+        }
+        if (mptcp == 0) {
+            mptcp = conf->mptcp;
+        }
 #ifdef HAVE_SETRLIMIT
         if (nofile == 0) {
             nofile = conf->nofile;
@@ -1230,6 +1248,7 @@ int main(int argc, char **argv)
     listen_ctx.timeout = atoi(timeout);
     listen_ctx.iface   = iface;
     listen_ctx.method  = m;
+    listen_ctx.mptcp   = mptcp;
 
     // Setup signal handler
     struct ev_signal sigint_watcher;
@@ -1245,7 +1264,7 @@ int main(int argc, char **argv)
         // Setup socket
         int listenfd;
         listenfd = create_and_bind(local_addr, local_port);
-        if (listenfd < 0) {
+        if (listenfd == -1) {
             FATAL("bind() error");
         }
         if (listen(listenfd, SOMAXCONN) == -1) {
@@ -1324,11 +1343,14 @@ int start_ss_local_server(profile_t profile)
     int local_port    = profile.local_port;
     int timeout       = profile.timeout;
     int mtu           = 0;
+    int mptcp         = 0;
 
     auth      = profile.auth;
     mode      = profile.mode;
     fast_open = profile.fast_open;
     verbose   = profile.verbose;
+    mtu       = profile.mtu;
+    mptcp     = profile.mptcp;
 
     char local_port_str[16];
     char remote_port_str[16];
@@ -1385,13 +1407,14 @@ int start_ss_local_server(profile_t profile)
     listen_ctx.timeout        = timeout;
     listen_ctx.method         = m;
     listen_ctx.iface          = NULL;
+    listen_ctx.mptcp          = mptcp;
 
     if (mode != UDP_ONLY) {
 
         // Setup socket
         int listenfd;
         listenfd = create_and_bind(local_addr, local_port_str);
-        if (listenfd < 0) {
+        if (listenfd == -1) {
             ERROR("bind()");
             return -1;
         }

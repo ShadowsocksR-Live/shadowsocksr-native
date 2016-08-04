@@ -118,6 +118,11 @@ Only available in server and manager mode.
 --mtu <MTU>::
 Specify the MTU of your network interface.
 
+--mptcp::
+Enable Multipath TCP.
++
+Only available with MPTCP enabled Linux kernel.
+
 -v::
 Enable verbose mode.
 
