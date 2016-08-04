@@ -1172,10 +1172,6 @@ int main(int argc, char **argv)
         // SSR beg
         case 'O':
             protocol = optarg;
-            if (strcmp(protocol, "verify_sha1") == 0) {
-                auth = 1;
-                protocol = NULL;
-            }
             break;
         case 'm':
             method = optarg;
@@ -1310,6 +1306,10 @@ int main(int argc, char **argv)
             set_nofile(nofile);
         }
 #endif
+    }
+    if (protocol && strcmp(protocol, "verify_sha1") == 0) {
+        auth = 1;
+        protocol = NULL;
     }
 
     if (remote_num == 0 || remote_port == NULL ||
