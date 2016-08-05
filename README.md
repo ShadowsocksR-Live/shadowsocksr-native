@@ -33,7 +33,6 @@ refer to the [Wiki page](https://github.com/shadowsocks/shadowsocks/wiki/Feature
 - [Debian & Ubuntu](#debian--ubuntu)
     + [Install from repository](#install-from-repository)
       - [Official repository](#official-repository)
-      - [Unofficial repository](#unofficial-repository)
     + [Build deb package from source](#build-deb-package-from-source)
     + [Configure and start the service](#configure-and-start-the-service)
 - [Fedora & RHEL](#fedora--rhel)
@@ -100,35 +99,6 @@ Using official repository for Debian unstable:
 ```bash
 sudo apt update
 sudo apt install shadowsocks-libev
-```
-
-**NOTE**: You may need to uninstall any unofficial debian packages for `shadowsocks-libev`
-to install this one from Debian official repository if you encounter any problem.
-
-##### Unofficial repository
-
-Add GPG public key:
-
-```bash
-wget -O- http://shadowsocks.org/debian/1D27208A.gpg | sudo apt-key add -
-```
-
-Add either of the following lines to your /etc/apt/sources.list:
-
-```
-# Ubuntu 14.04 or above
-deb http://shadowsocks.org/ubuntu trusty main
-
-# Debian Wheezy, Ubuntu 12.04 or any distribution with libssl > 1.0.1
-deb http://shadowsocks.org/debian wheezy main
-
-```
-
-Then:
-
-``` bash
-sudo apt-get update
-sudo apt-get install shadowsocks-libev
 ```
 
 #### Build deb package from source
@@ -474,6 +444,25 @@ The latest shadowsocks-libev has provided a *redir* mode. You can configure your
 
     # Start the shadowsocks-redir
     root@Wrt:~# ss-redir -u -c /etc/config/shadowsocks.json -f /var/run/shadowsocks.pid
+
+## Shadowsocks over KCP
+
+It's quite easy to use shadowsocks and [KCP](https://github.com/skywind3000/kcp) together with [kcptun](https://github.com/xtaci/kcptun).
+
+### Setup your server
+
+```bash
+server_linux_amd64 -l :8388 -t 127.0.0.1:8399 --crypt none --mtu 1400 --sndwnd 2048 --rcvwnd 2048 &
+ss-server -s 0.0.0.0 -p 8399 -k passwd -m chacha20 -u &
+```
+
+### Setup your client
+
+```bash
+client_linux_amd64 -l 127.0.0.1:29900 -r <server_ip>:8388 --crypt none --mtu 1400 --sndwnd 2048 --rcvwnd 2048 &
+ss-local -s 127.0.0.1 -p 29900 -k passwd -m chacha20 -l 1080 -b 0.0.0.0 &
+ss-local -s <server_ip> -p 8399 -k passwd -m chacha20 -l 1080 -U -b 0.0.0.0
+```
 
 ## Security Tips
 

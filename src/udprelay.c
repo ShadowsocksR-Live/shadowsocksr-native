@@ -81,8 +81,6 @@
 #define EWOULDBLOCK EAGAIN
 #endif
 
-#define BUF_SIZE MAX_UDP_PACKET_SIZE
-
 static void server_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents);
@@ -101,6 +99,8 @@ extern uint64_t tx;
 extern uint64_t rx;
 #endif
 
+static int packet_size                               = DEFAULT_PACKET_SIZE;
+static int buf_size                                  = DEFAULT_PACKET_SIZE * 2;
 static int server_num                                = 0;
 static server_ctx_t *server_ctx_list[MAX_REMOTE_NUM] = { NULL };
 
@@ -645,27 +645,25 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     memset(&src_addr, 0, src_addr_len);
 
     buffer_t *buf = ss_malloc(sizeof(buffer_t));
-    balloc(buf, BUF_SIZE);
+    balloc(buf, packet_size);
 
     // recv
-    r = recvfrom(remote_ctx->fd, buf->array, BUF_SIZE, 0, (struct sockaddr *)&src_addr, &src_addr_len);
+    r = recvfrom(remote_ctx->fd, buf->array, buf_size, 0, (struct sockaddr *)&src_addr, &src_addr_len);
 
     if (r == -1) {
         // error on recv
         // simply drop that packet
-        ERROR("[udp] remote_recvfrom");
+        ERROR("[udp] remote_recv_recvfrom");
+        goto CLEAN_UP;
+    } else if (r > packet_size) {
+        LOGE("[udp] remote_recv_recvfrom fragmentation");
         goto CLEAN_UP;
     }
 
     buf->len = r;
 
-    // packet size > default MTU
-    if (verbose && buf->len > MTU) {
-        LOGE("[udp] possible ip fragment, size: %d", (int)buf->len);
-    }
-
 #ifdef MODULE_LOCAL
-    int err = ss_decrypt_all(buf, server_ctx->method, 0, BUF_SIZE);
+    int err = ss_decrypt_all(buf, server_ctx->method, 0, packet_size);
     if (err) {
         // drop the packet silently
         goto CLEAN_UP;
@@ -699,7 +697,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     memmove(buf->array, buf->array + len, buf->len);
 #else
     // Construct packet
-    brealloc(buf, buf->len + 3, BUF_SIZE);
+    brealloc(buf, buf->len + 3, packet_size);
     memmove(buf->array + 3, buf->array, buf->len);
     memset(buf->array, 0, 3);
     buf->len += 3;
@@ -720,17 +718,22 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     // Construct packet
-    brealloc(buf, buf->len + addr_header_len, BUF_SIZE);
+    brealloc(buf, buf->len + addr_header_len, packet_size);
     memmove(buf->array + addr_header_len, buf->array, buf->len);
     memcpy(buf->array, addr_header, addr_header_len);
     buf->len += addr_header_len;
 
-    int err = ss_encrypt_all(buf, server_ctx->method, 0, BUF_SIZE);
+    int err = ss_encrypt_all(buf, server_ctx->method, 0, packet_size);
     if (err) {
         // drop the packet silently
         goto CLEAN_UP;
     }
 #endif
+
+    if (buf->len > packet_size) {
+        LOGE("[udp] remote_recv_sendto fragmentation");
+        goto CLEAN_UP;
+    }
 
     size_t remote_src_addr_len = get_sockaddr_len((struct sockaddr *)&remote_ctx->src_addr);
 
@@ -777,7 +780,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     }
 #endif
 
-    // handle the UDP packet sucessfully,
+    // handle the UDP packet successfully,
     // triger the timer
     ev_timer_again(EV_A_ & remote_ctx->watcher);
 
@@ -794,7 +797,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     memset(&src_addr, 0, sizeof(struct sockaddr_storage));
 
     buffer_t *buf = ss_malloc(sizeof(buffer_t));
-    balloc(buf, BUF_SIZE);
+    balloc(buf, packet_size);
 
     socklen_t src_addr_len = sizeof(struct sockaddr_storage);
     unsigned int offset    = 0;
@@ -812,13 +815,16 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     msg.msg_controllen = sizeof(control_buffer);
 
     iov[0].iov_base = buf->array;
-    iov[0].iov_len  = BUF_SIZE;
+    iov[0].iov_len  = packet_size;
     msg.msg_iov     = iov;
     msg.msg_iovlen  = 1;
 
     buf->len = recvmsg(server_ctx->fd, &msg, 0);
     if (buf->len == -1) {
         ERROR("[udp] server_recvmsg");
+        goto CLEAN_UP;
+    } else if (buf->len > packet_size) {
+        ERROR("[udp] UDP server_recv_recvmsg fragmentation");
         goto CLEAN_UP;
     }
 
@@ -830,13 +836,16 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     src_addr_len = msg.msg_namelen;
 #else
     ssize_t r;
-    r = recvfrom(server_ctx->fd, buf->array, BUF_SIZE,
+    r = recvfrom(server_ctx->fd, buf->array, buf_size,
                  0, (struct sockaddr *)&src_addr, &src_addr_len);
 
     if (r == -1) {
         // error on recv
         // simply drop that packet
-        ERROR("[udp] server_recvfrom");
+        ERROR("[udp] server_recv_recvfrom");
+        goto CLEAN_UP;
+    } else if (r > packet_size) {
+        ERROR("[udp] server_recv_recvfrom fragmentation");
         goto CLEAN_UP;
     }
 
@@ -851,7 +860,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     tx += buf->len;
 
-    int err = ss_decrypt_all(buf, server_ctx->method, server_ctx->auth, BUF_SIZE);
+    int err = ss_decrypt_all(buf, server_ctx->method, server_ctx->auth, packet_size);
     if (err) {
         // drop the packet silently
         goto CLEAN_UP;
@@ -864,11 +873,6 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     offset += 3;
 #endif
 #endif
-
-    // packet size > default MTU
-    if (verbose && buf->len > MTU) {
-        LOGE("[udp] possible ip fragment, size: %d", (int)buf->len);
-    }
 
     /*
      *
@@ -924,7 +928,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     // reconstruct the buffer
-    brealloc(buf, buf->len + addr_header_len, BUF_SIZE);
+    brealloc(buf, buf->len + addr_header_len, packet_size);
     memmove(buf->array + addr_header_len, buf->array, buf->len);
     memcpy(buf->array, addr_header, addr_header_len);
     buf->len += addr_header_len;
@@ -978,7 +982,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     addr_header_len += 2;
 
     // reconstruct the buffer
-    brealloc(buf, buf->len + addr_header_len, BUF_SIZE);
+    brealloc(buf, buf->len + addr_header_len, packet_size);
     memmove(buf->array + addr_header_len, buf->array, buf->len);
     memcpy(buf->array, addr_header, addr_header_len);
     buf->len += addr_header_len;
@@ -1116,23 +1120,33 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         buf->array[0] |= ONETIMEAUTH_FLAG;
     }
 
-    int err = ss_encrypt_all(buf, server_ctx->method, server_ctx->auth, BUF_SIZE);
+    int err = ss_encrypt_all(buf, server_ctx->method, server_ctx->auth, packet_size);
 
     if (err) {
         // drop the packet silently
         goto CLEAN_UP;
     }
 
+    if (buf->len > packet_size) {
+        LOGE("[udp] server_recv_sendto fragmentation");
+        goto CLEAN_UP;
+    }
+
     int s = sendto(remote_ctx->fd, buf->array, buf->len, 0, remote_addr, remote_addr_len);
 
     if (s == -1) {
-        ERROR("[udp] sendto_remote");
+        ERROR("[udp] server_recv_sendto");
     }
 
 #else
 
     int cache_hit  = 0;
     int need_query = 0;
+
+    if (buf->len - addr_header_len > packet_size) {
+        LOGE("[udp] server_recv_sendto fragmentation");
+        goto CLEAN_UP;
+    }
 
     if (remote_ctx != NULL) {
         cache_hit = 1;
@@ -1249,12 +1263,18 @@ int init_udprelay(const char *server_host, const char *server_port,
                   const ss_addr_t tunnel_addr,
 #endif
 #endif
-                  int method, int auth, int timeout, const char *iface)
+                  int mtu, int method, int auth, int timeout, const char *iface)
 {
-    // Inilitialize ev loop
+    // Initialize ev loop
     struct ev_loop *loop = EV_DEFAULT;
 
-    // Inilitialize cache
+    // Initialize MTU
+    if (mtu > 0) {
+        packet_size = mtu - 1 - 28 - 2 - 64;
+        buf_size    = packet_size * 2;
+    }
+
+    // Initialize cache
     struct cache *conn_cache;
     cache_create(&conn_cache, MAX_UDP_CONN_NUM, free_cb);
 

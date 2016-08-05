@@ -12,7 +12,7 @@ SYNOPSIS
  [-s <server_host>] [-p <server_port>] [-l <local_port>]
  [-k <password>] [-m <encrypt_method>] [-f <pid_file>]
  [-t <timeout>] [-c <config_file>] [-b <local_address>]
- [-a <user_name>] [-n <nofile>]
+ [-a <user_name>] [-n <nofile>] [--mtu <MTU>]
 
 DESCRIPTION
 -----------
@@ -88,6 +88,14 @@ Enable UDP relay and disable TCP relay.
 
 -A::
 Enable onetime authentication.
+
+--mtu <MTU>::
+Specify the MTU of your network interface.
+
+--mptcp::
+Enable Multipath TCP.
++
+Only available with MPTCP enabled Linux kernel.
 
 -v::
 Enable verbose mode.

@@ -23,6 +23,11 @@
 #ifndef _NETUTILS_H
 #define _NETUTILS_H
 
+/* Define the flag MPTCP_ENABLED if not defined*/
+#ifndef MPTCP_ENABLED
+#define MPTCP_ENABLED 26
+#endif
+
 /** byte size of ip4 address */
 #define INET_SIZE 4
 /** byte size of ip6 address */

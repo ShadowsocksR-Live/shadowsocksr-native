@@ -109,8 +109,8 @@ int resolv_init(struct ev_loop *loop, char **nameservers, int nameserver_num, in
     }
 
     if (nameserver_num == 1 && nameservers != NULL) {
-        if (strncmp("127.0.0.1", nameservers[0], 9)
-                || strncmp("::1",  nameservers[0], 3)) {
+        if (strncmp("127.0.0.1", nameservers[0], 9) == 0
+                || strncmp("::1",  nameservers[0], 3) == 0) {
             if (verbose) {
                 LOGI("bind UDP resolver to %s", nameservers[0]);
             }

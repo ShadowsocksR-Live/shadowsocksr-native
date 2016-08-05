@@ -183,7 +183,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
-    } else if (r < 0) {
+    } else if (r == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             // no data
             // continue to wait for recv
@@ -290,7 +290,7 @@ static void server_send_cb(EV_P_ ev_io *w, int revents)
         // has data to send
         ssize_t s = send(server->fd, server->buf->array + server->buf->idx,
                          server->buf->len, 0);
-        if (s < 0) {
+        if (s == -1) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
                 ERROR("send");
                 close_and_free_remote(EV_A_ remote);
@@ -338,7 +338,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
-    } else if (r < 0) {
+    } else if (r == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             // no data
             // continue to wait for recv
@@ -412,20 +412,22 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
             server->buf->idx = 0;
             ev_io_stop(EV_A_ & remote_recv_ctx->io);
             ev_io_start(EV_A_ & server->send_ctx->io);
-            return;
         } else {
             ERROR("send");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
-            return;
         }
     } else if (s < server->buf->len) {
         server->buf->len -= s;
         server->buf->idx  = s;
         ev_io_stop(EV_A_ & remote_recv_ctx->io);
         ev_io_start(EV_A_ & server->send_ctx->io);
-        return;
     }
+
+    // Disable TCP_NODELAY after the first response are sent
+    int opt = 0;
+    setsockopt(server->fd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
+    setsockopt(remote->fd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
 }
 
 static void remote_send_cb(EV_P_ ev_io *w, int revents)
@@ -533,7 +535,7 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
         // has data to send
         ssize_t s = send(remote->fd, remote->buf->array + remote->buf->idx,
                          remote->buf->len, 0);
-        if (s < 0) {
+        if (s == -1) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
                 ERROR("send");
                 // close and free
@@ -718,11 +720,12 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     struct sockaddr *remote_addr = listener->remote_addr[index];
 
     int remotefd = socket(remote_addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
-    if (remotefd < 0) {
+    if (remotefd == -1) {
         ERROR("socket");
         return;
     }
 
+    // Set flags
     setsockopt(remotefd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
 #ifdef SO_NOSIGPIPE
     setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
@@ -741,6 +744,14 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     // Setup
     setnonblocking(remotefd);
 
+    // Enable MPTCP
+    if (listener->mptcp == 1) {
+        int err = setsockopt(remotefd, SOL_TCP, MPTCP_ENABLED, &opt, sizeof(opt));
+        if (err == -1) {
+            ERROR("failed to enable multipath TCP");
+        }
+    }
+
     server_t *server = new_server(serverfd, listener->method);
     remote_t *remote = new_remote(remotefd, listener->timeout);
     server->remote   = remote;
@@ -749,7 +760,7 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
 
     int r = connect(remotefd, remote_addr, get_sockaddr_len(remote_addr));
 
-    if (r < 0 && errno != CONNECT_IN_PROGRESS) {
+    if (r == -1 && errno != CONNECT_IN_PROGRESS) {
         ERROR("connect");
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
@@ -825,6 +836,8 @@ int main(int argc, char **argv)
 
     int i, c;
     int pid_flags    = 0;
+    int mptcp        = 0;
+    int mtu          = 0;
     char *user       = NULL;
     char *local_port = NULL;
     char *local_addr = NULL;
@@ -843,8 +856,10 @@ int main(int argc, char **argv)
 
     int option_index                    = 0;
     static struct option long_options[] = {
-        { "help", no_argument, 0, 0 },
-        {      0,           0, 0, 0 }
+        { "mtu",  required_argument, 0, 0 },
+        { "mptcp", no_argument     , 0, 0 },
+        { "help",  no_argument     , 0, 0 },
+        {      0,            0     , 0, 0 }
     };
 
     opterr = 0;
@@ -854,6 +869,12 @@ int main(int argc, char **argv)
         switch (c) {
         case 0:
             if (option_index == 0) {
+                mtu = atoi(optarg);
+                LOGI("set MTU to %d", mtu);
+            } else if (option_index == 1) {
+                mptcp = 1;
+                LOGI("enable multipath TCP");
+            } else if (option_index == 2) {
                 usage();
                 exit(EXIT_SUCCESS);
             }
@@ -986,6 +1007,12 @@ int main(int argc, char **argv)
         if (auth == 0) {
             auth = conf->auth;
         }
+        if (mtu == 0) {
+            mtu = conf->mtu;
+        }
+        if (mptcp == 0) {
+            mptcp = conf->mptcp;
+        }
 #ifdef HAVE_SETRLIMIT
         if (nofile == 0) {
             nofile = conf->nofile;
@@ -1066,6 +1093,7 @@ int main(int argc, char **argv)
     memset(listen_ctx.list_protocol_global, 0, sizeof(void *) * remote_num);
     memset(listen_ctx.list_obfs_global, 0, sizeof(void *) * remote_num);
     // SSR end
+    listen_ctx.mptcp   = mptcp;
 
     struct ev_loop *loop = EV_DEFAULT;
 
@@ -1073,7 +1101,7 @@ int main(int argc, char **argv)
         // Setup socket
         int listenfd;
         listenfd = create_and_bind(local_addr, local_port);
-        if (listenfd < 0) {
+        if (listenfd == -1) {
             FATAL("bind() error");
         }
         if (listen(listenfd, SOMAXCONN) == -1) {
@@ -1091,7 +1119,7 @@ int main(int argc, char **argv)
     if (mode != TCP_ONLY) {
         LOGI("UDP relay enabled");
         init_udprelay(local_addr, local_port, listen_ctx.remote_addr[0],
-                      get_sockaddr_len(listen_ctx.remote_addr[0]), m, auth, listen_ctx.timeout, NULL);
+                      get_sockaddr_len(listen_ctx.remote_addr[0]), mtu, m, auth, listen_ctx.timeout, NULL);
     }
 
     if (mode == UDP_ONLY) {

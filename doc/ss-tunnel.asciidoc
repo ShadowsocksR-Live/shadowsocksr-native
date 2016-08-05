@@ -13,7 +13,7 @@ SYNOPSIS
  [-k <password>] [-m <encrypt_method>] [-f <pid_file>]
  [-t <timeout>] [-c <config_file>] [-i <interface>]
  [-b <local_addr>] [-a <user_name>] [-n <nofile>]
- [-L addr:port]
+ [-L addr:port] [--mtu <MTU>]
 
 DESCRIPTION
 -----------
@@ -99,6 +99,14 @@ Enable onetime authentication.
 Specify destination server address and port for local port forwarding.
 +
 Only used and available in tunnel mode.
+
+--mtu <MTU>::
+Specify the MTU of your network interface.
+
+--mptcp::
+Enable Multipath TCP.
++
+Only available with MPTCP enabled Linux kernel.
 
 -v::
 Enable verbose mode.
