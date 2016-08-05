@@ -636,10 +636,6 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         return;
     }
 
-    if (verbose) {
-        LOGI("[udp] remote receive a packet");
-    }
-
     struct sockaddr_storage src_addr;
     socklen_t src_addr_len = sizeof(src_addr);
     memset(&src_addr, 0, src_addr_len);
@@ -677,6 +673,14 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     if (dst_addr.ss_family != AF_INET && dst_addr.ss_family != AF_INET6) {
         LOGI("[udp] ss-redir does not support domain name");
         goto CLEAN_UP;
+    }
+
+    if (verbose) {
+        char src[SS_ADDRSTRLEN];
+        char dst[SS_ADDRSTRLEN];
+        strcpy(src, get_addr_str((struct sockaddr *)&src_addr));
+        strcpy(dst, get_addr_str((struct sockaddr *)&dst_addr));
+        LOGI("[udp] recv %s via %s", dst, src);
     }
 #else
     int len = parse_udprealy_header(buf->array, buf->len, NULL, NULL, NULL, NULL);
@@ -852,10 +856,6 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     buf->len = r;
 #endif
 
-    if (verbose) {
-        LOGI("[udp] server receive a packet");
-    }
-
 #ifdef MODULE_REMOTE
 
     tx += buf->len;
@@ -919,6 +919,14 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
      */
 
 #ifdef MODULE_REDIR
+    if (verbose) {
+        char src[SS_ADDRSTRLEN];
+        char dst[SS_ADDRSTRLEN];
+        strcpy(src, get_addr_str((struct sockaddr *)&src_addr));
+        strcpy(dst, get_addr_str((struct sockaddr *)&dst_addr));
+        LOGI("[udp] redir to %s from %s", dst, src);
+    }
+
     char addr_header[512] = { 0 };
     int addr_header_len   = construct_udprealy_header(&dst_addr, addr_header);
 
