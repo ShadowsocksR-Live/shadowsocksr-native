@@ -119,27 +119,30 @@ typedef struct {
 #endif
 
 #define SODIUM_BLOCK_SIZE   64
-#define CIPHER_NUM          18
+#define CIPHER_NUM          19
 
-#define NONE                -1
-#define TABLE               0
-#define RC4                 1
-#define RC4_MD5             2
-#define AES_128_CFB         3
-#define AES_192_CFB         4
-#define AES_256_CFB         5
-#define BF_CFB              6
-#define CAMELLIA_128_CFB    7
-#define CAMELLIA_192_CFB    8
-#define CAMELLIA_256_CFB    9
-#define CAST5_CFB           10
-#define DES_CFB             11
-#define IDEA_CFB            12
-#define RC2_CFB             13
-#define SEED_CFB            14
-#define SALSA20             15
-#define CHACHA20            16
-#define CHACHA20IETF        17
+enum crpher_index {
+    NONE = -1,
+    TABLE = 0,
+    RC4,
+    RC4_MD5_6,
+    RC4_MD5,
+    AES_128_CFB,
+    AES_192_CFB,
+    AES_256_CFB,
+    BF_CFB,
+    CAMELLIA_128_CFB,
+    CAMELLIA_192_CFB,
+    CAMELLIA_256_CFB,
+    CAST5_CFB,
+    DES_CFB,
+    IDEA_CFB,
+    RC2_CFB,
+    SEED_CFB,
+    SALSA20,
+    CHACHA20,
+    CHACHA20IETF,
+};
 
 #define ONETIMEAUTH_FLAG 0x10
 #define ADDRTYPE_MASK 0xF

@@ -103,6 +103,7 @@ static void dump(char *tag, char *text, int len)
 static const char *supported_ciphers[CIPHER_NUM] = {
     "table",
     "rc4",
+    "rc4-md5-6",
     "rc4-md5",
     "aes-128-cfb",
     "aes-192-cfb",
@@ -124,6 +125,7 @@ static const char *supported_ciphers[CIPHER_NUM] = {
 #ifdef USE_CRYPTO_POLARSSL
 static const char *supported_ciphers_polarssl[CIPHER_NUM] = {
     "table",
+    "ARC4-128",
     "ARC4-128",
     "ARC4-128",
     "AES-128-CFB128",
@@ -149,6 +151,7 @@ static const char *supported_ciphers_mbedtls[CIPHER_NUM] = {
     "table",
     "ARC4-128",
     "ARC4-128",
+    "ARC4-128",
     "AES-128-CFB128",
     "AES-192-CFB128",
     "AES-256-CFB128",
@@ -172,6 +175,7 @@ static const CCAlgorithm supported_ciphers_applecc[CIPHER_NUM] = {
     kCCAlgorithmInvalid,
     kCCAlgorithmRC4,
     kCCAlgorithmRC4,
+    kCCAlgorithmRC4,
     kCCAlgorithmAES,
     kCCAlgorithmAES,
     kCCAlgorithmAES,
@@ -192,11 +196,11 @@ static const CCAlgorithm supported_ciphers_applecc[CIPHER_NUM] = {
 #endif
 
 static const int supported_ciphers_iv_size[CIPHER_NUM] = {
-    0, 0, 16, 16, 16, 16, 8, 16, 16, 16, 8, 8, 8, 8, 16, 8, 8, 12
+    0,  0,  6, 16, 16, 16, 16,  8, 16, 16, 16,  8,  8,  8,  8, 16,  8,  8, 12
 };
 
 static const int supported_ciphers_key_size[CIPHER_NUM] = {
-    0, 16, 16, 16, 24, 32, 16, 16, 24, 32, 16, 8, 16, 16, 16, 32, 32, 32
+    0, 16, 16, 16, 16, 24, 32, 16, 16, 24, 32, 16,  8, 16, 16, 16, 32, 32, 32
 };
 
 static int safe_memcmp(const void *s1, const void *s2, size_t n)
@@ -787,7 +791,7 @@ const cipher_kt_t *get_cipher_type(int method)
         return NULL;
     }
 
-    if (method == RC4_MD5) {
+    if (method == RC4_MD5 || method == RC4_MD5_6) {
         method = RC4;
     }
 
@@ -927,11 +931,11 @@ void cipher_context_set_iv(cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len,
         return;
     }
 
-    if (enc_method == RC4_MD5) {
+    if (enc_method == RC4_MD5 || enc_method == RC4_MD5_6) {
         unsigned char key_iv[32];
         memcpy(key_iv, enc_key, 16);
-        memcpy(key_iv + 16, iv, 16);
-        true_key = enc_md5(key_iv, 32, NULL);
+        memcpy(key_iv + 16, iv, iv_len);
+        true_key = enc_md5(key_iv, 16 + iv_len, NULL);
         iv_len   = 0;
     } else {
         true_key = enc_key;
@@ -1394,7 +1398,7 @@ int ss_decrypt(buffer_t *cipher, enc_ctx_t *ctx, size_t capacity)
             ctx->counter = 0;
             ctx->init    = 1;
 
-            if (enc_method >= RC4_MD5) {
+            if (enc_method > RC4) {
                 if (cache_key_exist(iv_cache, (char *)iv, iv_len)) {
                     bfree(cipher);
                     return -1;
@@ -1546,8 +1550,8 @@ void enc_key_init(int method, const char *pass)
     if (enc_key_len == 0) {
         FATAL("Cannot generate key and IV");
     }
-    if (method == RC4_MD5) {
-        enc_iv_len = 16;
+    if (method == RC4_MD5 || method == RC4_MD5_6) {
+        enc_iv_len = supported_ciphers_iv_size[method];
     } else {
         enc_iv_len = cipher_iv_size(cipher);
     }
