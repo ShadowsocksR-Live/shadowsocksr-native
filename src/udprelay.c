@@ -429,6 +429,11 @@ int create_server_socket(const char *host, const char *port)
         if (err == 0) {
             LOGI("udp port reuse enabled");
         }
+#ifdef IP_TOS
+        // Set QoS flag
+        int tos = 46;
+        setsockopt(server_sock, IPPROTO_IP, IP_TOS, &tos, sizeof(tos));
+#endif
 
 #ifdef MODULE_REDIR
         if (setsockopt(server_sock, SOL_IP, IP_TRANSPARENT, &opt, sizeof(opt))) {
@@ -573,6 +578,11 @@ static void query_resolve_cb(struct sockaddr *addr, void *data)
 #endif
 #ifdef SO_NOSIGPIPE
                 set_nosigpipe(remotefd);
+#endif
+#ifdef IP_TOS
+                // Set QoS flag
+                int tos = 46;
+                setsockopt(remotefd, IPPROTO_IP, IP_TOS, &tos, sizeof(tos));
 #endif
 #ifdef SET_INTERFACE
                 if (query_ctx->server_ctx->iface) {
@@ -756,6 +766,11 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
         close(src_fd);
         goto CLEAN_UP;
     }
+#ifdef IP_TOS
+    // Set QoS flag
+    int tos = 46;
+    setsockopt(src_fd, IPPROTO_IP, IP_TOS, &tos, sizeof(tos));
+#endif
     if (bind(src_fd, (struct sockaddr *)&dst_addr, remote_dst_addr_len) != 0) {
         ERROR("[udp] remote_recv_bind");
         close(src_fd);
@@ -1079,6 +1094,11 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 #ifdef SO_NOSIGPIPE
         set_nosigpipe(remotefd);
 #endif
+#ifdef IP_TOS
+        // Set QoS flag
+        int tos = 46;
+        setsockopt(remotefd, IPPROTO_IP, IP_TOS, &tos, sizeof(tos));
+#endif
 #ifdef SET_INTERFACE
         if (server_ctx->iface) {
             if (setinterface(remotefd, server_ctx->iface) == -1)
@@ -1169,6 +1189,11 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 #endif
 #ifdef SO_NOSIGPIPE
                 set_nosigpipe(remotefd);
+#endif
+#ifdef IP_TOS
+                // Set QoS flag
+                int tos = 46;
+                setsockopt(remotefd, IPPROTO_IP, IP_TOS, &tos, sizeof(tos));
 #endif
 #ifdef SET_INTERFACE
                 if (server_ctx->iface) {

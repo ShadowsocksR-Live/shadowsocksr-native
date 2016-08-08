@@ -147,10 +147,6 @@ int create_and_bind(const char *addr, const char *port)
             LOGI("tcp port reuse enabled");
         }
 
-        // Set QoS flag
-        int tos = 46;
-        setsockopt(remotefd, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))
-
         s = bind(listen_sock, rp->ai_addr, rp->ai_addrlen);
         if (s == 0) {
             /* We managed to bind successfully! */
@@ -646,10 +642,6 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     setsockopt(remotefd, SOL_TCP, TCP_KEEPIDLE, (void *)&keepIdle, sizeof(keepIdle));
     setsockopt(remotefd, SOL_TCP, TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval));
     setsockopt(remotefd, SOL_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount));
-
-    // Set QoS flag
-    int tos = 46;
-    setsockopt(remotefd, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))
 
     // Set non blocking
     setnonblocking(remotefd);
