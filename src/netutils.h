@@ -23,6 +23,28 @@
 #ifndef _NETUTILS_H
 #define _NETUTILS_H
 
+// only enable TCP_FASTOPEN on linux
+#if defined(__linux__)
+
+/*  conditional define for TCP_FASTOPEN */
+#ifndef TCP_FASTOPEN
+#define TCP_FASTOPEN   23
+#endif
+
+/*  conditional define for MSG_FASTOPEN */
+#ifndef MSG_FASTOPEN
+#define MSG_FASTOPEN   0x20000000
+#endif
+
+#elif !defined(__APPLE__)
+
+#ifdef TCP_FASTOPEN
+#undef TCP_FASTOPEN
+#endif
+
+#endif
+
+
 /* Define the flag MPTCP_ENABLED if not defined*/
 #ifndef MPTCP_ENABLED
 #define MPTCP_ENABLED 26
