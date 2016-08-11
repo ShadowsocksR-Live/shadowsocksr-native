@@ -107,6 +107,9 @@ static const char *supported_ciphers[CIPHER_NUM] = {
     "aes-128-cfb",
     "aes-192-cfb",
     "aes-256-cfb",
+    "aes-128-ctr",
+    "aes-192-ctr",
+    "aes-256-ctr",
     "bf-cfb",
     "camellia-128-cfb",
     "camellia-192-cfb",
@@ -129,6 +132,9 @@ static const char *supported_ciphers_polarssl[CIPHER_NUM] = {
     "AES-128-CFB128",
     "AES-192-CFB128",
     "AES-256-CFB128",
+    "AES-128-CTR",
+    "AES-192-CTR",
+    "AES-256-CTR",
     "BLOWFISH-CFB64",
     "CAMELLIA-128-CFB128",
     "CAMELLIA-192-CFB128",
@@ -152,6 +158,9 @@ static const char *supported_ciphers_mbedtls[CIPHER_NUM] = {
     "AES-128-CFB128",
     "AES-192-CFB128",
     "AES-256-CFB128",
+    "AES-128-CTR",
+    "AES-192-CTR",
+    "AES-256-CTR",
     "BLOWFISH-CFB64",
     "CAMELLIA-128-CFB128",
     "CAMELLIA-192-CFB128",
@@ -175,6 +184,9 @@ static const CCAlgorithm supported_ciphers_applecc[CIPHER_NUM] = {
     kCCAlgorithmAES,
     kCCAlgorithmAES,
     kCCAlgorithmAES,
+    kCCAlgorithmInvalid,
+    kCCAlgorithmInvalid,
+    kCCAlgorithmInvalid,
     kCCAlgorithmBlowfish,
     kCCAlgorithmInvalid,
     kCCAlgorithmInvalid,
@@ -192,11 +204,11 @@ static const CCAlgorithm supported_ciphers_applecc[CIPHER_NUM] = {
 #endif
 
 static const int supported_ciphers_iv_size[CIPHER_NUM] = {
-    0, 0, 16, 16, 16, 16, 8, 16, 16, 16, 8, 8, 8, 8, 16, 8, 8, 12
+    0, 0, 16, 16, 16, 16, 16, 16, 16, 8, 16, 16, 16, 8, 8, 8, 8, 16, 8, 8, 12
 };
 
 static const int supported_ciphers_key_size[CIPHER_NUM] = {
-    0, 16, 16, 16, 24, 32, 16, 16, 24, 32, 16, 8, 16, 16, 16, 32, 32, 32
+    0, 16, 16, 16, 24, 32, 16, 24, 32, 16, 16, 24, 32, 16, 8, 16, 16, 16, 32, 32, 32
 };
 
 static int safe_memcmp(const void *s1, const void *s2, size_t n)
