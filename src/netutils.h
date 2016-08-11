@@ -23,6 +23,12 @@
 #ifndef _NETUTILS_H
 #define _NETUTILS_H
 
+#if defined(__linux__)
+#include <linux/tcp.h>
+#else
+#include <netinet/tcp.h>
+#endif
+
 // only enable TCP_FASTOPEN on linux
 #if defined(__linux__)
 
