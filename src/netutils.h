@@ -25,7 +25,7 @@
 
 #if defined(__linux__)
 #include <linux/tcp.h>
-#else
+#elif !defined(__MINGW32__)
 #include <netinet/tcp.h>
 #endif
 
