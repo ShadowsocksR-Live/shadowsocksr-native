@@ -32,7 +32,6 @@ refer to the [Wiki page](https://github.com/shadowsocks/shadowsocks/wiki/Feature
 
 - [Debian & Ubuntu](#debian--ubuntu)
     + [Install from repository](#install-from-repository)
-      - [Official repository](#official-repository)
     + [Build deb package from source](#build-deb-package-from-source)
     + [Configure and start the service](#configure-and-start-the-service)
 - [Fedora & RHEL](#fedora--rhel)
@@ -91,8 +90,6 @@ in the system during compilation and linking.
 #### Install from repository
 
 **Note: The repositories doesn't always contain the latest version. Please build from source if you want the latest version (see below)**
-
-##### Official repository
 
 Using official repository for Debian unstable:
 
