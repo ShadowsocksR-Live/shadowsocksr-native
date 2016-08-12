@@ -184,9 +184,9 @@ static const CCAlgorithm supported_ciphers_applecc[CIPHER_NUM] = {
     kCCAlgorithmAES,
     kCCAlgorithmAES,
     kCCAlgorithmAES,
-    kCCAlgorithmInvalid,
-    kCCAlgorithmInvalid,
-    kCCAlgorithmInvalid,
+    kCCAlgorithmAES,
+    kCCAlgorithmAES,
+    kCCAlgorithmAES,
     kCCAlgorithmBlowfish,
     kCCAlgorithmInvalid,
     kCCAlgorithmInvalid,
@@ -201,6 +201,29 @@ static const CCAlgorithm supported_ciphers_applecc[CIPHER_NUM] = {
     kCCAlgorithmInvalid
 };
 
+static const CCMode supported_modes_applecc[CIPHER_NUM] = {
+    kCCAlgorithmInvalid,
+    kCCAlgorithmInvalid,
+    kCCModeRC4,
+    kCCModeCFB,
+    kCCModeCFB,
+    kCCModeCFB,
+    kCCModeCTR,
+    kCCModeCTR,
+    kCCModeCTR,
+    kCCModeCFB,
+    kCCAlgorithmInvalid,
+    kCCAlgorithmInvalid,
+    kCCAlgorithmInvalid,
+    kCCModeCFB,
+    kCCModeCFB,
+    kCCModeCFB,
+    kCCModeCFB,
+    kCCAlgorithmInvalid,
+    kCCAlgorithmInvalid,
+    kCCAlgorithmInvalid,
+    kCCAlgorithmInvalid
+};
 #endif
 
 static const int supported_ciphers_iv_size[CIPHER_NUM] = {
@@ -857,11 +880,15 @@ void cipher_context_init(cipher_ctx_t *ctx, int method, int enc)
     } else {
         cc->valid = kCCContextValid;
         if (cc->cipher == kCCAlgorithmRC4) {
-            cc->mode    = kCCModeRC4;
+            cc->mode    = supported_modes_applecc[method];
             cc->padding = ccNoPadding;
         } else {
-            cc->mode    = kCCModeCFB;
-            cc->padding = ccPKCS7Padding;
+            cc->mode    = supported_modes_applecc[method];
+            if (cc->mode == kCCModeCTR) {
+                cc->padding = ccNoPadding;
+            } else {
+                cc->padding = ccPKCS7Padding;
+            }
         }
         return;
     }
@@ -959,7 +986,7 @@ void cipher_context_set_iv(cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len,
             cc->cipher,
             cc->padding,
             cc->iv, cc->key, cc->key_len,
-            NULL, 0, 0, 0,
+            NULL, 0, 0, kCCModeOptionCTR_BE,
             &cc->cryptor);
         if (ret != kCCSuccess) {
             if (cc->cryptor != NULL) {
