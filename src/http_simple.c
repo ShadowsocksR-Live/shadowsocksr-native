@@ -104,6 +104,10 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength, s
                 if (*body_pointer == '\\') {
                     trans_char = 1;
                     continue;
+                } else if (*body_pointer == '\n') {
+                    *p = '\r';
+                    *++p = '\n';
+                    continue;
                 }
                 if (trans_char) {
                     if (*body_pointer == '\\' ) {
@@ -121,6 +125,7 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength, s
                 }
                 ++p;
             }
+            *p = 0;
             hosts[pos] = 0;
             break;
         }
@@ -154,6 +159,7 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength, s
             g_useragent[g_useragent_index]
             );
     }
+    //LOGI("http header: %s", out_buffer);
     outlength = strlen(out_buffer);
     memmove(out_buffer + outlength, encryptdata + head_size, datalength - head_size);
     outlength += datalength - head_size;

@@ -10,7 +10,6 @@ int rand_bytes(uint8_t *output, int len);
 #include "obfsutil.c"
 #include "crc32.c"
 #include "http_simple.c"
-#include "tls1.0_session.c"
 #include "tls1.2_ticket.c"
 #include "verify.c"
 #include "auth.c"
