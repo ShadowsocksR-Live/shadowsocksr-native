@@ -795,14 +795,17 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     if (listener->list_protocol_global[remote->remote_index] == NULL && server->protocol_plugin) {
         listener->list_protocol_global[remote->remote_index] = server->protocol_plugin->init_data();
     }
+    ss_addr_t *sa = &server->destaddr;
     server_info _server_info;
+    struct cork_ip ip;
+    cork_ip_init(&ip, sa->host);
     memset(&_server_info, 0, sizeof(server_info));
     strcpy(_server_info.host, inet_ntoa(((struct sockaddr_in*)remote_addr)->sin_addr));
     _server_info.port = ((struct sockaddr_in*)remote_addr)->sin_port;
     _server_info.port = _server_info.port >> 8 | _server_info.port << 8;
     _server_info.param = listener->obfs_param;
     _server_info.g_data = listener->list_obfs_global[remote->remote_index];
-    _server_info.head_len = (AF_INET6 == server->destaddr.ss_family ? 19 : 7);
+    _server_info.head_len = (ip.version == 6 ? 19 : 7);
     _server_info.iv = server->e_ctx->evp.iv;
     _server_info.iv_len = enc_get_iv_len();
     _server_info.key = enc_get_key();
