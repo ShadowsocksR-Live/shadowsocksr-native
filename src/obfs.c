@@ -52,17 +52,6 @@ obfs_class * new_obfs_class(char *plugin_name)
         plugin->client_decode = http_simple_client_decode;
 
         return plugin;
-    } else if (strcmp(plugin_name, "tls1.0_session_auth") == 0) {
-        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
-        plugin->init_data = tls10_session_auth_init_data;
-        plugin->new_obfs = tls10_session_auth_new_obfs;
-        plugin->set_server_info = set_server_info;
-        plugin->dispose = tls10_session_auth_dispose;
-
-        plugin->client_encode = tls10_session_auth_client_encode;
-        plugin->client_decode = tls10_session_auth_client_decode;
-
-        return plugin;
     } else if (strcmp(plugin_name, "tls1.2_ticket_auth") == 0) {
         obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
         plugin->init_data = tls12_ticket_auth_init_data;
