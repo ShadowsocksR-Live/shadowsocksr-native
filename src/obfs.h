@@ -49,6 +49,7 @@ typedef struct obfs {
 typedef struct obfs_class {
     void * (*init_data)();
     obfs * (*new_obfs)();
+    void (*get_server_info)(obfs *self, server_info *server);
     void (*set_server_info)(obfs *self, server_info *server);
     void (*dispose)(obfs *self);
 
