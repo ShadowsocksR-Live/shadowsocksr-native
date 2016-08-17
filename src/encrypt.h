@@ -119,7 +119,6 @@ typedef struct {
 #endif
 
 #define SODIUM_BLOCK_SIZE   64
-#define CIPHER_NUM          19
 
 enum crpher_index {
     NONE = -1,
@@ -130,6 +129,9 @@ enum crpher_index {
     AES_128_CFB,
     AES_192_CFB,
     AES_256_CFB,
+    AES_128_CTR,
+    AES_192_CTR,
+    AES_256_CTR,
     BF_CFB,
     CAMELLIA_128_CFB,
     CAMELLIA_192_CFB,
@@ -142,6 +144,7 @@ enum crpher_index {
     SALSA20,
     CHACHA20,
     CHACHA20IETF,
+    CIPHER_NUM,
 };
 
 #define ONETIMEAUTH_FLAG 0x10

@@ -39,7 +39,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <netinet/tcp.h>
 #include <pthread.h>
 #endif
 
@@ -282,11 +281,18 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             if (!remote->send_ctx->connected) {
 #ifdef ANDROID
                 if (vpn) {
-                    if (protect_socket(remote->fd) == -1) {
-                        ERROR("protect_socket");
-                        close_and_free_remote(EV_A_ remote);
-                        close_and_free_server(EV_A_ server);
-                        return;
+                    int not_protect = 0;
+                    if (remote->addr.ss_family == AF_INET) {
+                        struct sockaddr_in *s = (struct sockaddr_in *)&remote->addr;
+                        if (s->sin_addr.s_addr == inet_addr("127.0.0.1")) not_protect = 1;
+                    }
+                    if (!not_protect) {
+                        if (protect_socket(remote->fd) == -1) {
+                            ERROR("protect_socket");
+                            close_and_free_remote(EV_A_ remote);
+                            close_and_free_server(EV_A_ server);
+                            return;
+                        }
                     }
                 }
 #endif

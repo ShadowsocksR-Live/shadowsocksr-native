@@ -42,7 +42,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <netinet/tcp.h>
 #include <pthread.h>
 #include <sys/un.h>
 #endif
@@ -611,7 +610,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
          *    |  1   | Variable |    2     |      10        |
          *    +------+----------+----------+----------------+
          *
-         *    If ATYP & ONETIMEAUTH_FLAG(0x10) == 1, Authentication (HMAC-SHA1) is enabled.
+         *    If ATYP & ONETIMEAUTH_FLAG(0x10) != 0, Authentication (HMAC-SHA1) is enabled.
          *
          *    The key of HMAC-SHA1 is (IV + KEY) and the input is the whole header.
          *    The output of HMAC-SHA is truncated to 10 bytes (leftmost bits).
