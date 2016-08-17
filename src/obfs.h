@@ -75,6 +75,7 @@ obfs_class * new_obfs_class(char *plugin_name);
 void free_obfs_class(obfs_class *plugin);
 
 void set_server_info(obfs *self, server_info *server);
+void get_server_info(obfs *self, server_info *server);
 obfs * new_obfs();
 void dispose_obfs(obfs *self);
 

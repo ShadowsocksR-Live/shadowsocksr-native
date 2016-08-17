@@ -28,6 +28,10 @@ void set_server_info(obfs *self, server_info *server) {
     memmove(&self->server, server, sizeof(server_info));
 }
 
+void get_server_info(obfs *self, server_info *server) {
+    memmove(server, &self->server, sizeof(server_info));
+}
+
 void dispose_obfs(obfs *self) {
     free(self);
 }

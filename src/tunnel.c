@@ -485,6 +485,12 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
             }
 
             // SSR beg
+            server_info _server_info;
+            if (server->obfs_plugin) {
+                server->obfs_plugin->get_server_info(server->obfs, &_server_info);
+                _server_info.head_len = get_head_size(abuf->array, abuf->len, 30);
+                server->obfs_plugin->set_server_info(server->obfs, &_server_info);
+            }
             if (server->protocol_plugin) {
                 obfs_class *protocol_plugin = server->protocol_plugin;
                 if (protocol_plugin->client_pre_encrypt) {
