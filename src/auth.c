@@ -283,8 +283,7 @@ int auth_sha1_client_post_decrypt(obfs *self, char **pplaindata, int datalength,
 }
 
 int auth_sha1_v2_pack_data(char *data, int datalength, char *outdata) {
-    unsigned char rand_len = datalength > 1300 ? 1 : datalength > 400 ? (xorshift128plus() & 0x7F) + 1 : (xorshift128plus() & 0x3FF) + 1;
-    if (datalength > 1400) rand_len = 1;
+    unsigned int rand_len = (datalength > 1300 ? 0 : datalength > 400 ? (xorshift128plus() & 0x7F) : (xorshift128plus() & 0x3FF)) + 1;
     int out_size = rand_len + datalength + 6;
     outdata[0] = out_size >> 8;
     outdata[1] = out_size;
@@ -304,7 +303,7 @@ int auth_sha1_v2_pack_data(char *data, int datalength, char *outdata) {
 }
 
 int auth_sha1_v2_pack_auth_data(auth_simple_global_data *global, server_info *server, char *data, int datalength, char *outdata) {
-    unsigned char rand_len = datalength > 1300 ? 1 : datalength > 400 ? (xorshift128plus() & 0x7F) + 1 : (xorshift128plus() & 0x3FF) + 1;
+    unsigned int rand_len = (datalength > 1300 ? 0 : datalength > 400 ? (xorshift128plus() & 0x7F) : (xorshift128plus() & 0x3FF)) + 1;
     int data_offset = rand_len + 4 + 2;
     int out_size = data_offset + datalength + 12 + OBFS_HMAC_SHA1_LEN;
     const char* salt = "auth_sha1_v2";
