@@ -90,7 +90,7 @@ int vpn = 0;
 char *prefix;
 #endif
 
-int verbose = 0;
+int verbose        = 0;
 int keep_resolving = 1;
 
 static int mode = TCP_ONLY;
@@ -636,7 +636,8 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
         int not_protect = 0;
         if (remote_addr->sa_family == AF_INET) {
             struct sockaddr_in *s = (struct sockaddr_in *)remote_addr;
-            if (s->sin_addr.s_addr == inet_addr("127.0.0.1")) not_protect = 1;
+            if (s->sin_addr.s_addr == inet_addr("127.0.0.1"))
+                not_protect = 1;
         }
         if (!not_protect) {
             if (protect_socket(remotefd) == -1) {
@@ -685,7 +686,8 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     }
 
     if (r == 0) {
-        if (verbose) LOGI("connected immediately");
+        if (verbose)
+            LOGI("connected immediately");
         remote_send_cb(EV_A_ & remote->send_ctx->io, 0);
     } else {
         // listen to remote connected event
@@ -694,7 +696,8 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     }
 }
 
-void signal_cb(int dummy) {
+void signal_cb(int dummy)
+{
     keep_resolving = 0;
     exit(-1);
 }
@@ -726,10 +729,10 @@ int main(int argc, char **argv)
 
     int option_index                    = 0;
     static struct option long_options[] = {
-        { "mtu",  required_argument, 0, 0 },
-        { "mptcp",no_argument,       0, 0 },
-        { "help", no_argument,       0, 0 },
-        {      0,           0,       0, 0 }
+        { "mtu",   required_argument, 0, 0 },
+        { "mptcp", no_argument,       0, 0 },
+        { "help",  no_argument,       0, 0 },
+        {       0,                 0, 0, 0 }
     };
 
     opterr = 0;
@@ -935,7 +938,7 @@ int main(int argc, char **argv)
     // ignore SIGPIPE
     signal(SIGPIPE, SIG_IGN);
     signal(SIGABRT, SIG_IGN);
-    signal(SIGINT,  signal_cb);
+    signal(SIGINT, signal_cb);
     signal(SIGTERM, signal_cb);
 #endif
 

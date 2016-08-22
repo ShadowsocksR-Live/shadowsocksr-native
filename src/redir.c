@@ -81,7 +81,7 @@ static void close_and_free_remote(EV_P_ remote_t *remote);
 static void free_server(server_t *server);
 static void close_and_free_server(EV_P_ server_t *server);
 
-int verbose = 0;
+int verbose        = 0;
 int keep_resolving = 1;
 
 static int mode = TCP_ONLY;
@@ -669,7 +669,8 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     }
 
     if (r == 0) {
-        if (verbose) LOGI("connected immediately");
+        if (verbose)
+            LOGI("connected immediately");
         remote_send_cb(EV_A_ & remote->send_ctx->io, 0);
     } else {
         // listen to remote connected event
@@ -680,7 +681,8 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     ev_io_start(EV_A_ & server->recv_ctx->io);
 }
 
-void signal_cb(int dummy) {
+void signal_cb(int dummy)
+{
     keep_resolving = 0;
     exit(-1);
 }
@@ -708,10 +710,10 @@ int main(int argc, char **argv)
 
     int option_index                    = 0;
     static struct option long_options[] = {
-        { "mtu",  required_argument, 0, 0 },
-        { "mptcp", no_argument     , 0, 0 },
-        { "help",  no_argument     , 0, 0 },
-        {      0,            0     , 0, 0 }
+        { "mtu",   required_argument, 0, 0 },
+        { "mptcp", no_argument,       0, 0 },
+        { "help",  no_argument,       0, 0 },
+        {       0,                 0, 0, 0 }
     };
 
     opterr = 0;
@@ -880,7 +882,7 @@ int main(int argc, char **argv)
     // ignore SIGPIPE
     signal(SIGPIPE, SIG_IGN);
     signal(SIGABRT, SIG_IGN);
-    signal(SIGINT,  signal_cb);
+    signal(SIGINT, signal_cb);
     signal(SIGTERM, signal_cb);
 
     // Setup keys

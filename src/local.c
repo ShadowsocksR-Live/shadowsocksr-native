@@ -78,7 +78,7 @@
 #define BUF_SIZE 2048
 #endif
 
-int verbose = 0;
+int verbose        = 0;
 int keep_resolving = 1;
 
 #ifdef ANDROID
@@ -267,7 +267,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     int not_protect = 0;
                     if (remote->addr.ss_family == AF_INET) {
                         struct sockaddr_in *s = (struct sockaddr_in *)&remote->addr;
-                        if (s->sin_addr.s_addr == inet_addr("127.0.0.1")) not_protect = 1;
+                        if (s->sin_addr.s_addr == inet_addr("127.0.0.1"))
+                            not_protect = 1;
                     }
                     if (!not_protect) {
                         if (protect_socket(remote->fd) == -1) {
@@ -294,7 +295,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     }
 
                     if (r == 0) {
-                        if (verbose) LOGI("connected immediately");
+                        if (verbose)
+                            LOGI("connected immediately");
                         remote_send_cb(EV_A_ & remote->send_ctx->io, 0);
                     } else {
                         // wait on remote connected event
@@ -302,7 +304,6 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                         ev_io_start(EV_A_ & remote->send_ctx->io);
                         ev_timer_start(EV_A_ & remote->send_ctx->watcher);
                     }
-
                 } else {
 #ifdef TCP_FASTOPEN
 #ifdef __APPLE__
@@ -986,7 +987,8 @@ void accept_cb(EV_P_ ev_io *w, int revents)
     ev_io_start(EV_A_ & server->recv_ctx->io);
 }
 
-void resolve_int_cb(int dummy) {
+void resolve_int_cb(int dummy)
+{
     keep_resolving = 0;
 }
 
@@ -1015,11 +1017,11 @@ int main(int argc, char **argv)
 
     int option_index                    = 0;
     static struct option long_options[] = {
-        { "fast-open", no_argument      , 0, 0 },
-        { "acl"      , required_argument, 0, 0 },
-        { "mtu"      , required_argument, 0, 0 },
-        { "mptcp"    , no_argument      , 0, 0 },
-        { "help"     , no_argument      , 0, 0 },
+        { "fast-open", no_argument,       0, 0 },
+        { "acl",       required_argument, 0, 0 },
+        { "mtu",       required_argument, 0, 0 },
+        { "mptcp",     no_argument,       0, 0 },
+        { "help",      no_argument,       0, 0 },
         {           0,                 0, 0, 0 }
     };
 
@@ -1228,7 +1230,7 @@ int main(int argc, char **argv)
     // ignore SIGPIPE
     signal(SIGPIPE, SIG_IGN);
     signal(SIGABRT, SIG_IGN);
-    signal(SIGINT,  resolve_int_cb);
+    signal(SIGINT, resolve_int_cb);
     signal(SIGTERM, resolve_int_cb);
 #endif
 
@@ -1318,7 +1320,6 @@ int main(int argc, char **argv)
             ss_free(listen_ctx.remote_addr[i]);
         ss_free(listen_ctx.remote_addr);
     }
-
 
     if (mode != TCP_ONLY) {
         free_udprelay();
@@ -1416,7 +1417,6 @@ int start_ss_local_server(profile_t profile)
     listen_ctx.mptcp          = mptcp;
 
     if (mode != UDP_ONLY) {
-
         // Setup socket
         int listenfd;
         listenfd = create_and_bind(local_addr, local_port_str);

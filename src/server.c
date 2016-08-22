@@ -106,6 +106,7 @@ static void server_resolve_cb(struct sockaddr *addr, void *data);
 static void query_free_cb(void *data);
 
 static size_t parse_header_len(const char atyp, const char *data, size_t offset);
+static int is_header_complete(const buffer_t *buf);
 
 int verbose = 0;
 
@@ -233,6 +234,42 @@ static size_t parse_header_len(const char atyp, const char *data, size_t offset)
     }
     len += 2;
     return len;
+}
+
+static int is_header_complete(const buffer_t *buf)
+{
+    size_t header_len = 0;
+    size_t buf_len    = buf->len;
+
+    char atyp = buf->array[header_len];
+
+    // 1 byte for atyp
+    header_len++;
+
+    if ((atyp & ADDRTYPE_MASK) == 1) {
+        // IP V4
+        header_len += sizeof(struct in_addr);
+    } else if ((atyp & ADDRTYPE_MASK) == 3) {
+        // Domain name
+        // domain len + len of domain
+        if (buf_len < header_len + 1)
+            return 0;
+        uint8_t name_len = *(uint8_t *)(buf->array + header_len);
+        header_len += name_len + 1;
+    } else if ((atyp & ADDRTYPE_MASK) == 4) {
+        // IP V6
+        header_len += sizeof(struct in6_addr);
+    }
+
+    // len of port
+    header_len += 2;
+
+    // size of ONETIMEAUTH_BYTES
+    if (auth || (atyp & ONETIMEAUTH_FLAG)) {
+        header_len += ONETIMEAUTH_BYTES;
+    }
+
+    return buf_len >= header_len;
 }
 
 static char *get_peer_name(int fd)
@@ -513,7 +550,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     ev_timer_again(EV_A_ & server->recv_ctx->watcher);
 
-    if (server->stage != 0) {
+    if (server->stage > 2) {
         remote = server->remote;
         buf    = remote->buf;
         len    = 0;
@@ -544,16 +581,16 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     tx += r;
 
-    // handle incomplete header
+    // handle incomplete header part 1
     if (server->stage == 0) {
         buf->len += r;
-        if (buf->len <= enc_get_iv_len()) {
+        if (buf->len <= enc_get_iv_len() + 1) {
             // wait for more
             if (verbose) {
 #ifdef __MINGW32__
-                LOGI("incomplete header: %u", r);
+                LOGI("incomplete IV: %u", r);
 #else
-                LOGI("incomplete header: %zu", r);
+                LOGI("incomplete IV: %zu", r);
 #endif
             }
             return;
@@ -570,6 +607,42 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
+    }
+
+    // handle incomplete header part 2
+    if (server->stage == 0) {
+        if (is_header_complete(server->buf)) {
+            bfree(server->header_buf);
+            ss_free(server->header_buf);
+            server->stage = 2;
+        } else {
+            server->stage = 1;
+        }
+    }
+    if (server->stage == 1) {
+        size_t header_len = server->header_buf->len;
+        brealloc(server->header_buf, server->buf->len + header_len, BUF_SIZE);
+        memcpy(server->header_buf->array + header_len,
+               server->buf->array, server->buf->len);
+        server->header_buf->len = server->buf->len + header_len;
+
+        if (is_header_complete(server->header_buf)) {
+            brealloc(server->buf, server->header_buf->len, BUF_SIZE);
+            memcpy(server->buf->array, server->header_buf->array, server->header_buf->len);
+            server->buf->len = server->header_buf->len;
+            bfree(server->header_buf);
+            ss_free(server->header_buf);
+            server->stage = 2;
+        } else {
+#ifdef __MINGW32__
+            LOGI("incomplete header: %u", server->header_buf->len);
+#else
+            LOGI("incomplete header: %zu", server->header_buf->len);
+#endif
+            server->buf->len = 0;
+            server->buf->idx = 0;
+            return;
+        }
     }
 
     // handshake and transmit data
@@ -600,7 +673,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             ev_io_start(EV_A_ & remote->send_ctx->io);
         }
         return;
-    } else if (server->stage == 0) {
+    } else if (server->stage == 2) {
         /*
          * Shadowsocks TCP Relay Header:
          *
@@ -793,7 +866,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         }
 
         if (!need_query) {
-            int connected = 0;
+            int connected    = 0;
             remote_t *remote = connect_to_remote(&info, server, &connected);
 
             if (remote == NULL) {
@@ -830,7 +903,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
             server->stage = 4;
             server->query = resolv_query(host, server_resolve_cb,
-                    query_free_cb, query, port);
+                                         query_free_cb, query, port);
 
             ev_io_stop(EV_A_ & server_recv_ctx->io);
         }
@@ -947,7 +1020,7 @@ static void server_resolve_cb(struct sockaddr *addr, void *data)
             info.ai_addrlen = sizeof(struct sockaddr_in6);
         }
 
-        int connected = 0;
+        int connected    = 0;
         remote_t *remote = connect_to_remote(&info, server, &connected);
 
         if (remote == NULL) {
@@ -1206,6 +1279,7 @@ static server_t *new_server(int fd, listen_ctx_t *listener)
     server->recv_ctx            = ss_malloc(sizeof(server_ctx_t));
     server->send_ctx            = ss_malloc(sizeof(server_ctx_t));
     server->buf                 = ss_malloc(sizeof(buffer_t));
+    server->header_buf          = ss_malloc(sizeof(buffer_t));
     server->fd                  = fd;
     server->recv_ctx->server    = server;
     server->recv_ctx->connected = 0;
@@ -1232,6 +1306,7 @@ static server_t *new_server(int fd, listen_ctx_t *listener)
                   min(MAX_CONNECT_TIMEOUT, listener->timeout), listener->timeout);
 
     balloc(server->buf, BUF_SIZE);
+    balloc(server->header_buf, BUF_SIZE);
 
     server->chunk = (chunk_t *)malloc(sizeof(chunk_t));
     memset(server->chunk, 0, sizeof(chunk_t));
@@ -1268,6 +1343,10 @@ static void free_server(server_t *server)
     if (server->buf != NULL) {
         bfree(server->buf);
         ss_free(server->buf);
+    }
+    if (server->header_buf != NULL) {
+        bfree(server->header_buf);
+        ss_free(server->header_buf);
     }
 
     ss_free(server->recv_ctx);
@@ -1363,12 +1442,12 @@ int main(int argc, char **argv)
 
     int option_index                    = 0;
     static struct option long_options[] = {
-        { "fast-open"      , no_argument      , 0, 0 },
-        { "acl"            , required_argument, 0, 0 },
+        { "fast-open",       no_argument,       0, 0 },
+        { "acl",             required_argument, 0, 0 },
         { "manager-address", required_argument, 0, 0 },
-        { "mtu"            , required_argument, 0, 0 },
-        { "mptcp"          , no_argument      , 0, 0 },
-        { "help"           , no_argument      , 0, 0 },
+        { "mtu",             required_argument, 0, 0 },
+        { "mptcp",           no_argument,       0, 0 },
+        { "help",            no_argument,       0, 0 },
         {                 0,                 0, 0, 0 }
     };
 
@@ -1659,7 +1738,7 @@ int main(int argc, char **argv)
         // Setup UDP
         if (mode != TCP_ONLY) {
             init_udprelay(server_host[index], server_port, mtu, m,
-                    auth, atoi(timeout), iface);
+                          auth, atoi(timeout), iface);
         }
 
         LOGI("listening at %s:%s", host ? host : "*", server_port);
