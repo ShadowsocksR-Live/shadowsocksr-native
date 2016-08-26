@@ -405,7 +405,7 @@ int create_and_bind(const char *host, const char *port, int mptcp)
 #endif
         int err = set_reuseport(listen_sock);
         if (err == 0) {
-            LOGI("port reuse enabled");
+            LOGI("tcp port reuse enabled");
         }
 
         if (mptcp == 1) {
