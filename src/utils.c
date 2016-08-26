@@ -267,7 +267,7 @@ void usage()
         "       [-b <local_address>]       Local address to bind.\n");
     printf("\n");
     printf(
-        "       [-u]                       Enable UDP relay,\n");
+        "       [-u]                       Enable UDP relay.\n");
 #ifdef MODULE_REDIR
     printf(
         "                                  TPROXY is required in redir mode.\n");

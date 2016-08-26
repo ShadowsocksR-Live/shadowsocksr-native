@@ -829,6 +829,7 @@ int main(int argc, char **argv)
 #endif
         case '?':
             // The option character is not recognized.
+            LOGE("Unrecognized option: %s", optarg);
             opterr = 1;
             break;
         }

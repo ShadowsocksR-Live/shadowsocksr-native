@@ -159,6 +159,10 @@ static char *construct_command_line(struct manager_ctx *manager, struct server *
         int len = strlen(cmd);
         snprintf(cmd + len, BUF_SIZE - len, " --fast-open");
     }
+    if (manager->mtu) {
+        int len = strlen(cmd);
+        snprintf(cmd + len, BUF_SIZE - len, " --mtu %d", manager->mtu);
+    }
     for (i = 0; i < manager->nameserver_num; i++) {
         int len = strlen(cmd);
         snprintf(cmd + len, BUF_SIZE - len, " -d %s", manager->nameservers[i]);
@@ -589,6 +593,7 @@ int main(int argc, char **argv)
     int auth      = 0;
     int fast_open = 0;
     int mode      = TCP_ONLY;
+    int mtu       = 0;
 
     int server_num = 0;
     char *server_host[MAX_REMOTE_NUM];
@@ -604,6 +609,7 @@ int main(int argc, char **argv)
         { "acl"            , required_argument, 0, 0 },
         { "manager-address", required_argument, 0, 0 },
         { "executable"     , required_argument, 0, 0 },
+        { "mtu"            , required_argument, 0, 0 },
         { "help"           , no_argument      , 0, 0 },
         {                 0,                 0, 0, 0 }
     };
@@ -625,6 +631,9 @@ int main(int argc, char **argv)
             } else if (option_index == 3) {
                 executable = optarg;
             } else if (option_index == 4) {
+                mtu = atoi(optarg);
+                LOGI("set MTU to %d", mtu);
+            } else if (option_index == 5) {
                 usage();
                 exit(EXIT_SUCCESS);
             }
@@ -678,6 +687,7 @@ int main(int argc, char **argv)
             break;
         case '?':
             // The option character is not recognized.
+            LOGE("Unrecognized option: %s", optarg);
             opterr = 1;
             break;
         }
@@ -716,6 +726,9 @@ int main(int argc, char **argv)
         }
         if (mode == TCP_ONLY) {
             mode = conf->mode;
+        }
+        if (mtu == 0) {
+            mtu = conf->mtu;
         }
     }
 
@@ -787,6 +800,7 @@ int main(int argc, char **argv)
     manager.host_num        = server_num;
     manager.nameservers     = nameservers;
     manager.nameserver_num  = nameserver_num;
+    manager.mtu             = mtu;
 
     // initialize ev loop
     struct ev_loop *loop = EV_DEFAULT;
