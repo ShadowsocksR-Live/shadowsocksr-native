@@ -301,6 +301,7 @@ static void report_addr(int fd)
     if (peer_name != NULL) {
         LOGE("failed to handshake with %s", peer_name);
     }
+    shutdown(fd, SHUT_RDWR);
 }
 
 int setfastopen(int fd)
@@ -736,6 +737,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                         }
                     }
                 }
+                shutdown(server->fd, SHUT_RDWR);
                 close_and_free_server(EV_A_ server);
                 return;
             }
