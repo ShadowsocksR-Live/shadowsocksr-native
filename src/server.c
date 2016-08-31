@@ -781,6 +781,12 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 close_and_free_server(EV_A_ server);
                 return;
             }
+            if (!validate_domain_name(host, name_len)) {
+                LOGE("invalid domain name");
+                report_addr(server->fd);
+                close_and_free_server(EV_A_ server);
+                return;
+            }
             struct cork_ip ip;
             if (cork_ip_init(&ip, host) != -1) {
                 info.ai_socktype = SOCK_STREAM;

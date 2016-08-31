@@ -251,3 +251,21 @@ int sockaddr_cmp_addr(struct sockaddr_storage *addr1,
         return memcmp(addr1, addr2, len);
     }
 }
+
+int validate_domain_name(const char *hostname, const int len)
+{
+    int i;
+    for (i = 0; i < len; i++)
+    {
+        char c = hostname[i];
+
+        int is_hyphen = c == 0x2D;
+        int is_stop = c == 0x2E;
+        int is_digit = c >= 0x30 && c <= 0x39;
+        int is_letter = (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A);
+
+        if (!is_hyphen && !is_stop && !is_digit && !is_letter)
+            return 0;
+    }
+    return 1;
+}
