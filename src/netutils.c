@@ -54,6 +54,9 @@
 
 extern int verbose;
 
+static const char valid_label_bytes[] =
+"-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+
 #if defined(MODULE_LOCAL)
 extern int keep_resolving;
 #endif
@@ -252,20 +255,38 @@ int sockaddr_cmp_addr(struct sockaddr_storage *addr1,
     }
 }
 
-int validate_domain_name(const char *hostname, const int len)
+int validate_hostname(const char *hostname, const int hostname_len)
 {
-    int i;
-    for (i = 0; i < len; i++)
-    {
-        char c = hostname[i];
+    if (hostname == NULL)
+        return 0;
 
-        int is_hyphen = c == 0x2D;
-        int is_stop = c == 0x2E;
-        int is_digit = c >= 0x30 && c <= 0x39;
-        int is_letter = (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A);
+    if (hostname_len < 1 || hostname_len > 255)
+        return 0;
 
-        if (!is_hyphen && !is_stop && !is_digit && !is_letter)
+    if (hostname[0] == '.')
+        return 0;
+
+    const char *label = hostname;
+    while (label < hostname + hostname_len) {
+        size_t label_len = hostname_len - (label - hostname);
+        char *next_dot = strchr(label, '.');
+        if (next_dot != NULL)
+            label_len = next_dot - label;
+
+        if (label + label_len > hostname + hostname_len)
             return 0;
+
+        if (label_len > 63 || label_len < 1)
+            return 0;
+
+        if (label[0] == '-' || label[label_len - 1] == '-')
+            return 0;
+
+        if (strspn(label, valid_label_bytes) < label_len)
+            return 0;
+
+        label += label_len + 1;
     }
+
     return 1;
 }
