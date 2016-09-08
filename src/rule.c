@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/queue.h>
-#include <pcre.h>
 
 #include "rule.h"
 #include "utils.h"

@@ -20,17 +20,11 @@ AC_DISABLE_STATIC
 AC_DISABLE_SHARED
 LT_INIT([dlopen])
 
-dnl Checks for libpcre
-PKG_CHECK_MODULES([LIBPCRE], [libpcre], HAVE_LIBPCRE=yes; AC_DEFINE(HAVE_LIBPCRE, 1),
-[AC_LIB_HAVE_LINKFLAGS(pcre,, [#include <pcre.h>], [pcre_exec(0,0,0,0,0,0,0,0);])
- if test x$ac_cv_libpcre = xyes; then
-  AC_SUBST([LIBPCRE_LIBS], [$LIBPCRE])
- else
-  AC_MSG_ERROR([[***
-*** libpcre was not found.
-***]])
- fi
-])
+dnl Check for pcre library
+TS_CHECK_PCRE
+if test "x${enable_pcre}" != "xyes"; then
+  AC_MSG_ERROR([Cannot find pcre library. Configure --with-pcre=DIR])
+fi
 
 dnl Checks for using shared libraries from system
 AC_ARG_ENABLE(

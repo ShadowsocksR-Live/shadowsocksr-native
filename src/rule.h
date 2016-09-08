@@ -24,11 +24,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef BACKEND_H
-#define BACKEND_H
+#ifndef RULE_H
+#define RULE_H
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <sys/queue.h>
+
+#ifdef HAVE_PCRE_H
 #include <pcre.h>
+#elif HAVE_PCRE_PCRE_H
+#include <pcer/pcre.h>
+#endif
 
 STAILQ_HEAD(rule_head, rule);
 

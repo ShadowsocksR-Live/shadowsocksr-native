@@ -79,7 +79,7 @@
 /* Define to 1 if you have the <langinfo.h> header file. */
 #undef HAVE_LANGINFO_H
 
-/* Define if you have the libpcre library. */
+/* Compiling with pcre support */
 #undef HAVE_LIBPCRE
 
 /* Define to 1 if you have the `rt' library (-lrt). */
@@ -145,6 +145,12 @@
 
 /* Define to 1 if you have the <openssl/sha.h> header file. */
 #undef HAVE_OPENSSL_SHA_H
+
+/* Define to 1 if you have the <pcre.h> header file. */
+#undef HAVE_PCRE_H
+
+/* Define to 1 if you have the <pcre/pcre.h> header file. */
+#undef HAVE_PCRE_PCRE_H
 
 /* Define to 1 if you have the `poll' function. */
 #undef HAVE_POLL
