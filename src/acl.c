@@ -90,6 +90,11 @@ int init_acl(const char *path)
                 line[len - 1] = '\0';
             }
 
+            // Skip comments
+            if (line[0] == '#') {
+                continue;
+            }
+
             if (strcmp(line, "[black_list]") == 0
                     || strcmp(line, "[bypass_list]") == 0) {
                 list_ipv4 = &black_list_ipv4;
