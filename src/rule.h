@@ -36,7 +36,7 @@
 #ifdef HAVE_PCRE_H
 #include <pcre.h>
 #elif HAVE_PCRE_PCRE_H
-#include <pcer/pcre.h>
+#include <pcre/pcre.h>
 #endif
 
 STAILQ_HEAD(rule_head, rule);
