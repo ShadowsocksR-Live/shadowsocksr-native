@@ -64,6 +64,8 @@
 #include "utils.h"
 #include "socks5.h"
 #include "acl.h"
+#include "http.h"
+#include "tls.h"
 #include "local.h"
 
 #ifndef EAGAIN
@@ -206,11 +208,12 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
 
     if (remote == NULL) {
         buf = server->buf;
+
     } else {
         buf = remote->buf;
     }
 
-    r = recv(server->fd, buf->array, BUF_SIZE, 0);
+    r = recv(server->fd, buf->array + buf->len, BUF_SIZE - buf->len, 0);
 
     if (r == 0) {
         // connection closed
@@ -231,7 +234,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         }
     }
 
-    buf->len = r;
+    buf->len += r;
 
     while (1) {
         // local socks5 server
@@ -344,6 +347,9 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     } else if (s <= (int)(remote->buf->len)) {
                         remote->buf->len -= s;
                         remote->buf->idx  = s;
+                    } else {
+                        remote->buf->idx = 0;
+                        remote->buf->len = 0;
                     }
 
                     // Just connected
@@ -356,6 +362,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     exit(1);
 #endif
                 }
+
             } else {
                 int s = send(remote->fd, remote->buf->array, remote->buf->len, 0);
                 if (s == -1) {
@@ -377,6 +384,9 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     ev_io_stop(EV_A_ & server_recv_ctx->io);
                     ev_io_start(EV_A_ & remote->send_ctx->io);
                     return;
+                } else {
+                    remote->buf->idx = 0;
+                    remote->buf->len = 0;
                 }
             }
 
@@ -397,10 +407,11 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 continue;
             }
 
-            return;
-        } else if (server->stage == 1) {
-            struct socks5_request *request = (struct socks5_request *)buf->array;
+            buf->len = 0;
 
+            return;
+        } else if (server->stage == 1 || server->stage == 2) {
+            struct socks5_request *request = (struct socks5_request *)buf->array;
             struct sockaddr_in sock_addr;
             memset(&sock_addr, 0, sizeof(sock_addr));
 
@@ -427,16 +438,17 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 close_and_free_server(EV_A_ server);
                 return;
             } else {
-                char host[257], port[16];
+                char host[257], ip[INET6_ADDRSTRLEN], port[16];
 
                 buffer_t ss_addr_to_send;
                 buffer_t *abuf = &ss_addr_to_send;
                 balloc(abuf, BUF_SIZE);
 
                 abuf->array[abuf->len++] = request->atyp;
+                int atyp = request->atyp;
 
                 // get remote addr and port
-                if (request->atyp == 1) {
+                if (atyp == 1) {
                     // IP V4
                     size_t in_addr_len = sizeof(struct in_addr);
                     memcpy(abuf->array + abuf->len, buf->array + 4, in_addr_len + 2);
@@ -445,10 +457,10 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     if (acl || verbose) {
                         uint16_t p = ntohs(*(uint16_t *)(buf->array + 4 + in_addr_len));
                         dns_ntop(AF_INET, (const void *)(buf->array + 4),
-                                 host, INET_ADDRSTRLEN);
+                                 ip, INET_ADDRSTRLEN);
                         sprintf(port, "%d", p);
                     }
-                } else if (request->atyp == 3) {
+                } else if (atyp == 3) {
                     // Domain name
                     uint8_t name_len = *(uint8_t *)(buf->array + 4);
                     abuf->array[abuf->len++] = name_len;
@@ -462,7 +474,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                         host[name_len] = '\0';
                         sprintf(port, "%d", p);
                     }
-                } else if (request->atyp == 4) {
+                } else if (atyp == 4) {
                     // IP V6
                     size_t in6_addr_len = sizeof(struct in6_addr);
                     memcpy(abuf->array + abuf->len, buf->array + 4, in6_addr_len + 2);
@@ -471,7 +483,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     if (acl || verbose) {
                         uint16_t p = ntohs(*(uint16_t *)(buf->array + 4 + in6_addr_len));
                         dns_ntop(AF_INET6, (const void *)(buf->array + 4),
-                                 host, INET6_ADDRSTRLEN);
+                                 ip, INET6_ADDRSTRLEN);
                         sprintf(port, "%d", p);
                     }
                 } else {
@@ -482,31 +494,147 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                     return;
                 }
 
+                if (server->stage == 1) {
+                    // Fake reply
+                    struct socks5_response response;
+                    response.ver  = SVERSION;
+                    response.rep  = 0;
+                    response.rsv  = 0;
+                    response.atyp = 1;
+
+                    buffer_t resp_to_send;
+                    buffer_t *resp_buf = &resp_to_send;
+                    balloc(resp_buf, BUF_SIZE);
+
+                    memcpy(resp_buf->array, &response, sizeof(struct socks5_response));
+                    memcpy(resp_buf->array + sizeof(struct socks5_response),
+                            &sock_addr.sin_addr, sizeof(sock_addr.sin_addr));
+                    memcpy(resp_buf->array + sizeof(struct socks5_response) +
+                            sizeof(sock_addr.sin_addr),
+                            &sock_addr.sin_port, sizeof(sock_addr.sin_port));
+
+                    int reply_size = sizeof(struct socks5_response) +
+                        sizeof(sock_addr.sin_addr) + sizeof(sock_addr.sin_port);
+
+                    int s = send(server->fd, resp_buf->array, reply_size, 0);
+
+                    bfree(resp_buf);
+
+                    if (s < reply_size) {
+                        LOGE("failed to send fake reply");
+                        bfree(abuf);
+                        close_and_free_remote(EV_A_ remote);
+                        close_and_free_server(EV_A_ server);
+                        return;
+                    }
+                    if (udp_assc) {
+                        bfree(abuf);
+                        close_and_free_remote(EV_A_ remote);
+                        close_and_free_server(EV_A_ server);
+                        return;
+                    }
+                }
+
+                size_t abuf_len = abuf->len;
+                int sni_detected = 0;
+
+                if (atyp == 1 || atyp == 4) {
+                    char *hostname;
+                    uint16_t p = ntohs(*(uint16_t *)(abuf->array + abuf->len - 2));
+                    int ret = 0;
+                    if (p == http_protocol->default_port)
+                        ret = http_protocol->parse_packet(buf->array + 3 + abuf->len,
+                                buf->len - 3 - abuf->len, &hostname);
+                    else if (p == tls_protocol->default_port)
+                        ret = tls_protocol->parse_packet(buf->array + 3 + abuf->len,
+                                buf->len - 3 - abuf->len, &hostname);
+                    if (ret == -1 || ret == -2) {
+                        server->stage = 2;
+                        bfree(abuf);
+                        return;
+                    } else if (ret > 0) {
+                        sni_detected = 1;
+
+                        // Reconstruct address buffer
+                        abuf->len = 0;
+                        abuf->array[abuf->len++] = 3;
+                        abuf->array[abuf->len++] = ret;
+                        memcpy(abuf->array + abuf->len, hostname, ret);
+                        abuf->len += ret;
+                        p = htons(p);
+                        memcpy(abuf->array + abuf->len, &p, 2);
+                        abuf->len += 2;
+
+                        if (acl || verbose) {
+                            memcpy(host, hostname, ret);
+                            host[ret] = '\0';
+                        }
+
+                        ss_free(hostname);
+                    }
+                }
+
                 server->stage = 5;
 
-                buf->len -= (3 + abuf->len);
+                buf->len -= (3 + abuf_len);
                 if (buf->len > 0) {
-                    memmove(buf->array, buf->array + 3 + abuf->len, buf->len);
+                    memmove(buf->array, buf->array + 3 + abuf_len, buf->len);
                 }
 
                 if (verbose) {
-                    if (request->atyp == 4)
-                        LOGI("connect to [%s]:%s", host, port);
-                    else
+                    if (sni_detected || atyp == 3)
                         LOGI("connect to %s:%s", host, port);
+                    else if (atyp == 1)
+                        LOGI("connect to %s:%s", ip, port);
+                    else if (atyp == 4)
+                        LOGI("connect to [%s]:%s", ip, port);
                 }
 
-                if ((acl && (request->atyp == 1 || request->atyp == 4) && acl_match_ip(host))) {
-                    if (verbose) {
-                        LOGI("bypass %s:%s", host, port);
+                if (acl) {
+                    int host_match = acl_match_host(host);
+                    int ip_match   = acl_match_host(ip);
+
+                    int bypass = get_acl_mode() == WHITE_LIST;
+
+                    if (get_acl_mode() == BLACK_LIST) {
+                        if (ip_match > 0) bypass = 1; // bypass IPs in black list
+
+                        if (host_match > 0) bypass = 1; // bypass hostnames in black list
+                        else if (host_match < 0) bypass = 0; // proxy hostnames in white list
+
+                    } else if (get_acl_mode() == WHITE_LIST) {
+                        if (ip_match < 0) bypass = 0; // proxy IPs in white list
+
+                        if (host_match < 0) bypass = 0; // proxy hostnames in white list
+                        else if (host_match > 0) bypass = 1; // bypass hostnames in black list
                     }
-                    struct sockaddr_storage storage;
-                    memset(&storage, 0, sizeof(struct sockaddr_storage));
-                    if (get_sockaddr(host, port, &storage, 0) != -1) {
-                        remote         = create_remote(server->listener, (struct sockaddr *)&storage);
-                        remote->direct = 1;
+
+                    if (bypass) {
+                        if (verbose) {
+                            if (sni_detected || atyp == 3)
+                                LOGI("bypass %s:%s", host, port);
+                            else if (atyp == 1)
+                                LOGI("bypass %s:%s", ip, port);
+                            else if (atyp == 4)
+                                LOGI("bypass [%s]:%s", ip, port);
+                        }
+                        struct sockaddr_storage storage;
+                        int err;
+                        memset(&storage, 0, sizeof(struct sockaddr_storage));
+                        if (atyp == 1 || atyp == 4) {
+                            err = get_sockaddr(ip, port, &storage, 0);
+                        } else {
+                            err = get_sockaddr(host, port, &storage, 1);
+                        }
+                        if (err != -1) {
+                            remote         = create_remote(server->listener, (struct sockaddr *)&storage);
+                            remote->direct = 1;
+                        }
                     }
-                } else {
+                }
+
+                // Not match ACL
+                if (remote == NULL) {
                     remote = create_remote(server->listener, NULL);
                 }
 
@@ -544,37 +672,6 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
                 remote->server = server;
 
                 bfree(abuf);
-            }
-
-            // Fake reply
-            struct socks5_response response;
-            response.ver  = SVERSION;
-            response.rep  = 0;
-            response.rsv  = 0;
-            response.atyp = 1;
-
-            memcpy(server->buf->array, &response, sizeof(struct socks5_response));
-            memcpy(server->buf->array + sizeof(struct socks5_response),
-                   &sock_addr.sin_addr, sizeof(sock_addr.sin_addr));
-            memcpy(server->buf->array + sizeof(struct socks5_response) +
-                   sizeof(sock_addr.sin_addr),
-                   &sock_addr.sin_port, sizeof(sock_addr.sin_port));
-
-            int reply_size = sizeof(struct socks5_response) +
-                             sizeof(sock_addr.sin_addr) +
-                             sizeof(sock_addr.sin_port);
-            int s = send(server->fd, server->buf->array, reply_size, 0);
-            if (s < reply_size) {
-                LOGE("failed to send fake reply");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
-
-            if (udp_assc) {
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
             }
         }
     }
@@ -1030,10 +1127,10 @@ int main(int argc, char **argv)
     USE_TTY();
 
 #ifdef ANDROID
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:P:huUvVA",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:P:huUvwVA",
                             long_options, &option_index)) != -1) {
 #else
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:huUvA",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:huUvwA",
                             long_options, &option_index)) != -1) {
 #endif
         switch (c) {
@@ -1042,7 +1139,7 @@ int main(int argc, char **argv)
                 fast_open = 1;
             } else if (option_index == 1) {
                 LOGI("initializing acl...");
-                acl = !init_acl(optarg, BLACK_LIST);
+                acl = !init_acl(optarg);
             } else if (option_index == 2) {
                 mtu = atoi(optarg);
                 LOGI("set MTU to %d", mtu);
@@ -1110,6 +1207,9 @@ int main(int argc, char **argv)
             exit(EXIT_SUCCESS);
         case 'A':
             auth = 1;
+            break;
+        case 'w':
+            set_acl_mode(WHITE_LIST);
             break;
 #ifdef ANDROID
         case 'V':
@@ -1371,7 +1471,11 @@ int start_ss_local_server(profile_t profile)
     USE_LOGFILE(log);
 
     if (profile.acl != NULL) {
-        acl = !init_acl(profile.acl, BLACK_LIST);
+        acl = !init_acl(profile.acl);
+    }
+
+    if (profile.white_list) {
+        set_acl_mode(WHITE_LIST);
     }
 
     if (local_addr == NULL) {
