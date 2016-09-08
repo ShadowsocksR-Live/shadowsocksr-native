@@ -279,8 +279,6 @@ void usage()
 #ifdef MODULE_REMOTE
     printf(
         "       [-6]                       Resovle hostname to IPv6 address first.\n");
-    printf(
-        "       [-w]                       Enable white list mode (when ACL enabled).\n");
 #endif
     printf("\n");
 #ifdef MODULE_TUNNEL

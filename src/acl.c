@@ -21,6 +21,7 @@
  */
 
 #include <ipset/ipset.h>
+#include <ctype.h>
 
 #include "rule.h"
 #include "utils.h"
@@ -58,6 +59,26 @@ static void parse_addr_cidr(const char *str, char *host, int *cidr)
     }
 }
 
+char *trimwhitespace(char *str)
+{
+      char *end;
+
+      // Trim leading space
+      while(isspace(*str)) str++;
+
+      if(*str == 0)  // All spaces?
+          return str;
+
+      // Trim trailing space
+      end = str + strlen(str) - 1;
+      while(end > str && isspace(*end)) end--;
+
+      // Write new null terminator
+      *(end+1) = 0;
+
+      return str;
+}
+
 int init_acl(const char *path)
 {
     // initialize ipset
@@ -81,17 +102,23 @@ int init_acl(const char *path)
         return -1;
     }
 
-    char line[257];
+    char buf[257];
     while (!feof(f))
-        if (fgets(line, 256, f)) {
+        if (fgets(buf, 256, f)) {
             // Trim the newline
-            int len = strlen(line);
-            if (len > 0 && line[len - 1] == '\n') {
-                line[len - 1] = '\0';
+            int len = strlen(buf);
+            if (len > 0 && buf[len - 1] == '\n') {
+                buf[len - 1] = '\0';
             }
+
+            char *line = trimwhitespace(buf);
 
             // Skip comments
             if (line[0] == '#') {
+                continue;
+            }
+
+            if (strlen(line) == 0) {
                 continue;
             }
 
@@ -106,6 +133,14 @@ int init_acl(const char *path)
                 list_ipv4 = &white_list_ipv4;
                 list_ipv6 = &white_list_ipv6;
                 rules     = &white_list_rules;
+                continue;
+            } else if (strcmp(line, "[reject_all]") == 0
+                    || strcmp(line, "[bypass_all]") == 0) {
+                acl_mode = WHITE_LIST;
+                continue;
+            } else if (strcmp(line, "[accept_all]") == 0
+                    || strcmp(line, "[proxy_all]") == 0) {
+                acl_mode = BLACK_LIST;
                 continue;
             }
 
@@ -163,11 +198,6 @@ void free_acl(void)
 int get_acl_mode(void)
 {
     return acl_mode;
-}
-
-void set_acl_mode(int mode)
-{
-    acl_mode = mode;
 }
 
 /*

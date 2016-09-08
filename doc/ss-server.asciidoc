@@ -95,9 +95,6 @@ Enable onetime authentication.
 -6::
 Resovle hostname to IPv6 address first.
 
--w::
-Enable white list mode (when ACL enabled).
-
 -d <addr>::
 Setup name servers for internal DNS resolver (libudns).
 The default server is fetched from '/etc/resolv.conf'.

@@ -1127,10 +1127,10 @@ int main(int argc, char **argv)
     USE_TTY();
 
 #ifdef ANDROID
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:P:huUvwVA",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:P:huUvVA",
                             long_options, &option_index)) != -1) {
 #else
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:huUvwA",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:huUvA",
                             long_options, &option_index)) != -1) {
 #endif
         switch (c) {
@@ -1207,9 +1207,6 @@ int main(int argc, char **argv)
             exit(EXIT_SUCCESS);
         case 'A':
             auth = 1;
-            break;
-        case 'w':
-            set_acl_mode(WHITE_LIST);
             break;
 #ifdef ANDROID
         case 'V':
@@ -1472,10 +1469,6 @@ int start_ss_local_server(profile_t profile)
 
     if (profile.acl != NULL) {
         acl = !init_acl(profile.acl);
-    }
-
-    if (profile.white_list) {
-        set_acl_mode(WHITE_LIST);
     }
 
     if (local_addr == NULL) {

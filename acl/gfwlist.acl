@@ -1,6 +1,8 @@
 # gfw list rules for shadowsocks-libev 
 # updated on 2016-09-08 12:09:55
-#
+[bypass_all]
+
+[white_list]
 .*4tern\.com
 .*adorama\.com
 .*akiba-web\.com
@@ -115,7 +117,6 @@
 .*xn--4gq171p\.com
 .*xn--p8j9a0d9c9a\.xn--q9jyb4c
 .*china-mmm\.jp\.net
-[white_list]
 .*lsxszzg\.com
 .*china-mmm\.net
 .*china-mmm\.sa\.com
