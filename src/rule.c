@@ -24,8 +24,17 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
 #include <string.h>
+
+#ifdef __MINGW32__
+extern void ss_error(const char *s);
+#endif
 
 #include "rule.h"
 #include "utils.h"

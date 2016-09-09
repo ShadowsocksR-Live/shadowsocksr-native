@@ -12149,6 +12149,27 @@ if test "$enable_pcre" != "no"; then
   fi
 
 
+  if test "x$CFLAGS" = "x"; then
+    test "x$verbose" = "xyes" && echo "  setting CFLAGS to \"-DPCRE_STATIC\""
+    CFLAGS="-DPCRE_STATIC"
+  else
+    ats_addto_bugger="-DPCRE_STATIC"
+    for i in $ats_addto_bugger; do
+      ats_addto_duplicate="0"
+      for j in $CFLAGS; do
+        if test "x$i" = "x$j"; then
+          ats_addto_duplicate="1"
+          break
+        fi
+      done
+      if test $ats_addto_duplicate = "0"; then
+        test "x$verbose" = "xyes" && echo "  adding \"$i\" to CFLAGS"
+        CFLAGS="$CFLAGS $i"
+      fi
+    done
+  fi
+
+
   if test "x$LDFLAGS" = "x"; then
     test "x$verbose" = "xyes" && echo "  setting LDFLAGS to \"-L${pcre_ldflags}\""
     LDFLAGS="-L${pcre_ldflags}"

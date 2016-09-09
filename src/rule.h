@@ -31,7 +31,6 @@
 #include "config.h"
 #endif
 
-#include <libcork/core.h>
 #include <libcork/ds.h>
 
 #ifdef HAVE_PCRE_H
@@ -55,6 +54,5 @@ rule_t *lookup_rule(const struct cork_dllist *, const char *, size_t);
 void remove_rule(rule_t *);
 rule_t *new_rule();
 int accept_rule_arg(rule_t *, const char *);
-
 
 #endif

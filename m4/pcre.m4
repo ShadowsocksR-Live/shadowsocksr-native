@@ -129,6 +129,7 @@ if test "$enable_pcre" != "no"; then
   pcre_have_libs=0
   if test "$pcre_base_dir" != "/usr"; then
     TS_ADDTO(CFLAGS, [-I${pcre_include}])
+    TS_ADDTO(CFLAGS, [-DPCRE_STATIC])
     TS_ADDTO(LDFLAGS, [-L${pcre_ldflags}])
     TS_ADDTO_RPATH(${pcre_ldflags})
   fi

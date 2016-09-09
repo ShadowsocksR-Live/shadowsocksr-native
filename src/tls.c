@@ -28,10 +28,20 @@
  * extension.  This was created based primarily on Wireshark dissection of a
  * TLS handshake and RFC4366.
  */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h> /* malloc() */
 #include <string.h> /* strncpy() */
+
+#ifndef __MINGW32__
 #include <sys/socket.h>
+#else
+#include <win32.h>
+#endif
 
 #include "tls.h"
 #include "protocol.h"
