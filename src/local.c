@@ -658,14 +658,15 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                         ss_onetimeauth(abuf, server->e_ctx->evp.iv, BUF_SIZE);
                     }
 
+                    if (buf->len > 0 && auth) {
+                        ss_gen_hash(buf, &remote->counter, server->e_ctx, BUF_SIZE);
+                    }
+
                     brealloc(remote->buf, buf->len + abuf->len, BUF_SIZE);
                     memcpy(remote->buf->array, abuf->array, abuf->len);
                     remote->buf->len = buf->len + abuf->len;
 
                     if (buf->len > 0) {
-                        if (auth) {
-                            ss_gen_hash(buf, &remote->counter, server->e_ctx, BUF_SIZE);
-                        }
                         memcpy(remote->buf->array + abuf->len, buf->array, buf->len);
                     }
                 } else {
