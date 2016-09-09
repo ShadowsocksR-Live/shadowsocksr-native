@@ -26,7 +26,6 @@
  */
 #include <stdio.h>
 #include <string.h>
-#include <sys/queue.h>
 
 #include "rule.h"
 #include "utils.h"
@@ -63,8 +62,8 @@ accept_rule_arg(rule_t *rule, const char *arg) {
 }
 
 void
-add_rule(rule_head_t *rules, rule_t *rule) {
-    STAILQ_INSERT_TAIL(rules, rule, entries);
+add_rule(struct cork_dllist *rules, rule_t *rule) {
+    cork_dllist_add(rules, &rule->entries);
 }
 
 int
@@ -86,26 +85,27 @@ init_rule(rule_t *rule) {
 }
 
 rule_t *
-lookup_rule(const rule_head_t *head, const char *name, size_t name_len) {
-    rule_t *iter;
+lookup_rule(const struct cork_dllist *rules, const char *name, size_t name_len) {
+    struct cork_dllist_item *curr, *next;
 
     if (name == NULL) {
         name = "";
         name_len = 0;
     }
 
-    STAILQ_FOREACH(iter, head, entries) {
-        if (pcre_exec(iter->pattern_re, NULL,
+    cork_dllist_foreach_void(rules, curr, next) {
+        rule_t *rule = cork_container_of(curr, rule_t, entries);
+        if (pcre_exec(rule->pattern_re, NULL,
                     name, name_len, 0, 0, NULL, 0) >= 0)
-            return iter;
+            return rule;
     }
 
     return NULL;
 }
 
 void
-remove_rule(rule_head_t *head, rule_t *rule) {
-    STAILQ_REMOVE(head, rule, rule, entries);
+remove_rule(rule_t *rule) {
+    cork_dllist_remove(&rule->entries);
     free_rule(rule);
 }
 

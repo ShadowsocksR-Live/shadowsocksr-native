@@ -33,8 +33,8 @@ static struct ip_set white_list_ipv6;
 static struct ip_set black_list_ipv4;
 static struct ip_set black_list_ipv6;
 
-rule_head_t black_list_rules;
-rule_head_t white_list_rules;
+static struct cork_dllist black_list_rules;
+static struct cork_dllist white_list_rules;
 
 static int acl_mode = BLACK_LIST;
 
@@ -89,12 +89,12 @@ int init_acl(const char *path)
     ipset_init(&black_list_ipv4);
     ipset_init(&black_list_ipv6);
 
-    STAILQ_INIT(&black_list_rules);
-    STAILQ_INIT(&white_list_rules);
+    cork_dllist_init(&black_list_rules);
+    cork_dllist_init(&white_list_rules);
 
-    struct ip_set *list_ipv4 = &black_list_ipv4;
-    struct ip_set *list_ipv6 = &black_list_ipv6;
-    rule_head_t *rules       = &black_list_rules;
+    struct ip_set *list_ipv4  = &black_list_ipv4;
+    struct ip_set *list_ipv6  = &black_list_ipv6;
+    struct cork_dllist *rules = &black_list_rules;
 
     FILE *f = fopen(path, "r");
     if (f == NULL) {
@@ -177,11 +177,13 @@ int init_acl(const char *path)
     return 0;
 }
 
-void free_rules(rule_head_t *rules)
+void free_rules(struct cork_dllist *rules)
 {
-    rule_t *iter;
-    while ((iter = STAILQ_FIRST(rules)) != NULL)
-        remove_rule(rules, iter);
+    struct cork_dllist_item *iter;
+    while ((iter = cork_dllist_head(rules)) != NULL) {
+        rule_t *rule = cork_container_of(iter, rule_t, entries);
+        remove_rule(rule);
+    }
 }
 
 void free_acl(void)

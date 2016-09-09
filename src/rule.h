@@ -31,7 +31,8 @@
 #include "config.h"
 #endif
 
-#include <sys/queue.h>
+#include <libcork/core.h>
+#include <libcork/ds.h>
 
 #ifdef HAVE_PCRE_H
 #include <pcre.h>
@@ -39,22 +40,19 @@
 #include <pcre/pcre.h>
 #endif
 
-STAILQ_HEAD(rule_head, rule);
-
-typedef struct rule_head rule_head_t;
-
 typedef struct rule {
     char *pattern;
 
     /* Runtime fields */
     pcre *pattern_re;
-    STAILQ_ENTRY(rule) entries;
+
+    struct cork_dllist_item entries;
 } rule_t;
 
-void add_rule(rule_head_t *, rule_t *);
+void add_rule(struct cork_dllist *, rule_t *);
 int init_rule(rule_t *);
-rule_t *lookup_rule(const rule_head_t *, const char *, size_t);
-void remove_rule(rule_head_t *, rule_t *);
+rule_t *lookup_rule(const struct cork_dllist *, const char *, size_t);
+void remove_rule(rule_t *);
 rule_t *new_rule();
 int accept_rule_arg(rule_t *, const char *);
 
