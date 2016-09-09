@@ -210,6 +210,6 @@ void *ss_realloc(void *ptr, size_t new_size);
     do {                 \
         free(ptr);       \
         ptr = NULL;      \
-    } while(0)
+    } while (0)
 
 #endif // _UTILS_H

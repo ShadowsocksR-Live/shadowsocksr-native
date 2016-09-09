@@ -38,7 +38,8 @@ static struct cork_dllist white_list_rules;
 
 static int acl_mode = BLACK_LIST;
 
-static void parse_addr_cidr(const char *str, char *host, int *cidr)
+static void
+parse_addr_cidr(const char *str, char *host, int *cidr)
 {
     int ret = -1, n = 0;
     char *pch;
@@ -59,27 +60,31 @@ static void parse_addr_cidr(const char *str, char *host, int *cidr)
     }
 }
 
-char *trimwhitespace(char *str)
+char *
+trimwhitespace(char *str)
 {
-      char *end;
+    char *end;
 
-      // Trim leading space
-      while(isspace(*str)) str++;
+    // Trim leading space
+    while (isspace(*str))
+        str++;
 
-      if(*str == 0)  // All spaces?
-          return str;
+    if (*str == 0)   // All spaces?
+        return str;
 
-      // Trim trailing space
-      end = str + strlen(str) - 1;
-      while(end > str && isspace(*end)) end--;
+    // Trim trailing space
+    end = str + strlen(str) - 1;
+    while (end > str && isspace(*end))
+        end--;
 
-      // Write new null terminator
-      *(end+1) = 0;
+    // Write new null terminator
+    *(end + 1) = 0;
 
-      return str;
+    return str;
 }
 
-int init_acl(const char *path)
+int
+init_acl(const char *path)
 {
     // initialize ipset
     ipset_init_library();
@@ -123,23 +128,23 @@ int init_acl(const char *path)
             }
 
             if (strcmp(line, "[black_list]") == 0
-                    || strcmp(line, "[bypass_list]") == 0) {
+                || strcmp(line, "[bypass_list]") == 0) {
                 list_ipv4 = &black_list_ipv4;
                 list_ipv6 = &black_list_ipv6;
                 rules     = &black_list_rules;
                 continue;
             } else if (strcmp(line, "[white_list]") == 0
-                    || strcmp(line, "[proxy_list]") == 0) {
+                       || strcmp(line, "[proxy_list]") == 0) {
                 list_ipv4 = &white_list_ipv4;
                 list_ipv6 = &white_list_ipv6;
                 rules     = &white_list_rules;
                 continue;
             } else if (strcmp(line, "[reject_all]") == 0
-                    || strcmp(line, "[bypass_all]") == 0) {
+                       || strcmp(line, "[bypass_all]") == 0) {
                 acl_mode = WHITE_LIST;
                 continue;
             } else if (strcmp(line, "[accept_all]") == 0
-                    || strcmp(line, "[proxy_all]") == 0) {
+                       || strcmp(line, "[proxy_all]") == 0) {
                 acl_mode = BLACK_LIST;
                 continue;
             }
@@ -177,7 +182,8 @@ int init_acl(const char *path)
     return 0;
 }
 
-void free_rules(struct cork_dllist *rules)
+void
+free_rules(struct cork_dllist *rules)
 {
     struct cork_dllist_item *iter;
     while ((iter = cork_dllist_head(rules)) != NULL) {
@@ -186,7 +192,8 @@ void free_rules(struct cork_dllist *rules)
     }
 }
 
-void free_acl(void)
+void
+free_acl(void)
 {
     ipset_done(&black_list_ipv4);
     ipset_done(&black_list_ipv6);
@@ -197,7 +204,8 @@ void free_acl(void)
     free_rules(&white_list_rules);
 }
 
-int get_acl_mode(void)
+int
+get_acl_mode(void)
 {
     return acl_mode;
 }
@@ -207,7 +215,8 @@ int get_acl_mode(void)
  * Return 1,  if match black list.
  * Return -1, if match white list.
  */
-int acl_match_host(const char *host)
+int
+acl_match_host(const char *host)
 {
     struct cork_ip addr;
     int ret = 0;
@@ -237,7 +246,8 @@ int acl_match_host(const char *host)
     return ret;
 }
 
-int acl_add_ip(const char *ip)
+int
+acl_add_ip(const char *ip)
 {
     struct cork_ip addr;
     int err = cork_ip_init(&addr, ip);
@@ -254,7 +264,8 @@ int acl_add_ip(const char *ip)
     return 0;
 }
 
-int acl_remove_ip(const char *ip)
+int
+acl_remove_ip(const char *ip)
 {
     struct cork_ip addr;
     int err = cork_ip_init(&addr, ip);

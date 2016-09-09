@@ -100,7 +100,8 @@ static int nofile = 0;
 #endif
 
 #ifndef __MINGW32__
-static int setnonblocking(int fd)
+static int
+setnonblocking(int fd)
 {
     int flags;
     if (-1 == (flags = fcntl(fd, F_GETFL, 0))) {
@@ -111,7 +112,8 @@ static int setnonblocking(int fd)
 
 #endif
 
-int create_and_bind(const char *addr, const char *port)
+int
+create_and_bind(const char *addr, const char *port)
 {
     struct addrinfo hints;
     struct addrinfo *result, *rp;
@@ -164,7 +166,8 @@ int create_and_bind(const char *addr, const char *port)
     return listen_sock;
 }
 
-static void server_recv_cb(EV_P_ ev_io *w, int revents)
+static void
+server_recv_cb(EV_P_ ev_io *w, int revents)
 {
     server_ctx_t *server_recv_ctx = (server_ctx_t *)w;
     server_t *server              = server_recv_ctx->server;
@@ -234,7 +237,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 }
 
-static void server_send_cb(EV_P_ ev_io *w, int revents)
+static void
+server_send_cb(EV_P_ ev_io *w, int revents)
 {
     server_ctx_t *server_send_ctx = (server_ctx_t *)w;
     server_t *server              = server_send_ctx->server;
@@ -276,7 +280,8 @@ static void server_send_cb(EV_P_ ev_io *w, int revents)
     }
 }
 
-static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
+static void
+remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 {
     remote_ctx_t *remote_ctx = (remote_ctx_t *)(((void *)watcher)
                                                 - sizeof(ev_io));
@@ -293,7 +298,8 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
     close_and_free_server(EV_A_ server);
 }
 
-static void remote_recv_cb(EV_P_ ev_io *w, int revents)
+static void
+remote_recv_cb(EV_P_ ev_io *w, int revents)
 {
     remote_ctx_t *remote_recv_ctx = (remote_ctx_t *)w;
     remote_t *remote              = remote_recv_ctx->remote;
@@ -356,7 +362,8 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     setsockopt(remote->fd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
 }
 
-static void remote_send_cb(EV_P_ ev_io *w, int revents)
+static void
+remote_send_cb(EV_P_ ev_io *w, int revents)
 {
     remote_ctx_t *remote_send_ctx = (remote_ctx_t *)w;
     remote_t *remote              = remote_send_ctx->remote;
@@ -488,7 +495,8 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
     }
 }
 
-static remote_t *new_remote(int fd, int timeout)
+static remote_t *
+new_remote(int fd, int timeout)
 {
     remote_t *remote;
     remote = ss_malloc(sizeof(remote_t));
@@ -514,7 +522,8 @@ static remote_t *new_remote(int fd, int timeout)
     return remote;
 }
 
-static void free_remote(remote_t *remote)
+static void
+free_remote(remote_t *remote)
 {
     if (remote != NULL) {
         if (remote->server != NULL) {
@@ -530,7 +539,8 @@ static void free_remote(remote_t *remote)
     }
 }
 
-static void close_and_free_remote(EV_P_ remote_t *remote)
+static void
+close_and_free_remote(EV_P_ remote_t *remote)
 {
     if (remote != NULL) {
         ev_timer_stop(EV_A_ & remote->send_ctx->watcher);
@@ -541,7 +551,8 @@ static void close_and_free_remote(EV_P_ remote_t *remote)
     }
 }
 
-static server_t *new_server(int fd, int method)
+static server_t *
+new_server(int fd, int method)
 {
     server_t *server;
 
@@ -573,7 +584,8 @@ static server_t *new_server(int fd, int method)
     return server;
 }
 
-static void free_server(server_t *server)
+static void
+free_server(server_t *server)
 {
     if (server != NULL) {
         if (server->remote != NULL) {
@@ -597,7 +609,8 @@ static void free_server(server_t *server)
     }
 }
 
-static void close_and_free_server(EV_P_ server_t *server)
+static void
+close_and_free_server(EV_P_ server_t *server)
 {
     if (server != NULL) {
         ev_io_stop(EV_A_ & server->send_ctx->io);
@@ -607,7 +620,8 @@ static void close_and_free_server(EV_P_ server_t *server)
     }
 }
 
-static void accept_cb(EV_P_ ev_io *w, int revents)
+static void
+accept_cb(EV_P_ ev_io *w, int revents)
 {
     struct listen_ctx *listener = (struct listen_ctx *)w;
     int serverfd                = accept(listener->fd, NULL, NULL);
@@ -696,13 +710,15 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     }
 }
 
-void signal_cb(int dummy)
+void
+signal_cb(int dummy)
 {
     keep_resolving = 0;
     exit(-1);
 }
 
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
     srand(time(NULL));
 

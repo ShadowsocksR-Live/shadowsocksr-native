@@ -44,7 +44,7 @@ static int get_header(const char *, const char *, int, char **);
 static int next_header(const char **, int *);
 
 static const protocol_t http_protocol_st = {
-    .default_port = 80,
+    .default_port =                 80,
     .parse_packet = &parse_http_header,
 };
 const protocol_t *const http_protocol = &http_protocol_st;
@@ -63,7 +63,8 @@ const protocol_t *const http_protocol = &http_protocol_st;
  *
  */
 static int
-parse_http_header(const char* data, size_t data_len, char **hostname) {
+parse_http_header(const char *data, size_t data_len, char **hostname)
+{
     int result, i;
 
     if (hostname == NULL)
@@ -84,7 +85,7 @@ parse_http_header(const char* data, size_t data_len, char **hostname) {
     for (i = result - 1; i >= 0; i--)
         if ((*hostname)[i] == ':') {
             (*hostname)[i] = '\0';
-            result = i;
+            result         = i;
             break;
         }
 
@@ -92,7 +93,8 @@ parse_http_header(const char* data, size_t data_len, char **hostname) {
 }
 
 static int
-get_header(const char *header, const char *data, int data_len, char **value) {
+get_header(const char *header, const char *data, int data_len, char **value)
+{
     int len, header_len;
 
     header_len = strlen(header);
@@ -123,7 +125,8 @@ get_header(const char *header, const char *data, int data_len, char **value) {
 }
 
 static int
-next_header(const char **data, int *len) {
+next_header(const char **data, int *len)
+{
     int header_len;
 
     /* perhaps we can optimize this to reuse the value of header_len, rather
@@ -136,13 +139,13 @@ next_header(const char **data, int *len) {
 
     /* advanced past the <CR><LF> pair */
     *data += 2;
-    *len -= 2;
+    *len  -= 2;
 
     /* Find the length of the next header */
     header_len = 0;
     while (*len > header_len + 1
-            && (*data)[header_len] != '\r'
-            && (*data)[header_len + 1] != '\n')
+           && (*data)[header_len] != '\r'
+           && (*data)[header_len + 1] != '\n')
         header_len++;
 
     return header_len;

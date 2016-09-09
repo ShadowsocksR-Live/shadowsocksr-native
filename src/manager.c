@@ -72,15 +72,16 @@
 #define BUF_SIZE 65535
 #endif
 
-int verbose      = 0;
-char *executable = "ss-server";
-char *working_dir = NULL;
+int verbose          = 0;
+char *executable     = "ss-server";
+char *working_dir    = NULL;
 int working_dir_size = 0;
 
 static struct cork_hash_table *server_table;
 
 #ifndef __MINGW32__
-static int setnonblocking(int fd)
+static int
+setnonblocking(int fd)
 {
     int flags;
     if (-1 == (flags = fcntl(fd, F_GETFL, 0))) {
@@ -91,9 +92,10 @@ static int setnonblocking(int fd)
 
 #endif
 
-static void build_config(char *prefix, struct server *server)
+static void
+build_config(char *prefix, struct server *server)
 {
-    char *path = NULL;
+    char *path    = NULL;
     int path_size = strlen(prefix) + strlen(server->port) + 20;
 
     path = malloc(path_size);
@@ -114,7 +116,8 @@ static void build_config(char *prefix, struct server *server)
     ss_free(path);
 }
 
-static char *construct_command_line(struct manager_ctx *manager, struct server *server)
+static char *
+construct_command_line(struct manager_ctx *manager, struct server *server)
 {
     static char cmd[BUF_SIZE];
     int i;
@@ -179,7 +182,8 @@ static char *construct_command_line(struct manager_ctx *manager, struct server *
     return cmd;
 }
 
-static char *get_data(char *buf, int len)
+static char *
+get_data(char *buf, int len)
 {
     char *data;
     int pos = 0;
@@ -194,7 +198,8 @@ static char *get_data(char *buf, int len)
     return data;
 }
 
-static char *get_action(char *buf, int len)
+static char *
+get_action(char *buf, int len)
 {
     char *action;
     int pos = 0;
@@ -213,7 +218,8 @@ static char *get_action(char *buf, int len)
     return action;
 }
 
-static struct server *get_server(char *buf, int len)
+static struct server *
+get_server(char *buf, int len)
 {
     char *data = get_data(buf, len);
     char error_buf[512];
@@ -259,7 +265,8 @@ static struct server *get_server(char *buf, int len)
     return server;
 }
 
-static int parse_traffic(char *buf, int len, char *port, uint64_t *traffic)
+static int
+parse_traffic(char *buf, int len, char *port, uint64_t *traffic)
 {
     char *data = get_data(buf, len);
     char error_buf[512];
@@ -292,7 +299,8 @@ static int parse_traffic(char *buf, int len, char *port, uint64_t *traffic)
     return 0;
 }
 
-static void add_server(struct manager_ctx *manager, struct server *server)
+static void
+add_server(struct manager_ctx *manager, struct server *server)
 {
     bool new = false;
     cork_hash_table_put(server_table, (void *)server->port, (void *)server, &new, NULL, NULL);
@@ -303,7 +311,8 @@ static void add_server(struct manager_ctx *manager, struct server *server)
     }
 }
 
-static void kill_server(char *prefix, char *pid_file)
+static void
+kill_server(char *prefix, char *pid_file)
 {
     char *path = NULL;
     int pid, path_size = strlen(prefix) + strlen(pid_file) + 2;
@@ -325,7 +334,8 @@ static void kill_server(char *prefix, char *pid_file)
     ss_free(path);
 }
 
-static void stop_server(char *prefix, char *port)
+static void
+stop_server(char *prefix, char *port)
 {
     char *path = NULL;
     int pid, path_size = strlen(prefix) + strlen(port) + 20;
@@ -346,7 +356,8 @@ static void stop_server(char *prefix, char *port)
     ss_free(path);
 }
 
-static void remove_server(char *prefix, char *port)
+static void
+remove_server(char *prefix, char *port)
 {
     char *old_port            = NULL;
     struct server *old_server = NULL;
@@ -360,7 +371,8 @@ static void remove_server(char *prefix, char *port)
     stop_server(prefix, port);
 }
 
-static void update_stat(char *port, uint64_t traffic)
+static void
+update_stat(char *port, uint64_t traffic)
 {
     void *ret = cork_hash_table_get(server_table, (void *)port);
     if (ret != NULL) {
@@ -369,7 +381,8 @@ static void update_stat(char *port, uint64_t traffic)
     }
 }
 
-static void manager_recv_cb(EV_P_ ev_io *w, int revents)
+static void
+manager_recv_cb(EV_P_ ev_io *w, int revents)
 {
     struct manager_ctx *manager = (struct manager_ctx *)w;
     socklen_t len;
@@ -491,7 +504,8 @@ ERROR_MSG:
     }
 }
 
-static void signal_cb(EV_P_ ev_signal *w, int revents)
+static void
+signal_cb(EV_P_ ev_signal *w, int revents)
 {
     if (revents & EV_SIGNAL) {
         switch (w->signum) {
@@ -502,7 +516,8 @@ static void signal_cb(EV_P_ ev_signal *w, int revents)
     }
 }
 
-int create_server_socket(const char *host, const char *port)
+int
+create_server_socket(const char *host, const char *port)
 {
     struct addrinfo hints;
     struct addrinfo *result, *rp, *ipv4v6bindall;
@@ -576,7 +591,8 @@ int create_server_socket(const char *host, const char *port)
     return server_sock;
 }
 
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
     int i, c;
     int pid_flags         = 0;
@@ -605,12 +621,12 @@ int main(int argc, char **argv)
 
     int option_index                    = 0;
     static struct option long_options[] = {
-        { "fast-open"      , no_argument      , 0, 0 },
-        { "acl"            , required_argument, 0, 0 },
+        { "fast-open",       no_argument,       0, 0 },
+        { "acl",             required_argument, 0, 0 },
         { "manager-address", required_argument, 0, 0 },
-        { "executable"     , required_argument, 0, 0 },
-        { "mtu"            , required_argument, 0, 0 },
-        { "help"           , no_argument      , 0, 0 },
+        { "executable",      required_argument, 0, 0 },
+        { "mtu",             required_argument, 0, 0 },
+        { "help",            no_argument,       0, 0 },
         {                 0,                 0, 0, 0 }
     };
 
@@ -812,8 +828,8 @@ int main(int argc, char **argv)
 
     struct passwd *pw   = getpwuid(getuid());
     const char *homedir = pw->pw_dir;
-    working_dir_size = strlen(homedir)+15;
-    working_dir = malloc(working_dir_size);
+    working_dir_size = strlen(homedir) + 15;
+    working_dir      = malloc(working_dir_size);
     snprintf(working_dir, working_dir_size, "%s/.shadowsocks", homedir);
 
     int err = mkdir(working_dir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
@@ -832,10 +848,11 @@ int main(int argc, char **argv)
             size_t len = strlen(ep->d_name);
             if (strcmp(ep->d_name + len - 3, "pid") == 0) {
                 kill_server(working_dir, ep->d_name);
-                if (verbose) LOGI("kill %s", ep->d_name);
+                if (verbose)
+                    LOGI("kill %s", ep->d_name);
             }
         }
-        closedir (dp);
+        closedir(dp);
     } else {
         ss_free(working_dir);
         FATAL("Couldn't open the directory");

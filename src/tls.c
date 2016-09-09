@@ -61,11 +61,10 @@ static int parse_extensions(const char *, size_t, char **);
 static int parse_server_name_extension(const char *, size_t, char **);
 
 static const protocol_t tls_protocol_st = {
-    .default_port = 443,
+    .default_port =               443,
     .parse_packet = &parse_tls_header,
 };
 const protocol_t *const tls_protocol = &tls_protocol_st;
-
 
 /* Parse a TLS packet for the Server Name Indication extension in the client
  * hello handshake, returning the first servername found (pointer to static
@@ -81,7 +80,8 @@ const protocol_t *const tls_protocol = &tls_protocol_st;
  *  < -4 - Invalid TLS client hello
  */
 static int
-parse_tls_header(const char *data, size_t data_len, char **hostname) {
+parse_tls_header(const char *data, size_t data_len, char **hostname)
+{
     char tls_content_type;
     char tls_version_major;
     char tls_version_minor;
@@ -116,14 +116,14 @@ parse_tls_header(const char *data, size_t data_len, char **hostname) {
     tls_version_minor = data[2];
     if (tls_version_major < 3) {
         LOGI("Received SSL %d.%d handshake which can not support SNI.",
-              tls_version_major, tls_version_minor);
+             tls_version_major, tls_version_minor);
 
         return -2;
     }
 
     /* TLS record length */
     len = ((unsigned char)data[3] << 8) +
-        (unsigned char)data[4] + TLS_HEADER_LEN;
+          (unsigned char)data[4] + TLS_HEADER_LEN;
     data_len = MIN(data_len, len);
 
     /* Check we received entire TLS record length */
@@ -143,30 +143,30 @@ parse_tls_header(const char *data, size_t data_len, char **hostname) {
     }
 
     /* Skip past fixed length records:
-       1	Handshake Type
-       3	Length
-       2	Version (again)
-       32	Random
-       to	Session ID Length
+     * 1	Handshake Type
+     * 3	Length
+     * 2	Version (again)
+     * 32	Random
+     * to	Session ID Length
      */
     pos += 38;
 
     /* Session ID */
     if (pos + 1 > data_len)
         return -5;
-    len = (unsigned char)data[pos];
+    len  = (unsigned char)data[pos];
     pos += 1 + len;
 
     /* Cipher Suites */
     if (pos + 2 > data_len)
         return -5;
-    len = ((unsigned char)data[pos] << 8) + (unsigned char)data[pos + 1];
+    len  = ((unsigned char)data[pos] << 8) + (unsigned char)data[pos + 1];
     pos += 2 + len;
 
     /* Compression Methods */
     if (pos + 1 > data_len)
         return -5;
-    len = (unsigned char)data[pos];
+    len  = (unsigned char)data[pos];
     pos += 1 + len;
 
     if (pos == data_len && tls_version_major == 3 && tls_version_minor == 0) {
@@ -177,7 +177,7 @@ parse_tls_header(const char *data, size_t data_len, char **hostname) {
     /* Extensions */
     if (pos + 2 > data_len)
         return -5;
-    len = ((unsigned char)data[pos] << 8) + (unsigned char)data[pos + 1];
+    len  = ((unsigned char)data[pos] << 8) + (unsigned char)data[pos + 1];
     pos += 2;
 
     if (pos + len > data_len)
@@ -186,7 +186,8 @@ parse_tls_header(const char *data, size_t data_len, char **hostname) {
 }
 
 static int
-parse_extensions(const char *data, size_t data_len, char **hostname) {
+parse_extensions(const char *data, size_t data_len, char **hostname)
+{
     size_t pos = 0;
     size_t len;
 
@@ -194,12 +195,12 @@ parse_extensions(const char *data, size_t data_len, char **hostname) {
     while (pos + 4 <= data_len) {
         /* Extension Length */
         len = ((unsigned char)data[pos + 2] << 8) +
-            (unsigned char)data[pos + 3];
+              (unsigned char)data[pos + 3];
 
         /* Check if it's a server name extension */
         if (data[pos] == 0x00 && data[pos + 1] == 0x00) {
             /* There can be only one extension of each type, so we break
-               our state and move p to beinnging of the extension here */
+             * our state and move p to beinnging of the extension here */
             if (pos + 4 + len > data_len)
                 return -5;
             return parse_server_name_extension(data + pos + 4, len, hostname);
@@ -215,33 +216,34 @@ parse_extensions(const char *data, size_t data_len, char **hostname) {
 
 static int
 parse_server_name_extension(const char *data, size_t data_len,
-        char **hostname) {
+                            char **hostname)
+{
     size_t pos = 2; /* skip server name list length */
     size_t len;
 
     while (pos + 3 < data_len) {
         len = ((unsigned char)data[pos + 1] << 8) +
-            (unsigned char)data[pos + 2];
+              (unsigned char)data[pos + 2];
 
         if (pos + 3 + len > data_len)
             return -5;
 
         switch (data[pos]) { /* name type */
-            case 0x00: /* host_name */
-                *hostname = malloc(len + 1);
-                if (*hostname == NULL) {
-                    ERROR("malloc() failure");
-                    return -4;
-                }
+        case 0x00:     /* host_name */
+            *hostname = malloc(len + 1);
+            if (*hostname == NULL) {
+                ERROR("malloc() failure");
+                return -4;
+            }
 
-                strncpy(*hostname, data + pos + 3, len);
+            strncpy(*hostname, data + pos + 3, len);
 
-                (*hostname)[len] = '\0';
+            (*hostname)[len] = '\0';
 
-                return len;
-            default:
-                LOGI("Unknown server name extension name type: %d",
-                      data[pos]);
+            return len;
+        default:
+            LOGI("Unknown server name extension name type: %d",
+                 data[pos]);
         }
         pos += 3 + len;
     }

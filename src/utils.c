@@ -53,7 +53,8 @@ int use_syslog = 0;
 #endif
 
 #ifndef __MINGW32__
-void ERROR(const char *s)
+void
+ERROR(const char *s)
 {
     char *msg = strerror(errno);
     LOGE("%s: %s", s, msg);
@@ -63,7 +64,8 @@ void ERROR(const char *s)
 
 int use_tty = 1;
 
-char *ss_itoa(int i)
+char *
+ss_itoa(int i)
 {
     /* Room for INT_DIGITS digits, - and '\0' */
     static char buf[INT_DIGITS + 2];
@@ -87,7 +89,8 @@ char *ss_itoa(int i)
 /*
  * setuid() and setgid() for a specified user.
  */
-int run_as(const char *user)
+int
+run_as(const char *user)
 {
 #ifndef __MINGW32__
     if (user[0]) {
@@ -164,7 +167,8 @@ int run_as(const char *user)
     return 1;
 }
 
-char *ss_strndup(const char *s, size_t n)
+char *
+ss_strndup(const char *s, size_t n)
 {
     size_t len = strlen(s);
     char *ret;
@@ -179,13 +183,15 @@ char *ss_strndup(const char *s, size_t n)
     return ret;
 }
 
-void FATAL(const char *msg)
+void
+FATAL(const char *msg)
 {
     LOGE("%s", msg);
     exit(-1);
 }
 
-void *ss_malloc(size_t size)
+void *
+ss_malloc(size_t size)
 {
     void *tmp = malloc(size);
     if (tmp == NULL)
@@ -193,7 +199,8 @@ void *ss_malloc(size_t size)
     return tmp;
 }
 
-void *ss_realloc(void *ptr, size_t new_size)
+void *
+ss_realloc(void *ptr, size_t new_size)
 {
     void *new = realloc(ptr, new_size);
     if (new == NULL) {
@@ -204,8 +211,8 @@ void *ss_realloc(void *ptr, size_t new_size)
     return new;
 }
 
-
-void usage()
+void
+usage()
 {
     printf("\n");
     printf("shadowsocks-libev %s\n\n", VERSION);
@@ -319,7 +326,8 @@ void usage()
     printf("\n");
 }
 
-void daemonize(const char *path)
+void
+daemonize(const char *path)
 {
 #ifndef __MINGW32__
     /* Our process ID and Session ID */
@@ -370,7 +378,8 @@ void daemonize(const char *path)
 }
 
 #ifdef HAVE_SETRLIMIT
-int set_nofile(int nofile)
+int
+set_nofile(int nofile)
 {
     struct rlimit limit = { nofile, nofile }; /* set both soft and hard limit */
 

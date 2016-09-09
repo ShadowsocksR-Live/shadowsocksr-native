@@ -42,7 +42,8 @@ extern void ss_error(const char *s);
 static void free_rule(rule_t *);
 
 rule_t *
-new_rule() {
+new_rule()
+{
     rule_t *rule;
 
     rule = calloc(1, sizeof(rule_t));
@@ -55,7 +56,8 @@ new_rule() {
 }
 
 int
-accept_rule_arg(rule_t *rule, const char *arg) {
+accept_rule_arg(rule_t *rule, const char *arg)
+{
     if (rule->pattern == NULL) {
         rule->pattern = strdup(arg);
         if (rule->pattern == NULL) {
@@ -71,12 +73,14 @@ accept_rule_arg(rule_t *rule, const char *arg) {
 }
 
 void
-add_rule(struct cork_dllist *rules, rule_t *rule) {
+add_rule(struct cork_dllist *rules, rule_t *rule)
+{
     cork_dllist_add(rules, &rule->entries);
 }
 
 int
-init_rule(rule_t *rule) {
+init_rule(rule_t *rule)
+{
     if (rule->pattern_re == NULL) {
         const char *reerr;
         int reerroffset;
@@ -85,7 +89,7 @@ init_rule(rule_t *rule) {
             pcre_compile(rule->pattern, 0, &reerr, &reerroffset, NULL);
         if (rule->pattern_re == NULL) {
             LOGE("Regex compilation of \"%s\" failed: %s, offset %d",
-                    rule->pattern, reerr, reerroffset);
+                 rule->pattern, reerr, reerroffset);
             return 0;
         }
     }
@@ -94,18 +98,19 @@ init_rule(rule_t *rule) {
 }
 
 rule_t *
-lookup_rule(const struct cork_dllist *rules, const char *name, size_t name_len) {
+lookup_rule(const struct cork_dllist *rules, const char *name, size_t name_len)
+{
     struct cork_dllist_item *curr, *next;
 
     if (name == NULL) {
-        name = "";
+        name     = "";
         name_len = 0;
     }
 
     cork_dllist_foreach_void(rules, curr, next) {
         rule_t *rule = cork_container_of(curr, rule_t, entries);
         if (pcre_exec(rule->pattern_re, NULL,
-                    name, name_len, 0, 0, NULL, 0) >= 0)
+                      name, name_len, 0, 0, NULL, 0) >= 0)
             return rule;
     }
 
@@ -113,13 +118,15 @@ lookup_rule(const struct cork_dllist *rules, const char *name, size_t name_len) 
 }
 
 void
-remove_rule(rule_t *rule) {
+remove_rule(rule_t *rule)
+{
     cork_dllist_remove(&rule->entries);
     free_rule(rule);
 }
 
 static void
-free_rule(rule_t *rule) {
+free_rule(rule_t *rule)
+{
     if (rule == NULL)
         return;
 
