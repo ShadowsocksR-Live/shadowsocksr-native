@@ -1,3 +1,10 @@
+shadowsocks-libev (2.5.1-1) unstable; urgency=medium
+
+  * Refine ACL feature with hostname support.
+  * Add HTTP/SNI parser for ss-local/ss-redir.
+
+ -- Max Lv <max.c.lv@gmail.com>  Sat, 10 Sep 2016 17:06:49 +0800
+
 shadowsocks-libev (2.5.0-1) unstable; urgency=medium
 
   * Fix several bugs of the command line interface.
