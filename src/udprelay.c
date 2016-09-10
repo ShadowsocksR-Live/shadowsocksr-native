@@ -214,15 +214,10 @@ construct_udprealy_header(const struct sockaddr_storage *in_addr,
 
 static int
 parse_udprealy_header(const char *buf, const size_t buf_len,
-                      int *auth, char *host, char *port,
-                      struct sockaddr_storage *storage)
+                      char *host, char *port, struct sockaddr_storage *storage)
 {
     const uint8_t atyp = *(uint8_t *)buf;
     int offset         = 1;
-
-    if (auth != NULL) {
-        *auth |= (atyp & ONETIMEAUTH_FLAG);
-    }
 
     // get remote addr and port
     if ((atyp & ADDRTYPE_MASK) == 1) {
@@ -699,14 +694,14 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 #ifdef MODULE_REDIR
     struct sockaddr_storage dst_addr;
     memset(&dst_addr, 0, sizeof(struct sockaddr_storage));
-    int len = parse_udprealy_header(buf->array, buf->len, NULL, NULL, NULL, &dst_addr);
+    int len = parse_udprealy_header(buf->array, buf->len, NULL, NULL, &dst_addr);
 
     if (dst_addr.ss_family != AF_INET && dst_addr.ss_family != AF_INET6) {
         LOGI("[udp] ss-redir does not support domain name");
         goto CLEAN_UP;
     }
 #else
-    int len = parse_udprealy_header(buf->array, buf->len, NULL, NULL, NULL, NULL);
+    int len = parse_udprealy_header(buf->array, buf->len, NULL, NULL, NULL);
 #endif
 
     if (len == 0) {
@@ -1028,8 +1023,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     memset(&dst_addr, 0, sizeof(struct sockaddr_storage));
 
     int addr_header_len = parse_udprealy_header(buf->array + offset, buf->len - offset,
-                                                &server_ctx->auth, host, port,
-                                                &dst_addr);
+                                                host, port, &dst_addr);
     if (addr_header_len == 0) {
         // error in parse header
         goto CLEAN_UP;
