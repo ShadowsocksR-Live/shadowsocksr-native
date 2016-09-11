@@ -436,7 +436,6 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
                 abuf->len += server->hostname_len;
                 memcpy(abuf->array + abuf->len, &port, 2);
 
-                LOGI("Dest: %s:%d", server->hostname, ntohs(port));
             } else if (AF_INET6 == server->destaddr.ss_family) { // IPv6
                 abuf->array[abuf->len++] = 4;          // Type 4 is IPv6 address
 
