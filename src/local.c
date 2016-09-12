@@ -419,7 +419,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             int udp_assc = 0;
 
-            if (mode != TCP_ONLY && request->cmd == 3) {
+            if (request->cmd == 3) {
                 udp_assc = 1;
                 socklen_t addr_len = sizeof(sock_addr);
                 getsockname(server->fd, (struct sockaddr *)&sock_addr,
