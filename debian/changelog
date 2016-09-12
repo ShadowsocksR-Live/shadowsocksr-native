@@ -1,3 +1,9 @@
+shadowsocks-libev (2.5.2-1ubuntu1) unstable; urgency=medium
+
+  * Fix a bug of UDP relay mode of ss-local
+
+ -- Max Lv <max.c.lv@gmail.com>  Mon, 12 Sep 2016 12:54:33 +0800
+
 shadowsocks-libev (2.5.1-1) unstable; urgency=medium
 
   * Refine ACL feature with hostname support.
