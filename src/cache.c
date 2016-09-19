@@ -93,6 +93,8 @@ cache_delete(struct cache *cache, int keep_data)
             if (entry->data != NULL) {
                 if (cache->free_cb) {
                     cache->free_cb(entry->data);
+                } else {
+                    ss_free(tmp->data);
                 }
             }
             ss_free(entry->key);

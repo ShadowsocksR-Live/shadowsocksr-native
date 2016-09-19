@@ -25,6 +25,7 @@
 
 #include "rule.h"
 #include "utils.h"
+#include "cache.h"
 #include "acl.h"
 
 static struct ip_set white_list_ipv4;
@@ -37,6 +38,34 @@ static struct cork_dllist black_list_rules;
 static struct cork_dllist white_list_rules;
 
 static int acl_mode = BLACK_LIST;
+
+static struct cache *block_list;
+
+void init_block_list()
+{
+    // Initialize cache
+    cache_create(&block_list, 256, NULL);
+}
+
+int check_block_list(char* addr, int max_tries)
+{
+    size_t addr_len = strlen(addr);
+
+    if (cache_key_exist(block_list, addr, addr_len)) {
+        int *count = NULL;
+        cache_lookup(block_list, addr, addr_len, &count);
+        if (count != NULL) {
+            if (*count > max_tries) return 1;
+            (*count)++;
+        }
+    } else {
+        int *count = (int*)ss_malloc(sizeof(int));
+        *count = 1;
+        cache_insert(block_list, addr, addr_len, count);
+    }
+
+    return 0;
+}
 
 static void
 parse_addr_cidr(const char *str, char *host, int *cidr)

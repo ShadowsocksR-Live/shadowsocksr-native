@@ -306,6 +306,10 @@ report_addr(int fd)
     if (peer_name != NULL) {
         LOGE("failed to handshake with %s", peer_name);
     }
+    // Block all requests from this IP, if the err# exceeds 128.
+    if (check_block_list(peer_name, 128)) {
+        LOGE("block all requests from %s", peer_name);
+    }
 }
 
 int
@@ -735,17 +739,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             server->buf->len = offset + header_len + ONETIMEAUTH_BYTES;
             if (ss_onetimeauth_verify(server->buf, server->d_ctx->evp.iv)) {
-                char *peer_name = get_peer_name(server->fd);
-                if (peer_name) {
-                    LOGE("authentication error from %s", peer_name);
-                    if (acl) {
-                        if (get_acl_mode() == BLACK_LIST) {
-                            // Auto ban enabled only in black list mode
-                            acl_add_ip(peer_name);
-                            LOGE("add %s to the black list", peer_name);
-                        }
-                    }
-                }
+                report_addr(server->fd);
                 close_and_free_server(EV_A_ server);
                 return;
             }
@@ -1714,6 +1708,9 @@ main(int argc, char **argv)
     // setup keys
     LOGI("initializing ciphers... %s", method);
     int m = enc_init(password, method);
+
+    // init block list
+    init_block_list();
 
     // initialize ev loop
     struct ev_loop *loop = EV_DEFAULT;
