@@ -350,15 +350,27 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     } else if (s < (int)(remote->buf->len)) {
                         remote->buf->len -= s;
                         remote->buf->idx  = s;
+
+                        ev_io_stop(EV_A_ & server_recv_ctx->io);
+                        ev_io_start(EV_A_ & remote->send_ctx->io);
+                        ev_timer_start(EV_A_ & remote->send_ctx->watcher);
                         return;
                     } else {
+                        // Just connected
                         remote->buf->idx = 0;
                         remote->buf->len = 0;
+#ifdef __APPLE__
+                        ev_io_stop(EV_A_ & server_recv_ctx->io);
+                        ev_io_start(EV_A_ & remote->send_ctx->io);
+                        ev_timer_start(EV_A_ & remote->send_ctx->watcher);
+#else
+                        remote->send_ctx->connected = 1;
+                        ev_timer_stop(EV_A_ & remote->send_ctx->watcher);
+                        ev_timer_start(EV_A_ & remote->recv_ctx->watcher);
+                        ev_io_start(EV_A_ & remote->recv_ctx->io);
+                        return;
+#endif
                     }
-
-                    // Just connected
-                    ev_io_stop(EV_A_ & server_recv_ctx->io);
-                    ev_io_start(EV_A_ & remote->send_ctx->io);
 #else
                     // if TCP_FASTOPEN is not defined, fast_open will always be 0
                     LOGE("can't come here");
