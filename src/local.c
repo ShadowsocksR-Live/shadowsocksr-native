@@ -350,7 +350,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     } else if (s < (int)(remote->buf->len)) {
                         remote->buf->len -= s;
                         remote->buf->idx  = s;
-                        return;
                     } else {
                         remote->buf->idx = 0;
                         remote->buf->len = 0;
