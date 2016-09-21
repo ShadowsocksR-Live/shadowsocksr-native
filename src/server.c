@@ -562,12 +562,12 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     int len       = server->buf->len;
     buffer_t *buf = server->buf;
 
-    ev_timer_again(EV_A_ & server->recv_ctx->watcher);
-
     if (server->stage > 2) {
         remote = server->remote;
         buf    = remote->buf;
         len    = 0;
+
+        ev_timer_again(EV_A_ & server->recv_ctx->watcher);
     }
 
     ssize_t r = recv(server->fd, buf->array + len, BUF_SIZE - len, 0);
@@ -600,13 +600,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         buf->len += r;
         if (buf->len <= enc_get_iv_len() + 1) {
             // wait for more
-            if (verbose) {
-#ifdef __MINGW32__
-                LOGI("incomplete IV: %u", r);
-#else
-                LOGI("incomplete IV: %zu", r);
-#endif
-            }
             return;
         }
     } else {
@@ -633,6 +626,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             server->stage = 1;
         }
     }
+
     if (server->stage == 1) {
         size_t header_len = server->header_buf->len;
         brealloc(server->header_buf, server->buf->len + header_len, BUF_SIZE);
@@ -648,11 +642,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             ss_free(server->header_buf);
             server->stage = 2;
         } else {
-#ifdef __MINGW32__
-            LOGI("incomplete header: %u", server->header_buf->len);
-#else
-            LOGI("incomplete header: %zu", server->header_buf->len);
-#endif
             server->buf->len = 0;
             server->buf->idx = 0;
             return;
@@ -989,6 +978,19 @@ server_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 
     if (verbose) {
         LOGI("TCP connection timeout");
+    }
+
+    if (server->stage < 2) {
+        if (verbose) {
+            size_t len = server->stage ?
+                server->header_buf->len : server->buf->len;
+#ifdef __MINGW32__
+            LOGI("incomplete header: %u", len);
+#else
+            LOGI("incomplete header: %zu", len);
+#endif
+        }
+        report_addr(server->fd);
     }
 
     close_and_free_remote(EV_A_ remote);
