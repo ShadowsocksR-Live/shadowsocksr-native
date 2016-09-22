@@ -117,6 +117,18 @@ obfs_class * new_obfs_class(char *plugin_name)
         plugin->client_post_decrypt = auth_sha1_v2_client_post_decrypt;
 
         return plugin;
+    } else if (strcmp(plugin_name, "auth_sha1_v4") == 0) {
+        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
+        plugin->init_data = auth_simple_init_data;
+        plugin->new_obfs = auth_simple_new_obfs;
+        plugin->get_server_info = get_server_info;
+        plugin->set_server_info = set_server_info;
+        plugin->dispose = auth_simple_dispose;
+
+        plugin->client_pre_encrypt = auth_sha1_v4_client_pre_encrypt;
+        plugin->client_post_decrypt = auth_sha1_v4_client_post_decrypt;
+
+        return plugin;
     }
     LOGE("Load obfs '%s' failed", plugin_name);
     return NULL;
@@ -125,4 +137,3 @@ obfs_class * new_obfs_class(char *plugin_name)
 void free_obfs_class(obfs_class *plugin) {
     free(plugin);
 }
-
