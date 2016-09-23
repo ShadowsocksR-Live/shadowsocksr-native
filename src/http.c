@@ -49,46 +49,6 @@ static const protocol_t http_protocol_st = {
 };
 const protocol_t *const http_protocol = &http_protocol_st;
 
-static int
-get_hostname_from_method(const char *data, size_t data_len, char **value)
-{
-    int hostname_len;
-    const char *hostname;
-
-    while (data_len >= 7 && *data != '\r' && *data != '\n') {
-        if (*data == 'h' && strncasecmp("http://", data, 7) == 0) {
-            data += 7;
-            data_len -= 7;
-
-            hostname = data;
-            hostname_len = 0;
-
-            while (data_len > 0 && !isblank(*data)
-                    && *data != '\r' && *data != '\n' && *data != '/') {
-                hostname_len++;
-                data++;
-                data_len--;
-            }
-
-            if (hostname_len == 0) return -2;
-
-            *value = malloc(hostname_len + 1);
-            if (*value == NULL)
-                return -4;
-
-            strncpy(*value, hostname, hostname_len);
-            (*value)[hostname_len] = '\0';
-
-            return hostname_len;
-        }
-
-        data++;
-        data_len--;
-    }
-
-    return -2;
-}
-
 /*
  * Parses a HTTP request for the Host: header
  *
@@ -114,10 +74,6 @@ parse_http_header(const char *data, size_t data_len, char **hostname)
         return -1;
 
     result = get_header("Host:", data, data_len, hostname);
-
-    if (result == -1)
-        result = get_hostname_from_method(data, data_len, hostname);
-
     if (result < 0)
         return result;
 
