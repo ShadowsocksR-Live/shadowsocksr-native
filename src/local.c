@@ -922,7 +922,7 @@ new_remote(int fd, int timeout)
     ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb,
                   min(MAX_CONNECT_TIMEOUT, timeout), 0);
     ev_timer_init(&remote->recv_ctx->watcher, remote_timeout_cb,
-                  min(MAX_CONNECT_TIMEOUT, timeout), timeout);
+                  timeout, timeout);
 
     balloc(remote->buf, BUF_SIZE);
 
