@@ -772,12 +772,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 close_and_free_server(EV_A_ server);
                 return;
             }
-            if (!validate_hostname(host, name_len)) {
-                LOGE("invalid host name");
-                report_addr(server->fd);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
             struct cork_ip ip;
             if (cork_ip_init(&ip, host) != -1) {
                 info.ai_socktype = SOCK_STREAM;
@@ -800,6 +794,12 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     info.ai_addr      = (struct sockaddr *)addr;
                 }
             } else {
+                if (!validate_hostname(host, name_len)) {
+                    LOGE("invalid host name");
+                    report_addr(server->fd);
+                    close_and_free_server(EV_A_ server);
+                    return;
+                }
                 need_query = 1;
             }
         } else if ((atyp & ADDRTYPE_MASK) == 4) {
