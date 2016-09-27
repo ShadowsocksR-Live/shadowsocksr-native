@@ -299,7 +299,7 @@ get_peer_name(int fd)
 }
 
 static void
-report_addr(int fd)
+report_addr(int fd, int err_level)
 {
     char *peer_name;
     peer_name = get_peer_name(fd);
@@ -307,7 +307,7 @@ report_addr(int fd)
         LOGE("failed to handshake with %s", peer_name);
     }
     // Block all requests from this IP, if the err# exceeds 128.
-    if (check_block_list(peer_name, 128)) {
+    if (check_block_list(peer_name, err_level)) {
         LOGE("block all requests from %s", peer_name);
     }
 }
@@ -610,7 +610,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     if (err) {
         LOGE("invalid password or cipher");
-        report_addr(server->fd);
+        report_addr(server->fd, ATTACK);
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
@@ -652,7 +652,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     if (server->stage == 5) {
         if (server->auth && !ss_check_hash(remote->buf, server->chunk, server->d_ctx, BUF_SIZE)) {
             LOGE("hash error");
-            report_addr(server->fd);
+            report_addr(server->fd, BAD);
             close_and_free_server(EV_A_ server);
             close_and_free_remote(EV_A_ remote);
             return;
@@ -721,14 +721,14 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             size_t len        = server->buf->len;
 
             if (len < offset + header_len + ONETIMEAUTH_BYTES) {
-                report_addr(server->fd);
+                report_addr(server->fd, MALFORMED);
                 close_and_free_server(EV_A_ server);
                 return;
             }
 
             server->buf->len = offset + header_len + ONETIMEAUTH_BYTES;
             if (ss_onetimeauth_verify(server->buf, server->d_ctx->evp.iv)) {
-                report_addr(server->fd);
+                report_addr(server->fd, BAD);
                 close_and_free_server(EV_A_ server);
                 return;
             }
@@ -750,7 +750,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 offset += in_addr_len;
             } else {
                 LOGE("invalid header with addr type %d", atyp);
-                report_addr(server->fd);
+                report_addr(server->fd, MALFORMED);
                 close_and_free_server(EV_A_ server);
                 return;
             }
@@ -768,7 +768,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 offset += name_len + 1;
             } else {
                 LOGE("invalid name length: %d", name_len);
-                report_addr(server->fd);
+                report_addr(server->fd, MALFORMED);
                 close_and_free_server(EV_A_ server);
                 return;
             }
@@ -796,7 +796,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             } else {
                 if (!validate_hostname(host, name_len)) {
                     LOGE("invalid host name");
-                    report_addr(server->fd);
+                    report_addr(server->fd, MALFORMED);
                     close_and_free_server(EV_A_ server);
                     return;
                 }
@@ -814,7 +814,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 offset += in6_addr_len;
             } else {
                 LOGE("invalid header with addr type %d", atyp);
-                report_addr(server->fd);
+                report_addr(server->fd, MALFORMED);
                 close_and_free_server(EV_A_ server);
                 return;
             }
@@ -828,7 +828,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
         if (offset == 1) {
             LOGE("invalid header with addr type %d", atyp);
-            report_addr(server->fd);
+            report_addr(server->fd, MALFORMED);
             close_and_free_server(EV_A_ server);
             return;
         }
@@ -842,7 +842,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         }
 
         if (server->buf->len < offset) {
-            report_addr(server->fd);
+            report_addr(server->fd, MALFORMED);
             close_and_free_server(EV_A_ server);
             return;
         } else {
@@ -859,7 +859,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
         if (server->auth && !ss_check_hash(server->buf, server->chunk, server->d_ctx, BUF_SIZE)) {
             LOGE("hash error");
-            report_addr(server->fd);
+            report_addr(server->fd, BAD);
             close_and_free_server(EV_A_ server);
             return;
         }
@@ -990,7 +990,7 @@ server_timeout_cb(EV_P_ ev_timer *watcher, int revents)
             LOGI("incomplete header: %zu", len);
 #endif
         }
-        report_addr(server->fd);
+        report_addr(server->fd, ATTACK);
     }
 
     close_and_free_remote(EV_A_ remote);

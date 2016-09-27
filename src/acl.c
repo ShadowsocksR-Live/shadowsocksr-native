@@ -47,7 +47,7 @@ void init_block_list()
     cache_create(&block_list, 256, NULL);
 }
 
-int check_block_list(char* addr, int max_tries)
+int check_block_list(char* addr, int err_level)
 {
     size_t addr_len = strlen(addr);
 
@@ -55,8 +55,8 @@ int check_block_list(char* addr, int max_tries)
         int *count = NULL;
         cache_lookup(block_list, addr, addr_len, &count);
         if (count != NULL) {
-            if (*count > max_tries) return 1;
-            (*count)++;
+            if (*count > MAX_TRIES) return 1;
+            (*count) += err_level;
         }
     } else {
         int *count = (int*)ss_malloc(sizeof(int));

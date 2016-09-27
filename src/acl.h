@@ -26,6 +26,11 @@
 #define BLACK_LIST 0
 #define WHITE_LIST 1
 
+#define MAX_TRIES 128
+#define ATTACK    32
+#define BAD       8 
+#define MALFORMED 1    
+
 int init_acl(const char *path);
 void free_acl(void);
 
@@ -36,6 +41,6 @@ int acl_remove_ip(const char *ip);
 int get_acl_mode(void);
 
 void init_block_list();
-int check_block_list(char* addr, int max_tries);
+int check_block_list(char* addr, int err_level);
 
 #endif // _ACL_H
