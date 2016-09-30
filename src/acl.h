@@ -27,8 +27,8 @@
 #define WHITE_LIST 1
 
 #define MAX_TRIES 128
-#define ATTACK    32
-#define BAD       8 
+#define ATTACK    8
+#define BAD       4
 #define MALFORMED 1    
 
 int init_acl(const char *path);

@@ -308,7 +308,7 @@ report_addr(int fd, int err_level)
     }
     // Block all requests from this IP, if the err# exceeds 128.
     if (check_block_list(peer_name, err_level)) {
-        LOGE("block all requests from %s", peer_name);
+        LOGE("add %s to block list", peer_name);
     }
 }
 
@@ -1419,14 +1419,18 @@ accept_cb(EV_P_ ev_io *w, int revents)
         return;
     }
 
-    if (acl) {
-        char *peer_name = get_peer_name(serverfd);
-        if (peer_name != NULL) {
-            if (check_block_list(peer_name, 0)
-                || (get_acl_mode() == BLACK_LIST && acl_match_host(peer_name) == 1)
-                || (get_acl_mode() == WHITE_LIST && acl_match_host(peer_name) >= 0)) {
-                if (verbose)
-                    LOGI("Access denied from %s", peer_name);
+    char *peer_name = get_peer_name(serverfd);
+
+    if (peer_name != NULL) {
+        if (check_block_list(peer_name, 0)) {
+            LOGE("block all requests from %s", peer_name);
+            close(serverfd);
+            return;
+        }
+        if (acl) {
+            if ((get_acl_mode() == BLACK_LIST && acl_match_host(peer_name) == 1)
+                    || (get_acl_mode() == WHITE_LIST && acl_match_host(peer_name) >= 0)) {
+                LOGE("Access denied from %s", peer_name);
                 close(serverfd);
                 return;
             }
