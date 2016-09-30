@@ -1422,7 +1422,8 @@ accept_cb(EV_P_ ev_io *w, int revents)
     if (acl) {
         char *peer_name = get_peer_name(serverfd);
         if (peer_name != NULL) {
-            if ((get_acl_mode() == BLACK_LIST && acl_match_host(peer_name) == 1)
+            if (check_block_list(peer_name, 0)
+                || (get_acl_mode() == BLACK_LIST && acl_match_host(peer_name) == 1)
                 || (get_acl_mode() == WHITE_LIST && acl_match_host(peer_name) >= 0)) {
                 if (verbose)
                     LOGI("Access denied from %s", peer_name);
