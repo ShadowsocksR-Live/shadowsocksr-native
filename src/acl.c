@@ -41,13 +41,23 @@ static int acl_mode = BLACK_LIST;
 
 static struct cache *block_list;
 
-void init_block_list()
+void
+init_block_list()
 {
     // Initialize cache
     cache_create(&block_list, 256, NULL);
 }
 
-int check_block_list(char* addr, int err_level)
+int
+remove_from_block_list(char *addr)
+{
+    size_t addr_len = strlen(addr);
+
+    return cache_remove(block_list, addr, addr_len);
+}
+
+int
+check_block_list(char *addr, int err_level)
 {
     size_t addr_len = strlen(addr);
 
@@ -55,11 +65,12 @@ int check_block_list(char* addr, int err_level)
         int *count = NULL;
         cache_lookup(block_list, addr, addr_len, &count);
         if (count != NULL) {
-            if (*count > MAX_TRIES) return 1;
+            if (*count > MAX_TRIES)
+                return 1;
             (*count) += err_level;
         }
     } else {
-        int *count = (int*)ss_malloc(sizeof(int));
+        int *count = (int *)ss_malloc(sizeof(int));
         *count = 1;
         cache_insert(block_list, addr, addr_len, count);
     }

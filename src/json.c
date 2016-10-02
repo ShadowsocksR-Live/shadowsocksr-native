@@ -248,7 +248,7 @@ json_parse_ex(json_settings *settings,
     json_value *top, *root, *alloc = 0;
     json_state state = { 0UL, 0U, 0UL, { 0UL, 0, NULL, NULL, NULL }, 0 };
     long flags;
-    long num_digits         = 0, num_e = 0;
+    long num_digits = 0, num_e = 0;
     json_int_t num_fraction = 0;
 
     /* Skip UTF-8 BOM
