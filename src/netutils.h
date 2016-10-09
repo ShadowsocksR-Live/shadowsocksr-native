@@ -52,9 +52,13 @@
 
 #endif
 
-/* Define the flag MPTCP_ENABLED if not defined*/
+/* Backward compatibility for MPTCP_ENABLED between kernel 3 & 4 */
 #ifndef MPTCP_ENABLED
+#ifdef TCP_CC_INFO
 #define MPTCP_ENABLED 42
+#else
+#define MPTCP_ENABLED 26
+#endif
 #endif
 
 /** byte size of ip4 address */
@@ -92,5 +96,7 @@ int sockaddr_cmp(struct sockaddr_storage *addr1,
  */
 int sockaddr_cmp_addr(struct sockaddr_storage *addr1,
                       struct sockaddr_storage *addr2, socklen_t len);
+
+int validate_hostname(const char *hostname, const int hostname_len);
 
 #endif

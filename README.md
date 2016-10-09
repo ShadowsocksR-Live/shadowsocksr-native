@@ -9,7 +9,7 @@ It is a port of [Shadowsocks](https://github.com/shadowsocks/shadowsocks)
 created by [@clowwindy](https://github.com/clowwindy), which is maintained by
 [@madeye](https://github.com/madeye) and [@linusyang](https://github.com/linusyang).
 
-Current version: 2.4.8 | [Changelog](debian/changelog)
+Current version: 2.5.4 | [Changelog](debian/changelog)
 
 Travis CI: [![Travis CI](https://travis-ci.org/shadowsocks/shadowsocks-libev.svg?branch=master)](https://travis-ci.org/shadowsocks/shadowsocks-libev)
 
@@ -124,7 +124,7 @@ section below.
 ``` bash
 cd shadowsocks-libev
 sudo apt-get install --no-install-recommends build-essential autoconf libtool libssl-dev \
-    gawk debhelper dh-systemd init-system-helpers pkg-config asciidoc xmlto
+    gawk debhelper dh-systemd init-system-helpers pkg-config asciidoc xmlto apg libpcre3-dev
 dpkg-buildpackage -b -us -uc -i
 cd ..
 sudo dpkg -i shadowsocks-libev*.deb
@@ -226,7 +226,10 @@ For Unix-like systems, especially Debian-based systems,
 e.g. Ubuntu, Debian or Linux Mint, you can build the binary like this:
 
 ```bash
-sudo apt-get install --no-install-recommends build-essential autoconf libtool libssl-dev asciidoc xmlto
+# Debian / Ubuntu
+sudo apt-get install --no-install-recommends build-essential autoconf libtool libssl-dev libpcre3-dev asciidoc xmlto
+# CentOS / Fedora / RHEL
+sudo yum install gcc autoconf libtool automake make zlib-devel openssl-devel asciidoc xmlto
 ./configure && make
 sudo make install
 ```
@@ -431,13 +434,15 @@ The latest shadowsocks-libev has provided a *redir* mode. You can configure your
     root@Wrt:~# iptables -t nat -A SHADOWSOCKS -p tcp -j REDIRECT --to-ports 12345
 
     # Add any UDP rules
-    root@Wrt:~# ip rule add fwmark 0x01/0x01 table 100
-    root@Wrt:~# ip route add local 0.0.0.0/0 dev lo table 100
+    root@Wrt:~# ip route add local default dev lo table 100
+    root@Wrt:~# ip rule add fwmark 1 lookup 100
     root@Wrt:~# iptables -t mangle -A SHADOWSOCKS -p udp --dport 53 -j TPROXY --on-port 12345 --tproxy-mark 0x01/0x01
+    root@Wrt:~# iptables -t mangle -A SHADOWSOCKS_MARK -p udp --dport 53 -j MARK --set-mark 1
 
     # Apply the rules
-    root@Wrt:~# iptables -t nat -A PREROUTING -p tcp -j SHADOWSOCKS
+    root@Wrt:~# iptables -t nat -A OUTPUT -p tcp -j SHADOWSOCKS
     root@Wrt:~# iptables -t mangle -A PREROUTING -j SHADOWSOCKS
+    root@Wrt:~# iptables -t mangle -A OUTPUT -j SHADOWSOCKS_MARK
 
     # Start the shadowsocks-redir
     root@Wrt:~# ss-redir -u -c /etc/config/shadowsocks.json -f /var/run/shadowsocks.pid

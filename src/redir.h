@@ -61,6 +61,9 @@ typedef struct server {
     struct server_ctx *send_ctx;
     struct remote *remote;
 
+    char *hostname;
+    size_t hostname_len;
+
     // SSR
     obfs *protocol;
     obfs *obfs;

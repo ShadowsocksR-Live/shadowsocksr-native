@@ -46,6 +46,8 @@
 #include "config.h"
 #endif
 
+#include "http.h"
+#include "tls.h"
 #include "netutils.h"
 #include "utils.h"
 #include "common.h"
@@ -83,7 +85,7 @@ static void close_and_free_remote(EV_P_ remote_t *remote);
 static void free_server(server_t *server);
 static void close_and_free_server(EV_P_ server_t *server);
 
-int verbose = 0;
+int verbose        = 0;
 int keep_resolving = 1;
 
 static int mode = TCP_ONLY;
@@ -92,7 +94,8 @@ static int auth = 0;
 static int nofile = 0;
 #endif
 
-int getdestaddr(int fd, struct sockaddr_storage *destaddr)
+int
+getdestaddr(int fd, struct sockaddr_storage *destaddr)
 {
     socklen_t socklen = sizeof(*destaddr);
     int error         = 0;
@@ -107,7 +110,8 @@ int getdestaddr(int fd, struct sockaddr_storage *destaddr)
     return 0;
 }
 
-int setnonblocking(int fd)
+int
+setnonblocking(int fd)
 {
     int flags;
     if (-1 == (flags = fcntl(fd, F_GETFL, 0))) {
@@ -116,7 +120,8 @@ int setnonblocking(int fd)
     return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
 
-int create_and_bind(const char *addr, const char *port)
+int
+create_and_bind(const char *addr, const char *port)
 {
     struct addrinfo hints;
     struct addrinfo *result, *rp;
@@ -169,13 +174,15 @@ int create_and_bind(const char *addr, const char *port)
     return listen_sock;
 }
 
-static void server_recv_cb(EV_P_ ev_io *w, int revents)
+static void
+server_recv_cb(EV_P_ ev_io *w, int revents)
 {
     server_ctx_t *server_recv_ctx = (server_ctx_t *)w;
     server_t *server              = server_recv_ctx->server;
     remote_t *remote              = server->remote;
 
-    ssize_t r = recv(server->fd, remote->buf->array, BUF_SIZE, 0);
+    ssize_t r = recv(server->fd, remote->buf->array + remote->buf->len,
+                     BUF_SIZE - remote->buf->len, 0);
 
     if (r == 0) {
         // connection closed
@@ -195,6 +202,8 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         }
     }
 
+    remote->buf->len += r;
+
     if (verbose) {
         uint16_t port = 0;
         char ipstr[INET6_ADDRSTRLEN];
@@ -212,15 +221,36 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
             port = ntohs(sa->sin6_port);
         }
 
-        LOGI("redir to %s:%d, len=%zd", ipstr, port, r);
+        LOGI("redir to %s:%d, len=%zd, recv=%zd", ipstr, port, remote->buf->len, r);
     }
-
-    remote->buf->len = r;
 
     if (auth) {
         ss_gen_hash(remote->buf, &remote->counter, server->e_ctx, BUF_SIZE);
     }
 
+    if (!remote->send_ctx->connected) {
+        // SNI
+        int ret       = 0;
+        uint16_t port = 0;
+
+        if (AF_INET6 == server->destaddr.ss_family) { // IPv6
+            port = ntohs(((struct sockaddr_in6 *)&(server->destaddr))->sin6_port);
+        } else {                             // IPv4
+            port = ntohs(((struct sockaddr_in *)&(server->destaddr))->sin_port);
+        }
+        if (port == http_protocol->default_port)
+            ret = http_protocol->parse_packet(remote->buf->array,
+                                              remote->buf->len, &server->hostname);
+        else if (port == tls_protocol->default_port)
+            ret = tls_protocol->parse_packet(remote->buf->array,
+                                             remote->buf->len, &server->hostname);
+        if (ret > 0) {
+            server->hostname_len = ret;
+        }
+
+        ev_io_stop(EV_A_ & server_recv_ctx->io);
+        ev_io_start(EV_A_ & remote->send_ctx->io);
+        return;
     // SSR beg
     if (server->protocol_plugin) {
         obfs_class *protocol_plugin = server->protocol_plugin;
@@ -272,10 +302,14 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents)
         ev_io_stop(EV_A_ & server_recv_ctx->io);
         ev_io_start(EV_A_ & remote->send_ctx->io);
         return;
+    } else {
+        remote->buf->idx = 0;
+        remote->buf->len = 0;
     }
 }
 
-static void server_send_cb(EV_P_ ev_io *w, int revents)
+static void
+server_send_cb(EV_P_ ev_io *w, int revents)
 {
     server_ctx_t *server_send_ctx = (server_ctx_t *)w;
     server_t *server              = server_send_ctx->server;
@@ -311,7 +345,8 @@ static void server_send_cb(EV_P_ ev_io *w, int revents)
     }
 }
 
-static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
+static void
+remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 {
     remote_ctx_t *remote_ctx = (remote_ctx_t *)(((void *)watcher)
                                                 - sizeof(ev_io));
@@ -324,7 +359,8 @@ static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
     close_and_free_server(EV_A_ server);
 }
 
-static void remote_recv_cb(EV_P_ ev_io *w, int revents)
+static void
+remote_recv_cb(EV_P_ ev_io *w, int revents)
 {
     remote_ctx_t *remote_recv_ctx = (remote_ctx_t *)w;
     remote_t *remote              = remote_recv_ctx->remote;
@@ -429,7 +465,8 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents)
     setsockopt(remote->fd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
 }
 
-static void remote_send_cb(EV_P_ ev_io *w, int revents)
+static void
+remote_send_cb(EV_P_ ev_io *w, int revents)
 {
     remote_ctx_t *remote_send_ctx = (remote_ctx_t *)w;
     remote_t *remote              = remote_send_ctx->remote;
@@ -450,7 +487,20 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
             buffer_t *abuf = &ss_addr_to_send;
             balloc(abuf, BUF_SIZE);
 
-            if (AF_INET6 == server->destaddr.ss_family) { // IPv6
+            if (server->hostname_len > 0) { // HTTP/SNI
+                uint16_t port;
+                if (AF_INET6 == server->destaddr.ss_family) { // IPv6
+                    port = (((struct sockaddr_in6 *)&(server->destaddr))->sin6_port);
+                } else {                             // IPv4
+                    port = (((struct sockaddr_in *)&(server->destaddr))->sin_port);
+                }
+
+                abuf->array[abuf->len++] = 3;          // Type 3 is hostname
+                abuf->array[abuf->len++] = server->hostname_len;
+                memcpy(abuf->array + abuf->len, server->hostname, server->hostname_len);
+                abuf->len += server->hostname_len;
+                memcpy(abuf->array + abuf->len, &port, 2);
+            } else if (AF_INET6 == server->destaddr.ss_family) { // IPv6
                 abuf->array[abuf->len++] = 4;          // Type 4 is IPv6 address
 
                 size_t in6_addr_len = sizeof(struct in6_addr);
@@ -471,6 +521,7 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
                 memcpy(abuf->array + abuf->len,
                        &((struct sockaddr_in *)&(server->destaddr))->sin_port, 2);
             }
+
             abuf->len += 2;
 
             if (auth) {
@@ -563,7 +614,8 @@ static void remote_send_cb(EV_P_ ev_io *w, int revents)
     }
 }
 
-static remote_t *new_remote(int fd, int timeout)
+static remote_t *
+new_remote(int fd, int timeout)
 {
     remote_t *remote;
     remote = ss_malloc(sizeof(remote_t));
@@ -589,7 +641,8 @@ static remote_t *new_remote(int fd, int timeout)
     return remote;
 }
 
-static void free_remote(remote_t *remote)
+static void
+free_remote(remote_t *remote)
 {
     if (remote != NULL) {
         if (remote->server != NULL) {
@@ -605,7 +658,8 @@ static void free_remote(remote_t *remote)
     }
 }
 
-static void close_and_free_remote(EV_P_ remote_t *remote)
+static void
+close_and_free_remote(EV_P_ remote_t *remote)
 {
     if (remote != NULL) {
         ev_timer_stop(EV_A_ & remote->send_ctx->watcher);
@@ -616,7 +670,8 @@ static void close_and_free_remote(EV_P_ remote_t *remote)
     }
 }
 
-static server_t *new_server(int fd, int method)
+static server_t *
+new_server(int fd, int method)
 {
     server_t *server;
     server = ss_malloc(sizeof(server_t));
@@ -629,6 +684,9 @@ static server_t *new_server(int fd, int method)
     server->recv_ctx->connected = 0;
     server->send_ctx->server    = server;
     server->send_ctx->connected = 0;
+
+    server->hostname     = NULL;
+    server->hostname_len = 0;
 
     if (method) {
         server->e_ctx = ss_malloc(sizeof(enc_ctx_t));
@@ -648,9 +706,13 @@ static server_t *new_server(int fd, int method)
     return server;
 }
 
-static void free_server(server_t *server)
+static void
+free_server(server_t *server)
 {
     if (server != NULL) {
+        if (server->hostname != NULL) {
+            ss_free(server->hostname);
+        }
         if (server->remote != NULL) {
             server->remote->server = NULL;
         }
@@ -686,7 +748,8 @@ static void free_server(server_t *server)
     }
 }
 
-static void close_and_free_server(EV_P_ server_t *server)
+static void
+close_and_free_server(EV_P_ server_t *server)
 {
     if (server != NULL) {
         ev_io_stop(EV_A_ & server->send_ctx->io);
@@ -696,7 +759,8 @@ static void close_and_free_server(EV_P_ server_t *server)
     }
 }
 
-static void accept_cb(EV_P_ ev_io *w, int revents)
+static void
+accept_cb(EV_P_ ev_io *w, int revents)
 {
     listen_ctx_t *listener = (listen_ctx_t *)w;
     struct sockaddr_storage destaddr;
@@ -813,7 +877,8 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     // SSR end
 
     if (r == 0) {
-        if (verbose) LOGI("connected immediately");
+        if (verbose)
+            LOGI("connected immediately");
         remote_send_cb(EV_A_ & remote->send_ctx->io, 0);
     } else {
         // listen to remote connected event
@@ -831,12 +896,15 @@ static void accept_cb(EV_P_ ev_io *w, int revents)
     ev_io_start(EV_A_ & remote->send_ctx->io);
 }
 
-void signal_cb(int dummy) {
+void
+signal_cb(int dummy)
+{
     keep_resolving = 0;
     exit(-1);
 }
 
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
     srand(time(NULL));
 
@@ -862,13 +930,15 @@ int main(int argc, char **argv)
 
     int option_index                    = 0;
     static struct option long_options[] = {
-        { "mtu",  required_argument, 0, 0 },
-        { "mptcp", no_argument     , 0, 0 },
-        { "help",  no_argument     , 0, 0 },
-        {      0,            0     , 0, 0 }
+        { "mtu",   required_argument, 0, 0 },
+        { "mptcp", no_argument,       0, 0 },
+        { "help",  no_argument,       0, 0 },
+        {       0,                 0, 0, 0 }
     };
 
     opterr = 0;
+
+    USE_TTY();
 
     while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:c:b:a:n:O:o:G:g:huUvA", // SSR
                             long_options, &option_index)) != -1) {
@@ -954,6 +1024,7 @@ int main(int argc, char **argv)
             break;
         case '?':
             // The option character is not recognized.
+            LOGE("Unrecognized option: %s", optarg);
             opterr = 1;
             break;
         }
@@ -1023,16 +1094,6 @@ int main(int argc, char **argv)
         if (nofile == 0) {
             nofile = conf->nofile;
     }
-        /*
-         * no need to check the return value here since we will show
-         * the user an error message if setrlimit(2) fails
-         */
-        if (nofile > 1024) {
-            if (verbose) {
-                LOGI("setting NOFILE to %d", nofile);
-            }
-            set_nofile(nofile);
-        }
 #endif
     }
     if (protocol && strcmp(protocol, "verify_sha1") == 0) {
@@ -1050,6 +1111,19 @@ int main(int argc, char **argv)
         timeout = "60";
     }
 
+#ifdef HAVE_SETRLIMIT
+    /*
+     * no need to check the return value here since we will show
+     * the user an error message if setrlimit(2) fails
+     */
+    if (nofile > 1024) {
+        if (verbose) {
+            LOGI("setting NOFILE to %d", nofile);
+        }
+        set_nofile(nofile);
+    }
+#endif
+
     if (local_addr == NULL) {
         local_addr = "127.0.0.1";
     }
@@ -1066,7 +1140,7 @@ int main(int argc, char **argv)
     // ignore SIGPIPE
     signal(SIGPIPE, SIG_IGN);
     signal(SIGABRT, SIG_IGN);
-    signal(SIGINT,  signal_cb);
+    signal(SIGINT, signal_cb);
     signal(SIGTERM, signal_cb);
 
     // Setup keys

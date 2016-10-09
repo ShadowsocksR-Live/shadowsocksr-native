@@ -54,17 +54,22 @@
 
 extern int verbose;
 
+static const char valid_label_bytes[] =
+    "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+
 #if defined(MODULE_LOCAL)
 extern int keep_resolving;
 #endif
 
-int set_reuseport(int socket)
+int
+set_reuseport(int socket)
 {
     int opt = 1;
     return setsockopt(socket, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
 }
 
-size_t get_sockaddr_len(struct sockaddr *addr)
+size_t
+get_sockaddr_len(struct sockaddr *addr)
 {
     if (addr->sa_family == AF_INET) {
         return sizeof(struct sockaddr_in);
@@ -75,7 +80,8 @@ size_t get_sockaddr_len(struct sockaddr *addr)
 }
 
 #ifdef SET_INTERFACE
-int setinterface(int socket_fd, const char *interface_name)
+int
+setinterface(int socket_fd, const char *interface_name)
 {
     struct ifreq interface;
     memset(&interface, 0, sizeof(interface));
@@ -84,9 +90,11 @@ int setinterface(int socket_fd, const char *interface_name)
                          sizeof(struct ifreq));
     return res;
 }
+
 #endif
 
-int bind_to_address(int socket_fd, const char *host)
+int
+bind_to_address(int socket_fd, const char *host)
 {
     if (host != NULL) {
         struct cork_ip ip;
@@ -109,7 +117,8 @@ int bind_to_address(int socket_fd, const char *host)
     return -1;
 }
 
-ssize_t get_sockaddr(char *host, char *port, struct sockaddr_storage *storage, int block)
+ssize_t
+get_sockaddr(char *host, char *port, struct sockaddr_storage *storage, int block)
 {
     struct cork_ip ip;
     if (cork_ip_init(&ip, host) != -1) {
@@ -184,8 +193,9 @@ ssize_t get_sockaddr(char *host, char *port, struct sockaddr_storage *storage, i
     return -1;
 }
 
-int sockaddr_cmp(struct sockaddr_storage *addr1,
-                 struct sockaddr_storage *addr2, socklen_t len)
+int
+sockaddr_cmp(struct sockaddr_storage *addr1,
+             struct sockaddr_storage *addr2, socklen_t len)
 {
     struct sockaddr_in *p1_in   = (struct sockaddr_in *)addr1;
     struct sockaddr_in *p2_in   = (struct sockaddr_in *)addr2;
@@ -217,8 +227,9 @@ int sockaddr_cmp(struct sockaddr_storage *addr1,
     }
 }
 
-int sockaddr_cmp_addr(struct sockaddr_storage *addr1,
-                      struct sockaddr_storage *addr2, socklen_t len)
+int
+sockaddr_cmp_addr(struct sockaddr_storage *addr1,
+                  struct sockaddr_storage *addr2, socklen_t len)
 {
     struct sockaddr_in *p1_in   = (struct sockaddr_in *)addr1;
     struct sockaddr_in *p2_in   = (struct sockaddr_in *)addr2;
@@ -238,4 +249,41 @@ int sockaddr_cmp_addr(struct sockaddr_storage *addr1,
         /* eek unknown type, perform this comparison for sanity. */
         return memcmp(addr1, addr2, len);
     }
+}
+
+int
+validate_hostname(const char *hostname, const int hostname_len)
+{
+    if (hostname == NULL)
+        return 0;
+
+    if (hostname_len < 1 || hostname_len > 255)
+        return 0;
+
+    if (hostname[0] == '.')
+        return 0;
+
+    const char *label = hostname;
+    while (label < hostname + hostname_len) {
+        size_t label_len = hostname_len - (label - hostname);
+        char *next_dot   = strchr(label, '.');
+        if (next_dot != NULL)
+            label_len = next_dot - label;
+
+        if (label + label_len > hostname + hostname_len)
+            return 0;
+
+        if (label_len > 63 || label_len < 1)
+            return 0;
+
+        if (label[0] == '-' || label[label_len - 1] == '-')
+            return 0;
+
+        if (strspn(label, valid_label_bytes) < label_len)
+            return 0;
+
+        label += label_len + 1;
+    }
+
+    return 1;
 }

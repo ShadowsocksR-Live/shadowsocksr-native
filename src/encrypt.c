@@ -89,7 +89,8 @@ static int enc_method;
 static struct cache *iv_cache;
 
 #ifdef DEBUG
-static void dump(char *tag, char *text, int len)
+static void
+dump(char *tag, char *text, int len)
 {
     int i;
     printf("%s: ", tag);
@@ -239,7 +240,8 @@ static const int supported_ciphers_key_size[CIPHER_NUM] = {
     0, 16, 16, 16, 16, 24, 32, 16, 24, 32, 16, 16, 24, 32, 16,  8, 16, 16, 16, 32, 32, 32
 };
 
-static int safe_memcmp(const void *s1, const void *s2, size_t n)
+static int
+safe_memcmp(const void *s1, const void *s2, size_t n)
 {
     const unsigned char *_s1 = (const unsigned char *)s1;
     const unsigned char *_s2 = (const unsigned char *)s2;
@@ -250,7 +252,8 @@ static int safe_memcmp(const void *s1, const void *s2, size_t n)
     return !!ret;
 }
 
-int balloc(buffer_t *ptr, size_t capacity)
+int
+balloc(buffer_t *ptr, size_t capacity)
 {
     sodium_memzero(ptr, sizeof(buffer_t));
     ptr->array    = ss_malloc(capacity);
@@ -258,7 +261,8 @@ int balloc(buffer_t *ptr, size_t capacity)
     return capacity;
 }
 
-int brealloc(buffer_t *ptr, size_t len, size_t capacity)
+int
+brealloc(buffer_t *ptr, size_t len, size_t capacity)
 {
     if (ptr == NULL)
         return -1;
@@ -270,7 +274,8 @@ int brealloc(buffer_t *ptr, size_t len, size_t capacity)
     return real_capacity;
 }
 
-void bfree(buffer_t *ptr)
+void
+bfree(buffer_t *ptr)
 {
     if (ptr == NULL)
         return;
@@ -282,9 +287,10 @@ void bfree(buffer_t *ptr)
     }
 }
 
-static int crypto_stream_xor_ic(uint8_t *c, const uint8_t *m, uint64_t mlen,
-                                const uint8_t *n, uint64_t ic, const uint8_t *k,
-                                int method)
+static int
+crypto_stream_xor_ic(uint8_t *c, const uint8_t *m, uint64_t mlen,
+                     const uint8_t *n, uint64_t ic, const uint8_t *k,
+                     int method)
 {
     switch (method) {
     case SALSA20:
@@ -298,16 +304,18 @@ static int crypto_stream_xor_ic(uint8_t *c, const uint8_t *m, uint64_t mlen,
     return 0;
 }
 
-static int random_compare(const void *_x, const void *_y, uint32_t i,
-                          uint64_t a)
+static int
+random_compare(const void *_x, const void *_y, uint32_t i,
+               uint64_t a)
 {
     uint8_t x = *((uint8_t *)_x);
     uint8_t y = *((uint8_t *)_y);
     return a % (x + i) - a % (y + i);
 }
 
-static void merge(uint8_t *left, int llength, uint8_t *right,
-                  int rlength, uint32_t salt, uint64_t key)
+static void
+merge(uint8_t *left, int llength, uint8_t *right,
+      int rlength, uint32_t salt, uint64_t key)
 {
     uint8_t *ltmp = (uint8_t *)malloc(llength * sizeof(uint8_t));
     uint8_t *rtmp = (uint8_t *)malloc(rlength * sizeof(uint8_t));
@@ -353,8 +361,9 @@ static void merge(uint8_t *left, int llength, uint8_t *right,
     ss_free(rtmp);
 }
 
-static void merge_sort(uint8_t array[], int length,
-                       uint32_t salt, uint64_t key)
+static void
+merge_sort(uint8_t array[], int length,
+           uint32_t salt, uint64_t key)
 {
     uint8_t middle;
     uint8_t *left, *right;
@@ -376,7 +385,8 @@ static void merge_sort(uint8_t array[], int length,
     merge(left, llength, right, middle, salt, key);
 }
 
-int enc_get_iv_len()
+int
+enc_get_iv_len()
 {
     return enc_iv_len;
 }
@@ -391,7 +401,8 @@ int enc_get_key_len()
     return enc_key_len;
 }
 
-unsigned char *enc_md5(const unsigned char *d, size_t n, unsigned char *md)
+unsigned char *
+enc_md5(const unsigned char *d, size_t n, unsigned char *md)
 {
 #if defined(USE_CRYPTO_OPENSSL)
     return MD5(d, n, md);
@@ -412,7 +423,8 @@ unsigned char *enc_md5(const unsigned char *d, size_t n, unsigned char *md)
 #endif
 }
 
-void enc_table_init(const char *pass)
+void
+enc_table_init(const char *pass)
 {
     uint32_t i;
     uint64_t key = 0;
@@ -435,7 +447,8 @@ void enc_table_init(const char *pass)
         dec_table[enc_table[i]] = i;
 }
 
-int cipher_iv_size(const cipher_kt_t *cipher)
+int
+cipher_iv_size(const cipher_kt_t *cipher)
 {
 #if defined(USE_CRYPTO_OPENSSL)
     return EVP_CIPHER_iv_length(cipher);
@@ -447,7 +460,8 @@ int cipher_iv_size(const cipher_kt_t *cipher)
 #endif
 }
 
-int cipher_key_size(const cipher_kt_t *cipher)
+int
+cipher_key_size(const cipher_kt_t *cipher)
 {
 #if defined(USE_CRYPTO_OPENSSL)
     return EVP_CIPHER_key_length(cipher);
@@ -478,8 +492,9 @@ int cipher_key_size(const cipher_kt_t *cipher)
 #endif
 }
 
-int bytes_to_key(const cipher_kt_t *cipher, const digest_type_t *md,
-                 const uint8_t *pass, uint8_t *key, uint8_t *iv)
+int
+bytes_to_key(const cipher_kt_t *cipher, const digest_type_t *md,
+             const uint8_t *pass, uint8_t *key, uint8_t *iv)
 {
     size_t datal;
     datal = strlen((const char *)pass);
@@ -694,7 +709,8 @@ int bytes_to_key(const cipher_kt_t *cipher, const digest_type_t *md,
 #endif
 }
 
-int rand_bytes(uint8_t *output, int len)
+int
+rand_bytes(uint8_t *output, int len)
 {
 #if defined(USE_CRYPTO_OPENSSL)
     return RAND_bytes(output, len);
@@ -820,7 +836,8 @@ int rand_bytes(uint8_t *output, int len)
 #endif
 }
 
-const cipher_kt_t *get_cipher_type(int method)
+const cipher_kt_t *
+get_cipher_type(int method)
 {
     if (method <= TABLE || method >= CIPHER_NUM) {
         LOGE("get_cipher_type(): Illegal method");
@@ -857,7 +874,8 @@ const cipher_kt_t *get_cipher_type(int method)
 #endif
 }
 
-const digest_type_t *get_digest_type(const char *digest)
+const digest_type_t *
+get_digest_type(const char *digest)
 {
     if (digest == NULL) {
         LOGE("get_digest_type(): Digest name is null");
@@ -873,7 +891,8 @@ const digest_type_t *get_digest_type(const char *digest)
 #endif
 }
 
-void cipher_context_init(cipher_ctx_t *ctx, int method, int enc)
+void
+cipher_context_init(cipher_ctx_t *ctx, int method, int enc)
 {
     if (method <= TABLE || method >= CIPHER_NUM) {
         LOGE("cipher_context_init(): Illegal method");
@@ -898,7 +917,7 @@ void cipher_context_init(cipher_ctx_t *ctx, int method, int enc)
             cc->mode    = supported_modes_applecc[method];
             cc->padding = ccNoPadding;
         } else {
-            cc->mode    = supported_modes_applecc[method];
+            cc->mode = supported_modes_applecc[method];
             if (cc->mode == kCCModeCTR) {
                 cc->padding = ccNoPadding;
             } else {
@@ -953,8 +972,9 @@ void cipher_context_init(cipher_ctx_t *ctx, int method, int enc)
 #endif
 }
 
-void cipher_context_set_iv(cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len,
-                           int enc)
+void
+cipher_context_set_iv(cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len,
+                      int enc)
 {
     const unsigned char *true_key;
 
@@ -1066,7 +1086,8 @@ void cipher_context_set_iv(cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len,
 #endif
 }
 
-void cipher_context_release(cipher_ctx_t *ctx)
+void
+cipher_context_release(cipher_ctx_t *ctx)
 {
     if (enc_method >= SALSA20) {
         return;
@@ -1095,8 +1116,9 @@ void cipher_context_release(cipher_ctx_t *ctx)
 #endif
 }
 
-static int cipher_context_update(cipher_ctx_t *ctx, uint8_t *output, size_t *olen,
-                                 const uint8_t *input, size_t ilen)
+static int
+cipher_context_update(cipher_ctx_t *ctx, uint8_t *output, size_t *olen,
+                      const uint8_t *input, size_t ilen)
 {
 #ifdef USE_CRYPTO_APPLECC
     cipher_cc_t *cc = &ctx->cc;
@@ -1160,7 +1182,8 @@ int ss_sha1_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key,
     return 0;
 }
 
-int ss_onetimeauth(buffer_t *buf, uint8_t *iv, size_t capacity)
+int
+ss_onetimeauth(buffer_t *buf, uint8_t *iv, size_t capacity)
 {
     uint8_t hash[ONETIMEAUTH_BYTES * 2];
     uint8_t auth_key[MAX_IV_LENGTH + MAX_KEY_LENGTH];
@@ -1185,7 +1208,8 @@ int ss_onetimeauth(buffer_t *buf, uint8_t *iv, size_t capacity)
     return 0;
 }
 
-int ss_onetimeauth_verify(buffer_t *buf, uint8_t *iv)
+int
+ss_onetimeauth_verify(buffer_t *buf, uint8_t *iv)
 {
     uint8_t hash[ONETIMEAUTH_BYTES * 2];
     uint8_t auth_key[MAX_IV_LENGTH + MAX_KEY_LENGTH];
@@ -1205,7 +1229,8 @@ int ss_onetimeauth_verify(buffer_t *buf, uint8_t *iv)
     return safe_memcmp(buf->array + len, hash, ONETIMEAUTH_BYTES);
 }
 
-int ss_encrypt_all(buffer_t *plain, int method, int auth, size_t capacity)
+int
+ss_encrypt_all(buffer_t *plain, int method, int auth, size_t capacity)
 {
     if (method > TABLE) {
         cipher_ctx_t evp;
@@ -1270,7 +1295,8 @@ int ss_encrypt_all(buffer_t *plain, int method, int auth, size_t capacity)
     }
 }
 
-int ss_encrypt(buffer_t *plain, enc_ctx_t *ctx, size_t capacity)
+int
+ss_encrypt(buffer_t *plain, enc_ctx_t *ctx, size_t capacity)
 {
     if (ctx != NULL) {
         static buffer_t tmp = { 0, 0, 0, NULL };
@@ -1343,7 +1369,8 @@ int ss_encrypt(buffer_t *plain, enc_ctx_t *ctx, size_t capacity)
     }
 }
 
-int ss_decrypt_all(buffer_t *cipher, int method, int auth, size_t capacity)
+int
+ss_decrypt_all(buffer_t *cipher, int method, int auth, size_t capacity)
 {
     if (method > TABLE) {
         size_t iv_len = enc_iv_len;
@@ -1416,7 +1443,8 @@ int ss_decrypt_all(buffer_t *cipher, int method, int auth, size_t capacity)
     }
 }
 
-int ss_decrypt(buffer_t *cipher, enc_ctx_t *ctx, size_t capacity)
+int
+ss_decrypt(buffer_t *cipher, enc_ctx_t *ctx, size_t capacity)
 {
     if (ctx != NULL) {
         static buffer_t tmp = { 0, 0, 0, NULL };
@@ -1500,7 +1528,8 @@ int ss_decrypt(buffer_t *cipher, enc_ctx_t *ctx, size_t capacity)
     }
 }
 
-void enc_ctx_init(int method, enc_ctx_t *ctx, int enc)
+void
+enc_ctx_init(int method, enc_ctx_t *ctx, int enc)
 {
     sodium_memzero(ctx, sizeof(enc_ctx_t));
     cipher_context_init(&ctx->evp, method, enc);
@@ -1510,7 +1539,8 @@ void enc_ctx_init(int method, enc_ctx_t *ctx, int enc)
     }
 }
 
-void enc_key_init(int method, const char *pass)
+void
+enc_key_init(int method, const char *pass)
 {
     if (method <= TABLE || method >= CIPHER_NUM) {
         LOGE("enc_key_init(): Illegal method");
@@ -1518,7 +1548,7 @@ void enc_key_init(int method, const char *pass)
     }
 
     // Initialize cache
-    cache_create(&iv_cache, 256, NULL);
+    cache_create(&iv_cache, 1024, NULL);
 
 #if defined(USE_CRYPTO_OPENSSL)
     OpenSSL_add_all_algorithms();
@@ -1598,7 +1628,8 @@ void enc_key_init(int method, const char *pass)
     enc_method = method;
 }
 
-int enc_init(const char *pass, const char *method)
+int
+enc_init(const char *pass, const char *method)
 {
     int m = TABLE;
     if (method != NULL) {
@@ -1619,7 +1650,8 @@ int enc_init(const char *pass, const char *method)
     return m;
 }
 
-int ss_check_hash(buffer_t *buf, chunk_t *chunk, enc_ctx_t *ctx, size_t capacity)
+int
+ss_check_hash(buffer_t *buf, chunk_t *chunk, enc_ctx_t *ctx, size_t capacity)
 {
     int i, j, k;
     ssize_t blen  = buf->len;
@@ -1677,7 +1709,8 @@ int ss_check_hash(buffer_t *buf, chunk_t *chunk, enc_ctx_t *ctx, size_t capacity
     return 1;
 }
 
-int ss_gen_hash(buffer_t *buf, uint32_t *counter, enc_ctx_t *ctx, size_t capacity)
+int
+ss_gen_hash(buffer_t *buf, uint32_t *counter, enc_ctx_t *ctx, size_t capacity)
 {
     ssize_t blen       = buf->len;
     uint16_t chunk_len = htons((uint16_t)blen);
