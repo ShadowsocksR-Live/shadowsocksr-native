@@ -1,3 +1,9 @@
+shadowsocks-libev (2.5.4-1) unstable; urgency=medium
+
+  * Fix a bug of auto blocking mechanism.
+
+ -- Max Lv <max.c.lv@gmail.com>  Sun, 09 Oct 2016 19:36:37 +0800
+
 shadowsocks-libev (2.5.3-1) unstable; urgency=medium
 
   * Fix TCP Fast Open on macOS.

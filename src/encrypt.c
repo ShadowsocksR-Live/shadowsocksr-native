@@ -1496,7 +1496,7 @@ enc_key_init(int method, const char *pass)
     }
 
     // Initialize cache
-    cache_create(&iv_cache, 256, NULL);
+    cache_create(&iv_cache, 1024, NULL);
 
 #if defined(USE_CRYPTO_OPENSSL)
     OpenSSL_add_all_algorithms();
