@@ -233,6 +233,8 @@ parse_header_len(const char atyp, const char *data, size_t offset)
     } else if ((atyp & ADDRTYPE_MASK) == 4) {
         // IP V6
         len += sizeof(struct in6_addr);
+    } else {
+        return 0;
     }
     len += 2;
     return len;
@@ -262,6 +264,8 @@ is_header_complete(const buffer_t *buf)
     } else if ((atyp & ADDRTYPE_MASK) == 4) {
         // IP V6
         header_len += sizeof(struct in6_addr);
+    } else {
+        return 1;
     }
 
     // len of port
@@ -612,6 +616,25 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             // wait for more
             return;
         }
+
+        char *peer_name = get_peer_name(server->fd);
+        if (peer_name != NULL) {
+            if (check_block_list(peer_name, 0)) {
+                LOGE("block all requests from %s", peer_name);
+                close_and_free_remote(EV_A_ remote);
+                close_and_free_server(EV_A_ server);
+                return;
+            }
+            if (acl) {
+                if ((get_acl_mode() == BLACK_LIST && acl_match_host(peer_name) == 1)
+                        || (get_acl_mode() == WHITE_LIST && acl_match_host(peer_name) >= 0)) {
+                    LOGE("Access denied from %s", peer_name);
+                    close_and_free_remote(EV_A_ remote);
+                    close_and_free_server(EV_A_ server);
+                    return;
+                }
+            }
+        }
     } else {
         buf->len = r;
     }
@@ -730,7 +753,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             size_t header_len = parse_header_len(atyp, server->buf->array, offset);
             size_t len        = server->buf->len;
 
-            if (len < offset + header_len + ONETIMEAUTH_BYTES) {
+            if (header_len == 0 || len < offset + header_len + ONETIMEAUTH_BYTES) {
                 report_addr(server->fd, MALFORMED);
                 close_and_free_server(EV_A_ server);
                 return;
@@ -1335,10 +1358,12 @@ new_server(int fd, listen_ctx_t *listener)
         server->d_ctx = NULL;
     }
 
+    int request_timeout = min(MAX_REQUEST_TIMEOUT, listener->timeout);
+
     ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
     ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
     ev_timer_init(&server->recv_ctx->watcher, server_timeout_cb,
-                  min(MAX_CONNECT_TIMEOUT, listener->timeout), listener->timeout);
+                  request_timeout, listener->timeout);
 
     balloc(server->buf, BUF_SIZE);
     balloc(server->header_buf, BUF_SIZE);
@@ -1430,24 +1455,6 @@ accept_cb(EV_P_ ev_io *w, int revents)
     if (serverfd == -1) {
         ERROR("accept");
         return;
-    }
-
-    char *peer_name = get_peer_name(serverfd);
-
-    if (peer_name != NULL) {
-        if (check_block_list(peer_name, 0)) {
-            LOGE("block all requests from %s", peer_name);
-            close(serverfd);
-            return;
-        }
-        if (acl) {
-            if ((get_acl_mode() == BLACK_LIST && acl_match_host(peer_name) == 1)
-                || (get_acl_mode() == WHITE_LIST && acl_match_host(peer_name) >= 0)) {
-                LOGE("Access denied from %s", peer_name);
-                close(serverfd);
-                return;
-            }
-        }
     }
 
     int opt = 1;

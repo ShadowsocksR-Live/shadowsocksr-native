@@ -26,10 +26,10 @@
 #define BLACK_LIST 0
 #define WHITE_LIST 1
 
-#define MAX_TRIES  64
-#define MALICIOUS  32
-#define SUSPICIOUS 16
-#define BAD        4
+#define MAX_TRIES  128
+#define MALICIOUS  8
+#define SUSPICIOUS 4
+#define BAD        2
 #define MALFORMED  1
 
 int init_acl(const char *path);
