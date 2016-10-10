@@ -145,7 +145,7 @@ typedef struct {
 #define CHACHA20IETF        20
 
 #define ONETIMEAUTH_FLAG 0x10
-#define ADDRTYPE_MASK 0xF
+#define ADDRTYPE_MASK 0xEF
 
 #define ONETIMEAUTH_BYTES 10U
 #define CLEN_BYTES 2U
