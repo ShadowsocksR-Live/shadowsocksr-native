@@ -617,24 +617,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             return;
         }
 
-        char *peer_name = get_peer_name(server->fd);
-        if (peer_name != NULL) {
-            if (check_block_list(peer_name, 0)) {
-                LOGE("block all requests from %s", peer_name);
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
-            if (acl) {
-                if ((get_acl_mode() == BLACK_LIST && acl_match_host(peer_name) == 1)
-                        || (get_acl_mode() == WHITE_LIST && acl_match_host(peer_name) >= 0)) {
-                    LOGE("Access denied from %s", peer_name);
-                    close_and_free_remote(EV_A_ remote);
-                    close_and_free_server(EV_A_ server);
-                    return;
-                }
-            }
-        }
     } else {
         buf->len = r;
     }
@@ -1358,7 +1340,8 @@ new_server(int fd, listen_ctx_t *listener)
         server->d_ctx = NULL;
     }
 
-    int request_timeout = min(MAX_REQUEST_TIMEOUT, listener->timeout);
+    int request_timeout = min(MAX_REQUEST_TIMEOUT, listener->timeout)
+        + rand() % MAX_REQUEST_TIMEOUT;
 
     ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
     ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
@@ -1455,6 +1438,23 @@ accept_cb(EV_P_ ev_io *w, int revents)
     if (serverfd == -1) {
         ERROR("accept");
         return;
+    }
+
+    char *peer_name = get_peer_name(serverfd);
+    if (peer_name != NULL) {
+        if (check_block_list(peer_name, 0)) {
+            LOGE("block all requests from %s", peer_name);
+            close(serverfd);
+            return;
+        }
+        if (acl) {
+            if ((get_acl_mode() == BLACK_LIST && acl_match_host(peer_name) == 1)
+                    || (get_acl_mode() == WHITE_LIST && acl_match_host(peer_name) >= 0)) {
+                LOGE("Access denied from %s", peer_name);
+                close(serverfd);
+                return;
+            }
+        }
     }
 
     int opt = 1;
