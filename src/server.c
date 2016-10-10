@@ -265,7 +265,7 @@ is_header_complete(const buffer_t *buf)
         // IP V6
         header_len += sizeof(struct in6_addr);
     } else {
-        return 1;
+        return 0;
     }
 
     // len of port
