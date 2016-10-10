@@ -258,24 +258,8 @@ service shadowsocks_libev start
 
 ### OpenWRT
 
-**Note**: You may want to use [openwrt-shadowsocks](https://github.com/shadowsocks/openwrt-shadowsocks)
-, which is developed specifically for OpenWRT.
-
-```bash
-# At OpenWRT build root
-pushd package
-git clone https://github.com/shadowsocks/shadowsocks-libev.git
-popd
-
-# Enable shadowsocks-libev in network category
-make menuconfig
-
-# Optional
-make -j
-
-# Build the package
-make V=99 package/shadowsocks-libev/openwrt/compile
-```
+The OpenWRT project is maintained here:
+[openwrt-shadowsocks](https://github.com/shadowsocks/openwrt-shadowsocks).
 
 ### OS X
 For OS X, use [Homebrew](http://brew.sh) to install or build.
