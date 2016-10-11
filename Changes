@@ -1,3 +1,9 @@
+shadowsocks-libev (2.5.5-1) unstable; urgency=medium
+
+  * Refine attack detection.
+
+ -- Max Lv <max.c.lv@gmail.com>  Tue, 11 Oct 2016 15:45:09 +0800
+
 shadowsocks-libev (2.5.4-1) unstable; urgency=medium
 
   * Fix a bug of auto blocking mechanism.
