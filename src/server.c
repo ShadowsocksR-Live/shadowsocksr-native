@@ -95,8 +95,7 @@ static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents);
 static remote_t *new_remote(int fd);
 static server_t *new_server(int fd, listen_ctx_t *listener);
 static remote_t *connect_to_remote(struct addrinfo *res,
-                                   server_t *server,
-                                   int *connected);
+                                   server_t *server);
 
 static void free_remote(remote_t *remote);
 static void close_and_free_remote(EV_P_ remote_t *remote);
@@ -464,8 +463,7 @@ create_and_bind(const char *host, const char *port, int mptcp)
 
 static remote_t *
 connect_to_remote(struct addrinfo *res,
-                  server_t *server,
-                  int *connected)
+                  server_t *server)
 {
     int sockfd;
 #ifdef SET_INTERFACE
@@ -559,8 +557,6 @@ connect_to_remote(struct addrinfo *res,
             close(sockfd);
             return NULL;
         }
-
-        *connected = r == 0;
     }
 
     return remote;
@@ -880,8 +876,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         }
 
         if (!need_query) {
-            int connected    = 0;
-            remote_t *remote = connect_to_remote(&info, server, &connected);
+            remote_t *remote = connect_to_remote(&info, server);
 
             if (remote == NULL) {
                 LOGE("connect error");
@@ -902,13 +897,9 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 server->stage = 4;
 
-                if (connected) {
-                    remote_send_cb(EV_A_ & remote->send_ctx->io, 0);
-                } else {
-                    // waiting on remote connected event
-                    ev_io_stop(EV_A_ & server_recv_ctx->io);
-                    ev_io_start(EV_A_ & remote->send_ctx->io);
-                }
+                // waiting on remote connected event
+                ev_io_stop(EV_A_ & server_recv_ctx->io);
+                ev_io_start(EV_A_ & remote->send_ctx->io);
             }
         } else {
             query_t *query = (query_t *)ss_malloc(sizeof(query_t));
@@ -1051,8 +1042,7 @@ server_resolve_cb(struct sockaddr *addr, void *data)
             info.ai_addrlen = sizeof(struct sockaddr_in6);
         }
 
-        int connected    = 0;
-        remote_t *remote = connect_to_remote(&info, server, &connected);
+        remote_t *remote = connect_to_remote(&info, server);
 
         if (remote == NULL) {
             LOGE("connect error");
@@ -1071,12 +1061,8 @@ server_resolve_cb(struct sockaddr *addr, void *data)
                 server->buf->idx = 0;
             }
 
-            if (connected) {
-                remote_send_cb(EV_A_ & remote->send_ctx->io, 0);
-            } else {
-                // listen to remote connected event
-                ev_io_start(EV_A_ & remote->send_ctx->io);
-            }
+            // listen to remote connected event
+            ev_io_start(EV_A_ & remote->send_ctx->io);
         }
     }
 }

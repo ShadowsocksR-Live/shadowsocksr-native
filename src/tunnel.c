@@ -699,15 +699,9 @@ accept_cb(EV_P_ ev_io *w, int revents)
         return;
     }
 
-    if (r == 0) {
-        if (verbose)
-            LOGI("connected immediately");
-        remote_send_cb(EV_A_ & remote->send_ctx->io, 0);
-    } else {
-        // listen to remote connected event
-        ev_io_start(EV_A_ & remote->send_ctx->io);
-        ev_timer_start(EV_A_ & remote->send_ctx->watcher);
-    }
+    // listen to remote connected event
+    ev_io_start(EV_A_ & remote->send_ctx->io);
+    ev_timer_start(EV_A_ & remote->send_ctx->watcher);
 }
 
 void
