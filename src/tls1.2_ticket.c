@@ -67,6 +67,15 @@ int tls12_ticket_pack_auth_data(tls12_ticket_auth_global_data *global, server_in
     return out_size;
 }
 
+void tls12_ticket_auth_pack_data(char *encryptdata, int datalength, int start, int len, char *out_buffer, int outlength) {
+    out_buffer[outlength] = 0x17;
+    out_buffer[outlength + 1] = 0x3;
+    out_buffer[outlength + 2] = 0x3;
+    out_buffer[outlength + 3] = len >> 8;
+    out_buffer[outlength + 4] = len;
+    memcpy(out_buffer + outlength + 5, encryptdata + start, len);
+}
+
 int tls12_ticket_auth_client_encode(obfs *self, char **pencryptdata, int datalength, size_t* capacity) {
     char *encryptdata = *pencryptdata;
     tls12_ticket_auth_local_data *local = (tls12_ticket_auth_local_data*)self->l_data;
@@ -74,17 +83,44 @@ int tls12_ticket_auth_client_encode(obfs *self, char **pencryptdata, int datalen
     char * out_buffer = NULL;
 
     if (local->handshake_status == 8) {
-        if (*capacity < datalength + 5) {
-            *pencryptdata = (char*)realloc(*pencryptdata, *capacity = (datalength + 5) * 2);
-            encryptdata = *pencryptdata;
+        if (datalength < 1024) {
+            if (*capacity < datalength + 5) {
+                *pencryptdata = (char*)realloc(*pencryptdata, *capacity = (datalength + 5) * 2);
+                encryptdata = *pencryptdata;
+            }
+            memmove(encryptdata + 5, encryptdata, datalength);
+            encryptdata[0] = 0x17;
+            encryptdata[1] = 0x3;
+            encryptdata[2] = 0x3;
+            encryptdata[3] = datalength >> 8;
+            encryptdata[4] = datalength;
+            return datalength + 5;
+        } else {
+            out_buffer = (char*)malloc(datalength + 2048);
+            int start = 0;
+            int outlength = 0;
+            int len;
+            while (datalength - start > 2048) {
+                len = xorshift128plus() % 4096 + 100;
+                if (len > datalength - start)
+                    len = datalength - start;
+                tls12_ticket_auth_pack_data(encryptdata, datalength, start, len, out_buffer, outlength);
+                outlength += len + 5;
+                start += len;
+            }
+            if (datalength - start > 0) {
+                len = datalength - start;
+                tls12_ticket_auth_pack_data(encryptdata, datalength, start, len, out_buffer, outlength);
+                outlength += len + 5;
+            }
+            if (*capacity < outlength) {
+                *pencryptdata = (char*)realloc(*pencryptdata, *capacity = outlength * 2);
+                encryptdata = *pencryptdata;
+            }
+            memcpy(encryptdata, out_buffer, outlength);
+            free(out_buffer);
+            return outlength;
         }
-        memmove(encryptdata + 5, encryptdata, datalength);
-        encryptdata[0] = 0x17;
-        encryptdata[1] = 0x3;
-        encryptdata[2] = 0x3;
-        encryptdata[3] = datalength >> 8;
-        encryptdata[4] = datalength;
-        return datalength + 5;
     }
     local->send_buffer = (char*)realloc(local->send_buffer, local->send_buffer_size + datalength + 5);
     memcpy(local->send_buffer + local->send_buffer_size + 5, encryptdata, datalength);

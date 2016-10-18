@@ -199,3 +199,130 @@ int http_simple_client_decode(obfs *self, char **pencryptdata, int datalength, s
     }
 }
 
+void boundary(char result[])
+{
+    char *str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    int i,lstr;
+    char ss[3] = {0};
+    lstr = strlen(str);
+    srand((unsigned int)time((time_t *)NULL));
+    for(i = 0; i < 32; ++i)
+    {
+        sprintf(ss, "%c", str[(rand()%lstr)]);
+        strcat(result, ss);
+    }
+}
+
+int http_post_client_encode(obfs *self, char **pencryptdata, int datalength, size_t* capacity) {
+    char *encryptdata = *pencryptdata;
+    http_simple_local_data *local = (http_simple_local_data*)self->l_data;
+    if (local->has_sent_header) {
+        return datalength;
+    }
+    char hosts[1024];
+    char * phost[128];
+    int host_num = 0;
+    int pos;
+    char hostport[128];
+    int head_size = self->server.head_len + (xorshift128plus() & 0x3F);
+    int outlength;
+    char * out_buffer = (char*)malloc(datalength + 2048);
+    char * body_buffer = NULL;
+    if (head_size > datalength)
+        head_size = datalength;
+    http_simple_encode_head(local, encryptdata, head_size);
+    if (self->server.param && strlen(self->server.param) == 0)
+        self->server.param = NULL;
+    strncpy(hosts, self->server.param ? self->server.param : self->server.host, sizeof hosts);
+    phost[host_num++] = hosts;
+    for (pos = 0; hosts[pos]; ++pos) {
+        if (hosts[pos] == ',') {
+            phost[host_num++] = &hosts[pos + 1];
+            hosts[pos] = 0;
+        } else if (hosts[pos] == '#') {
+            char * body_pointer = &hosts[pos + 1];
+            char * p;
+            int trans_char = 0;
+            p = body_buffer = (char*)malloc(2048);
+            for ( ; *body_pointer; ++body_pointer) {
+                if (*body_pointer == '\\') {
+                    trans_char = 1;
+                    continue;
+                } else if (*body_pointer == '\n') {
+                    *p = '\r';
+                    *++p = '\n';
+                    continue;
+                }
+                if (trans_char) {
+                    if (*body_pointer == '\\' ) {
+                        *p = '\\';
+                    } else if (*body_pointer == 'n' ) {
+                        *p = '\r';
+                        *++p = '\n';
+                    } else {
+                        *p = '\\';
+                        *p = *body_pointer;
+                    }
+                    trans_char = 0;
+                } else {
+                    *p = *body_pointer;
+                }
+                ++p;
+            }
+            *p = 0;
+            hosts[pos] = 0;
+            break;
+        }
+    }
+    host_num = xorshift128plus() % host_num;
+    if (self->server.port == 80)
+        sprintf(hostport, "%s", phost[host_num]);
+    else
+        sprintf(hostport, "%s:%d", phost[host_num], self->server.port);
+    if (body_buffer) {
+        sprintf(out_buffer,
+            "POST /%s HTTP/1.1\r\n"
+            "Host: %s\r\n"
+            "%s\r\n\r\n",
+            local->encode_buffer,
+            hostport,
+            body_buffer);
+    } else {
+        char result[33] = {0};
+        boundary(result);
+        sprintf(out_buffer,
+            "POST /%s HTTP/1.1\r\n"
+            "Host: %s\r\n"
+            "User-Agent: %s\r\n"
+            "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n"
+            "Accept-Language: en-US,en;q=0.8\r\n"
+            "Accept-Encoding: gzip, deflate\r\n"
+            "Content-Type: multipart/form-data; boundary=%s\r\n"
+            "DNT: 1\r\n"
+            "Connection: keep-alive\r\n"
+            "\r\n",
+            local->encode_buffer,
+            hostport,
+            g_useragent[g_useragent_index],
+            result
+            );
+    }
+    //LOGI("http header: %s", out_buffer);
+    outlength = strlen(out_buffer);
+    memmove(out_buffer + outlength, encryptdata + head_size, datalength - head_size);
+    outlength += datalength - head_size;
+    local->has_sent_header = 1;
+    if (*capacity < outlength) {
+        *pencryptdata = (char*)realloc(*pencryptdata, *capacity = outlength * 2);
+        encryptdata = *pencryptdata;
+    }
+    memmove(encryptdata, out_buffer, outlength);
+    free(out_buffer);
+    if (body_buffer != NULL)
+        free(body_buffer);
+    if (local->encode_buffer != NULL) {
+        free(local->encode_buffer);
+        local->encode_buffer = NULL;
+    }
+    return outlength;
+}
