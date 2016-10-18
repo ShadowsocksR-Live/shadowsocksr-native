@@ -7,7 +7,7 @@ show_help()
     echo
     echo -e "Options:"
     echo -e "  -h    show this help."
-    echo -e "  -v    with argument version (2.4.1 by default)."
+    echo -e "  -v    with argument version (2.5.5 by default)."
     echo -e "  -f    with argument format (tar.xz by default) used by git archive."
     echo
     echo -e "Examples:"
@@ -48,7 +48,7 @@ get_att_val()
     fi
 }
 
-get_att_val version "2.4.5"
+get_att_val version "2.5.5"
 get_att_val format "tar.gz"
 
 name="shadowsocks-libev"
@@ -58,8 +58,8 @@ pushd `git rev-parse --show-toplevel`
 git archive v${version} --format=${format} --prefix=${name}-${version}/ -o rpm/SOURCES/${name}-${version}.${format}
 pushd rpm
 
-sed -i -e "s/^\(Version:	\).*$/\1${version}/" \
-       -e "s/^\(Source0:	\).*$/\1${name}-${version}.${format}/" \
-    SPECS/${spec_name}
+sed -e "s/^\(Version:	\).*$/\1${version}/" \
+    -e "s/^\(Source0:	\).*$/\1${name}-${version}.${format}/" \
+    SPECS/${spec_name}.in > SPECS/${spec_name}
 
 rpmbuild -bb SPECS/${spec_name} --define "%_topdir `pwd`"
