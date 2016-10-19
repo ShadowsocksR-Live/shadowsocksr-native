@@ -27,6 +27,7 @@ debian/*.debhelper*
 shadowsocks-libev.pc
 debian/libshadowsocks-libev*.symbols
 libsodium/src/libsodium/include/sodium/version.h
+rpm/SPECS/shadowsocks-libev.spec
 
 # Ignore per-project vim config
 .vimrc
