@@ -654,7 +654,7 @@ int auth_aes128_sha1_pack_data(char *data, int datalength, char *outdata, auth_s
 
     {
         char hash[20];
-        ss_sha1_hmac_with_key(hash, outdata, 2, key, key_len);
+        local->hmac(hash, outdata, 2, key, key_len);
         memcpy(outdata + 2, hash, 2);
     }
 
@@ -672,7 +672,7 @@ int auth_aes128_sha1_pack_data(char *data, int datalength, char *outdata, auth_s
 
     {
         char hash[20];
-        ss_sha1_hmac_with_key(hash, outdata, out_size - 4, key, key_len);
+        local->hmac(hash, outdata, out_size - 4, key, key_len);
         memcpy(outdata + out_size - 4, hash, 4);
     }
     free(key);
