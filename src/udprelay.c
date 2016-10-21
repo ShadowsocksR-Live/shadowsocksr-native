@@ -1310,7 +1310,7 @@ init_udprelay(const char *server_host, const char *server_port,
               const ss_addr_t tunnel_addr,
 #endif
 #endif
-              int mtu, int method, int auth, int timeout, const char *iface)
+              int mtu, int method, int auth, int timeout, const char *iface, const char *protocol)
 {
     // Initialize ev loop
     struct ev_loop *loop = EV_DEFAULT;
@@ -1334,6 +1334,10 @@ init_udprelay(const char *server_host, const char *server_port,
         FATAL("[udp] bind() error");
     }
     setnonblocking(serverfd);
+    if (protocol != NULL && strcmp(protocol, "verify_sha1") == 0) {
+        auth = 1;
+        protocol = NULL;
+    }
 
     server_ctx_t *server_ctx = new_server_ctx(serverfd);
 #ifdef MODULE_REMOTE

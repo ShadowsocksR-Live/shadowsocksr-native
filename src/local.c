@@ -511,59 +511,59 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             char host[257], ip[INET6_ADDRSTRLEN], port[16];
 
-                buffer_t ss_addr_to_send;
-                buffer_t *abuf = &ss_addr_to_send;
-                balloc(abuf, BUF_SIZE);
+            buffer_t ss_addr_to_send;
+            buffer_t *abuf = &ss_addr_to_send;
+            balloc(abuf, BUF_SIZE);
 
-                abuf->array[abuf->len++] = request->atyp;
+            abuf->array[abuf->len++] = request->atyp;
             int atyp = request->atyp;
 
-                // get remote addr and port
+            // get remote addr and port
             if (atyp == 1) {
-                    // IP V4
-                    size_t in_addr_len = sizeof(struct in_addr);
-                    memcpy(abuf->array + abuf->len, buf->array + 4, in_addr_len + 2);
-                    abuf->len += in_addr_len + 2;
+                // IP V4
+                size_t in_addr_len = sizeof(struct in_addr);
+                memcpy(abuf->array + abuf->len, buf->array + 4, in_addr_len + 2);
+                abuf->len += in_addr_len + 2;
 
-                    if (acl || verbose) {
-                        uint16_t p = ntohs(*(uint16_t *)(buf->array + 4 + in_addr_len));
-                        dns_ntop(AF_INET, (const void *)(buf->array + 4),
-                             ip, INET_ADDRSTRLEN);
-                        sprintf(port, "%d", p);
-                    }
-            } else if (atyp == 3) {
-                    // Domain name
-                    uint8_t name_len = *(uint8_t *)(buf->array + 4);
-                    abuf->array[abuf->len++] = name_len;
-                    memcpy(abuf->array + abuf->len, buf->array + 4 + 1, name_len + 2);
-                    abuf->len += name_len + 2;
-
-                    if (acl || verbose) {
-                        uint16_t p =
-                            ntohs(*(uint16_t *)(buf->array + 4 + 1 + name_len));
-                        memcpy(host, buf->array + 4 + 1, name_len);
-                        host[name_len] = '\0';
-                        sprintf(port, "%d", p);
-                    }
-            } else if (atyp == 4) {
-                    // IP V6
-                    size_t in6_addr_len = sizeof(struct in6_addr);
-                    memcpy(abuf->array + abuf->len, buf->array + 4, in6_addr_len + 2);
-                    abuf->len += in6_addr_len + 2;
-
-                    if (acl || verbose) {
-                        uint16_t p = ntohs(*(uint16_t *)(buf->array + 4 + in6_addr_len));
-                        dns_ntop(AF_INET6, (const void *)(buf->array + 4),
-                             ip, INET6_ADDRSTRLEN);
-                        sprintf(port, "%d", p);
-                    }
-                } else {
-                    bfree(abuf);
-                    LOGE("unsupported addrtype: %d", request->atyp);
-                    close_and_free_remote(EV_A_ remote);
-                    close_and_free_server(EV_A_ server);
-                    return;
+                if (acl || verbose) {
+                    uint16_t p = ntohs(*(uint16_t *)(buf->array + 4 + in_addr_len));
+                    dns_ntop(AF_INET, (const void *)(buf->array + 4),
+                         ip, INET_ADDRSTRLEN);
+                    sprintf(port, "%d", p);
                 }
+            } else if (atyp == 3) {
+                // Domain name
+                uint8_t name_len = *(uint8_t *)(buf->array + 4);
+                abuf->array[abuf->len++] = name_len;
+                memcpy(abuf->array + abuf->len, buf->array + 4 + 1, name_len + 2);
+                abuf->len += name_len + 2;
+
+                if (acl || verbose) {
+                    uint16_t p =
+                        ntohs(*(uint16_t *)(buf->array + 4 + 1 + name_len));
+                    memcpy(host, buf->array + 4 + 1, name_len);
+                    host[name_len] = '\0';
+                    sprintf(port, "%d", p);
+                }
+            } else if (atyp == 4) {
+                // IP V6
+                size_t in6_addr_len = sizeof(struct in6_addr);
+                memcpy(abuf->array + abuf->len, buf->array + 4, in6_addr_len + 2);
+                abuf->len += in6_addr_len + 2;
+
+                if (acl || verbose) {
+                    uint16_t p = ntohs(*(uint16_t *)(buf->array + 4 + in6_addr_len));
+                    dns_ntop(AF_INET6, (const void *)(buf->array + 4),
+                         ip, INET6_ADDRSTRLEN);
+                    sprintf(port, "%d", p);
+                }
+            } else {
+                bfree(abuf);
+                LOGE("unsupported addrtype: %d", request->atyp);
+                close_and_free_remote(EV_A_ remote);
+                close_and_free_server(EV_A_ server);
+                return;
+            }
 
             size_t abuf_len  = abuf->len;
             int sni_detected = 0;
@@ -604,21 +604,21 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 }
             }
 
-                server->stage = 5;
+            server->stage = 5;
 
             buf->len -= (3 + abuf_len);
-                if (buf->len > 0) {
+            if (buf->len > 0) {
                 memmove(buf->array, buf->array + 3 + abuf_len, buf->len);
-                }
+            }
 
-                if (verbose) {
+            if (verbose) {
                 if (sni_detected || atyp == 3)
-                        LOGI("connect to %s:%s", host, port);
-                else if (atyp == 1)
-                    LOGI("connect to %s:%s", ip, port);
-                else if (atyp == 4)
-                    LOGI("connect to [%s]:%s", ip, port);
-                }
+                    LOGI("connect to %s:%s", host, port);
+            else if (atyp == 1)
+                LOGI("connect to %s:%s", ip, port);
+            else if (atyp == 4)
+                LOGI("connect to [%s]:%s", ip, port);
+            }
 
             if (acl) {
                 int host_match = acl_match_host(host);
@@ -670,78 +670,78 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             // Not match ACL
             if (remote == NULL) {
-                    remote = create_remote(server->listener, NULL);
+                remote = create_remote(server->listener, NULL);
+            }
+
+            if (remote == NULL) {
+                bfree(abuf);
+                LOGE("invalid remote addr");
+                close_and_free_server(EV_A_ server);
+                return;
+            }
+
+            // SSR beg
+            if (server->listener->list_obfs_global[remote->remote_index] == NULL && server->obfs_plugin) {
+                server->listener->list_obfs_global[remote->remote_index] = server->obfs_plugin->init_data();
+            }
+            if (server->listener->list_protocol_global[remote->remote_index] == NULL && server->protocol_plugin) {
+                server->listener->list_protocol_global[remote->remote_index] = server->protocol_plugin->init_data();
+            }
+
+            server_info _server_info;
+            memset(&_server_info, 0, sizeof(server_info));
+            strcpy(_server_info.host, inet_ntoa(((struct sockaddr_in*)&remote->addr)->sin_addr));
+            _server_info.port = ((struct sockaddr_in*)&remote->addr)->sin_port;
+            _server_info.port = _server_info.port >> 8 | _server_info.port << 8;
+            _server_info.param = server->listener->obfs_param;
+            _server_info.g_data = server->listener->list_obfs_global[remote->remote_index];
+            _server_info.head_len = get_head_size(ss_addr_to_send.array, 320, 30);
+            _server_info.iv = server->e_ctx->evp.iv;
+            _server_info.iv_len = enc_get_iv_len();
+            _server_info.key = enc_get_key();
+            _server_info.key_len = enc_get_key_len();
+            _server_info.tcp_mss = 1460;
+
+            if (server->obfs_plugin)
+                server->obfs_plugin->set_server_info(server->obfs, &_server_info);
+
+            _server_info.param = NULL;
+            _server_info.g_data = server->listener->list_protocol_global[remote->remote_index];
+
+            if (server->protocol_plugin)
+                server->protocol_plugin->set_server_info(server->protocol, &_server_info);
+            // SSR end
+
+            if (!remote->direct) {
+                if (auth) {
+                    abuf->array[0] |= ONETIMEAUTH_FLAG;
+                    ss_onetimeauth(abuf, server->e_ctx->evp.iv, BUF_SIZE);
                 }
-
-                if (remote == NULL) {
-                    bfree(abuf);
-                    LOGE("invalid remote addr");
-                    close_and_free_server(EV_A_ server);
-                    return;
-                }
-
-                // SSR beg
-                if (server->listener->list_obfs_global[remote->remote_index] == NULL && server->obfs_plugin) {
-                    server->listener->list_obfs_global[remote->remote_index] = server->obfs_plugin->init_data();
-                }
-                if (server->listener->list_protocol_global[remote->remote_index] == NULL && server->protocol_plugin) {
-                    server->listener->list_protocol_global[remote->remote_index] = server->protocol_plugin->init_data();
-                }
-
-                server_info _server_info;
-                memset(&_server_info, 0, sizeof(server_info));
-                strcpy(_server_info.host, inet_ntoa(((struct sockaddr_in*)&remote->addr)->sin_addr));
-                _server_info.port = ((struct sockaddr_in*)&remote->addr)->sin_port;
-                _server_info.port = _server_info.port >> 8 | _server_info.port << 8;
-                _server_info.param = server->listener->obfs_param;
-                _server_info.g_data = server->listener->list_obfs_global[remote->remote_index];
-                _server_info.head_len = get_head_size(ss_addr_to_send.array, 320, 30);
-                _server_info.iv = server->e_ctx->evp.iv;
-                _server_info.iv_len = enc_get_iv_len();
-                _server_info.key = enc_get_key();
-                _server_info.key_len = enc_get_key_len();
-                _server_info.tcp_mss = 1460;
-
-                if (server->obfs_plugin)
-                    server->obfs_plugin->set_server_info(server->obfs, &_server_info);
-
-                _server_info.param = NULL;
-                _server_info.g_data = server->listener->list_protocol_global[remote->remote_index];
-
-                if (server->protocol_plugin)
-                    server->protocol_plugin->set_server_info(server->protocol, &_server_info);
-                // SSR end
-
-                if (!remote->direct) {
-                    if (auth) {
-                        abuf->array[0] |= ONETIMEAUTH_FLAG;
-                        ss_onetimeauth(abuf, server->e_ctx->evp.iv, BUF_SIZE);
-                    }
 
                 if (buf->len > 0 && auth) {
                     ss_gen_hash(buf, &remote->counter, server->e_ctx, BUF_SIZE);
                 }
 
-                    brealloc(remote->buf, buf->len + abuf->len, BUF_SIZE);
-                    memcpy(remote->buf->array, abuf->array, abuf->len);
-                    remote->buf->len = buf->len + abuf->len;
+                brealloc(remote->buf, buf->len + abuf->len, BUF_SIZE);
+                memcpy(remote->buf->array, abuf->array, abuf->len);
+                remote->buf->len = buf->len + abuf->len;
 
-                    if (buf->len > 0) {
-                        memcpy(remote->buf->array + abuf->len, buf->array, buf->len);
-                    }
-                } else {
-                    if (buf->len > 0) {
-                        memcpy(remote->buf->array, buf->array, buf->len);
-                        remote->buf->len = buf->len;
-                    }
+                if (buf->len > 0) {
+                    memcpy(remote->buf->array + abuf->len, buf->array, buf->len);
                 }
-
-                server->remote = remote;
-                remote->server = server;
-
-                bfree(abuf);
+            } else {
+                if (buf->len > 0) {
+                    memcpy(remote->buf->array, buf->array, buf->len);
+                    remote->buf->len = buf->len;
+                }
             }
-            }
+
+            server->remote = remote;
+            remote->server = server;
+
+            bfree(abuf);
+        }
+    }
 }
 
 static void
@@ -1586,7 +1586,7 @@ main(int argc, char **argv)
     if (mode != TCP_ONLY) {
         LOGI("udprelay enabled");
         init_udprelay(local_addr, local_port, listen_ctx.remote_addr[0],
-                      get_sockaddr_len(listen_ctx.remote_addr[0]), mtu, m, auth, listen_ctx.timeout, iface);
+                      get_sockaddr_len(listen_ctx.remote_addr[0]), mtu, m, auth, listen_ctx.timeout, iface, protocol);
     }
 
     LOGI("listening at %s:%s", local_addr, local_port);
@@ -1750,7 +1750,7 @@ start_ss_local_server(profile_t profile)
         LOGI("udprelay enabled");
         struct sockaddr *addr = (struct sockaddr *)storage;
         init_udprelay(local_addr, local_port_str, addr,
-                      get_sockaddr_len(addr), mtu, m, auth, timeout, NULL);
+                      get_sockaddr_len(addr), mtu, m, auth, timeout, NULL, NULL);
     }
 
     LOGI("listening at %s:%s", local_addr, local_port_str);

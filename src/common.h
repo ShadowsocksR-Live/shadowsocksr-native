@@ -39,7 +39,7 @@ int init_udprelay(const char *server_host, const char *server_port,
                   const ss_addr_t tunnel_addr,
 #endif
 #endif
-                  int mtu, int method, int auth, int timeout, const char *iface);
+                  int mtu, int method, int auth, int timeout, const char *iface, const char *protocol);
 
 void free_udprelay(void);
 

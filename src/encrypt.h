@@ -151,6 +151,8 @@ enum crpher_index {
 #define ADDRTYPE_MASK 0xF
 
 #define ONETIMEAUTH_BYTES 10U
+#define MD5_BYTES 16U
+#define SHA1_BYTES 20U
 #define CLEN_BYTES 2U
 #define AUTH_BYTES (ONETIMEAUTH_BYTES + CLEN_BYTES)
 
@@ -177,6 +179,8 @@ typedef struct enc_ctx {
     cipher_ctx_t evp;
 } enc_ctx_t;
 
+void bytes_to_key_with_size(const char *pass, size_t len, uint8_t *md, size_t md_size);
+
 int ss_encrypt_all(buffer_t *plaintext, int method, int auth, size_t capacity);
 int ss_decrypt_all(buffer_t *ciphertext, int method, int auth, size_t capacity);
 int ss_encrypt(buffer_t *plaintext, enc_ctx_t *ctx, size_t capacity);
@@ -190,8 +194,11 @@ int enc_get_key_len(void);
 void cipher_context_release(cipher_ctx_t *evp);
 unsigned char *enc_md5(const unsigned char *d, size_t n, unsigned char *md);
 
+int ss_md5_hmac(char *auth, char *msg, int msg_len, uint8_t *iv);
+int ss_md5_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len);
 int ss_sha1_hmac(char *auth, char *msg, int msg_len, uint8_t *iv);
 int ss_sha1_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len);
+int ss_aes_128_cbc(char *encrypt, char *out_data, char *key);
 int ss_onetimeauth(buffer_t *buf, uint8_t *iv, size_t capacity);
 int ss_onetimeauth_verify(buffer_t *buf, uint8_t *iv);
 
