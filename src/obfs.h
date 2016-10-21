@@ -54,6 +54,14 @@ typedef struct obfs_class {
             char **pplaindata,
             int datalength,
             size_t* capacity);
+    int (*client_udp_pre_encrypt)(obfs *self,
+            char **pplaindata,
+            int datalength,
+            size_t* capacity);
+    int (*client_udp_post_decrypt)(obfs *self,
+            char **pplaindata,
+            int datalength,
+            size_t* capacity);
 }obfs_class;
 
 obfs_class * new_obfs_class(char *plugin_name);
