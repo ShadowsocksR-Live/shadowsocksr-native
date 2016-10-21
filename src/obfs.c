@@ -46,6 +46,7 @@ obfs_class * new_obfs_class(char *plugin_name)
     if (strcmp(plugin_name, "plain") == 0)
         return NULL;
     init_crc32_table();
+    init_shift128plus();
     if (strcmp(plugin_name, "http_simple") == 0) {
         obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
         plugin->init_data = init_data;
