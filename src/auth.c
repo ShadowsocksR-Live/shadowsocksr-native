@@ -15,6 +15,7 @@ typedef struct auth_simple_local_data {
     int recv_buffer_size;
     uint32_t recv_id;
     uint32_t pack_id;
+    char * salt;
     uint8_t * user_key;
     int user_key_len;
     hmac_with_key_func hmac;
@@ -26,6 +27,7 @@ void auth_simple_local_data_init(auth_simple_local_data* local) {
     local->recv_buffer_size = 0;
     local->recv_id = 1;
     local->pack_id = 1;
+    local->salt = "";
     local->user_key = 0;
     local->user_key_len = 0;
     local->hmac = 0;
@@ -51,6 +53,7 @@ obfs * auth_aes128_md5_new_obfs() {
     self->l_data = malloc(sizeof(auth_simple_local_data));
     auth_simple_local_data_init((auth_simple_local_data*)self->l_data);
     ((auth_simple_local_data*)self->l_data)->hmac = ss_md5_hmac_with_key;
+    ((auth_simple_local_data*)self->l_data)->salt = "auth_aes128_md5";
     return self;
 }
 
@@ -59,6 +62,7 @@ obfs * auth_aes128_sha1_new_obfs() {
     self->l_data = malloc(sizeof(auth_simple_local_data));
     auth_simple_local_data_init((auth_simple_local_data*)self->l_data);
     ((auth_simple_local_data*)self->l_data)->hmac = ss_sha1_hmac_with_key;
+    ((auth_simple_local_data*)self->l_data)->salt = "auth_aes128_sha1";
     return self;
 }
 
@@ -680,7 +684,7 @@ int auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, server_info
     unsigned int rand_len = (datalength > 400 ? (xorshift128plus() & 0x200) : (xorshift128plus() & 0x400));
     int data_offset = rand_len + 16 + 4 + 4 + 7;
     int out_size = data_offset + datalength + 4;
-    const char* salt = "auth_aes128_sha1";
+    const char* salt = local->salt;
 
     char encrypt[24];
     char encrypt_data[16];
