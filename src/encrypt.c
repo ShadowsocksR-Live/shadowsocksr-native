@@ -1246,22 +1246,20 @@ int ss_aes_128_cbc(char *encrypt, char *out_data, char *key)
 #elif defined(USE_CRYPTO_MBEDTLS)
     mbedtls_aes_context aes;
 
-    unsigned char input [16];
     unsigned char output[16];
 
-    mbedtls_aes_setkey_enc( &aes, key, 128 );
-    mbedtls_aes_crypt_cbc( &aes, MBEDTLS_AES_ENCRYPT, 16, iv, encrypt, output );
+    mbedtls_aes_setkey_enc( &aes, (unsigned char *)key, 128 );
+    mbedtls_aes_crypt_cbc( &aes, MBEDTLS_AES_ENCRYPT, 16, iv, (unsigned char *)encrypt, output );
 
     memcpy(out_data, output, 16);
 #else
 
     aes_context aes;
 
-    unsigned char input [16];
     unsigned char output[16];
 
-    aes_setkey_enc( &aes, key, 128 );
-    aes_crypt_cbc( &aes, MBEDTLS_AES_ENCRYPT, 16, iv, encrypt, output );
+    aes_setkey_enc( &aes, (unsigned char *)key, 128 );
+    aes_crypt_cbc( &aes, MBEDTLS_AES_ENCRYPT, 16, iv, (unsigned char *)encrypt, output );
 
     memcpy(out_data, output, 16);
 #endif
