@@ -915,6 +915,7 @@ int auth_aes128_sha1_client_udp_pre_encrypt(obfs *self, char **pplaindata, int d
         plaindata = *pplaindata;
     }
     memmove(plaindata, out_buffer, outlength);
+    free(out_buffer);
     return outlength;
 }
 
