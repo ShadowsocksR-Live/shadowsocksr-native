@@ -56,6 +56,12 @@ remove_from_block_list(char *addr)
     return cache_remove(block_list, addr, addr_len);
 }
 
+void
+clear_block_list()
+{
+    cache_clear(block_list, 3600); // Clear items older than 1 hour
+}
+
 int
 check_block_list(char *addr, int err_level)
 {

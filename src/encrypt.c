@@ -1392,7 +1392,7 @@ enc_key_init(int method, const char *pass)
     if (sodium_init() == -1) {
         FATAL("Failed to initialize sodium");
     }
-    
+
     if (method == SALSA20 || method == CHACHA20 || method == CHACHA20IETF) {
         // Fake cipher
         cipher = (cipher_kt_t *)&cipher_info;
@@ -1469,8 +1469,8 @@ enc_init(const char *pass, const char *method)
                 break;
             }
         if (m >= CIPHER_NUM) {
-            LOGE("Invalid cipher name: %s, use table instead", method);
-            m = TABLE;
+            LOGE("Invalid cipher name: %s, use rc4-md5 instead", method);
+            m = RC4_MD5;
         }
     }
     if (m == TABLE) {

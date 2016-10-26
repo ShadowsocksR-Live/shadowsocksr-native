@@ -34,6 +34,7 @@
 
 int init_acl(const char *path);
 void free_acl(void);
+void clear_block_list(void);
 
 int acl_match_host(const char *ip);
 int acl_add_ip(const char *ip);

@@ -91,6 +91,7 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_send_cb(EV_P_ ev_io *w, int revents);
 static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents);
+static void block_list_clear_cb(EV_P_ ev_timer *watcher, int revents);
 
 static remote_t *new_remote(int fd);
 static server_t *new_server(int fd, listen_ctx_t *listener);
@@ -127,6 +128,7 @@ static char *manager_address = NULL;
 uint64_t tx                  = 0;
 uint64_t rx                  = 0;
 ev_timer stat_update_watcher;
+ev_timer block_list_watcher;
 
 static struct cork_dllist connections;
 
@@ -975,6 +977,12 @@ server_send_cb(EV_P_ ev_io *w, int revents)
 }
 
 static void
+block_list_clear_cb(EV_P_ ev_timer *watcher, int revents)
+{
+    clear_block_list();
+}
+
+static void
 server_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 {
     server_ctx_t *server_ctx = (server_ctx_t *)(((void *)watcher)
@@ -1653,7 +1661,7 @@ main(int argc, char **argv)
     }
 
     if (method == NULL) {
-        method = "table";
+        method = "rc4-md5";
     }
 
     if (timeout == NULL) {
@@ -1793,6 +1801,9 @@ main(int argc, char **argv)
         ev_timer_start(EV_DEFAULT, &stat_update_watcher);
     }
 
+    ev_timer_init(&block_list_watcher, block_list_clear_cb, UPDATE_INTERVAL, UPDATE_INTERVAL);
+    ev_timer_start(EV_DEFAULT, &block_list_watcher);
+
     // setuid
     if (user != NULL) {
         run_as(user);
@@ -1811,6 +1822,7 @@ main(int argc, char **argv)
     if (manager_address != NULL) {
         ev_timer_stop(EV_DEFAULT, &stat_update_watcher);
     }
+    ev_timer_stop(EV_DEFAULT, &block_list_watcher);
 
     // Clean up
     for (int i = 0; i <= server_num; i++) {
