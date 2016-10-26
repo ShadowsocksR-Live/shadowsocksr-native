@@ -1436,18 +1436,21 @@ accept_cb(EV_P_ ev_io *w, int revents)
 
     char *peer_name = get_peer_name(serverfd);
     if (peer_name != NULL) {
-        if (check_block_list(peer_name, 0)) {
-            LOGE("block all requests from %s", peer_name);
-            close(serverfd);
-            return;
-        }
+        int in_white_list = 0;
         if (acl) {
             if ((get_acl_mode() == BLACK_LIST && acl_match_host(peer_name) == 1)
                     || (get_acl_mode() == WHITE_LIST && acl_match_host(peer_name) >= 0)) {
                 LOGE("Access denied from %s", peer_name);
                 close(serverfd);
                 return;
+            } else if (acl_match_host(peer_name) == -1) {
+                in_white_list = 1;
             }
+        }
+        if (!in_white_list && check_block_list(peer_name, 0)) {
+            LOGE("block all requests from %s", peer_name);
+            close(serverfd);
+            return;
         }
     }
 
