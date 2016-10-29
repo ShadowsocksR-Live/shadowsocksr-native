@@ -40,7 +40,6 @@
 #include <netdb.h>
 #include <errno.h>
 #include <arpa/inet.h>
-#include <netdb.h>
 #include <netinet/in.h>
 #include <pthread.h>
 #include <sys/un.h>
@@ -114,8 +113,6 @@ static int acl       = 0;
 static int mode      = TCP_ONLY;
 static int auth      = 0;
 static int ipv6first = 0;
-
-static int outbound_block = 0;
 
 static int fast_open = 0;
 #ifdef HAVE_SETRLIMIT
@@ -465,49 +462,6 @@ create_and_bind(const char *host, const char *port, int mptcp)
     return listen_sock;
 }
 
-void print_addrinfo(struct addrinfo *ai)
-{
-    // TODO: move this function to somewhere like 'debug.c'
-    char ipstr[INET6_ADDRSTRLEN];
-    unsigned short int port = 0;
-    bzero(ipstr, INET6_ADDRSTRLEN);
-
-    printf("addrinfo=>{");
-    printf("ai_flags=");
-    switch (ai->ai_flags) {
-        case AI_PASSIVE:   printf("AI_PASSIVE");   break;
-        case AI_CANONNAME: printf("AI_CANONNAME"); break;
-        default: printf("ERROR(%d)", ai->ai_flags);
-    }
-    printf(", ai_family=");
-    switch (ai->ai_family) {
-        case AF_INET:
-            inet_ntop(AF_INET, &(((struct sockaddr_in *)ai->ai_addr)->sin_addr), ipstr, INET_ADDRSTRLEN);
-            port = htons(((struct sockaddr_in *)ai->ai_addr)->sin_port);
-            printf("AF_INET");
-            break;
-        case AF_INET6:
-            inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)ai->ai_addr)->sin6_addr), ipstr, INET6_ADDRSTRLEN);
-            port = htons(((struct sockaddr_in6 *)ai->ai_addr)->sin6_port);
-            printf("AF_INET6");
-            break;
-        case AF_UNSPEC: printf("AF_UNSPEC"); break;
-        default: printf("ERROR(%d)", ai->ai_family);
-    }
-    printf(", ai_socktype=");
-    switch (ai->ai_socktype) {
-        case SOCK_STREAM: printf("SOCK_STREAM"); break;
-        case SOCK_DGRAM:  printf("SOCK_SGRAM");  break;
-        default: printf("ERROR(%d)", ai->ai_socktype);
-    }
-    printf(", ai_protocol=%d", ai->ai_protocol);
-    printf(", ai_addrlen=%d", ai->ai_addrlen);
-    printf(", ai_addr=%s:%d", ipstr, port);
-    printf(", ai_canonname=%s", ai->ai_canonname);
-    printf(", ai_next=%p", ai->ai_next);
-    printf("}\n");
-}
-
 static remote_t *
 connect_to_remote(struct addrinfo *res,
                   server_t *server)
@@ -517,13 +471,21 @@ connect_to_remote(struct addrinfo *res,
     const char *iface = server->listen_ctx->iface;
 #endif
 
-    if (outbound_block) {
+    if (acl) {
         char ipstr[INET6_ADDRSTRLEN];
         bzero(ipstr, INET6_ADDRSTRLEN);
 
-        inet_ntop(AF_INET, &(((struct sockaddr_in *)res->ai_addr)->sin_addr), ipstr, INET_ADDRSTRLEN);
+        if (res->ai_addr->sa_family == AF_INET) {
+            struct sockaddr_in *s = (struct sockaddr_in *)res->ai_addr;
+            dns_ntop(AF_INET, &s->sin_addr, ipstr, INET_ADDRSTRLEN);
+        } else if (res->ai_addr->sa_family == AF_INET6) {
+            struct sockaddr_in6 *s = (struct sockaddr_in6 *)res->ai_addr;
+            dns_ntop(AF_INET6, &s->sin6_addr, ipstr, INET6_ADDRSTRLEN);
+        }
+
         if (outbound_block_match_host(ipstr) == 1) {
-            LOGI("outbound blocked %s", ipstr);
+            if (verbose)
+                LOGI("outbound blocked %s", ipstr);
             return NULL;
         }
     }
@@ -670,7 +632,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             // wait for more
             return;
         }
-
     } else {
         buf->len = r;
     }
@@ -838,6 +799,12 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             } else {
                 LOGE("invalid name length: %d", name_len);
                 report_addr(server->fd, MALFORMED);
+                close_and_free_server(EV_A_ server);
+                return;
+            }
+            if (outbound_block_match_host(host) == 1) {
+                if (verbose)
+                    LOGI("outbound blocked %s", host);
                 close_and_free_server(EV_A_ server);
                 return;
             }
@@ -1109,8 +1076,6 @@ server_resolve_cb(struct sockaddr *addr, void *data)
         remote_t *remote = connect_to_remote(&info, server);
 
         if (remote == NULL) {
-            if (!outbound_block)
-                LOGE("connect error");
             close_and_free_server(EV_A_ server);
         } else {
             server->remote = remote;
@@ -1392,7 +1357,7 @@ new_server(int fd, listen_ctx_t *listener)
     }
 
     int request_timeout = min(MAX_REQUEST_TIMEOUT, listener->timeout)
-        + rand() % MAX_REQUEST_TIMEOUT;
+                          + rand() % MAX_REQUEST_TIMEOUT;
 
     ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
     ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
@@ -1496,7 +1461,7 @@ accept_cb(EV_P_ ev_io *w, int revents)
         int in_white_list = 0;
         if (acl) {
             if ((get_acl_mode() == BLACK_LIST && acl_match_host(peer_name) == 1)
-                    || (get_acl_mode() == WHITE_LIST && acl_match_host(peer_name) >= 0)) {
+                || (get_acl_mode() == WHITE_LIST && acl_match_host(peer_name) >= 0)) {
                 LOGE("Access denied from %s", peer_name);
                 close(serverfd);
                 return;
@@ -1556,7 +1521,6 @@ main(int argc, char **argv)
         { "mtu",             required_argument, 0, 0 },
         { "mptcp",           no_argument,       0, 0 },
         { "help",            no_argument,       0, 0 },
-        { "outbound-block",  required_argument, 0, 0 },
         {                 0,                 0, 0, 0 }
     };
 
@@ -1584,9 +1548,6 @@ main(int argc, char **argv)
             } else if (option_index == 5) {
                 usage();
                 exit(EXIT_SUCCESS);
-            } else if (option_index == 6) {
-                LOGI("initializing outbound block...");
-                outbound_block = !init_outbound_block(optarg);
             }
             break;
         case 's':

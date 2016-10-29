@@ -3,7 +3,7 @@
 #
 # The IPs bellow are all IPs in CHN. It'll block ss-server to access all
 # CHN hosts by command
-# `ss-server -s:: -p 8388 -k123456 --outbound-block acl/server_block_chn.acl`
+# `ss-server -s:: -p 8388 -k 123456 --acl acl/server_block_chn.acl`
 
 [outbound_block_list]
 103.235.44.0/22

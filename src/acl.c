@@ -43,6 +43,7 @@ static struct cache *block_list;
 
 static struct ip_set outbound_block_list_ipv4;
 static struct ip_set outbound_block_list_ipv6;
+static struct cork_dllist outbound_block_list_rules;
 
 void
 init_block_list()
@@ -142,9 +143,12 @@ init_acl(const char *path)
     ipset_init(&white_list_ipv6);
     ipset_init(&black_list_ipv4);
     ipset_init(&black_list_ipv6);
+    ipset_init(&outbound_block_list_ipv4);
+    ipset_init(&outbound_block_list_ipv6);
 
     cork_dllist_init(&black_list_rules);
     cork_dllist_init(&white_list_rules);
+    cork_dllist_init(&outbound_block_list_rules);
 
     struct ip_set *list_ipv4  = &black_list_ipv4;
     struct ip_set *list_ipv6  = &black_list_ipv6;
@@ -176,8 +180,13 @@ init_acl(const char *path)
                 continue;
             }
 
-            if (strcmp(line, "[black_list]") == 0
-                || strcmp(line, "[bypass_list]") == 0) {
+            if (strcmp(line, "[outbound_block_list]") == 0) {
+                list_ipv4 = &outbound_block_list_ipv4;
+                list_ipv6 = &outbound_block_list_ipv6;
+                rules     = &outbound_block_list_rules;
+                continue;
+            } else if (strcmp(line, "[black_list]") == 0
+                       || strcmp(line, "[bypass_list]") == 0) {
                 list_ipv4 = &black_list_ipv4;
                 list_ipv6 = &black_list_ipv6;
                 rules     = &black_list_rules;
@@ -331,76 +340,23 @@ acl_remove_ip(const char *ip)
     return 0;
 }
 
-int
-init_outbound_block(const char *path)
-{
-    // initialize ipset
-    ipset_init_library();
-
-    ipset_init(&outbound_block_list_ipv4);
-    ipset_init(&outbound_block_list_ipv6);
-
-    FILE *f = fopen(path, "r");
-    if (f == NULL) {
-        LOGE("Invalid outbound block list path.");
-        return -1;
-    }
-
-    char buf[257];
-    while (!feof(f))
-        if (fgets(buf, 256, f)) {
-            // Trim the newline
-            int len = strlen(buf);
-            if (len > 0 && buf[len - 1] == '\n') {
-                buf[len - 1] = '\0';
-            }
-
-            char *line = trimwhitespace(buf);
-
-            if (line[0] == '#') continue;     // Skip comment line
-            if (strlen(line) == 0) continue;  // Skip empty line
-            if (strcmp(line, "[outbound_block_list]") == 0) continue;  // Skip section line
-
-            char host[257];
-            int cidr;
-            parse_addr_cidr(line, host, &cidr);
-
-            struct cork_ip addr;
-            int err = cork_ip_init(&addr, host);
-            if (!err) {
-                if (addr.version == 4) {
-                    if (cidr >= 0) {
-                        ipset_ipv4_add_network(&outbound_block_list_ipv4, &(addr.ip.v4), cidr);
-                    } else {
-                        ipset_ipv4_add(&outbound_block_list_ipv4, &(addr.ip.v4));
-                    }
-                } else if (addr.version == 6) {
-                    if (cidr >= 0) {
-                        ipset_ipv6_add_network(&outbound_block_list_ipv6, &(addr.ip.v6), cidr);
-                    } else {
-                        ipset_ipv6_add(&outbound_block_list_ipv6, &(addr.ip.v6));
-                    }
-                }
-            }
-        }
-
-    fclose(f);
-
-    return 0;
-}
-
 /*
  * Return 0,  if not match.
  * Return 1,  if match black list.
  */
 int
-outbound_block_match_host(const char *ipstr)
+outbound_block_match_host(const char *host)
 {
     struct cork_ip addr;
     int ret = 0;
-    int err = cork_ip_init(&addr, ipstr);
+    int err = cork_ip_init(&addr, host);
 
-    if (err) return 0;
+    if (err) {
+        int host_len = strlen(host);
+        if (lookup_rule(&outbound_block_list_rules, host, host_len) != NULL)
+            ret = 1;
+        return ret;
+    }
 
     if (addr.version == 4) {
         if (ipset_contains_ipv4(&outbound_block_list_ipv4, &(addr.ip.v4)))
