@@ -586,7 +586,6 @@ int auth_sha1_v4_client_post_decrypt(obfs *self, char **pplaindata, int dataleng
     while (local->recv_buffer_size > 4) {
         uint32_t crc_val = crc32((unsigned char*)recv_buffer, 2);
         if ((((uint32_t)recv_buffer[3] << 8) | recv_buffer[2]) != (crc_val & 0xffff)) {
-            free(out_buffer);
             local->recv_buffer_size = 0;
             error = 1;
             break;
