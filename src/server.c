@@ -473,7 +473,7 @@ connect_to_remote(struct addrinfo *res,
 
     if (acl) {
         char ipstr[INET6_ADDRSTRLEN];
-        bzero(ipstr, INET6_ADDRSTRLEN);
+        memset(ipstr, 0, INET6_ADDRSTRLEN);
 
         if (res->ai_addr->sa_family == AF_INET) {
             struct sockaddr_in *s = (struct sockaddr_in *)res->ai_addr;
@@ -528,7 +528,7 @@ connect_to_remote(struct addrinfo *res,
 #ifdef __APPLE__
         ((struct sockaddr_in *)(res->ai_addr))->sin_len = sizeof(struct sockaddr_in);
         sa_endpoints_t endpoints;
-        bzero((char *)&endpoints, sizeof(endpoints));
+        memset((char *)&endpoints, 0, sizeof(endpoints));
         endpoints.sae_dstaddr    = res->ai_addr;
         endpoints.sae_dstaddrlen = res->ai_addrlen;
 

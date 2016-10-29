@@ -305,7 +305,7 @@ print_addrinfo(struct addrinfo *ai)
 {
     char ipstr[INET6_ADDRSTRLEN];
     unsigned short int port = 0;
-    bzero(ipstr, INET6_ADDRSTRLEN);
+    memset(ipstr, 0, INET6_ADDRSTRLEN);
 
     printf("addrinfo=>{");
     printf("ai_flags=");

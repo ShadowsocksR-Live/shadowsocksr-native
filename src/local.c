@@ -309,7 +309,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 #ifdef __APPLE__
                     ((struct sockaddr_in *)&(remote->addr))->sin_len = sizeof(struct sockaddr_in);
                     sa_endpoints_t endpoints;
-                    bzero((char *)&endpoints, sizeof(endpoints));
+                    memset((char *)&endpoints, 0, sizeof(endpoints));
                     endpoints.sae_dstaddr    = (struct sockaddr *)&(remote->addr);
                     endpoints.sae_dstaddrlen = remote->addr_len;
 
