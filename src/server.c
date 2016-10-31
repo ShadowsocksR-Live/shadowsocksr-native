@@ -91,7 +91,6 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_send_cb(EV_P_ ev_io *w, int revents);
 static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents);
 static void block_list_clear_cb(EV_P_ ev_timer *watcher, int revents);
-static void report_addr(int fd, int err_level);
 
 static remote_t *new_remote(int fd);
 static server_t *new_server(int fd, listen_ctx_t *listener);
@@ -106,7 +105,7 @@ static void server_resolve_cb(struct sockaddr *addr, void *data);
 static void query_free_cb(void *data);
 
 static size_t parse_header_len(const char atyp, const char *data, size_t offset);
-static int is_header_complete(const buffer_t *buf, const int fd);
+static int is_header_complete(const buffer_t *buf);
 
 int verbose = 0;
 
@@ -242,7 +241,7 @@ parse_header_len(const char atyp, const char *data, size_t offset)
 }
 
 static int
-is_header_complete(const buffer_t *buf, const int fd)
+is_header_complete(const buffer_t *buf)
 {
     size_t header_len = 0;
     size_t buf_len    = buf->len;
@@ -266,8 +265,7 @@ is_header_complete(const buffer_t *buf, const int fd)
         // IP V6
         header_len += sizeof(struct in6_addr);
     } else {
-        report_addr(fd, MALFORMED);
-        return 0;
+        return -1;
     }
 
     // len of port
@@ -278,7 +276,7 @@ is_header_complete(const buffer_t *buf, const int fd)
         header_len += ONETIMEAUTH_BYTES;
     }
 
-    return buf_len >= header_len;
+    return buf_len >= header_len ? 1 : 0;
 }
 
 static char *
@@ -602,6 +600,13 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         ev_timer_again(EV_A_ & server->recv_ctx->watcher);
     }
 
+    if (len > BUF_SIZE) {
+        ERROR("out of recv buffer");
+        close_and_free_remote(EV_A_ remote);
+        close_and_free_server(EV_A_ server);
+        return;
+    }
+
     ssize_t r = recv(server->fd, buf->array + len, BUF_SIZE - len, 0);
 
     if (r == 0) {
@@ -627,6 +632,12 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     tx += r;
 
+    if (server->stage == -1) {
+        server->buf->len = 0;
+        server->buf->idx = 0;
+        return;
+    }
+
     // handle incomplete header part 1
     if (server->stage == 0) {
         buf->len += r;
@@ -649,10 +660,17 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     // handle incomplete header part 2
     if (server->stage == 0) {
-        if (is_header_complete(server->buf, server->fd)) {
+        int ret = is_header_complete(server->buf);
+        if (ret == 1) {
             bfree(server->header_buf);
             ss_free(server->header_buf);
             server->stage = 2;
+        } else if (ret == -1) {
+            server->stage = -1;
+            report_addr(server->fd, MALFORMED);
+            server->buf->len = 0;
+            server->buf->idx = 0;
+            return;
         } else {
             server->stage = 1;
         }
@@ -665,7 +683,9 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                server->buf->array, server->buf->len);
         server->header_buf->len = server->buf->len + header_len;
 
-        if (is_header_complete(server->header_buf, server->fd)) {
+        int ret = is_header_complete(server->buf);
+
+        if (ret == 1) {
             brealloc(server->buf, server->header_buf->len, BUF_SIZE);
             memcpy(server->buf->array, server->header_buf->array, server->header_buf->len);
             server->buf->len = server->header_buf->len;
@@ -673,6 +693,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             ss_free(server->header_buf);
             server->stage = 2;
         } else {
+            if (ret == -1) server->stage = -1;
             server->buf->len = 0;
             server->buf->idx = 0;
             return;
