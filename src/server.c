@@ -91,6 +91,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_send_cb(EV_P_ ev_io *w, int revents);
 static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents);
 static void block_list_clear_cb(EV_P_ ev_timer *watcher, int revents);
+static void report_addr(int fd, int err_level);
 
 static remote_t *new_remote(int fd);
 static server_t *new_server(int fd, listen_ctx_t *listener);
@@ -105,7 +106,7 @@ static void server_resolve_cb(struct sockaddr *addr, void *data);
 static void query_free_cb(void *data);
 
 static size_t parse_header_len(const char atyp, const char *data, size_t offset);
-static int is_header_complete(const buffer_t *buf);
+static int is_header_complete(const buffer_t *buf, const int fd);
 
 int verbose = 0;
 
@@ -241,7 +242,7 @@ parse_header_len(const char atyp, const char *data, size_t offset)
 }
 
 static int
-is_header_complete(const buffer_t *buf)
+is_header_complete(const buffer_t *buf, const int fd)
 {
     size_t header_len = 0;
     size_t buf_len    = buf->len;
@@ -265,6 +266,7 @@ is_header_complete(const buffer_t *buf)
         // IP V6
         header_len += sizeof(struct in6_addr);
     } else {
+        report_addr(fd, MALFORMED);
         return 0;
     }
 
@@ -639,7 +641,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     int err = ss_decrypt(buf, server->d_ctx, BUF_SIZE);
 
     if (err) {
-        LOGE("invalid password or cipher");
         report_addr(server->fd, MALICIOUS);
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
@@ -648,7 +649,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     // handle incomplete header part 2
     if (server->stage == 0) {
-        if (is_header_complete(server->buf)) {
+        if (is_header_complete(server->buf, server->fd)) {
             bfree(server->header_buf);
             ss_free(server->header_buf);
             server->stage = 2;
@@ -664,7 +665,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                server->buf->array, server->buf->len);
         server->header_buf->len = server->buf->len + header_len;
 
-        if (is_header_complete(server->header_buf)) {
+        if (is_header_complete(server->header_buf, server->fd)) {
             brealloc(server->buf, server->header_buf->len, BUF_SIZE);
             memcpy(server->buf->array, server->header_buf->array, server->header_buf->len);
             server->buf->len = server->header_buf->len;
