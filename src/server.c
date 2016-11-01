@@ -40,7 +40,6 @@
 #include <netdb.h>
 #include <errno.h>
 #include <arpa/inet.h>
-#include <netdb.h>
 #include <netinet/in.h>
 #include <pthread.h>
 #include <sys/un.h>
@@ -91,12 +90,12 @@ static void server_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_send_cb(EV_P_ ev_io *w, int revents);
 static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents);
+static void block_list_clear_cb(EV_P_ ev_timer *watcher, int revents);
 
 static remote_t *new_remote(int fd);
 static server_t *new_server(int fd, listen_ctx_t *listener);
 static remote_t *connect_to_remote(struct addrinfo *res,
-                                   server_t *server,
-                                   int *connected);
+                                   server_t *server);
 
 static void free_remote(remote_t *remote);
 static void close_and_free_remote(EV_P_ remote_t *remote);
@@ -128,6 +127,7 @@ static char *manager_address = NULL;
 uint64_t tx                  = 0;
 uint64_t rx                  = 0;
 ev_timer stat_update_watcher;
+ev_timer block_list_watcher;
 
 static struct cork_dllist connections;
 
@@ -233,6 +233,8 @@ parse_header_len(const char atyp, const char *data, size_t offset)
     } else if ((atyp & ADDRTYPE_MASK) == 4) {
         // IP V6
         len += sizeof(struct in6_addr);
+    } else {
+        return 0;
     }
     len += 2;
     return len;
@@ -262,6 +264,8 @@ is_header_complete(const buffer_t *buf)
     } else if ((atyp & ADDRTYPE_MASK) == 4) {
         // IP V6
         header_len += sizeof(struct in6_addr);
+    } else {
+        return -1;
     }
 
     // len of port
@@ -272,7 +276,7 @@ is_header_complete(const buffer_t *buf)
         header_len += ONETIMEAUTH_BYTES;
     }
 
-    return buf_len >= header_len;
+    return buf_len >= header_len ? 1 : 0;
 }
 
 static char *
@@ -460,13 +464,31 @@ create_and_bind(const char *host, const char *port, int mptcp)
 
 static remote_t *
 connect_to_remote(struct addrinfo *res,
-                  server_t *server,
-                  int *connected)
+                  server_t *server)
 {
     int sockfd;
 #ifdef SET_INTERFACE
     const char *iface = server->listen_ctx->iface;
 #endif
+
+    if (acl) {
+        char ipstr[INET6_ADDRSTRLEN];
+        memset(ipstr, 0, INET6_ADDRSTRLEN);
+
+        if (res->ai_addr->sa_family == AF_INET) {
+            struct sockaddr_in *s = (struct sockaddr_in *)res->ai_addr;
+            dns_ntop(AF_INET, &s->sin_addr, ipstr, INET_ADDRSTRLEN);
+        } else if (res->ai_addr->sa_family == AF_INET6) {
+            struct sockaddr_in6 *s = (struct sockaddr_in6 *)res->ai_addr;
+            dns_ntop(AF_INET6, &s->sin6_addr, ipstr, INET6_ADDRSTRLEN);
+        }
+
+        if (outbound_block_match_host(ipstr) == 1) {
+            if (verbose)
+                LOGI("outbound blocked %s", ipstr);
+            return NULL;
+        }
+    }
 
     // initialize remote socks
     sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
@@ -506,7 +528,7 @@ connect_to_remote(struct addrinfo *res,
 #ifdef __APPLE__
         ((struct sockaddr_in *)(res->ai_addr))->sin_len = sizeof(struct sockaddr_in);
         sa_endpoints_t endpoints;
-        bzero((char *)&endpoints, sizeof(endpoints));
+        memset((char *)&endpoints, 0, sizeof(endpoints));
         endpoints.sae_dstaddr    = res->ai_addr;
         endpoints.sae_dstaddrlen = res->ai_addrlen;
 
@@ -555,8 +577,6 @@ connect_to_remote(struct addrinfo *res,
             close(sockfd);
             return NULL;
         }
-
-        *connected = r == 0;
     }
 
     return remote;
@@ -578,6 +598,13 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         len    = 0;
 
         ev_timer_again(EV_A_ & server->recv_ctx->watcher);
+    }
+
+    if (len > BUF_SIZE) {
+        ERROR("out of recv buffer");
+        close_and_free_remote(EV_A_ remote);
+        close_and_free_server(EV_A_ server);
+        return;
     }
 
     ssize_t r = recv(server->fd, buf->array + len, BUF_SIZE - len, 0);
@@ -605,6 +632,12 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     tx += r;
 
+    if (server->stage == -1) {
+        server->buf->len = 0;
+        server->buf->idx = 0;
+        return;
+    }
+
     // handle incomplete header part 1
     if (server->stage == 0) {
         buf->len += r;
@@ -619,8 +652,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     int err = ss_decrypt(buf, server->d_ctx, BUF_SIZE);
 
     if (err) {
-        LOGE("invalid password or cipher");
-        report_addr(server->fd, ATTACK);
+        report_addr(server->fd, MALICIOUS);
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
@@ -628,10 +660,17 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     // handle incomplete header part 2
     if (server->stage == 0) {
-        if (is_header_complete(server->buf)) {
+        int ret = is_header_complete(server->buf);
+        if (ret == 1) {
             bfree(server->header_buf);
             ss_free(server->header_buf);
             server->stage = 2;
+        } else if (ret == -1) {
+            server->stage = -1;
+            report_addr(server->fd, MALFORMED);
+            server->buf->len = 0;
+            server->buf->idx = 0;
+            return;
         } else {
             server->stage = 1;
         }
@@ -644,7 +683,9 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                server->buf->array, server->buf->len);
         server->header_buf->len = server->buf->len + header_len;
 
-        if (is_header_complete(server->header_buf)) {
+        int ret = is_header_complete(server->buf);
+
+        if (ret == 1) {
             brealloc(server->buf, server->header_buf->len, BUF_SIZE);
             memcpy(server->buf->array, server->header_buf->array, server->header_buf->len);
             server->buf->len = server->header_buf->len;
@@ -652,6 +693,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             ss_free(server->header_buf);
             server->stage = 2;
         } else {
+            if (ret == -1) server->stage = -1;
             server->buf->len = 0;
             server->buf->idx = 0;
             return;
@@ -730,7 +772,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             size_t header_len = parse_header_len(atyp, server->buf->array, offset);
             size_t len        = server->buf->len;
 
-            if (len < offset + header_len + ONETIMEAUTH_BYTES) {
+            if (header_len == 0 || len < offset + header_len + ONETIMEAUTH_BYTES) {
                 report_addr(server->fd, MALFORMED);
                 close_and_free_server(EV_A_ server);
                 return;
@@ -779,6 +821,12 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             } else {
                 LOGE("invalid name length: %d", name_len);
                 report_addr(server->fd, MALFORMED);
+                close_and_free_server(EV_A_ server);
+                return;
+            }
+            if (acl && outbound_block_match_host(host) == 1) {
+                if (verbose)
+                    LOGI("outbound blocked %s", host);
                 close_and_free_server(EV_A_ server);
                 return;
             }
@@ -875,8 +923,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         }
 
         if (!need_query) {
-            int connected    = 0;
-            remote_t *remote = connect_to_remote(&info, server, &connected);
+            remote_t *remote = connect_to_remote(&info, server);
 
             if (remote == NULL) {
                 LOGE("connect error");
@@ -897,13 +944,9 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 server->stage = 4;
 
-                if (connected) {
-                    remote_send_cb(EV_A_ & remote->send_ctx->io, 0);
-                } else {
-                    // waiting on remote connected event
-                    ev_io_stop(EV_A_ & server_recv_ctx->io);
-                    ev_io_start(EV_A_ & remote->send_ctx->io);
-                }
+                // waiting on remote connected event
+                ev_io_stop(EV_A_ & server_recv_ctx->io);
+                ev_io_start(EV_A_ & remote->send_ctx->io);
             }
         } else {
             query_t *query = (query_t *)ss_malloc(sizeof(query_t));
@@ -979,6 +1022,12 @@ server_send_cb(EV_P_ ev_io *w, int revents)
 }
 
 static void
+block_list_clear_cb(EV_P_ ev_timer *watcher, int revents)
+{
+    clear_block_list();
+}
+
+static void
 server_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 {
     server_ctx_t *server_ctx = (server_ctx_t *)(((void *)watcher)
@@ -1000,7 +1049,7 @@ server_timeout_cb(EV_P_ ev_timer *watcher, int revents)
             LOGI("incomplete header: %zu", len);
 #endif
         }
-        report_addr(server->fd, ATTACK);
+        report_addr(server->fd, SUSPICIOUS);
     }
 
     close_and_free_remote(EV_A_ remote);
@@ -1046,11 +1095,9 @@ server_resolve_cb(struct sockaddr *addr, void *data)
             info.ai_addrlen = sizeof(struct sockaddr_in6);
         }
 
-        int connected    = 0;
-        remote_t *remote = connect_to_remote(&info, server, &connected);
+        remote_t *remote = connect_to_remote(&info, server);
 
         if (remote == NULL) {
-            LOGE("connect error");
             close_and_free_server(EV_A_ server);
         } else {
             server->remote = remote;
@@ -1066,12 +1113,8 @@ server_resolve_cb(struct sockaddr *addr, void *data)
                 server->buf->idx = 0;
             }
 
-            if (connected) {
-                remote_send_cb(EV_A_ & remote->send_ctx->io, 0);
-            } else {
-                // listen to remote connected event
-                ev_io_start(EV_A_ & remote->send_ctx->io);
-            }
+            // listen to remote connected event
+            ev_io_start(EV_A_ & remote->send_ctx->io);
         }
     }
 }
@@ -1335,10 +1378,13 @@ new_server(int fd, listen_ctx_t *listener)
         server->d_ctx = NULL;
     }
 
+    int request_timeout = min(MAX_REQUEST_TIMEOUT, listener->timeout)
+                          + rand() % MAX_REQUEST_TIMEOUT;
+
     ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
     ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
     ev_timer_init(&server->recv_ctx->watcher, server_timeout_cb,
-                  min(MAX_CONNECT_TIMEOUT, listener->timeout), listener->timeout);
+                  request_timeout, listener->timeout);
 
     balloc(server->buf, BUF_SIZE);
     balloc(server->header_buf, BUF_SIZE);
@@ -1433,20 +1479,22 @@ accept_cb(EV_P_ ev_io *w, int revents)
     }
 
     char *peer_name = get_peer_name(serverfd);
-
     if (peer_name != NULL) {
-        if (check_block_list(peer_name, 0)) {
-            LOGE("block all requests from %s", peer_name);
-            close(serverfd);
-            return;
-        }
+        int in_white_list = 0;
         if (acl) {
             if ((get_acl_mode() == BLACK_LIST && acl_match_host(peer_name) == 1)
                 || (get_acl_mode() == WHITE_LIST && acl_match_host(peer_name) >= 0)) {
                 LOGE("Access denied from %s", peer_name);
                 close(serverfd);
                 return;
+            } else if (acl_match_host(peer_name) == -1) {
+                in_white_list = 1;
             }
+        }
+        if (!in_white_list && check_block_list(peer_name, 0)) {
+            LOGE("block all requests from %s", peer_name);
+            close(serverfd);
+            return;
         }
     }
 
@@ -1660,7 +1708,7 @@ main(int argc, char **argv)
     }
 
     if (method == NULL) {
-        method = "table";
+        method = "rc4-md5";
     }
 
     if (timeout == NULL) {
@@ -1789,13 +1837,19 @@ main(int argc, char **argv)
                           auth, atoi(timeout), iface, NULL);
         }
 
-        LOGI("listening at %s:%s", host ? host : "*", server_port);
+        if (host && strcmp(host, ":") > 0)
+            LOGI("listening at [%s]:%s", host, server_port);
+        else
+            LOGI("listening at %s:%s", host ? host : "*", server_port);
     }
 
     if (manager_address != NULL) {
         ev_timer_init(&stat_update_watcher, stat_update_cb, UPDATE_INTERVAL, UPDATE_INTERVAL);
         ev_timer_start(EV_DEFAULT, &stat_update_watcher);
     }
+
+    ev_timer_init(&block_list_watcher, block_list_clear_cb, UPDATE_INTERVAL, UPDATE_INTERVAL);
+    ev_timer_start(EV_DEFAULT, &block_list_watcher);
 
     // setuid
     if (user != NULL) {
@@ -1815,6 +1869,7 @@ main(int argc, char **argv)
     if (manager_address != NULL) {
         ev_timer_stop(EV_DEFAULT, &stat_update_watcher);
     }
+    ev_timer_stop(EV_DEFAULT, &block_list_watcher);
 
     // Clean up
     for (int i = 0; i <= server_num; i++) {

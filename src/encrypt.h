@@ -148,7 +148,7 @@ enum crpher_index {
 };
 
 #define ONETIMEAUTH_FLAG 0x10
-#define ADDRTYPE_MASK 0xF
+#define ADDRTYPE_MASK 0xEF
 
 #define ONETIMEAUTH_BYTES 10U
 #define MD5_BYTES 16U

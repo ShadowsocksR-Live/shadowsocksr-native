@@ -5,7 +5,7 @@
 FROM alpine
 MAINTAINER kev <noreply@datageek.info>
 
-ARG SS_VER=2.5.4
+ARG SS_VER=2.5.6
 ARG SS_URL=https://github.com/shadowsocks/shadowsocks-libev/archive/v$SS_VER.tar.gz
 
 ENV SERVER_ADDR 0.0.0.0
@@ -56,6 +56,4 @@ CMD ss-server -s $SERVER_ADDR \
               --fast-open \
               -d $DNS_ADDR \
               -d $DNS_ADDR_2 \
-              -U \
               -u
-

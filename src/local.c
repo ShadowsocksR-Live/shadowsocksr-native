@@ -317,22 +317,16 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                         return;
                     }
 
-                    if (r == 0) {
-                        if (verbose)
-                            LOGI("connected immediately");
-                        remote_send_cb(EV_A_ & remote->send_ctx->io, 0);
-                    } else {
-                        // wait on remote connected event
-                        ev_io_stop(EV_A_ & server_recv_ctx->io);
-                        ev_io_start(EV_A_ & remote->send_ctx->io);
-                        ev_timer_start(EV_A_ & remote->send_ctx->watcher);
-                    }
+                    // wait on remote connected event
+                    ev_io_stop(EV_A_ & server_recv_ctx->io);
+                    ev_io_start(EV_A_ & remote->send_ctx->io);
+                    ev_timer_start(EV_A_ & remote->send_ctx->watcher);
                 } else {
 #ifdef TCP_FASTOPEN
 #ifdef __APPLE__
                     ((struct sockaddr_in *)&(remote->addr))->sin_len = sizeof(struct sockaddr_in);
                     sa_endpoints_t endpoints;
-                    bzero((char *)&endpoints, sizeof(endpoints));
+                    memset((char *)&endpoints, 0, sizeof(endpoints));
                     endpoints.sae_dstaddr    = (struct sockaddr *)&(remote->addr);
                     endpoints.sae_dstaddrlen = remote->addr_len;
 
@@ -1473,6 +1467,10 @@ main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
+    if (method == NULL) {
+        method = "rc4-md5";
+    }
+
     if (timeout == NULL) {
         timeout = "60";
     }
@@ -1589,7 +1587,10 @@ main(int argc, char **argv)
                       get_sockaddr_len(listen_ctx.remote_addr[0]), mtu, m, auth, listen_ctx.timeout, iface, protocol);
     }
 
-    LOGI("listening at %s:%s", local_addr, local_port);
+    if (strcmp(local_addr, ":") > 0)
+        LOGI("listening at [%s]:%s", local_addr, local_port);
+    else
+        LOGI("listening at %s:%s", local_addr, local_port);
 
     // setuid
     if (user != NULL) {
@@ -1753,7 +1754,10 @@ start_ss_local_server(profile_t profile)
                       get_sockaddr_len(addr), mtu, m, auth, timeout, NULL, NULL);
     }
 
-    LOGI("listening at %s:%s", local_addr, local_port_str);
+    if (strcmp(local_addr, ":") > 0)
+        LOGI("listening at [%s]:%s", local_addr, local_port_str);
+    else
+        LOGI("listening at %s:%s", local_addr, local_port_str);
 
     // Init connections
     cork_dllist_init(&connections);

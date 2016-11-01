@@ -1,14 +1,14 @@
 Name:		shadowsocks-libev
-Version:	2.4.1
+Version:	VERSION
 Release:	1%{?dist}
 Summary:	A lightweight and secure socks5 proxy
 
 Group:		Applications/Internet
 License:	GPLv3+
-URL:		https://github.com/madeye/%{name}
+URL:		https://github.com/shadowsocks/%{name}
 Source0:	%{url}/archive/v%{version}.tar.gz
 
-BuildRequires:	openssl-devel
+BuildRequires: make automake gcc openssl-devel pcre-devel asciidoc xmlto
 Requires:	openssl
 
 %if 0%{?rhel} != 6
@@ -46,6 +46,7 @@ mkdir -p %{buildroot}%{_sysconfdir}/default
 mkdir -p %{buildroot}%{_unitdir}
 install -m 644 %{_builddir}/%{buildsubdir}/debian/shadowsocks-libev.default %{buildroot}%{_sysconfdir}/default/shadowsocks-libev
 install -m 644 %{_builddir}/%{buildsubdir}/debian/shadowsocks-libev.service %{buildroot}%{_unitdir}/shadowsocks-libev.service
+install -m 644 %{_builddir}/%{buildsubdir}/debian/shadowsocks-libev-*.service %{buildroot}%{_unitdir}/
 %endif
 install -m 644 %{_builddir}/%{buildsubdir}/debian/config.json %{buildroot}%{_sysconfdir}/shadowsocks-libev/config.json
 
@@ -74,6 +75,13 @@ fi
 
 
 %files
+/usr/share/doc/shadowsocks-libev/shadowsocks-libev.html
+/usr/share/doc/shadowsocks-libev/ss-local.html
+/usr/share/doc/shadowsocks-libev/ss-manager.html
+/usr/share/doc/shadowsocks-libev/ss-nat.html
+/usr/share/doc/shadowsocks-libev/ss-redir.html
+/usr/share/doc/shadowsocks-libev/ss-server.html
+/usr/share/doc/shadowsocks-libev/ss-tunnel.html
 %{_bindir}/*
 %{_libdir}/*
 %config(noreplace) %{_sysconfdir}/shadowsocks-libev/config.json
@@ -82,11 +90,13 @@ fi
 %{_initddir}/shadowsocks-libev
 %else
 %{_unitdir}/shadowsocks-libev.service
+%{_unitdir}/shadowsocks-libev-*.service
 %config(noreplace) %{_sysconfdir}/default/shadowsocks-libev
 %endif
 
 %package devel
 Summary:    Development files for shadowsocks-libev
+Group:      Applications/Internet
 License:    GPLv3+
 
 %description devel

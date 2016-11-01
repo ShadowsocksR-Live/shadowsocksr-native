@@ -287,3 +287,4 @@ validate_hostname(const char *hostname, const int hostname_len)
 
     return 1;
 }
+

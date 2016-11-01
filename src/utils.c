@@ -254,7 +254,7 @@ usage()
     printf(
         "                                  chacha20 and chacha20-ietf.\n");
     printf(
-        "                                  The default cipher is tables.\n");
+        "                                  The default cipher is rc4-md5.\n");
     printf("\n");
     printf(
         "       [-a <user>]                Run as another user.\n");

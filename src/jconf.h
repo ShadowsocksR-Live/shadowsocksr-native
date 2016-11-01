@@ -27,6 +27,7 @@
 #define MAX_CONF_SIZE 128 * 1024
 #define MAX_DNS_NUM 4
 #define MAX_CONNECT_TIMEOUT 10
+#define MAX_REQUEST_TIMEOUT 60
 #define MIN_UDP_TIMEOUT 10
 
 #define TCP_ONLY     0

@@ -138,6 +138,12 @@ construct_command_line(struct manager_ctx *manager, struct server *server)
         int len = strlen(cmd);
         snprintf(cmd + len, BUF_SIZE - len, " -t %s", manager->timeout);
     }
+#ifdef HAVE_SETRLIMIT
+    if (manager->nofile) {
+        int len = strlen(cmd);
+        snprintf(cmd + len, BUF_SIZE - len, " -n %d", manager->nofile);
+    }
+#endif
     if (manager->user != NULL) {
         int len = strlen(cmd);
         snprintf(cmd + len, BUF_SIZE - len, " -a %s", manager->user);
@@ -611,6 +617,10 @@ main(int argc, char **argv)
     int mode      = TCP_ONLY;
     int mtu       = 0;
 
+#ifdef HAVE_SETRLIMIT
+static int nofile = 0;
+#endif
+
     int server_num = 0;
     char *server_host[MAX_REMOTE_NUM];
 
@@ -634,7 +644,7 @@ main(int argc, char **argv)
 
     USE_TTY();
 
-    while ((c = getopt_long(argc, argv, "f:s:l:k:t:m:c:i:d:a:huUvA",
+    while ((c = getopt_long(argc, argv, "f:s:l:k:t:m:c:i:d:a:n:huUvA",
                             long_options, &option_index)) != -1)
         switch (c) {
         case 0:
@@ -701,6 +711,11 @@ main(int argc, char **argv)
         case 'A':
             auth = 1;
             break;
+#ifdef HAVE_SETRLIMIT
+        case 'n':
+            nofile = atoi(optarg);
+            break;
+#endif
         case '?':
             // The option character is not recognized.
             LOGE("Unrecognized option: %s", optarg);
@@ -746,6 +761,11 @@ main(int argc, char **argv)
         if (mtu == 0) {
             mtu = conf->mtu;
         }
+#ifdef HAVE_SETRLIMIT
+        if (nofile == 0) {
+            nofile = conf->nofile;
+        }
+#endif
     }
 
     if (server_num == 0) {
@@ -817,6 +837,9 @@ main(int argc, char **argv)
     manager.nameservers     = nameservers;
     manager.nameserver_num  = nameserver_num;
     manager.mtu             = mtu;
+#ifdef HAVE_SETRLIMIT
+    manager.nofile          = nofile;
+#endif
 
     // initialize ev loop
     struct ev_loop *loop = EV_DEFAULT;

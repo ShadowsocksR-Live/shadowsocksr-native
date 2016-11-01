@@ -41,6 +41,10 @@ static int acl_mode = BLACK_LIST;
 
 static struct cache *block_list;
 
+static struct ip_set outbound_block_list_ipv4;
+static struct ip_set outbound_block_list_ipv6;
+static struct cork_dllist outbound_block_list_rules;
+
 void
 init_block_list()
 {
@@ -54,6 +58,12 @@ remove_from_block_list(char *addr)
     size_t addr_len = strlen(addr);
 
     return cache_remove(block_list, addr, addr_len);
+}
+
+void
+clear_block_list()
+{
+    cache_clear(block_list, 3600); // Clear items older than 1 hour
 }
 
 int
@@ -133,9 +143,12 @@ init_acl(const char *path)
     ipset_init(&white_list_ipv6);
     ipset_init(&black_list_ipv4);
     ipset_init(&black_list_ipv6);
+    ipset_init(&outbound_block_list_ipv4);
+    ipset_init(&outbound_block_list_ipv6);
 
     cork_dllist_init(&black_list_rules);
     cork_dllist_init(&white_list_rules);
+    cork_dllist_init(&outbound_block_list_rules);
 
     struct ip_set *list_ipv4  = &black_list_ipv4;
     struct ip_set *list_ipv6  = &black_list_ipv6;
@@ -167,8 +180,13 @@ init_acl(const char *path)
                 continue;
             }
 
-            if (strcmp(line, "[black_list]") == 0
-                || strcmp(line, "[bypass_list]") == 0) {
+            if (strcmp(line, "[outbound_block_list]") == 0) {
+                list_ipv4 = &outbound_block_list_ipv4;
+                list_ipv6 = &outbound_block_list_ipv6;
+                rules     = &outbound_block_list_rules;
+                continue;
+            } else if (strcmp(line, "[black_list]") == 0
+                       || strcmp(line, "[bypass_list]") == 0) {
                 list_ipv4 = &black_list_ipv4;
                 list_ipv6 = &black_list_ipv6;
                 rules     = &black_list_rules;
@@ -320,4 +338,33 @@ acl_remove_ip(const char *ip)
     }
 
     return 0;
+}
+
+/*
+ * Return 0,  if not match.
+ * Return 1,  if match black list.
+ */
+int
+outbound_block_match_host(const char *host)
+{
+    struct cork_ip addr;
+    int ret = 0;
+    int err = cork_ip_init(&addr, host);
+
+    if (err) {
+        int host_len = strlen(host);
+        if (lookup_rule(&outbound_block_list_rules, host, host_len) != NULL)
+            ret = 1;
+        return ret;
+    }
+
+    if (addr.version == 4) {
+        if (ipset_contains_ipv4(&outbound_block_list_ipv4, &(addr.ip.v4)))
+            ret = 1;
+    } else if (addr.version == 6) {
+        if (ipset_contains_ipv6(&outbound_block_list_ipv6, &(addr.ip.v6)))
+            ret = 1;
+    }
+
+    return ret;
 }

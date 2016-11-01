@@ -56,6 +56,8 @@
 #define MIN(X, Y) ((X) < (Y) ? (X) : (Y))
 #endif
 
+extern int verbose;
+
 static int parse_tls_header(const char *, size_t, char **);
 static int parse_extensions(const char *, size_t, char **);
 static int parse_server_name_extension(const char *, size_t, char **);
@@ -102,21 +104,24 @@ parse_tls_header(const char *data, size_t data_len, char **hostname)
      * See RFC5246 Appendix E.2
      */
     if (data[0] & 0x80 && data[2] == 1) {
-        LOGI("Received SSL 2.0 Client Hello which can not support SNI.");
+        if (verbose)
+            LOGI("Received SSL 2.0 Client Hello which can not support SNI.");
         return -2;
     }
 
     tls_content_type = data[0];
     if (tls_content_type != TLS_HANDSHAKE_CONTENT_TYPE) {
-        LOGI("Request did not begin with TLS handshake.");
+        if (verbose)
+            LOGI("Request did not begin with TLS handshake.");
         return -5;
     }
 
     tls_version_major = data[1];
     tls_version_minor = data[2];
     if (tls_version_major < 3) {
-        LOGI("Received SSL %d.%d handshake which can not support SNI.",
-             tls_version_major, tls_version_minor);
+        if (verbose)
+            LOGI("Received SSL %d.%d handshake which can not support SNI.",
+                    tls_version_major, tls_version_minor);
 
         return -2;
     }
@@ -137,7 +142,8 @@ parse_tls_header(const char *data, size_t data_len, char **hostname)
         return -5;
     }
     if (data[pos] != TLS_HANDSHAKE_TYPE_CLIENT_HELLO) {
-        LOGI("Not a client hello");
+        if (verbose)
+            LOGI("Not a client hello");
 
         return -5;
     }
@@ -170,7 +176,8 @@ parse_tls_header(const char *data, size_t data_len, char **hostname)
     pos += 1 + len;
 
     if (pos == data_len && tls_version_major == 3 && tls_version_minor == 0) {
-        LOGI("Received SSL 3.0 handshake without extensions");
+        if (verbose)
+            LOGI("Received SSL 3.0 handshake without extensions");
         return -2;
     }
 
@@ -242,8 +249,9 @@ parse_server_name_extension(const char *data, size_t data_len,
 
             return len;
         default:
-            LOGI("Unknown server name extension name type: %d",
-                 data[pos]);
+            if (verbose)
+                LOGI("Unknown server name extension name type: %d",
+                        data[pos]);
         }
         pos += 3 + len;
     }

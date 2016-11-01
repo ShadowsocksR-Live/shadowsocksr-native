@@ -806,58 +806,9 @@ accept_cb(EV_P_ ev_io *w, int revents)
         return;
     }
 
-    // SSR beg
-    remote->remote_index = index;
-    server->obfs_plugin = new_obfs_class(listener->obfs_name);
-    if (server->obfs_plugin) {
-        server->obfs = server->obfs_plugin->new_obfs();
-    }
-    server->protocol_plugin = new_obfs_class(listener->protocol_name);
-    if (server->protocol_plugin) {
-        server->protocol = server->protocol_plugin->new_obfs();
-    }
-    if (listener->list_obfs_global[remote->remote_index] == NULL && server->obfs_plugin) {
-        listener->list_obfs_global[remote->remote_index] = server->obfs_plugin->init_data();
-    }
-    if (listener->list_protocol_global[remote->remote_index] == NULL && server->protocol_plugin) {
-        listener->list_protocol_global[remote->remote_index] = server->protocol_plugin->init_data();
-    }
-    ss_addr_t *sa = &server->destaddr;
-    server_info _server_info;
-    struct cork_ip ip;
-    cork_ip_init(&ip, sa->host);
-    memset(&_server_info, 0, sizeof(server_info));
-    strcpy(_server_info.host, inet_ntoa(((struct sockaddr_in*)remote_addr)->sin_addr));
-    _server_info.port = ((struct sockaddr_in*)remote_addr)->sin_port;
-    _server_info.port = _server_info.port >> 8 | _server_info.port << 8;
-    _server_info.param = listener->obfs_param;
-    _server_info.g_data = listener->list_obfs_global[remote->remote_index];
-    _server_info.head_len = (ip.version == 6 ? 19 : 7);
-    _server_info.iv = server->e_ctx->evp.iv;
-    _server_info.iv_len = enc_get_iv_len();
-    _server_info.key = enc_get_key();
-    _server_info.key_len = enc_get_key_len();
-    _server_info.tcp_mss = 1460;
-
-    if (server->obfs_plugin)
-        server->obfs_plugin->set_server_info(server->obfs, &_server_info);
-
-    _server_info.param = NULL;
-    _server_info.g_data = listener->list_protocol_global[remote->remote_index];
-
-    if (server->protocol_plugin)
-        server->protocol_plugin->set_server_info(server->protocol, &_server_info);
-    // SSR end
-
-    if (r == 0) {
-        if (verbose)
-            LOGI("connected immediately");
-        remote_send_cb(EV_A_ & remote->send_ctx->io, 0);
-    } else {
-        // listen to remote connected event
-        ev_io_start(EV_A_ & remote->send_ctx->io);
-        ev_timer_start(EV_A_ & remote->send_ctx->watcher);
-    }
+    // listen to remote connected event
+    ev_io_start(EV_A_ & remote->send_ctx->io);
+    ev_timer_start(EV_A_ & remote->send_ctx->watcher);
 }
 
 void
@@ -1098,6 +1049,10 @@ main(int argc, char **argv)
         local_port == NULL || password == NULL) {
         usage();
         exit(EXIT_FAILURE);
+    }
+
+    if (method == NULL) {
+        method = "rc4-md5";
     }
 
     if (timeout == NULL) {
