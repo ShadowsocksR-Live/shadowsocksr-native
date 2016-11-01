@@ -1,3 +1,10 @@
+shadowsocks-libev (2.5.6-1) unstable; urgency=medium
+
+  * Add outbound ACL for server.
+  * Refine log format.
+
+ -- Max Lv <max.c.lv@gmail.com>  Tue, 01 Nov 2016 09:51:52 +0800
+
 shadowsocks-libev (2.5.5-1) unstable; urgency=medium
 
   * Refine attack detection.
