@@ -111,11 +111,6 @@ Not available in local mode.
 -A::
 Enable onetime authentication.
 
--w::
-Enable white list mode (when ACL enabled).
-+
-Only available in server mode.
-
 -L <addr:port>::
 Specify destination server address and port for local port forwarding.
 +
