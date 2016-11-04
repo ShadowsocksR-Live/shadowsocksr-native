@@ -345,6 +345,8 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     remote_t *remote              = remote_recv_ctx->remote;
     server_t *server              = remote->server;
 
+    ev_timer_again(EV_A_ & remote->recv_ctx->watcher);
+
     ssize_t r = recv(remote->fd, server->buf->array, BUF_SIZE, 0);
 
     if (r == 0) {
@@ -416,6 +418,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
             ev_io_stop(EV_A_ & remote_send_ctx->io);
             ev_io_stop(EV_A_ & server->recv_ctx->io);
             ev_timer_stop(EV_A_ & remote_send_ctx->watcher);
+            ev_timer_start(EV_A_ & remote->recv_ctx->watcher);
 
             // send destaddr
             buffer_t ss_addr_to_send;
@@ -541,6 +544,8 @@ new_remote(int fd, int timeout)
     ev_io_init(&remote->send_ctx->io, remote_send_cb, fd, EV_WRITE);
     ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb,
                   min(MAX_CONNECT_TIMEOUT, timeout), 0);
+    ev_timer_init(&remote->recv_ctx->watcher, remote_timeout_cb,
+                  timeout, 0);
 
     balloc(remote->buf, BUF_SIZE);
 
@@ -569,6 +574,7 @@ close_and_free_remote(EV_P_ remote_t *remote)
 {
     if (remote != NULL) {
         ev_timer_stop(EV_A_ & remote->send_ctx->watcher);
+        ev_timer_stop(EV_A_ & remote->recv_ctx->watcher);
         ev_io_stop(EV_A_ & remote->send_ctx->io);
         ev_io_stop(EV_A_ & remote->recv_ctx->io);
         close(remote->fd);
@@ -915,7 +921,7 @@ main(int argc, char **argv)
     }
 
     if (timeout == NULL) {
-        timeout = "60";
+        timeout = "600";
     }
 
 #ifdef HAVE_SETRLIMIT
