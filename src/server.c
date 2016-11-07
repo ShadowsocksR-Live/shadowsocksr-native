@@ -315,6 +315,14 @@ reset_addr(int fd)
 static void
 report_addr(int fd, int err_level)
 {
+
+#ifdef __linux__
+    struct linger so_linger;
+    so_linger.l_onoff = 1;
+    so_linger.l_linger = 0;
+    setsockopt(fd, SOL_SOCKET, SO_LINGER, &so_linger, sizeof so_linger);
+#endif
+
     char *peer_name;
     peer_name = get_peer_name(fd);
     if (peer_name != NULL) {

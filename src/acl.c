@@ -74,7 +74,7 @@ init_iptables()
     char cli[256];
     sprintf(cli, "iptables -N SHADOWSOCKS_LIBEV; \
             iptables -F SHADOWSOCKS_LIBEV; \
-            iptables -A OUTPUT -p tcp --tcp-flags FIN FIN -j SHADOWSOCKS_LIBEV");
+            iptables -A OUTPUT -p tcp --tcp-flags RST RST -j SHADOWSOCKS_LIBEV");
     return run_cmd(cli);
 }
 
@@ -84,7 +84,7 @@ clean_iptables()
     if (geteuid() != 0)
         return -1;
     char cli[256];
-    sprintf(cli, "iptables -D OUTPUT -p tcp --tcp-flags FIN FIN -j SHADOWSOCKS_LIBEV; \
+    sprintf(cli, "iptables -D OUTPUT -p tcp --tcp-flags RST RST -j SHADOWSOCKS_LIBEV; \
             iptables -F SHADOWSOCKS_LIBEV; \
             iptables -X SHADOWSOCKS_LIBEV");
     return run_cmd(cli);
