@@ -498,9 +498,10 @@ bytes_to_key(const cipher_t *cipher, const digest_type_t *md,
     int addmd;
     unsigned int i, j, mds;
 
-    mds   = 16;
+    mds  = 16;
     nkey = cipher_key_size(cipher);
-    if (pass == NULL) return nkey;
+    if (pass == NULL)
+        return nkey;
     memset(&c, 0, sizeof(MD5_CTX));
 
     for (j = 0, addmd = 0; j < nkey; addmd++) {
@@ -512,7 +513,8 @@ bytes_to_key(const cipher_t *cipher, const digest_type_t *md,
         MD5_Final(md_buf, &c);
 
         for (i = 0; i < mds; i++, j++) {
-            if (j >= nkey) break;
+            if (j >= nkey)
+                break;
             key[j] = md_buf[i];
         }
     }
@@ -530,8 +532,10 @@ bytes_to_key(const cipher_t *cipher, const digest_type_t *md,
     mds  = md_get_size(md);
     memset(&c, 0, sizeof(md_context_t));
 
-    if (pass == NULL) return nkey;
-    if (md_init_ctx(&c, md)) return 0;
+    if (pass == NULL)
+        return nkey;
+    if (md_init_ctx(&c, md))
+        return 0;
 
     for (j = 0, addmd = 0; j < nkey; addmd++) {
         md_starts(&c);
@@ -542,7 +546,8 @@ bytes_to_key(const cipher_t *cipher, const digest_type_t *md,
         md_finish(&c, md_buf);
 
         for (i = 0; i < mds; i++, j++) {
-            if (j >= nkey) break;
+            if (j >= nkey)
+                break;
             key[j] = md_buf[i];
         }
     }
@@ -562,8 +567,10 @@ bytes_to_key(const cipher_t *cipher, const digest_type_t *md,
     mds  = mbedtls_md_get_size(md);
     memset(&c, 0, sizeof(mbedtls_md_context_t));
 
-    if (pass == NULL) return nkey;
-    if (mbedtls_md_setup(&c, md, 1)) return 0;
+    if (pass == NULL)
+        return nkey;
+    if (mbedtls_md_setup(&c, md, 1))
+        return 0;
 
     for (j = 0, addmd = 0; j < nkey; addmd++) {
         mbedtls_md_starts(&c);
@@ -574,7 +581,8 @@ bytes_to_key(const cipher_t *cipher, const digest_type_t *md,
         mbedtls_md_finish(&c, &(md_buf[0]));
 
         for (i = 0; i < mds; i++, j++) {
-            if (j >= nkey) break;
+            if (j >= nkey)
+                break;
             key[j] = md_buf[i];
         }
     }
@@ -683,7 +691,6 @@ cipher_context_init(cipher_ctx_t *ctx, int method, int enc)
         return;
     }
 #endif
-
 
     const cipher_kt_t *cipher = get_cipher_type(method);
 
@@ -1294,14 +1301,14 @@ enc_key_init(int method, const char *pass)
         cipher.iv_len  = supported_ciphers_iv_size[method];
 #endif
 #if defined(USE_CRYPTO_POLARSSL)
-        cipher.info = &cipher_info;
+        cipher.info             = &cipher_info;
         cipher.info->base       = NULL;
         cipher.info->key_length = supported_ciphers_key_size[method] * 8;
         cipher.info->iv_size    = supported_ciphers_iv_size[method];
 #endif
 #if defined(USE_CRYPTO_MBEDTLS)
         // XXX: key_length changed to key_bitlen in mbed TLS 2.0.0
-        cipher.info = &cipher_info;
+        cipher.info             = &cipher_info;
         cipher.info->base       = NULL;
         cipher.info->key_bitlen = supported_ciphers_key_size[method] * 8;
         cipher.info->iv_size    = supported_ciphers_iv_size[method];
