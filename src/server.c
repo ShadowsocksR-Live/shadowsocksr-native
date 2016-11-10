@@ -1785,9 +1785,6 @@ main(int argc, char **argv)
     LOGI("initializing ciphers... %s", method);
     int m = enc_init(password, method);
 
-    // init block list
-    init_block_list();
-
     // initialize ev loop
     struct ev_loop *loop = EV_DEFAULT;
 
@@ -1863,6 +1860,9 @@ main(int argc, char **argv)
     if (user != NULL) {
         run_as(user);
     }
+
+    // init block list
+    init_block_list();
 
     // Init connections
     cork_dllist_init(&connections);
