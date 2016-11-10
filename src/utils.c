@@ -109,14 +109,14 @@ run_as(const char *user)
 
             if (err == 0 && pwd) {
                 /* setgid first, because we may not be allowed to do it anymore after setuid */
-                if (setresgid(pwd->pw_gid, 0, pwd->pw_gid) != 0) {
+                if (setregid(pwd->pw_gid, 0) != 0) {
                     LOGE(
                         "Could not change group id to that of run_as user '%s': %s",
                         user, strerror(errno));
                     return 0;
                 }
 
-                if (setresuid(pwd->pw_uid, 0, pwd->pw_uid) != 0) {
+                if (setreuid(pwd->pw_uid, 0) != 0) {
                     LOGE(
                         "Could not change user id to that of run_as user '%s': %s",
                         user, strerror(errno));
@@ -150,12 +150,12 @@ run_as(const char *user)
             return 0;
         }
         /* setgid first, because we may not allowed to do it anymore after setuid */
-        if (setresgid(pwd->pw_gid, 0, pwd->pwd_gid) != 0) {
+        if (setregid(pwd->pw_gid, 0) != 0) {
             LOGE("Could not change group id to that of run_as user '%s': %s",
                  user, strerror(errno));
             return 0;
         }
-        if (setresuid(pwd->pw_uid, 0, pwd->pwd_uid) != 0) {
+        if (setresuid(pwd->pw_uid, 0) != 0) {
             LOGE("Could not change user id to that of run_as user '%s': %s",
                  user, strerror(errno));
             return 0;
