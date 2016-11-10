@@ -48,6 +48,7 @@ static struct cork_dllist outbound_block_list_rules;
 #ifdef __linux__
 
 #include <unistd.h>
+#include <stdio.h>
 
 #define NO_FIREWALL_MODE 0
 #define IPTABLES_MODE    1
@@ -96,21 +97,34 @@ run_cmd(const char *cmdstring)
 static int
 init_iptables()
 {
-    int ret = 0;
+    char cli[256];
+    FILE *fp;
+
     if (geteuid() != 0)
         return -1;
-    sprintf(chain_name, "SHADOWSOCKS_LIBEV_%d", getpid());
-    char cli[256];
-    sprintf(cli, iptables_init_chain, chain_name, chain_name, chain_name);
-    ret = system(cli);
-    if (ret) {
-        sprintf(cli, firewalld_init_chain, chain_name, chain_name, chain_name);
-        ret = system(cli);
-        if (ret == 0) mode = FIREWALLD_MODE;
+
+    sprintf(cli, "firewall-cmd --version 2>&1");
+    fp = popen(cli, "r");
+
+    if (pclose(fp) == 0) {
+        mode = FIREWALLD_MODE;
     } else {
-        mode = IPTABLES_MODE;
+        sprintf(cli, "iptables --version 2>&1");
+        fp = popen(cli, "r");
+        if (pclose(fp) == 0) mode = IPTABLES_MODE;
     }
-    return 0;
+
+    sprintf(chain_name, "SHADOWSOCKS_LIBEV_%d", getpid());
+
+    if (mode == FIREWALLD_MODE) {
+        sprintf(cli, firewalld_init_chain, chain_name, chain_name, chain_name);
+        return system(cli);
+    } else if (mode == IPTABLES_MODE) {
+        sprintf(cli, iptables_init_chain, chain_name, chain_name, chain_name);
+        return system(cli);
+    }
+
+    return -1;
 }
 
 static int
