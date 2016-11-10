@@ -128,7 +128,7 @@ init_firewall()
     char cli[256];
     FILE *fp;
 
-    if (geteuid() != 0)
+    if (getuid() != 0)
         return -1;
 
     sprintf(cli, "firewall-cmd --version 2>&1");
@@ -165,7 +165,7 @@ reset_firewall()
     int ret = 0;
     char cli[256];
 
-    if (geteuid() != 0)
+    if (getuid() != 0)
         return -1;
 
     if (mode == IPTABLES_MODE) {
@@ -189,7 +189,7 @@ set_firewall_rule(char *addr, int add)
     char cli[256];
     struct cork_ip ip;
 
-    if (geteuid() != 0)
+    if (getuid() != 0)
         return -1;
 
     if (cork_ip_init(&ip, addr))
