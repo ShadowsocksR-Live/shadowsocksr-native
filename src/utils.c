@@ -155,7 +155,7 @@ run_as(const char *user)
                  user, strerror(errno));
             return 0;
         }
-        if (setresuid(pwd->pw_uid, 0) != 0) {
+        if (setreuid(pwd->pw_uid, 0) != 0) {
             LOGE("Could not change user id to that of run_as user '%s': %s",
                  user, strerror(errno));
             return 0;
