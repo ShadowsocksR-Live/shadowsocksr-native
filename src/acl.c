@@ -49,7 +49,30 @@ static struct cork_dllist outbound_block_list_rules;
 
 #include <unistd.h>
 
+#define NO_FIREWALL_MODE 0
+#define IPTABLES_MODE    1
+#define FIREWALLD_MODE   2
+
+static int mode       = NO_FIREWALL_MODE;
+static int rule_count = 0;
+
 static char chain_name[64];
+static char *iptables_init_chain =
+    "iptables -N %s; iptables -F %s; iptables -A OUTPUT -p tcp --tcp-flags RST RST -j %s";
+static char *iptables_remove_chain =
+    "iptables -D OUTPUT -p tcp --tcp-flags RST RST -j %s; iptables -F %s; iptables -X %s";
+static char *iptables_add_rule    = "iptables -A %s -d %s -j DROP";
+static char *iptables_remove_rule = "iptables -D %s -d %s -j DROP";
+
+static char *firewalld_init_chain =
+    "firewall-cmd --direct --add-chain ipv4 filter %s; \
+     firewall-cmd --direct --add-rule ipv4 filter OUTPUT -p tcp --tcp-flags RST RST -j %s";
+static char *firewalld_remove_chain =
+    "firewall-cmd --direct --remove-rule ipv4 filter OUTPUT -p tcp --tcp-flags RST RST -j %s; \
+     firewall-cmd --direct --remove-chain ipv4 filter %s";
+static char *firewalld_add_rule    = "firewall-cmd --direct --add-rule ipv4 filter %s -d %s -j DROP";
+static char *firewalld_remove_rule = "firewall-cmd --direct --remove-rule ipv4 filter %s -d %s -j DROP";
+static char *firewalld_remove_rule_by_id = "firewall-cmd --direct --remove-rule ipv4 filter %s %d";
 
 static int
 run_cmd(const char *cmdstring)
@@ -73,42 +96,76 @@ run_cmd(const char *cmdstring)
 static int
 init_iptables()
 {
+    int ret = 0;
     if (geteuid() != 0)
         return -1;
     sprintf(chain_name, "SHADOWSOCKS_LIBEV_%d", getpid());
     char cli[256];
-    sprintf(cli,
-            "iptables -N %s; \
-            iptables -F %s; \
-            iptables -A OUTPUT -p tcp --tcp-flags RST RST -j %s",
-            chain_name, chain_name, chain_name);
-    return run_cmd(cli);
+    sprintf(cli, iptables_init_chain, chain_name, chain_name, chain_name);
+    ret = system(cli);
+    if (ret) {
+        sprintf(cli, firewalld_init_chain, chain_name, chain_name, chain_name);
+        ret = system(cli);
+        if (ret == 0) mode = FIREWALLD_MODE;
+    } else {
+        mode = IPTABLES_MODE;
+    }
+    return 0;
 }
 
 static int
 clean_iptables()
 {
+    int i, ret;
+    char cli[256];
+
     if (geteuid() != 0)
         return -1;
-    char cli[256];
-    sprintf(cli,
-            "iptables -D OUTPUT -p tcp --tcp-flags RST RST -j %s; \
-            iptables -F %s; \
-            iptables -X %s", chain_name, chain_name, chain_name);
-    return run_cmd(cli);
+
+    if (mode == IPTABLES_MODE) {
+        sprintf(cli, iptables_remove_chain, chain_name, chain_name, chain_name);
+        return system(cli);
+    } else if (mode == FIREWALLD_MODE) {
+        for (i = 0; i < rule_count; i++) {
+            sprintf(cli, firewalld_remove_rule_by_id, chain_name, i + 1);
+            ret = system(cli);
+        }
+        sprintf(cli, firewalld_remove_chain, chain_name, chain_name, chain_name);
+        ret = system(cli);
+        return ret;
+    }
+
+    return 0;
 }
 
 static int
 set_iptables_rules(char *addr, int add)
 {
+    char cli[256];
+
     if (geteuid() != 0)
         return -1;
-    char cli[256];
+
     if (add)
-        sprintf(cli, "iptables -A %s -d %s -j DROP", chain_name, addr);
+        rule_count++;
     else
-        sprintf(cli, "iptables -D %s -d %s -j DROP", chain_name, addr);
-    return run_cmd(cli);
+        rule_count = rule_count > 0 ? rule_count - 1 : 0;
+
+    if (add) {
+        if (mode == IPTABLES_MODE)
+            sprintf(cli, iptables_add_rule, chain_name, addr);
+        else if (mode == FIREWALLD_MODE)
+            sprintf(cli, firewalld_add_rule, chain_name, addr);
+        return run_cmd(cli);
+    } else {
+        if (mode == IPTABLES_MODE)
+            sprintf(cli, iptables_remove_rule, chain_name, addr);
+        else if (mode == FIREWALLD_MODE)
+            sprintf(cli, firewalld_remove_rule, chain_name, addr);
+        return run_cmd(cli);
+    }
+
+    return 0;
 }
 
 #endif
