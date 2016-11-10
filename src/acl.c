@@ -49,6 +49,8 @@ static struct cork_dllist outbound_block_list_rules;
 
 #include <unistd.h>
 
+static char chain_name[64];
+
 static int
 run_cmd(const char *cmdstring)
 {
@@ -73,11 +75,13 @@ init_iptables()
 {
     if (geteuid() != 0)
         return -1;
+    sprintf(chain_name, "SHADOWSOCKS_LIBEV_%d", getpid());
     char cli[256];
     sprintf(cli,
-            "iptables -N SHADOWSOCKS_LIBEV; \
-            iptables -F SHADOWSOCKS_LIBEV; \
-            iptables -A OUTPUT -p tcp --tcp-flags RST RST -j SHADOWSOCKS_LIBEV");
+            "iptables -N %s; \
+            iptables -F %s; \
+            iptables -A OUTPUT -p tcp --tcp-flags RST RST -j %s",
+            chain_name, chain_name, chain_name);
     return run_cmd(cli);
 }
 
@@ -88,9 +92,9 @@ clean_iptables()
         return -1;
     char cli[256];
     sprintf(cli,
-            "iptables -D OUTPUT -p tcp --tcp-flags RST RST -j SHADOWSOCKS_LIBEV; \
-            iptables -F SHADOWSOCKS_LIBEV; \
-            iptables -X SHADOWSOCKS_LIBEV");
+            "iptables -D OUTPUT -p tcp --tcp-flags RST RST -j %s; \
+            iptables -F %s; \
+            iptables -X %s", chain_name, chain_name, chain_name);
     return run_cmd(cli);
 }
 
@@ -101,9 +105,9 @@ set_iptables_rules(char *addr, int add)
         return -1;
     char cli[256];
     if (add)
-        sprintf(cli, "iptables -A SHADOWSOCKS_LIBEV -d %s -j DROP", addr);
+        sprintf(cli, "iptables -A %s -d %s -j DROP", chain_name, addr);
     else
-        sprintf(cli, "iptables -D SHADOWSOCKS_LIBEV -d %s -j DROP", addr);
+        sprintf(cli, "iptables -D %s -d %s -j DROP", chain_name, addr);
     return run_cmd(cli);
 }
 
