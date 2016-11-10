@@ -94,25 +94,31 @@ static char *firewalld6_add_rule    = "firewall-cmd --direct --passthrough ipv6 
 static char *firewalld6_remove_rule = "firewall-cmd --direct --passthrough ipv6 -D %s -d %s -j DROP";
 
 static int
-run_cmd(const char *cmd)
+run_cmd(const char *cmdstring)
 {
     pid_t pid;
     int status = 0;
-    char cmdstring[256];
 
-    if (cmd == NULL)
+    if (cmdstring == NULL)
         return -1;
-
-    sprintf(cmdstring, "%s &> /dev/null", cmd);
 
     if ((pid = fork()) < 0) {
         status = -1;
     } else if (pid == 0) {
+        fclose(stdout);
         execl("/bin/sh", "sh", "-c", cmdstring, (char *)0);
         _exit(127);
     }
 
     return status;
+}
+
+static int
+quiet_system(const char *cmd)
+{
+    FILE *fp;
+    fp = popen(cmd, "r");
+    return pclose(fp);
 }
 
 static int
@@ -140,14 +146,14 @@ init_firewall()
 
     if (mode == FIREWALLD_MODE) {
         sprintf(cli, firewalld6_init_chain, chain_name, chain_name, chain_name);
-        ret |= system(cli);
+        ret |= quiet_system(cli);
         sprintf(cli, firewalld_init_chain, chain_name, chain_name, chain_name);
-        ret |= system(cli);
+        ret |= quiet_system(cli);
     } else if (mode == IPTABLES_MODE) {
         sprintf(cli, ip6tables_init_chain, chain_name, chain_name, chain_name);
-        ret |= system(cli);
+        ret |= quiet_system(cli);
         sprintf(cli, iptables_init_chain, chain_name, chain_name, chain_name);
-        ret |= system(cli);
+        ret |= quiet_system(cli);
     }
 
     return ret;
@@ -164,14 +170,14 @@ reset_firewall()
 
     if (mode == IPTABLES_MODE) {
         sprintf(cli, ip6tables_remove_chain, chain_name, chain_name, chain_name);
-        ret |= system(cli);
+        ret |= quiet_system(cli);
         sprintf(cli, iptables_remove_chain, chain_name, chain_name, chain_name);
-        ret |= system(cli);
+        ret |= quiet_system(cli);
     } else if (mode == FIREWALLD_MODE) {
         sprintf(cli, firewalld6_remove_chain, chain_name, chain_name, chain_name);
-        ret |= system(cli);
+        ret |= quiet_system(cli);
         sprintf(cli, firewalld_remove_chain, chain_name, chain_name, chain_name);
-        ret |= system(cli);
+        ret |= quiet_system(cli);
     }
 
     return ret;
