@@ -259,7 +259,23 @@ clear_block_list()
 }
 
 int
-check_block_list(char *addr, int err_level)
+check_block_list(char *addr)
+{
+    size_t addr_len = strlen(addr);
+
+    if (cache_key_exist(block_list, addr, addr_len)) {
+        int *count = NULL;
+        cache_lookup(block_list, addr, addr_len, &count);
+
+        if (count != NULL && *count > MAX_TRIES)
+            return 1;
+    }
+
+    return 0;
+}
+
+int
+update_block_list(char *addr, int err_level)
 {
     size_t addr_len = strlen(addr);
 
