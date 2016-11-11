@@ -302,6 +302,18 @@ get_peer_name(int fd)
     return peer_name;
 }
 
+
+#ifdef __linux__
+static void
+set_linger(int fd)
+{
+    struct linger so_linger;
+    so_linger.l_onoff = 1;
+    so_linger.l_linger = 0;
+    setsockopt(fd, SOL_SOCKET, SO_LINGER, &so_linger, sizeof so_linger);
+}
+#endif
+
 static void
 reset_addr(int fd)
 {
@@ -315,12 +327,8 @@ reset_addr(int fd)
 static void
 report_addr(int fd, int err_level)
 {
-
 #ifdef __linux__
-    struct linger so_linger;
-    so_linger.l_onoff = 1;
-    so_linger.l_linger = 0;
-    setsockopt(fd, SOL_SOCKET, SO_LINGER, &so_linger, sizeof so_linger);
+    set_linger(fd);
 #endif
 
     char *peer_name;
@@ -1500,6 +1508,9 @@ accept_cb(EV_P_ ev_io *w, int revents)
         }
         if (!in_white_list && check_block_list(peer_name)) {
             LOGE("block all requests from %s", peer_name);
+#ifdef __linux__
+            set_linger(serverfd);
+#endif
             close(serverfd);
             return;
         }
