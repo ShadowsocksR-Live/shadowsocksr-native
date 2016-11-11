@@ -54,7 +54,8 @@ static struct cork_dllist outbound_block_list_rules;
 #define IPTABLES_MODE    1
 #define FIREWALLD_MODE   2
 
-static int mode       = NO_FIREWALL_MODE;
+static FILE *shell_stdin;
+static int mode = NO_FIREWALL_MODE;
 
 static char chain_name[64];
 static char *iptables_init_chain =
@@ -94,31 +95,20 @@ static char *firewalld6_add_rule    = "firewall-cmd --direct --passthrough ipv6 
 static char *firewalld6_remove_rule = "firewall-cmd --direct --passthrough ipv6 -D %s -d %s -j DROP";
 
 static int
-run_cmd(const char *cmdstring)
+run_cmd(const char *cmd)
 {
-    pid_t pid;
-    int status = 0;
+    int ret = 0;
+    char cmdstring[256];
 
-    if (cmdstring == NULL)
-        return -1;
+    sprintf(cmdstring, "%s\n", cmd);
+    size_t len = strlen(cmdstring);
 
-    if ((pid = fork()) < 0) {
-        status = -1;
-    } else if (pid == 0) {
-        fclose(stdout);
-        execl("/bin/sh", "sh", "-c", cmdstring, (char *)0);
-        _exit(127);
+    if (shell_stdin != NULL) {
+        ret = fwrite(cmdstring, 1, len, shell_stdin);
+        fflush(shell_stdin);
     }
 
-    return status;
-}
-
-static int
-quiet_system(const char *cmd)
-{
-    FILE *fp;
-    fp = popen(cmd, "r");
-    return pclose(fp);
+    return ret == len;
 }
 
 static int
@@ -134,11 +124,16 @@ init_firewall()
     sprintf(cli, "firewall-cmd --version 2>&1");
     fp = popen(cli, "r");
 
+    if (fp == NULL)
+        return -1;
+
     if (pclose(fp) == 0) {
         mode = FIREWALLD_MODE;
     } else {
         sprintf(cli, "iptables --version 2>&1");
         fp = popen(cli, "r");
+        if (fp == NULL)
+            return -1;
         if (pclose(fp) == 0) mode = IPTABLES_MODE;
     }
 
@@ -146,15 +141,17 @@ init_firewall()
 
     if (mode == FIREWALLD_MODE) {
         sprintf(cli, firewalld6_init_chain, chain_name, chain_name, chain_name);
-        ret |= quiet_system(cli);
+        ret |= system(cli);
         sprintf(cli, firewalld_init_chain, chain_name, chain_name, chain_name);
-        ret |= quiet_system(cli);
+        ret |= system(cli);
     } else if (mode == IPTABLES_MODE) {
         sprintf(cli, ip6tables_init_chain, chain_name, chain_name, chain_name);
-        ret |= quiet_system(cli);
+        ret |= system(cli);
         sprintf(cli, iptables_init_chain, chain_name, chain_name, chain_name);
-        ret |= quiet_system(cli);
+        ret |= system(cli);
     }
+
+    shell_stdin = popen("/bin/sh", "w");
 
     return ret;
 }
@@ -170,14 +167,19 @@ reset_firewall()
 
     if (mode == IPTABLES_MODE) {
         sprintf(cli, ip6tables_remove_chain, chain_name, chain_name, chain_name);
-        ret |= quiet_system(cli);
+        ret |= system(cli);
         sprintf(cli, iptables_remove_chain, chain_name, chain_name, chain_name);
-        ret |= quiet_system(cli);
+        ret |= system(cli);
     } else if (mode == FIREWALLD_MODE) {
         sprintf(cli, firewalld6_remove_chain, chain_name, chain_name, chain_name);
-        ret |= quiet_system(cli);
+        ret |= system(cli);
         sprintf(cli, firewalld_remove_chain, chain_name, chain_name, chain_name);
-        ret |= quiet_system(cli);
+        ret |= system(cli);
+    }
+
+    if (shell_stdin != NULL) {
+        run_cmd("exit 0");
+        pclose(shell_stdin);
     }
 
     return ret;
