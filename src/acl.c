@@ -271,7 +271,7 @@ check_block_list(char *addr, int err_level)
                 return 1;
             (*count) += err_level;
         }
-    } else {
+    } else if (err_level > 0) {
         int *count = (int *)ss_malloc(sizeof(int));
         *count = 1;
         cache_insert(block_list, addr, addr_len, count);
