@@ -8,7 +8,7 @@ ss-local - shadowsocks client as socks5 proxy, libev port
 SYNOPSIS
 --------
 *ss-local*
- [-Auv] [-h|--help]
+ [-Auv6] [-h|--help]
  [-s <server_host>] [-p <server_port>] [-l <local_port>]
  [-k <password>] [-m <encrypt_method>] [-f <pid_file>]
  [-t <timeout>] [-c <config_file>] [-i <interface>]
@@ -95,6 +95,9 @@ Enable UDP relay and disable TCP relay.
 
 -A::
 Enable onetime authentication.
+
+-6::
+Resovle hostname to IPv6 address first.
 
 --fast-open::
 Enable TCP fast open.
