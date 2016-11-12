@@ -86,8 +86,9 @@ static void close_and_free_server(EV_P_ server_t *server);
 int verbose        = 0;
 int keep_resolving = 1;
 
-static int mode = TCP_ONLY;
-static int auth = 0;
+static int ipv6first = 0;
+static int mode      = TCP_ONLY;
+static int auth      = 0;
 #ifdef HAVE_SETRLIMIT
 static int nofile = 0;
 #endif
@@ -781,7 +782,7 @@ main(int argc, char **argv)
 
     USE_TTY();
 
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:c:b:a:n:huUvA",
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:c:b:a:n:huUvA6",
                             long_options, &option_index)) != -1) {
         switch (c) {
         case 0:
@@ -849,6 +850,9 @@ main(int argc, char **argv)
             exit(EXIT_SUCCESS);
         case 'A':
             auth = 1;
+            break;
+        case '6':
+            ipv6first = 1;
             break;
         case '?':
             // The option character is not recognized.
@@ -946,6 +950,10 @@ main(int argc, char **argv)
         daemonize(pid_path);
     }
 
+    if (ipv6first) {
+        LOGI("resolving hostname to IPv6 address first");
+    }
+
     if (auth) {
         LOGI("onetime authentication enabled");
     }
@@ -970,7 +978,7 @@ main(int argc, char **argv)
                      remote_addr[i].port;
         struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
         memset(storage, 0, sizeof(struct sockaddr_storage));
-        if (get_sockaddr(host, port, storage, 1) == -1) {
+        if (get_sockaddr(host, port, storage, 1, ipv6first) == -1) {
             FATAL("failed to resolve the provided hostname");
         }
         listen_ctx.remote_addr[i] = (struct sockaddr *)storage;

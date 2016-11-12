@@ -183,7 +183,7 @@ stat_update_cb(EV_P_ ev_timer *watcher, int revents)
     } else {
         struct sockaddr_storage storage;
         memset(&storage, 0, sizeof(struct sockaddr_storage));
-        if (get_sockaddr(ip_addr.host, ip_addr.port, &storage, 0) == -1) {
+        if (get_sockaddr(ip_addr.host, ip_addr.port, &storage, 0, ipv6first) == -1) {
             ERROR("failed to parse the manager addr");
             return;
         }
@@ -302,16 +302,16 @@ get_peer_name(int fd)
     return peer_name;
 }
 
-
 #ifdef __linux__
 static void
 set_linger(int fd)
 {
     struct linger so_linger;
-    so_linger.l_onoff = 1;
+    so_linger.l_onoff  = 1;
     so_linger.l_linger = 0;
     setsockopt(fd, SOL_SOCKET, SO_LINGER, &so_linger, sizeof so_linger);
 }
+
 #endif
 
 static void
@@ -708,7 +708,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             ss_free(server->header_buf);
             server->stage = 2;
         } else {
-            if (ret == -1) server->stage = -1;
+            if (ret == -1)
+                server->stage = -1;
             server->buf->len = 0;
             server->buf->idx = 0;
             return;

@@ -618,7 +618,7 @@ main(int argc, char **argv)
     int mtu       = 0;
 
 #ifdef HAVE_SETRLIMIT
-static int nofile = 0;
+    static int nofile = 0;
 #endif
 
     int server_num = 0;
@@ -838,7 +838,7 @@ static int nofile = 0;
     manager.nameserver_num  = nameserver_num;
     manager.mtu             = mtu;
 #ifdef HAVE_SETRLIMIT
-    manager.nofile          = nofile;
+    manager.nofile = nofile;
 #endif
 
     // initialize ev loop

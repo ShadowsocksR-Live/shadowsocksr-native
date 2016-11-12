@@ -134,7 +134,8 @@ init_firewall()
         fp = popen(cli, "r");
         if (fp == NULL)
             return -1;
-        if (pclose(fp) == 0) mode = IPTABLES_MODE;
+        if (pclose(fp) == 0)
+            mode = IPTABLES_MODE;
     }
 
     sprintf(chain_name, "SHADOWSOCKS_LIBEV_%d", getpid());

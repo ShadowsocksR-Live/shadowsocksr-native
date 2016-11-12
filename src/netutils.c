@@ -118,7 +118,9 @@ bind_to_address(int socket_fd, const char *host)
 }
 
 ssize_t
-get_sockaddr(char *host, char *port, struct sockaddr_storage *storage, int block)
+get_sockaddr(char *host, char *port,
+             struct sockaddr_storage *storage, int block,
+             int ipv6first)
 {
     struct cork_ip ip;
     if (cork_ip_init(&ip, host) != -1) {
@@ -167,8 +169,9 @@ get_sockaddr(char *host, char *port, struct sockaddr_storage *storage, int block
             return -1;
         }
 
+        int prefer_af = ipv6first ? AF_INET6 : AF_INET;
         for (rp = result; rp != NULL; rp = rp->ai_next)
-            if (rp->ai_family == AF_INET) {
+            if (rp->ai_family == prefer_af) {
                 memcpy(storage, rp->ai_addr, sizeof(struct sockaddr_in));
                 break;
             }
@@ -299,4 +302,3 @@ validate_hostname(const char *hostname, const int hostname_len)
 
     return 1;
 }
-

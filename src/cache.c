@@ -283,7 +283,7 @@ cache_insert(struct cache *cache, char *key, size_t key_len, void *data)
     entry->key = ss_malloc(key_len);
     memcpy(entry->key, key, key_len);
     entry->data = data;
-    entry->ts = ev_time();
+    entry->ts   = ev_time();
     HASH_ADD_KEYPTR(hh, cache->entries, entry->key, key_len, entry);
 
     if (HASH_COUNT(cache->entries) >= cache->max_entries) {
