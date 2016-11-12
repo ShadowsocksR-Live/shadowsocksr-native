@@ -172,16 +172,21 @@ get_sockaddr(char *host, char *port,
         int prefer_af = ipv6first ? AF_INET6 : AF_INET;
         for (rp = result; rp != NULL; rp = rp->ai_next)
             if (rp->ai_family == prefer_af) {
-                memcpy(storage, rp->ai_addr, sizeof(struct sockaddr_in));
+                if (rp->ai_family == AF_INET)
+                    memcpy(storage, rp->ai_addr, sizeof(struct sockaddr_in));
+                else if (rp->ai_family == AF_INET6)
+                    memcpy(storage, rp->ai_addr, sizeof(struct sockaddr_in6));
                 break;
             }
 
         if (rp == NULL) {
-            for (rp = result; rp != NULL; rp = rp->ai_next)
-                if (rp->ai_family == AF_INET6) {
+            for (rp = result; rp != NULL; rp = rp->ai_next) {
+                if (rp->ai_family == AF_INET)
+                    memcpy(storage, rp->ai_addr, sizeof(struct sockaddr_in));
+                else if (rp->ai_family == AF_INET6)
                     memcpy(storage, rp->ai_addr, sizeof(struct sockaddr_in6));
-                    break;
-                }
+                break;
+            }
         }
 
         if (rp == NULL) {
