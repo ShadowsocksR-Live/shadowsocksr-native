@@ -737,7 +737,6 @@ stat_update_cb(struct ev_loop *loop)
         last = now;
     }
 }
-
 #endif
 
 static void

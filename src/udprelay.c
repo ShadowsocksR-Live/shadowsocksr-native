@@ -91,8 +91,13 @@ static void query_resolve_cb(struct sockaddr *addr, void *data);
 static void close_and_free_remote(EV_P_ remote_ctx_t *ctx);
 static remote_ctx_t *new_remote(int fd, server_ctx_t *server_ctx);
 
-extern int verbose;
+#ifdef ANDROID
+extern uint64_t tx;
+extern uint64_t rx;
 extern int vpn;
+#endif
+
+extern int verbose;
 #ifdef MODULE_REMOTE
 extern uint64_t tx;
 extern uint64_t rx;
@@ -723,6 +728,9 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     memmove(buf->array + 3, buf->array, buf->len);
     memset(buf->array, 0, 3);
     buf->len += 3;
+#ifdef ANDROID
+    rx += buf->len;
+#endif
 #endif
 #endif
 
@@ -750,6 +758,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
         // drop the packet silently
         goto CLEAN_UP;
     }
+
 #endif
 
     if (buf->len > packet_size) {
@@ -760,6 +769,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     size_t remote_src_addr_len = get_sockaddr_len((struct sockaddr *)&remote_ctx->src_addr);
 
 #ifdef MODULE_REDIR
+
     size_t remote_dst_addr_len = get_sockaddr_len((struct sockaddr *)&dst_addr);
 
     int src_fd = socket(remote_ctx->src_addr.ss_family, SOCK_DGRAM, 0);
@@ -799,12 +809,14 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     close(src_fd);
 
 #else
+
     int s = sendto(server_ctx->fd, buf->array, buf->len, 0,
                    (struct sockaddr *)&remote_ctx->src_addr, remote_src_addr_len);
     if (s == -1) {
         ERROR("[udp] remote_recv_sendto");
         goto CLEAN_UP;
     }
+
 #endif
 
     // handle the UDP packet successfully,
@@ -885,7 +897,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
 #ifdef MODULE_REMOTE
-
     tx += buf->len;
 
     int err = ss_decrypt_all(buf, server_ctx->method, server_ctx->auth, buf_size);
@@ -897,6 +908,9 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
 #ifdef MODULE_LOCAL
 #if !defined(MODULE_TUNNEL) && !defined(MODULE_REDIR)
+#ifdef ANDROID
+    tx += buf->len;
+#endif
     uint8_t frag = *(uint8_t *)(buf->array + 2);
     offset += 3;
 #endif
