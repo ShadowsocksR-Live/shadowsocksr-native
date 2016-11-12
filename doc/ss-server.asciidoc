@@ -13,8 +13,8 @@ SYNOPSIS
  [-k <password>] [-m <encrypt_method>] [-f <pid_file>]
  [-t <timeout>] [-c <config_file>] [-i <interface>]
  [-a <user_name>] [-d <addr>] [-n <nofile>]
- [--fast-open] [--acl <acl_config>] [--mtu <MTU>]
- [--manager-address <path_to_unix_domain>]
+ [-b <local_address] [--fast-open] [--acl <acl_config>]
+ [--mtu <MTU>] [--manager-address <path_to_unix_domain>]
 
 DESCRIPTION
 -----------
