@@ -729,9 +729,9 @@ server_send_cb(EV_P_ ev_io *w, int revents)
 
 #ifdef ANDROID
 static void
-stat_update_cb(struct ev_loop *loop)
+stat_update_cb()
 {
-    ev_tstamp now = ev_now(loop);
+    ev_tstamp now = ev_time();
     if (now - last > 1.0) {
         send_traffic_stat(tx, rx);
         last = now;
@@ -765,7 +765,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     ev_timer_again(EV_A_ & remote->recv_ctx->watcher);
 
 #ifdef ANDROID
-    stat_update_cb(loop);
+    stat_update_cb();
 #endif
 
     ssize_t r = recv(remote->fd, server->buf->array, BUF_SIZE, 0);

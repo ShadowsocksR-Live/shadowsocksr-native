@@ -717,21 +717,21 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 
     // server may return using a different address type other than the type we
     // have used during sending
-
 #if defined(MODULE_TUNNEL) || defined(MODULE_REDIR)
     // Construct packet
     buf->len -= len;
     memmove(buf->array, buf->array + len, buf->len);
 #else
+#ifdef ANDROID
+    rx += buf->len;
+#endif
     // Construct packet
     brealloc(buf, buf->len + 3, buf_size);
     memmove(buf->array + 3, buf->array, buf->len);
     memset(buf->array, 0, 3);
     buf->len += 3;
-#ifdef ANDROID
-    rx += buf->len;
 #endif
-#endif
+
 #endif
 
 #ifdef MODULE_REMOTE
