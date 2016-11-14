@@ -1140,7 +1140,7 @@ int ss_aes_128_cbc(char *encrypt, char *out_data, char *key)
     unsigned char output[16];
 
     aes_setkey_enc( &aes, (unsigned char *)key, 128 );
-    aes_crypt_cbc( &aes, MBEDTLS_AES_ENCRYPT, 16, iv, (unsigned char *)encrypt, output );
+    aes_crypt_cbc( &aes, AES_ENCRYPT, 16, iv, (unsigned char *)encrypt, output );
 
     memcpy(out_data, output, 16);
 #endif
