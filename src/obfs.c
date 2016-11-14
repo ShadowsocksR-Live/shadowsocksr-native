@@ -93,6 +93,8 @@ obfs_class * new_obfs_class(char *plugin_name)
 
         plugin->client_pre_encrypt = verify_simple_client_pre_encrypt;
         plugin->client_post_decrypt = verify_simple_client_post_decrypt;
+        plugin->client_udp_pre_encrypt = NULL;
+        plugin->client_udp_post_decrypt = NULL;
 
         return plugin;
     } else if (strcmp(plugin_name, "auth_simple") == 0) {
@@ -105,6 +107,8 @@ obfs_class * new_obfs_class(char *plugin_name)
 
         plugin->client_pre_encrypt = auth_simple_client_pre_encrypt;
         plugin->client_post_decrypt = auth_simple_client_post_decrypt;
+        plugin->client_udp_pre_encrypt = NULL;
+        plugin->client_udp_post_decrypt = NULL;
 
         return plugin;
     } else if (strcmp(plugin_name, "auth_sha1") == 0) {
@@ -117,6 +121,8 @@ obfs_class * new_obfs_class(char *plugin_name)
 
         plugin->client_pre_encrypt = auth_sha1_client_pre_encrypt;
         plugin->client_post_decrypt = auth_sha1_client_post_decrypt;
+        plugin->client_udp_pre_encrypt = NULL;
+        plugin->client_udp_post_decrypt = NULL;
 
         return plugin;
     } else if (strcmp(plugin_name, "auth_sha1_v2") == 0) {
@@ -129,6 +135,8 @@ obfs_class * new_obfs_class(char *plugin_name)
 
         plugin->client_pre_encrypt = auth_sha1_v2_client_pre_encrypt;
         plugin->client_post_decrypt = auth_sha1_v2_client_post_decrypt;
+        plugin->client_udp_pre_encrypt = NULL;
+        plugin->client_udp_post_decrypt = NULL;
 
         return plugin;
     } else if (strcmp(plugin_name, "auth_sha1_v4") == 0) {
@@ -141,6 +149,8 @@ obfs_class * new_obfs_class(char *plugin_name)
 
         plugin->client_pre_encrypt = auth_sha1_v4_client_pre_encrypt;
         plugin->client_post_decrypt = auth_sha1_v4_client_post_decrypt;
+        plugin->client_udp_pre_encrypt = NULL;
+        plugin->client_udp_post_decrypt = NULL;
 
         return plugin;
     } else if (strcmp(plugin_name, "auth_aes128_md5") == 0) {
