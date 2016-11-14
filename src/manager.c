@@ -845,11 +845,14 @@ main(int argc, char **argv)
     struct ev_loop *loop = EV_DEFAULT;
 
     // setuid
-    if (user != NULL) {
-        run_as(user);
+    if (user != NULL && ! run_as(user)) {
+        FATAL("failed to switch user");
+    }
+    if (geteuid() == 0){
+        LOGI("You are running this process as the root user!");
     }
 
-    struct passwd *pw   = getpwuid(getuid());
+    struct passwd *pw   = getpwuid(geteuid());
     const char *homedir = pw->pw_dir;
     working_dir_size = strlen(homedir) + 15;
     working_dir      = malloc(working_dir_size);

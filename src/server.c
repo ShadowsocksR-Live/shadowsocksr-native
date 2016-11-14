@@ -1871,8 +1871,11 @@ main(int argc, char **argv)
     ev_timer_start(EV_DEFAULT, &block_list_watcher);
 
     // setuid
-    if (user != NULL) {
-        run_as(user);
+    if (user != NULL && ! run_as(user)) {
+        FATAL("failed to switch user");
+    }
+    if (geteuid() == 0){
+        LOGI("You are running this process as the root user!");
     }
 
     // init block list
