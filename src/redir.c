@@ -1021,8 +1021,11 @@ main(int argc, char **argv)
     LOGI("listening at %s:%s", local_addr, local_port);
 
     // setuid
-    if (user != NULL) {
-        run_as(user);
+    if (user != NULL && ! run_as(user)) {
+        FATAL("failed to switch user");
+    }
+    if (geteuid() == 0){
+        LOGI("You are running this process as the root user!");
     }
 
     ev_run(loop, 0);
