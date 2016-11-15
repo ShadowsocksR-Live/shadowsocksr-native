@@ -130,7 +130,7 @@ init_firewall()
     if (pclose(fp) == 0) {
         mode = FIREWALLD_MODE;
     } else {
-        /* Check whether we have permission to operate iptables. 
+        /* Check whether we have permission to operate iptables.
 	 * Note that checking `iptables --version` is insufficient:
          * eg, running within a child user namespace.
 	 */
@@ -223,6 +223,16 @@ set_firewall_rule(char *addr, int add)
     return 0;
 }
 
+static void
+free_firewall_rule(void *key, void *element)
+{
+    if (key == NULL)
+        return;
+    char *addr = (char *)key;
+    set_firewall_rule(addr, 0);
+    ss_free(element);
+}
+
 #endif
 
 void
@@ -231,8 +241,10 @@ init_block_list()
     // Initialize cache
 #ifdef __linux__
     init_firewall();
-#endif
+    cache_create(&block_list, 256, free_firewall_rule);
+#else
     cache_create(&block_list, 256, NULL);
+#endif
 }
 
 void
@@ -248,12 +260,6 @@ int
 remove_from_block_list(char *addr)
 {
     size_t addr_len = strlen(addr);
-
-#ifdef __linux__
-    if (cache_key_exist(block_list, addr, addr_len))
-        set_firewall_rule(addr, 0);
-#endif
-
     return cache_remove(block_list, addr, addr_len);
 }
 
