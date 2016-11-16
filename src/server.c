@@ -311,7 +311,6 @@ set_linger(int fd)
     so_linger.l_linger = 0;
     setsockopt(fd, SOL_SOCKET, SO_LINGER, &so_linger, sizeof so_linger);
 }
-
 #endif
 
 static void

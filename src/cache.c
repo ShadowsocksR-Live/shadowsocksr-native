@@ -280,8 +280,10 @@ cache_insert(struct cache *cache, char *key, size_t key_len, void *data)
         return ENOMEM;
     }
 
-    entry->key = ss_malloc(key_len);
+    entry->key = ss_malloc(key_len + 1);
     memcpy(entry->key, key, key_len);
+    entry->key[key_len] = 0;
+
     entry->data = data;
     entry->ts   = ev_time();
     HASH_ADD_KEYPTR(hh, cache->entries, entry->key, key_len, entry);
