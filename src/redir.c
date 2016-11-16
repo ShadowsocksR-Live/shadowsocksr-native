@@ -1024,6 +1024,7 @@ main(int argc, char **argv)
     if (user != NULL && ! run_as(user)) {
         FATAL("failed to switch user");
     }
+
     if (getuid() == 0){
         LOGI("You are running this process as the root user!");
     }

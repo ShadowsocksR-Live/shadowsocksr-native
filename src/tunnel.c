@@ -1031,9 +1031,12 @@ main(int argc, char **argv)
     if (user != NULL && ! run_as(user)) {
         FATAL("failed to switch user");
     }
+
+#ifndef __MINGW32__
     if (getuid() == 0){
         LOGI("You are running this process as the root user!");
     }
+#endif
 
     ev_run(loop, 0);
 
