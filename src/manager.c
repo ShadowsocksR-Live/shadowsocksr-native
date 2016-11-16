@@ -850,7 +850,7 @@ main(int argc, char **argv)
     }
 
 #ifndef __MINGW32__
-    if (getuid() == 0){
+    if (geteuid() == 0){
         LOGI("You are running this process as the root user!");
     }
 #endif
