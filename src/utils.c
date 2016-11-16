@@ -177,7 +177,7 @@ ss_strndup(const char *s, size_t n)
         return strdup(s);
     }
 
-    ret = malloc(n + 1);
+    ret = ss_malloc(n + 1);
     strncpy(ret, s, n);
     ret[n] = '\0';
     return ret;
