@@ -848,11 +848,11 @@ main(int argc, char **argv)
     if (user != NULL && ! run_as(user)) {
         FATAL("failed to switch user");
     }
-    if (geteuid() == 0){
+    if (getuid() == 0){
         LOGI("You are running this process as the root user!");
     }
 
-    struct passwd *pw   = getpwuid(geteuid());
+    struct passwd *pw   = getpwuid(getuid());
     const char *homedir = pw->pw_dir;
     working_dir_size = strlen(homedir) + 15;
     working_dir      = malloc(working_dir_size);
