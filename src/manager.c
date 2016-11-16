@@ -848,9 +848,12 @@ main(int argc, char **argv)
     if (user != NULL && ! run_as(user)) {
         FATAL("failed to switch user");
     }
+
+#ifndef __MINGW32__
     if (getuid() == 0){
         LOGI("You are running this process as the root user!");
     }
+#endif
 
     struct passwd *pw   = getpwuid(getuid());
     const char *homedir = pw->pw_dir;
