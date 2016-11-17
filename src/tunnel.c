@@ -490,20 +490,6 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
                 ss_onetimeauth(abuf, server->e_ctx->evp.iv, BUF_SIZE);
             }
 
-            // SSR beg
-            server_info _server_info;
-            if (server->obfs_plugin) {
-                server->obfs_plugin->get_server_info(server->obfs, &_server_info);
-                _server_info.head_len = get_head_size(abuf->array, abuf->len, 30);
-                server->obfs_plugin->set_server_info(server->obfs, &_server_info);
-            }
-            if (server->protocol_plugin) {
-                obfs_class *protocol_plugin = server->protocol_plugin;
-                if (protocol_plugin->client_pre_encrypt) {
-                    abuf->len = protocol_plugin->client_pre_encrypt(server->protocol, &abuf->array, abuf->len, &abuf->capacity);
-                }
-            }
-
             if (remote->buf->len > 0) {
                 brealloc(remote->buf, remote->buf->len + abuf->len, BUF_SIZE);
                 memmove(remote->buf->array + abuf->len, remote->buf->array, remote->buf->len);
@@ -515,6 +501,20 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
                 remote->buf->len = abuf->len;
             }
             bfree(abuf);
+
+            // SSR beg
+            server_info _server_info;
+            if (server->obfs_plugin) {
+                server->obfs_plugin->get_server_info(server->obfs, &_server_info);
+                _server_info.head_len = get_head_size(remote->buf->array, remote->buf->len, 30);
+                server->obfs_plugin->set_server_info(server->obfs, &_server_info);
+            }
+            if (server->protocol_plugin) {
+                obfs_class *protocol_plugin = server->protocol_plugin;
+                if (protocol_plugin->client_pre_encrypt) {
+                    remote->buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
+                }
+            }
 
             int err = ss_encrypt(remote->buf, server->e_ctx, BUF_SIZE);
             if (err) {
