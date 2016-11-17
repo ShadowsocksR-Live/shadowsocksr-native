@@ -1026,7 +1026,7 @@ main(int argc, char **argv)
     }
 
     if (geteuid() == 0){
-        LOGI("You are running this process as the root user!");
+        LOGI("running from root user");
     }
 
     ev_run(loop, 0);

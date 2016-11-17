@@ -236,11 +236,14 @@ free_firewall_rule(void *key, void *element)
 #endif
 
 void
-init_block_list()
+init_block_list(int firewall)
 {
     // Initialize cache
 #ifdef __linux__
-    init_firewall();
+    if (firewall)
+        init_firewall();
+    else
+        mode = NO_FIREWALL_MODE;
     cache_create(&block_list, 256, free_firewall_rule);
 #else
     cache_create(&block_list, 256, NULL);
@@ -251,7 +254,8 @@ void
 free_block_list()
 {
 #ifdef __linux__
-    reset_firewall();
+    if (mode != NO_FIREWALL_MODE)
+        reset_firewall();
 #endif
     cache_clear(block_list, 0); // Remove all items
 }
@@ -303,7 +307,8 @@ update_block_list(char *addr, int err_level)
         *count = 1;
         cache_insert(block_list, addr, addr_len, count);
 #ifdef __linux__
-        set_firewall_rule(addr, 1);
+        if (mode != NO_FIREWALL_MODE)
+            set_firewall_rule(addr, 1);
 #endif
     }
 

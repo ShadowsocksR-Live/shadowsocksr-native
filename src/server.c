@@ -1538,6 +1538,7 @@ main(int argc, char **argv)
     int i, c;
     int pid_flags   = 0;
     int mptcp       = 0;
+    int firewall    = 0;
     int mtu         = 0;
     char *user      = NULL;
     char *password  = NULL;
@@ -1559,8 +1560,11 @@ main(int argc, char **argv)
         { "acl",             required_argument, 0, 0 },
         { "manager-address", required_argument, 0, 0 },
         { "mtu",             required_argument, 0, 0 },
-        { "mptcp",           no_argument,       0, 0 },
         { "help",            no_argument,       0, 0 },
+#ifdef __linux__
+        { "mptcp",           no_argument,       0, 0 },
+        { "firewall",        no_argument,       0, 0 },
+#endif
         {                 0,                 0, 0, 0 }
     };
 
@@ -1583,11 +1587,14 @@ main(int argc, char **argv)
                 mtu = atoi(optarg);
                 LOGI("set MTU to %d", mtu);
             } else if (option_index == 4) {
-                mptcp = 1;
-                LOGI("enable multipath TCP");
-            } else if (option_index == 5) {
                 usage();
                 exit(EXIT_SUCCESS);
+            } else if (option_index == 5) {
+                mptcp = 1;
+                LOGI("enable multipath TCP");
+            } else if (option_index == 6) {
+                firewall = 1;
+                LOGI("enable firewall rules");
             }
             break;
         case 's':
@@ -1876,12 +1883,15 @@ main(int argc, char **argv)
 
 #ifndef __MINGW32__
     if (geteuid() == 0){
-        LOGI("You are running this process as the root user!");
+        LOGI("running from root user");
+    } else if (firewall) {
+        LOGE("firewall setup requires running from root user");
+        exit(-1);
     }
 #endif
 
     // init block list
-    init_block_list();
+    init_block_list(firewall);
 
     // Init connections
     cork_dllist_init(&connections);

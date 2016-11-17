@@ -341,8 +341,14 @@ usage()
 #endif
     printf(
         "       [--mtu <MTU>]              MTU of your network interface.\n");
+#ifdef __linux__
     printf(
         "       [--mptcp]                  Enable Multipath TCP on MPTCP Kernel.\n");
+#ifdef MODULE_REMOTE
+    printf(
+        "       [--firewall]               Setup firewall rules for auto blocking.\n");
+#endif
+#endif
     printf("\n");
     printf(
         "       [-v]                       Verbose mode.\n");

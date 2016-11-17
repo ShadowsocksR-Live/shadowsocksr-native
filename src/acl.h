@@ -42,7 +42,7 @@ int acl_remove_ip(const char *ip);
 
 int get_acl_mode(void);
 
-void init_block_list();
+void init_block_list(int firewall);
 void free_block_list();
 int check_block_list(char *addr);
 int update_block_list(char *addr, int err_level);
