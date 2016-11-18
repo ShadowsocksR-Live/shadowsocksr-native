@@ -1,6 +1,7 @@
 _ss_tunnel()
 {
-    local cur prev opts
+    local cur prev opts ciphers
+    ciphers='rc4-md5 table rc4 aes-128-cfb aes-192-cfb aes-256-cfb aes-128-ctr aes-192-ctr aes-256-ctr bf-cfb camellia-128-cfb camellia-192-cfb camellia-256-cfb cast5-cfb des-cfb idea-cfb rc2-cfb seed-cfb salsa20 chacha20 and chacha20-ietf'
     opts='-s -b -p -k -f -t -m -c -a -n -u -U -v -h -A --mtu --help --mptcp -i -l -L'
     cur=${COMP_WORDS[COMP_CWORD]}
     prev="${COMP_WORDS[COMP_CWORD-1]}"
