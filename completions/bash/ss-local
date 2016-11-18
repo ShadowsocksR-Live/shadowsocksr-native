@@ -1,0 +1,32 @@
+_ss_local()
+{
+    local cur prev opts
+    opts='-s -b -p -k -f -t -m -c -a -n -u -U -v -h -A --fast-open --mtu --help --mptcp -i --acl -l'
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    case "$prev" in
+        -c|-f|--acl)
+            _filedir || COMPREPLY=( $(compgen -o plusdirs -f ${cur}) )
+            ;;
+        -s|-b|-l)
+            _known_hosts_real -- "${cur}" || OMPREPLY=( $(compgen -A hostname -- ${cur}) )
+            ;;
+        -m)
+            COMPREPLY=( $(compgen -W "$ciphers" -- ${cur}) )
+            ;;
+        -a)
+            _allowed_users || COMPREPLY=( $(compgen -u -- ${cur}) )
+            ;;
+        -p|-k|-t|-n|--mtu)
+            ;;
+        -i)
+            _available_interfaces -a || true
+            ;;
+        *)
+            COMPREPLY+=( $(compgen -W "${opts}" -- ${cur}) )
+            ;;
+    esac
+    return 0
+}
+
+complete -F _ss_local ss-local

@@ -1,0 +1,37 @@
+_ss_tunnel()
+{
+    local cur prev opts
+    opts='-s -b -p -k -f -t -m -c -a -n -u -U -v -h -A --mtu --help --mptcp -i -l -L'
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    compopt +o nospace
+    case "$prev" in
+        -c|-f)
+            _filedir || COMPREPLY=( $(compgen -o plusdirs -f ${cur}) )
+            ;;
+        -s|-b|-l)
+            _known_hosts_real -- "${cur}" || OMPREPLY=( $(compgen -A hostname -- ${cur}) )
+            ;;
+        -L)
+            compopt -o nospace
+            _known_hosts_real -c -- "${cur}" || OMPREPLY=( $(compgen -A hostname -S : -- ${cur}) )
+            ;;
+        -m)
+            COMPREPLY=( $(compgen -W "$ciphers" -- ${cur}) )
+            ;;
+        -a)
+            _allowed_users || COMPREPLY=( $(compgen -u -- ${cur}) )
+            ;;
+        -p|-k|-t|-n|--mtu)
+            ;;
+        -i)
+            _available_interfaces -a || true
+            ;;
+        *)
+            COMPREPLY+=( $(compgen -W "${opts}" -- ${cur}) )
+            ;;
+    esac
+    return 0
+}
+
+complete -F _ss_tunnel ss-tunnel
