@@ -8,10 +8,10 @@ License:	GPLv3+
 URL:		https://github.com/shadowsocks/%{name}
 Source0:	%{url}/archive/v%{version}.tar.gz
 
-BuildRequires: make automake gcc openssl-devel pcre-devel asciidoc xmlto
+BuildRequires: make gcc openssl-devel pcre-devel asciidoc xmlto
 Requires:	openssl
 
-%if 0%{?rhel} != 6
+%if 0%{?rhel} > 6
 Requires(post): systemd
 Requires(preun): systemd
 Requires(postun): systemd
@@ -49,17 +49,18 @@ install -m 644 %{_builddir}/%{buildsubdir}/debian/shadowsocks-libev.service %{bu
 install -m 644 %{_builddir}/%{buildsubdir}/debian/shadowsocks-libev-*.service %{buildroot}%{_unitdir}/
 %endif
 install -m 644 %{_builddir}/%{buildsubdir}/debian/config.json %{buildroot}%{_sysconfdir}/shadowsocks-libev/config.json
-
+mkdir -p %{buildroot}%{_datadir}/bash-completion/completions/
+install -m 644 %{_builddir}/%{buildsubdir}/completions/bash/* %{buildroot}%{_datadir}/bash-completion/completions/
 
 %post
-%if 0%{?rhel} == 6
+%if 0%{?rhel} <= 6
 /sbin/chkconfig --add shadowsocks-libev
 %else
 %systemd_post shadowsocks-libev.service
 %endif
 
 %preun
-%if 0%{?rhel} == 6
+%if 0%{?rhel} <= 6
 if [ $1 -eq 0 ]; then
     /sbin/service shadowsocks-libev stop
     /sbin/chkconfig --del shadowsocks-libev
@@ -68,7 +69,7 @@ fi
 %systemd_preun shadowsocks-libev.service
 %endif
 
-%if 0%{?rhel} != 6
+%if 0%{?rhel} > 6
 %postun
 %systemd_postun_with_restart shadowsocks-libev.service
 %endif
@@ -85,8 +86,9 @@ fi
 %{_bindir}/*
 %{_libdir}/*
 %config(noreplace) %{_sysconfdir}/shadowsocks-libev/config.json
+%{_datadir}/bash-completion/completions/*
 %doc %{_mandir}/*
-%if 0%{?rhel} == 6
+%if 0%{?rhel} <= 6
 %{_initddir}/shadowsocks-libev
 %else
 %{_unitdir}/shadowsocks-libev.service
