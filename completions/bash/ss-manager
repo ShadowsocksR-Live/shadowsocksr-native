@@ -9,7 +9,7 @@ _ss_manager()
         -c|-f|--executable)
             _filedir || COMPREPLY=( $(compgen -o plusdirs -f ${cur}) )
             ;;
-        -s|-b|-l)
+        -s|-b)
             _known_hosts_real -- "${cur}" || OMPREPLY=( $(compgen -A hostname -- ${cur}) )
             ;;
         -L)
@@ -22,7 +22,7 @@ _ss_manager()
         -a)
             _allowed_users || COMPREPLY=( $(compgen -u -- ${cur}) )
             ;;
-        -p|-k|-t|-n|--mtu)
+        -p|-k|-t|-n|--mtu|-l)
             ;;
         -i)
             _available_interfaces -a || true
