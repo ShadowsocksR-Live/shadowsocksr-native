@@ -104,7 +104,6 @@ run_as(const char *user)
 {
 #ifndef __MINGW32__
     if (user[0]) {
-        printf("user: %s\n", user);
         /* Convert user to a long integer if it is a non-negative number.
          * -1 means it is a user name. */
         long uid = -1;
