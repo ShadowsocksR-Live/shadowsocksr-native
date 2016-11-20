@@ -528,7 +528,7 @@ connect_to_remote(EV_P_ struct addrinfo *res,
 
     if (bind_address != NULL)
         if (bind_to_address(sockfd, bind_address) == -1)
-            ERROR("bind_to_address");
+            FATAL("unable to bind the specific address");
 
 #ifdef SET_INTERFACE
     if (iface) {
