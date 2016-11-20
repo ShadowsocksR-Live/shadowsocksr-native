@@ -94,7 +94,7 @@ static void block_list_clear_cb(EV_P_ ev_timer *watcher, int revents);
 
 static remote_t *new_remote(int fd);
 static server_t *new_server(int fd, listen_ctx_t *listener);
-static remote_t *connect_to_remote(struct addrinfo *res,
+static remote_t *connect_to_remote(EV_P_ struct addrinfo *res,
                                    server_t *server);
 
 static void free_remote(remote_t *remote);
@@ -477,7 +477,7 @@ create_and_bind(const char *host, const char *port, int mptcp)
 }
 
 static remote_t *
-connect_to_remote(struct addrinfo *res,
+connect_to_remote(EV_P_ struct addrinfo *res,
                   server_t *server)
 {
     int sockfd;
@@ -588,7 +588,7 @@ connect_to_remote(struct addrinfo *res,
 
         if (r == -1 && errno != CONNECT_IN_PROGRESS) {
             ERROR("connect");
-            close(sockfd);
+            close_and_free_remote(EV_A_ remote);
             return NULL;
         }
     }
@@ -938,7 +938,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         }
 
         if (!need_query) {
-            remote_t *remote = connect_to_remote(&info, server);
+            remote_t *remote = connect_to_remote(EV_A_ &info, server);
 
             if (remote == NULL) {
                 LOGE("connect error");
@@ -1110,7 +1110,7 @@ server_resolve_cb(struct sockaddr *addr, void *data)
             info.ai_addrlen = sizeof(struct sockaddr_in6);
         }
 
-        remote_t *remote = connect_to_remote(&info, server);
+        remote_t *remote = connect_to_remote(EV_A_ &info, server);
 
         if (remote == NULL) {
             close_and_free_server(EV_A_ server);
