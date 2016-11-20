@@ -9,7 +9,7 @@ _ss_redir()
         -c|-f)
             _filedir || COMPREPLY=( $(compgen -o plusdirs -f ${cur}) )
             ;;
-        -s|-b|-l)
+        -s|-b)
             _known_hosts_real -- "${cur}" || OMPREPLY=( $(compgen -A hostname -- ${cur}) )
             ;;
         -m)
@@ -18,7 +18,7 @@ _ss_redir()
         -a)
             _allowed_users || COMPREPLY=( $(compgen -u -- ${cur}) )
             ;;
-        -p|-k|-t|-n|--mtu)
+        -p|-k|-t|-n|--mtu|-l)
             ;;
         *)
             COMPREPLY+=( $(compgen -W "${opts}" -- ${cur}) )
