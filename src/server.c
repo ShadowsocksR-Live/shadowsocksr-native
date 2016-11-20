@@ -519,16 +519,17 @@ connect_to_remote(EV_P_ struct addrinfo *res,
 #endif
     setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-    remote_t *remote = new_remote(sockfd);
-
     // setup remote socks
 
     if (setnonblocking(sockfd) == -1)
         ERROR("setnonblocking");
 
     if (bind_address != NULL)
-        if (bind_to_address(sockfd, bind_address) == -1)
-            FATAL("unable to bind the specific address");
+        if (bind_to_address(sockfd, bind_address) == -1) {
+            ERROR("bind_to_address");
+            close(sockfd);
+            return NULL;
+        } 
 
 #ifdef SET_INTERFACE
     if (iface) {
@@ -537,6 +538,8 @@ connect_to_remote(EV_P_ struct addrinfo *res,
     }
 #endif
 
+    remote_t *remote = new_remote(sockfd);
+  
 #ifdef TCP_FASTOPEN
     if (fast_open) {
 #ifdef __APPLE__
