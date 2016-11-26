@@ -612,7 +612,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     int len       = server->buf->len;
     buffer_t *buf = server->buf;
 
-    if (server->stage > 2) {
+    if (server->stage > STAGE_PARSE) {
         remote = server->remote;
         buf    = remote->buf;
         len    = 0;
@@ -652,14 +652,14 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     tx += r;
 
-    if (server->stage == -1) {
+    if (server->stage == STAGE_ERROR) {
         server->buf->len = 0;
         server->buf->idx = 0;
         return;
     }
 
     // handle incomplete header part 1
-    if (server->stage == 0) {
+    if (server->stage == STAGE_INIT) {
         buf->len += r;
         if (buf->len <= enc_get_iv_len() + 1) {
             // wait for more
@@ -679,24 +679,24 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     // handle incomplete header part 2
-    if (server->stage == 0) {
+    if (server->stage == STAGE_INIT) {
         int ret = is_header_complete(server->buf);
         if (ret == 1) {
             bfree(server->header_buf);
             ss_free(server->header_buf);
-            server->stage = 2;
+            server->stage = STAGE_PARSE;
         } else if (ret == -1) {
-            server->stage = -1;
+            server->stage = STAGE_ERROR;
             report_addr(server->fd, MALFORMED);
             server->buf->len = 0;
             server->buf->idx = 0;
             return;
         } else {
-            server->stage = 1;
+            server->stage = STAGE_HANDSHAKE;
         }
     }
 
-    if (server->stage == 1) {
+    if (server->stage == STAGE_HANDSHAKE) {
         size_t header_len = server->header_buf->len;
         brealloc(server->header_buf, server->buf->len + header_len, BUF_SIZE);
         memcpy(server->header_buf->array + header_len,
@@ -711,10 +711,10 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             server->buf->len = server->header_buf->len;
             bfree(server->header_buf);
             ss_free(server->header_buf);
-            server->stage = 2;
+            server->stage = STAGE_PARSE;
         } else {
             if (ret == -1)
-                server->stage = -1;
+                server->stage = STAGE_ERROR;
             server->buf->len = 0;
             server->buf->idx = 0;
             return;
@@ -722,7 +722,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     // handshake and transmit data
-    if (server->stage == 5) {
+    if (server->stage == STAGE_STREAM) {
         if (server->auth && !ss_check_hash(remote->buf, server->chunk, server->d_ctx, BUF_SIZE)) {
             LOGE("hash error");
             report_addr(server->fd, BAD);
@@ -749,7 +749,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             ev_io_start(EV_A_ & remote->send_ctx->io);
         }
         return;
-    } else if (server->stage == 2) {
+    } else if (server->stage == STAGE_PARSE) {
         /*
          * Shadowsocks TCP Relay Header:
          *
@@ -963,8 +963,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     server->buf->idx = 0;
                 }
 
-                server->stage = 4;
-
                 // waiting on remote connected event
                 ev_io_stop(EV_A_ & server_recv_ctx->io);
                 ev_io_start(EV_A_ & remote->send_ctx->io);
@@ -974,7 +972,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             query->server = server;
             snprintf(query->hostname, 256, "%s", host);
 
-            server->stage = 4;
+            server->stage = STAGE_RESOLVE;
             server->query = resolv_query(host, server_resolve_cb,
                                          query_free_cb, query, port);
 
@@ -1060,7 +1058,7 @@ server_timeout_cb(EV_P_ ev_timer *watcher, int revents)
         LOGI("TCP connection timeout");
     }
 
-    if (server->stage < 2) {
+    if (server->stage < STAGE_PARSE) {
         if (verbose) {
             size_t len = server->stage ?
                          server->header_buf->len : server->buf->len;
@@ -1244,7 +1242,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
             reset_addr(server->fd);
 
             if (remote->buf->len == 0) {
-                server->stage = 5;
+                server->stage = STAGE_STREAM;
                 ev_io_stop(EV_A_ & remote_send_ctx->io);
                 ev_io_start(EV_A_ & server->recv_ctx->io);
                 ev_io_start(EV_A_ & remote->recv_ctx->io);
@@ -1291,8 +1289,8 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
             ev_io_stop(EV_A_ & remote_send_ctx->io);
             if (server != NULL) {
                 ev_io_start(EV_A_ & server->recv_ctx->io);
-                if (server->stage == 4) {
-                    server->stage = 5;
+                if (server->stage != STAGE_STREAM) {
+                    server->stage = STAGE_STREAM;
                     ev_io_start(EV_A_ & remote->recv_ctx->io);
                 }
             } else {
@@ -1384,7 +1382,7 @@ new_server(int fd, listen_ctx_t *listener)
     server->recv_ctx->connected = 0;
     server->send_ctx->server    = server;
     server->send_ctx->connected = 0;
-    server->stage               = 0;
+    server->stage               = STAGE_INIT;
     server->query               = NULL;
     server->listen_ctx          = listener;
     server->remote              = NULL;

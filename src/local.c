@@ -242,7 +242,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     while (1) {
         // local socks5 server
-        if (server->stage == 5) {
+        if (server->stage == STAGE_STREAM) {
             if (remote == NULL) {
                 LOGE("invalid remote");
                 close_and_free_server(EV_A_ server);
@@ -401,13 +401,13 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             // all processed
             return;
-        } else if (server->stage == 0) {
+        } else if (server->stage == STAGE_INIT) {
             struct method_select_response response;
             response.ver    = SVERSION;
             response.method = 0;
             char *send_buf = (char *)&response;
             send(server->fd, send_buf, sizeof(response), 0);
-            server->stage = 1;
+            server->stage = STAGE_HANDSHAKE;
 
             int off = (buf->array[1] & 0xff) + 2;
             if (buf->array[0] == 0x05 && off < (int)(buf->len)) {
@@ -419,7 +419,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             buf->len = 0;
 
             return;
-        } else if (server->stage == 1 || server->stage == 2) {
+        } else if (server->stage == STAGE_HANDSHAKE || server->stage == STAGE_PARSE) {
             struct socks5_request *request = (struct socks5_request *)buf->array;
             struct sockaddr_in sock_addr;
             memset(&sock_addr, 0, sizeof(sock_addr));
@@ -449,7 +449,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             }
 
             // Fake reply
-            if (server->stage == 1) {
+            if (server->stage == STAGE_HANDSHAKE) {
                 struct socks5_response response;
                 response.ver  = SVERSION;
                 response.rep  = 0;
@@ -557,7 +557,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     ret = tls_protocol->parse_packet(buf->array + 3 + abuf->len,
                                                      buf->len - 3 - abuf->len, &hostname);
                 if (ret == -1) {
-                    server->stage = 2;
+                    server->stage = STAGE_PARSE;
                     bfree(abuf);
                     return;
                 } else if (ret > 0) {
@@ -582,7 +582,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 }
             }
 
-            server->stage = 5;
+            server->stage = STAGE_STREAM;
 
             buf->len -= (3 + abuf_len);
             if (buf->len > 0) {
@@ -963,6 +963,7 @@ new_server(int fd, int method)
     server->recv_ctx            = ss_malloc(sizeof(server_ctx_t));
     server->send_ctx            = ss_malloc(sizeof(server_ctx_t));
     server->buf                 = ss_malloc(sizeof(buffer_t));
+    server->stage               = STAGE_INIT;
     server->recv_ctx->connected = 0;
     server->send_ctx->connected = 0;
     server->fd                  = fd;
