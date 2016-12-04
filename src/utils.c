@@ -31,11 +31,11 @@
 #include <ctype.h>
 #ifndef __MINGW32__
 #include <pwd.h>
+#include <grp.h>
 #endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <grp.h>
 
 #include "utils.h"
 
