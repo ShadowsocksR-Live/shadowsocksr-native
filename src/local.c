@@ -1625,6 +1625,7 @@ start_ss_local_server(profile_t profile)
         close(listen_ctx.fd);
     }
 
+    ss_free(listen_ctx.remote_addr[0]);
     ss_free(listen_ctx.remote_addr);
 
 #ifdef __MINGW32__
