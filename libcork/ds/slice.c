@@ -163,7 +163,8 @@ cork_slice_slice(struct cork_slice *slice, size_t offset, size_t length)
               slice->buf, slice->size,
               offset, length);
         */
-        cork_slice_invalid_slice_set(slice->size, offset, length);
+        if (slice != NULL)
+            cork_slice_invalid_slice_set(slice->size, offset, length);
         return -1;
     }
 }
