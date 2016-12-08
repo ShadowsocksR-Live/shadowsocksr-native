@@ -1454,6 +1454,9 @@ main(int argc, char **argv)
     }
 #endif
 
+    // Disable retry
+    keep_resolving = 0;
+
     // Init connections
     cork_dllist_init(&connections);
 
