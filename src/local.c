@@ -640,8 +640,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                         err = get_sockaddr(host, port, &storage, 1, ipv6first);
                     }
                     if (err != -1) {
-                        remote         = create_remote(server->listener, (struct sockaddr *)&storage);
-                        remote->direct = 1;
+                        remote = create_remote(server->listener, (struct sockaddr *)&storage);
+                        if (remote != NULL) remote->direct = 1;
                     }
                 }
             }
