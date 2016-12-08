@@ -1050,7 +1050,7 @@ static void
 server_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 {
     server_ctx_t *server_ctx
-        = (server_ctx_t *)container_of(watcher, server_ctx_t, watcher);
+        = cork_container_of(watcher, server_ctx_t, watcher);
     server_t *server = server_ctx->server;
     remote_t *remote = server->remote;
 

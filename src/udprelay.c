@@ -550,7 +550,7 @@ static void
 remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 {
     remote_ctx_t *remote_ctx
-        = (remote_ctx_t *)container_of(watcher, remote_ctx_t, watcher);
+        = cork_container_of(watcher, remote_ctx_t, watcher);
 
     if (verbose) {
         LOGI("[udp] connection timeout");
