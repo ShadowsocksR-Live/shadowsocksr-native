@@ -1049,8 +1049,8 @@ block_list_clear_cb(EV_P_ ev_timer *watcher, int revents)
 static void
 server_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 {
-    server_ctx_t *server_ctx = (server_ctx_t *)(((char *)watcher)
-                                                - sizeof(ev_io));
+    server_ctx_t *server_ctx
+        = (server_ctx_t *)container_of(watcher, server_ctx_t, watcher);
     server_t *server = server_ctx->server;
     remote_t *remote = server->remote;
 

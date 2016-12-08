@@ -549,8 +549,8 @@ close_and_free_remote(EV_P_ remote_ctx_t *ctx)
 static void
 remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 {
-    remote_ctx_t *remote_ctx = (remote_ctx_t *)(((char *)watcher)
-                                                - sizeof(ev_io));
+    remote_ctx_t *remote_ctx
+        = (remote_ctx_t *)container_of(watcher, remote_ctx_t, watcher);
 
     if (verbose) {
         LOGI("[udp] connection timeout");
