@@ -40,7 +40,9 @@
 #include <linux/if.h>
 #include <linux/netfilter_ipv4.h>
 #include <linux/netfilter_ipv6/ip6_tables.h>
+
 #include <udns.h>
+#include <libcork/core.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
