@@ -556,7 +556,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 else if (p == tls_protocol->default_port)
                     ret = tls_protocol->parse_packet(buf->array + 3 + abuf->len,
                                                      buf->len - 3 - abuf->len, &hostname);
-                if (ret == -1) {
+                if (ret == -1 && buf->len < BUF_SIZE) {
                     server->stage = STAGE_PARSE;
                     bfree(abuf);
                     return;
