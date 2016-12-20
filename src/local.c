@@ -632,13 +632,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                             LOGI("bypass [%s]:%s", ip, port);
                     }
                     struct sockaddr_storage storage;
-                    int err;
                     memset(&storage, 0, sizeof(struct sockaddr_storage));
-                    if (atyp == 1 || atyp == 4) {
-                        err = get_sockaddr(ip, port, &storage, 0, ipv6first);
-                    } else {
-                        err = get_sockaddr(host, port, &storage, 1, ipv6first);
-                    }
+                    int err = get_sockaddr(ip, port, &storage, 0, ipv6first);
                     if (err != -1) {
                         remote = create_remote(server->listener, (struct sockaddr *)&storage);
                         if (remote != NULL) remote->direct = 1;
@@ -1458,9 +1453,6 @@ main(int argc, char **argv)
     }
 #endif
 
-    // Disable retry
-    keep_resolving = 0;
-
     // Init connections
     cork_dllist_init(&connections);
 
@@ -1562,7 +1554,7 @@ start_ss_local_server(profile_t profile)
 
     struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
     memset(storage, 0, sizeof(struct sockaddr_storage));
-    if (get_sockaddr(remote_host, remote_port_str, storage, 1, ipv6first) == -1) {
+    if (get_sockaddr(remote_host, remote_port_str, storage, 0, ipv6first) == -1) {
         return -1;
     }
 
