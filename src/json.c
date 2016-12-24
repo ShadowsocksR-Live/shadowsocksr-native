@@ -243,7 +243,7 @@ json_parse_ex(json_settings *settings,
               char *error_buf)
 {
     json_char error[json_error_max];
-    unsigned int cur_line;
+    int cur_line;
     const json_char *cur_line_begin, *i, *end;
     json_value *top, *root, *alloc = 0;
     json_state state = { 0UL, 0U, 0UL, { 0UL, 0, NULL, NULL, NULL }, 0 };
@@ -819,8 +819,8 @@ whitespace:
 
                         top->u.dbl *=
                             pow(10,
-                                (double)(flags &
-                                         flag_num_e_negative ? -num_e : num_e));
+                                (double)((flags &
+                                         flag_num_e_negative) ? -num_e : num_e));
                     }
 
                     if (flags & flag_num_negative) {

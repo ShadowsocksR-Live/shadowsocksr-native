@@ -169,6 +169,8 @@ resolv_query(const char *hostname, void (*client_cb)(struct sockaddr *, void *),
         LOGE("Failed to allocate memory for DNS query callback data.");
         return NULL;
     }
+    memset(cb_data, 0, sizeof(struct ResolvQuery));
+
     cb_data->client_cb      = client_cb;
     cb_data->client_free_cb = client_free_cb;
     cb_data->client_cb_data = client_cb_data;
@@ -264,8 +266,8 @@ dns_query_v4_cb(struct dns_ctx *ctx, struct dns_rr_a4 *result, void *data)
             cb_data->responses = new_responses;
 
             for (int i = 0; i < result->dnsa4_nrr; i++) {
-                struct sockaddr_in *sa =
-                    (struct sockaddr_in *)malloc(sizeof(struct sockaddr_in));
+                struct sockaddr_in *sa = ss_malloc(sizeof(struct sockaddr_in));
+                memset(sa, 0, sizeof(struct sockaddr_in));
                 sa->sin_family = AF_INET;
                 sa->sin_port   = cb_data->port;
                 sa->sin_addr   = result->dnsa4_addr[i];
@@ -311,8 +313,8 @@ dns_query_v6_cb(struct dns_ctx *ctx, struct dns_rr_a6 *result, void *data)
             cb_data->responses = new_responses;
 
             for (int i = 0; i < result->dnsa6_nrr; i++) {
-                struct sockaddr_in6 *sa =
-                    (struct sockaddr_in6 *)malloc(sizeof(struct sockaddr_in6));
+                struct sockaddr_in6 *sa = ss_malloc(sizeof(struct sockaddr_in6));
+                memset(sa, 0, sizeof(struct sockaddr_in6));
                 sa->sin6_family = AF_INET6;
                 sa->sin6_port   = cb_data->port;
                 sa->sin6_addr   = result->dnsa6_addr[i];

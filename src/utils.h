@@ -38,6 +38,7 @@
 #ifndef _UTILS_H
 #define _UTILS_H
 
+#include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -209,6 +210,7 @@ void ERROR(const char *s);
 #endif
 
 char *ss_itoa(int i);
+int ss_isnumeric(const char *s);
 int run_as(const char *user);
 void FATAL(const char *msg);
 void usage(void);

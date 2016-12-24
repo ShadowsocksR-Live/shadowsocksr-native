@@ -95,6 +95,7 @@ char *prefix;
 int verbose        = 0;
 int keep_resolving = 1;
 
+static int ipv6first = 0;
 static int mode = TCP_ONLY;
 static int auth = 0;
 #ifdef HAVE_SETRLIMIT
@@ -300,8 +301,9 @@ server_send_cb(EV_P_ ev_io *w, int revents)
 static void
 remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 {
-    remote_ctx_t *remote_ctx = (remote_ctx_t *)(((void *)watcher)
-                                                - sizeof(ev_io));
+    remote_ctx_t *remote_ctx
+        = cork_container_of(watcher, remote_ctx_t, watcher);
+
     remote_t *remote = remote_ctx->remote;
     server_t *server = remote->server;
 
@@ -431,7 +433,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
 
     if (!remote_send_ctx->connected) {
         struct sockaddr_storage addr;
-        socklen_t len = sizeof addr;
+        socklen_t len = sizeof(struct sockaddr_storage);
 
         int r = getpeername(remote->fd, (struct sockaddr *)&addr, &len);
         if (r == 0) {
@@ -449,6 +451,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
                 if (ip.version == 4) {
                     // send as IPv4
                     struct in_addr host;
+                    memset(&host, 0, sizeof(struct in_addr));
                     int host_len = sizeof(struct in_addr);
 
                     if (dns_pton(AF_INET, sa->host, &host) == -1) {
@@ -460,6 +463,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
                 } else if (ip.version == 6) {
                     // send as IPv6
                     struct in6_addr host;
+                    memset(&host, 0, sizeof(struct in6_addr));
                     int host_len = sizeof(struct in6_addr);
 
                     if (dns_pton(AF_INET6, sa->host, &host) == -1) {
@@ -591,14 +595,16 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
 static remote_t *
 new_remote(int fd, int timeout)
 {
-    remote_t *remote;
-    remote = ss_malloc(sizeof(remote_t));
+    remote_t *remote = ss_malloc(sizeof(remote_t));
 
     memset(remote, 0, sizeof(remote_t));
 
     remote->buf                 = ss_malloc(sizeof(buffer_t));
     remote->recv_ctx            = ss_malloc(sizeof(remote_ctx_t));
     remote->send_ctx            = ss_malloc(sizeof(remote_ctx_t));
+    balloc(remote->buf, BUF_SIZE);
+    memset(remote->recv_ctx, 0, sizeof(remote_ctx_t));
+    memset(remote->send_ctx, 0, sizeof(remote_ctx_t));
     remote->fd                  = fd;
     remote->recv_ctx->remote    = remote;
     remote->recv_ctx->connected = 0;
@@ -609,8 +615,6 @@ new_remote(int fd, int timeout)
     ev_io_init(&remote->send_ctx->io, remote_send_cb, fd, EV_WRITE);
     ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb,
                   min(MAX_CONNECT_TIMEOUT, timeout), 0);
-
-    balloc(remote->buf, BUF_SIZE);
 
     return remote;
 }
@@ -647,12 +651,15 @@ close_and_free_remote(EV_P_ remote_t *remote)
 static server_t *
 new_server(int fd, int method)
 {
-    server_t *server;
+    server_t *server = ss_malloc(sizeof(server_t));
+    memset(server, 0, sizeof(server_t));
 
-    server                      = ss_malloc(sizeof(server_t));
     server->buf                 = ss_malloc(sizeof(buffer_t));
     server->recv_ctx            = ss_malloc(sizeof(server_ctx_t));
     server->send_ctx            = ss_malloc(sizeof(server_ctx_t));
+    balloc(server->buf, BUF_SIZE);
+    memset(server->recv_ctx, 0, sizeof(server_ctx_t));
+    memset(server->send_ctx, 0, sizeof(server_ctx_t));
     server->fd                  = fd;
     server->recv_ctx->server    = server;
     server->recv_ctx->connected = 0;
@@ -668,8 +675,6 @@ new_server(int fd, int method)
         server->e_ctx = NULL;
         server->d_ctx = NULL;
     }
-
-    balloc(server->buf, BUF_SIZE);
 
     ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
     ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
@@ -860,10 +865,12 @@ main(int argc, char **argv)
     USE_TTY();
 
 #ifdef ANDROID
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:n:P:O:o:G:g:huUvVA", // SSR
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:n:P:huUvVA6"
+                            "O:o:G:g:",
                             long_options, &option_index)) != -1) {
 #else
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:n:O:o:G:g:huUvA", // SSR
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:n:huUvA6"
+                            "O:o:G:g:",
                             long_options, &option_index)) != -1) {
 #endif
         switch (c) {
@@ -952,6 +959,9 @@ main(int argc, char **argv)
         case 'A':
             auth = 1;
             break;
+        case '6':
+            ipv6first = 1;
+            break;
 #ifdef ANDROID
         case 'V':
             vpn = 1;
@@ -1019,6 +1029,9 @@ main(int argc, char **argv)
         if (timeout == NULL) {
             timeout = conf->timeout;
         }
+        if (user == NULL) {
+            user = conf->user;
+        }
         if (auth == 0) {
             auth = conf->auth;
         }
@@ -1081,6 +1094,10 @@ main(int argc, char **argv)
         daemonize(pid_path);
     }
 
+    if (ipv6first) {
+        LOGI("resolving hostname to IPv6 address first");
+    }
+
     if (auth) {
         LOGI("onetime authentication enabled");
     }
@@ -1108,16 +1125,18 @@ main(int argc, char **argv)
 
     // Setup proxy context
     struct listen_ctx listen_ctx;
+    memset(&listen_ctx, 0, sizeof(struct listen_ctx));
     listen_ctx.tunnel_addr = tunnel_addr;
     listen_ctx.remote_num  = remote_num;
     listen_ctx.remote_addr = ss_malloc(sizeof(struct sockaddr *) * remote_num);
+    memset(listen_ctx.remote_addr, 0, sizeof(struct sockaddr *) * remote_num);
     for (i = 0; i < remote_num; i++) {
         char *host = remote_addr[i].host;
         char *port = remote_addr[i].port == NULL ? remote_port :
                      remote_addr[i].port;
         struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
         memset(storage, 0, sizeof(struct sockaddr_storage));
-        if (get_sockaddr(host, port, storage, 1) == -1) {
+        if (get_sockaddr(host, port, storage, 1, ipv6first) == -1) {
             FATAL("failed to resolve the provided hostname");
         }
         listen_ctx.remote_addr[i] = (struct sockaddr *)storage;
@@ -1171,9 +1190,15 @@ main(int argc, char **argv)
     LOGI("listening at %s:%s", local_addr, local_port);
 
     // setuid
-    if (user != NULL) {
-        run_as(user);
+    if (user != NULL && ! run_as(user)) {
+        FATAL("failed to switch user");
     }
+
+#ifndef __MINGW32__
+    if (geteuid() == 0){
+        LOGI("running from root user");
+    }
+#endif
 
     ev_run(loop, 0);
 

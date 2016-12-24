@@ -45,18 +45,225 @@ static struct ip_set outbound_block_list_ipv4;
 static struct ip_set outbound_block_list_ipv6;
 static struct cork_dllist outbound_block_list_rules;
 
+#ifdef __linux__
+
+#include <unistd.h>
+#include <stdio.h>
+
+#define NO_FIREWALL_MODE 0
+#define IPTABLES_MODE    1
+#define FIREWALLD_MODE   2
+
+static FILE *shell_stdin;
+static int mode = NO_FIREWALL_MODE;
+
+static char chain_name[64];
+static char *iptables_init_chain =
+    "iptables -N %s; iptables -F %s; iptables -A OUTPUT -p tcp --tcp-flags RST RST -j %s";
+static char *iptables_remove_chain =
+    "iptables -D OUTPUT -p tcp --tcp-flags RST RST -j %s; iptables -F %s; iptables -X %s";
+static char *iptables_add_rule    = "iptables -A %s -d %s -j DROP";
+static char *iptables_remove_rule = "iptables -D %s -d %s -j DROP";
+
+static char *ip6tables_init_chain =
+    "ip6tables -N %s; ip6tables -F %s; ip6tables -A OUTPUT -p tcp --tcp-flags RST RST -j %s";
+static char *ip6tables_remove_chain =
+    "ip6tables -D OUTPUT -p tcp --tcp-flags RST RST -j %s; ip6tables -F %s; ip6tables -X %s";
+static char *ip6tables_add_rule    = "ip6tables -A %s -d %s -j DROP";
+static char *ip6tables_remove_rule = "ip6tables -D %s -d %s -j DROP";
+
+static char *firewalld_init_chain =
+    "firewall-cmd --direct --add-chain ipv4 filter %s; \
+     firewall-cmd --direct --passthrough ipv4 -F %s; \
+     firewall-cmd --direct --passthrough ipv4 -A OUTPUT -p tcp --tcp-flags RST RST -j %s";
+static char *firewalld_remove_chain =
+    "firewall-cmd --direct --passthrough ipv4 -D OUTPUT -p tcp --tcp-flags RST RST -j %s; \
+     firewall-cmd --direct --passthrough ipv4 -F %s; \
+     firewall-cmd --direct --remove-chain ipv4 filter %s";
+static char *firewalld_add_rule    = "firewall-cmd --direct --passthrough ipv4 -A %s -d %s -j DROP";
+static char *firewalld_remove_rule = "firewall-cmd --direct --passthrough ipv4 -D %s -d %s -j DROP";
+
+static char *firewalld6_init_chain =
+    "firewall-cmd --direct --add-chain ipv6 filter %s; \
+     firewall-cmd --direct --passthrough ipv6 -F %s; \
+     firewall-cmd --direct --passthrough ipv6 -A OUTPUT -p tcp --tcp-flags RST RST -j %s";
+static char *firewalld6_remove_chain =
+    "firewall-cmd --direct --passthrough ipv6 -D OUTPUT -p tcp --tcp-flags RST RST -j %s; \
+     firewall-cmd --direct --passthrough ipv6 -F %s; \
+     firewall-cmd --direct --remove-chain ipv6 filter %s";
+static char *firewalld6_add_rule    = "firewall-cmd --direct --passthrough ipv6 -A %s -d %s -j DROP";
+static char *firewalld6_remove_rule = "firewall-cmd --direct --passthrough ipv6 -D %s -d %s -j DROP";
+
+static int
+run_cmd(const char *cmd)
+{
+    int ret = 0;
+    char cmdstring[256];
+
+    sprintf(cmdstring, "%s\n", cmd);
+    size_t len = strlen(cmdstring);
+
+    if (shell_stdin != NULL) {
+        ret = fwrite(cmdstring, 1, len, shell_stdin);
+        fflush(shell_stdin);
+    }
+
+    return ret == len;
+}
+
+static int
+init_firewall()
+{
+    int ret = 0;
+    char cli[256];
+    FILE *fp;
+
+    if (getuid() != 0)
+        return -1;
+
+    sprintf(cli, "firewall-cmd --version 2>&1");
+    fp = popen(cli, "r");
+
+    if (fp == NULL)
+        return -1;
+
+    if (pclose(fp) == 0) {
+        mode = FIREWALLD_MODE;
+    } else {
+        /* Check whether we have permission to operate iptables.
+	 * Note that checking `iptables --version` is insufficient:
+         * eg, running within a child user namespace.
+	 */
+        sprintf(cli, "iptables -L 2>&1");
+        fp = popen(cli, "r");
+        if (fp == NULL)
+            return -1;
+        if (pclose(fp) == 0)
+            mode = IPTABLES_MODE;
+    }
+
+    sprintf(chain_name, "SHADOWSOCKS_LIBEV_%d", getpid());
+
+    if (mode == FIREWALLD_MODE) {
+        sprintf(cli, firewalld6_init_chain, chain_name, chain_name, chain_name);
+        ret |= system(cli);
+        sprintf(cli, firewalld_init_chain, chain_name, chain_name, chain_name);
+        ret |= system(cli);
+    } else if (mode == IPTABLES_MODE) {
+        sprintf(cli, ip6tables_init_chain, chain_name, chain_name, chain_name);
+        ret |= system(cli);
+        sprintf(cli, iptables_init_chain, chain_name, chain_name, chain_name);
+        ret |= system(cli);
+    }
+
+    shell_stdin = popen("/bin/sh", "w");
+
+    return ret;
+}
+
+static int
+reset_firewall()
+{
+    int ret = 0;
+    char cli[256];
+
+    if (getuid() != 0)
+        return -1;
+
+    if (mode == IPTABLES_MODE) {
+        sprintf(cli, ip6tables_remove_chain, chain_name, chain_name, chain_name);
+        ret |= system(cli);
+        sprintf(cli, iptables_remove_chain, chain_name, chain_name, chain_name);
+        ret |= system(cli);
+    } else if (mode == FIREWALLD_MODE) {
+        sprintf(cli, firewalld6_remove_chain, chain_name, chain_name, chain_name);
+        ret |= system(cli);
+        sprintf(cli, firewalld_remove_chain, chain_name, chain_name, chain_name);
+        ret |= system(cli);
+    }
+
+    if (shell_stdin != NULL) {
+        run_cmd("exit 0");
+        pclose(shell_stdin);
+    }
+
+    return ret;
+}
+
+static int
+set_firewall_rule(char *addr, int add)
+{
+    char cli[256];
+    struct cork_ip ip;
+
+    if (getuid() != 0)
+        return -1;
+
+    if (cork_ip_init(&ip, addr))
+        return -1;
+
+    if (add) {
+        if (mode == IPTABLES_MODE)
+            sprintf(cli, ip.version == 4 ? iptables_add_rule : ip6tables_add_rule,
+                    chain_name, addr);
+        else if (mode == FIREWALLD_MODE)
+            sprintf(cli, ip.version == 4 ? firewalld_add_rule : firewalld6_add_rule,
+                    chain_name, addr);
+        return run_cmd(cli);
+    } else {
+        if (mode == IPTABLES_MODE)
+            sprintf(cli, ip.version == 4 ? iptables_remove_rule : ip6tables_remove_rule,
+                    chain_name, addr);
+        else if (mode == FIREWALLD_MODE)
+            sprintf(cli, ip.version == 4 ? firewalld_remove_rule : firewalld6_remove_rule,
+                    chain_name, addr);
+        return run_cmd(cli);
+    }
+
+    return 0;
+}
+
+static void
+free_firewall_rule(void *key, void *element)
+{
+    if (key == NULL)
+        return;
+    char *addr = (char *)key;
+    set_firewall_rule(addr, 0);
+    ss_free(element);
+}
+
+#endif
+
 void
-init_block_list()
+init_block_list(int firewall)
 {
     // Initialize cache
+#ifdef __linux__
+    if (firewall)
+        init_firewall();
+    else
+        mode = NO_FIREWALL_MODE;
+    cache_create(&block_list, 256, free_firewall_rule);
+#else
     cache_create(&block_list, 256, NULL);
+#endif
+}
+
+void
+free_block_list()
+{
+#ifdef __linux__
+    if (mode != NO_FIREWALL_MODE)
+        reset_firewall();
+#endif
+    cache_clear(block_list, 0); // Remove all items
 }
 
 int
 remove_from_block_list(char *addr)
 {
     size_t addr_len = strlen(addr);
-
     return cache_remove(block_list, addr, addr_len);
 }
 
@@ -67,7 +274,23 @@ clear_block_list()
 }
 
 int
-check_block_list(char *addr, int err_level)
+check_block_list(char *addr)
+{
+    size_t addr_len = strlen(addr);
+
+    if (cache_key_exist(block_list, addr, addr_len)) {
+        int *count = NULL;
+        cache_lookup(block_list, addr, addr_len, &count);
+
+        if (count != NULL && *count > MAX_TRIES)
+            return 1;
+    }
+
+    return 0;
+}
+
+int
+update_block_list(char *addr, int err_level)
 {
     size_t addr_len = strlen(addr);
 
@@ -79,10 +302,14 @@ check_block_list(char *addr, int err_level)
                 return 1;
             (*count) += err_level;
         }
-    } else {
+    } else if (err_level > 0) {
         int *count = (int *)ss_malloc(sizeof(int));
         *count = 1;
         cache_insert(block_list, addr, addr_len, count);
+#ifdef __linux__
+        if (mode != NO_FIREWALL_MODE)
+            set_firewall_rule(addr, 1);
+#endif
     }
 
     return 0;

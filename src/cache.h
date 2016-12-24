@@ -47,11 +47,11 @@ struct cache_entry {
 struct cache {
     size_t max_entries;              /**<Amount of entries this cache object can hold */
     struct cache_entry *entries;     /**<Head pointer for uthash */
-    void (*free_cb) (void *element); /**<Callback function to free cache entries */
+    void (*free_cb) (void *key, void *element); /**<Callback function to free cache entries */
 };
 
 int cache_create(struct cache **dst, const size_t capacity,
-                        void (*free_cb)(void *element));
+                        void (*free_cb)(void *key, void *element));
 int cache_delete(struct cache *cache, int keep_data);
 int cache_clear(struct cache *cache, ev_tstamp age);
 int cache_lookup(struct cache *cache, char *key, size_t key_len, void *result);

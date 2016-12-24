@@ -28,8 +28,10 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>
 #ifndef __MINGW32__
 #include <pwd.h>
+#include <grp.h>
 #endif
 
 #include <sys/types.h>
@@ -86,6 +88,15 @@ ss_itoa(int i)
     return p;
 }
 
+int
+ss_isnumeric(const char *s) {
+    if (!s || !*s)
+        return 0;
+    while (isdigit(*s))
+        ++s;
+    return *s == '\0';
+}
+
 /*
  * setuid() and setgid() for a specified user.
  */
@@ -94,8 +105,20 @@ run_as(const char *user)
 {
 #ifndef __MINGW32__
     if (user[0]) {
+        /* Convert user to a long integer if it is a non-negative number.
+         * -1 means it is a user name. */
+        long uid = -1;
+        if (ss_isnumeric(user)) {
+            errno = 0;
+            char *endptr;
+            uid = strtol(user, &endptr, 10);
+            if (errno || endptr == user)
+                uid = -1;
+        }
+
 #ifdef HAVE_GETPWNAM_R
         struct passwd pwdbuf, *pwd;
+        memset(&pwdbuf, 0, sizeof(struct passwd));
         size_t buflen;
         int err;
 
@@ -105,28 +128,34 @@ run_as(const char *user)
             /* Note that we use getpwnam_r() instead of getpwnam(),
              * which returns its result in a statically allocated buffer and
              * cannot be considered thread safe. */
-            err = getpwnam_r(user, &pwdbuf, buf, buflen, &pwd);
+            err = uid >= 0 ? getpwuid_r((uid_t)uid, &pwdbuf, buf, buflen, &pwd)
+                : getpwnam_r(user, &pwdbuf, buf, buflen, &pwd);
 
             if (err == 0 && pwd) {
                 /* setgid first, because we may not be allowed to do it anymore after setuid */
                 if (setgid(pwd->pw_gid) != 0) {
                     LOGE(
                         "Could not change group id to that of run_as user '%s': %s",
-                        user, strerror(errno));
+                        pwd->pw_name, strerror(errno));
+                    return 0;
+                }
+
+                if (initgroups(pwd->pw_name, pwd->pw_gid) == -1) {
+                    LOGE("Could not change supplementary groups for user '%s'.", pwd->pw_name);
                     return 0;
                 }
 
                 if (setuid(pwd->pw_uid) != 0) {
                     LOGE(
                         "Could not change user id to that of run_as user '%s': %s",
-                        user, strerror(errno));
+                        pwd->pw_name, strerror(errno));
                     return 0;
                 }
                 break;
             } else if (err != ERANGE) {
                 if (err) {
-                    LOGE("run_as user '%s' could not be found: %s", user, strerror(
-                             err));
+                    LOGE("run_as user '%s' could not be found: %s", user,
+                            strerror(err));
                 } else {
                     LOGE("run_as user '%s' could not be found.", user);
                 }
@@ -145,19 +174,23 @@ run_as(const char *user)
         /* No getpwnam_r() :-(  We'll use getpwnam() and hope for the best. */
         struct passwd *pwd;
 
-        if (!(pwd = getpwnam(user))) {
+        if (!(pwd = uid >=0 ? getpwuid((uid_t)uid) : getpwnam(user))) {
             LOGE("run_as user %s could not be found.", user);
             return 0;
         }
         /* setgid first, because we may not allowed to do it anymore after setuid */
         if (setgid(pwd->pw_gid) != 0) {
             LOGE("Could not change group id to that of run_as user '%s': %s",
-                 user, strerror(errno));
+                 pwd->pw_name, strerror(errno));
+            return 0;
+        }
+        if (initgroups(pwd->pw_name, pwd->pw_gid) == -1) {
+            LOGE("Could not change supplementary groups for user '%s'.", pwd->pw_name);
             return 0;
         }
         if (setuid(pwd->pw_uid) != 0) {
             LOGE("Could not change user id to that of run_as user '%s': %s",
-                 user, strerror(errno));
+                 pwd->pw_name, strerror(errno));
             return 0;
         }
 #endif
@@ -177,7 +210,7 @@ ss_strndup(const char *s, size_t n)
         return strdup(s);
     }
 
-    ret = malloc(n + 1);
+    ret = ss_malloc(n + 1);
     strncpy(ret, s, n);
     ret[n] = '\0';
     return ret;
@@ -318,8 +351,14 @@ usage()
 #endif
     printf(
         "       [--mtu <MTU>]              MTU of your network interface.\n");
+#ifdef __linux__
     printf(
         "       [--mptcp]                  Enable Multipath TCP on MPTCP Kernel.\n");
+#ifdef MODULE_REMOTE
+    printf(
+        "       [--firewall]               Setup firewall rules for auto blocking.\n");
+#endif
+#endif
     printf("\n");
     printf(
         "       [-v]                       Verbose mode.\n");

@@ -47,7 +47,7 @@
  */
 int
 cache_create(struct cache **dst, const size_t capacity,
-             void (*free_cb)(void *element))
+             void (*free_cb)(void *key, void *element))
 {
     struct cache *new = NULL;
 
@@ -92,7 +92,7 @@ cache_delete(struct cache *cache, int keep_data)
             HASH_DEL(cache->entries, entry);
             if (entry->data != NULL) {
                 if (cache->free_cb) {
-                    cache->free_cb(entry->data);
+                    cache->free_cb(entry->key, entry->data);
                 } else {
                     ss_free(entry->data);
                 }
@@ -132,7 +132,7 @@ cache_clear(struct cache *cache, ev_tstamp age)
             HASH_DEL(cache->entries, entry);
             if (entry->data != NULL) {
                 if (cache->free_cb) {
-                    cache->free_cb(entry->data);
+                    cache->free_cb(entry->key, entry->data);
                 } else {
                     ss_free(entry->data);
                 }
@@ -173,7 +173,7 @@ cache_remove(struct cache *cache, char *key, size_t key_len)
         HASH_DEL(cache->entries, tmp);
         if (tmp->data != NULL) {
             if (cache->free_cb) {
-                cache->free_cb(tmp->data);
+                cache->free_cb(tmp->key, tmp->data);
             } else {
                 ss_free(tmp->data);
             }
@@ -280,10 +280,12 @@ cache_insert(struct cache *cache, char *key, size_t key_len, void *data)
         return ENOMEM;
     }
 
-    entry->key = ss_malloc(key_len);
+    entry->key = ss_malloc(key_len + 1);
     memcpy(entry->key, key, key_len);
+    entry->key[key_len] = 0;
+
     entry->data = data;
-    entry->ts = ev_time();
+    entry->ts   = ev_time();
     HASH_ADD_KEYPTR(hh, cache->entries, entry->key, key_len, entry);
 
     if (HASH_COUNT(cache->entries) >= cache->max_entries) {
@@ -291,7 +293,7 @@ cache_insert(struct cache *cache, char *key, size_t key_len, void *data)
             HASH_DELETE(hh, cache->entries, entry);
             if (entry->data != NULL) {
                 if (cache->free_cb) {
-                    cache->free_cb(entry->data);
+                    cache->free_cb(entry->key, entry->data);
                 } else {
                     ss_free(entry->data);
                 }

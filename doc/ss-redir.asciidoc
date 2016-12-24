@@ -8,7 +8,7 @@ ss-redir - shadowsocks client as transparent proxy, libev port
 SYNOPSIS
 --------
 *ss-redir*
- [-AuUv] [-h|--help]
+ [-AuUv6] [-h|--help]
  [-s <server_host>] [-p <server_port>] [-l <local_port>]
  [-k <password>] [-m <encrypt_method>] [-f <pid_file>]
  [-t <timeout>] [-c <config_file>] [-b <local_address>]
@@ -89,6 +89,9 @@ Enable UDP relay and disable TCP relay.
 
 -A::
 Enable onetime authentication.
+
+-6::
+Resovle hostname to IPv6 address first.
 
 --mtu <MTU>::
 Specify the MTU of your network interface.

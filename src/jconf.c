@@ -32,6 +32,12 @@
 
 #include <libcork/core.h>
 
+#define check_json_value_type(value, expected_type, message) \
+    do { \
+        if ((value)->type != (expected_type)) \
+            FATAL((message)); \
+    } while(0)
+
 static char *
 to_string(const json_value *value)
 {
@@ -154,7 +160,9 @@ read_jconf(const char *file)
                             break;
                         }
                         json_value *v = value->u.array.values[j];
-                        parse_addr(to_string(v), conf.remote_addr + j);
+                        char *addr_str = to_string(v);
+                        parse_addr(addr_str, conf.remote_addr + j);
+                        ss_free(addr_str);
                         conf.remote_num = j + 1;
                     }
                 } else if (value->type == json_string) {
@@ -195,11 +203,19 @@ read_jconf(const char *file)
                 conf.obfs_param = to_string(value);
             } else if (strcmp(name, "timeout") == 0) {
                 conf.timeout = to_string(value);
+            } else if (strcmp(name, "user") == 0) {
+                conf.user = to_string(value);
             } else if (strcmp(name, "fast_open") == 0) {
+                check_json_value_type(value, json_boolean,
+                        "invalid config file: option 'fast_open' must be a boolean");
                 conf.fast_open = value->u.boolean;
             } else if (strcmp(name, "auth") == 0) {
+                check_json_value_type(value, json_boolean,
+                        "invalid config file: option 'auth' must be a boolean");
                 conf.auth = value->u.boolean;
             } else if (strcmp(name, "nofile") == 0) {
+                check_json_value_type(value, json_integer,
+                    "invalid config file: option 'nofile' must be an integer");
                 conf.nofile = value->u.integer;
             } else if (strcmp(name, "nameserver") == 0) {
                 conf.nameserver = to_string(value);
@@ -219,9 +235,17 @@ read_jconf(const char *file)
                          mode_str);
                 ss_free(mode_str);
             } else if (strcmp(name, "mtu") == 0) {
+                check_json_value_type(value, json_integer,
+                    "invalid config file: option 'mtu' must be an integer");
                 conf.mtu = value->u.integer;
             } else if (strcmp(name, "mptcp") == 0) {
+                check_json_value_type(value, json_boolean,
+                    "invalid config file: option 'mptcp' must be a boolean");
                 conf.mptcp = value->u.boolean;
+            } else if (strcmp(name, "ipv6_first") == 0) {
+                check_json_value_type(value, json_boolean,
+                    "invalid config file: option 'ipv6_first' must be a boolean");
+                conf.ipv6_first = value->u.boolean;
             }
         }
     } else {

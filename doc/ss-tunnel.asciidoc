@@ -8,7 +8,7 @@ ss-tunnel - shadowsocks tools for local port forwarding, libev port
 SYNOPSIS
 --------
 *ss-tunnel*
- [-AuUv] [-h|--help]
+ [-AuUv6] [-h|--help]
  [-s <server_host>] [-p <server_port>] [-l <local_port>]
  [-k <password>] [-m <encrypt_method>] [-f <pid_file>]
  [-t <timeout>] [-c <config_file>] [-i <interface>]
@@ -95,6 +95,9 @@ Enable UDP relay and disable TCP relay.
 
 -A::
 Enable onetime authentication.
+
+-6::
+Resovle hostname to IPv6 address first.
 
 -L <addr:port>::
 Specify destination server address and port for local port forwarding.

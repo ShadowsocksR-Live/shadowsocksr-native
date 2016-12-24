@@ -48,4 +48,11 @@ int protect_socket(int fd);
 int send_traffic_stat(uint64_t tx, uint64_t rx);
 #endif
 
+#define STAGE_ERROR     -1  /* Error detected                   */
+#define STAGE_INIT       0  /* Initial stage                    */
+#define STAGE_HANDSHAKE  1  /* Handshake with client            */
+#define STAGE_PARSE      2  /* Parse the header                 */
+#define STAGE_RESOLVE    4  /* Resolve the hostname             */
+#define STAGE_STREAM     5  /* Stream between client and server */
+
 #endif // _COMMON_H
