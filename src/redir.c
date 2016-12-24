@@ -889,9 +889,6 @@ accept_cb(EV_P_ ev_io *w, int revents)
         server->protocol_plugin->set_server_info(server->protocol, &_server_info);
     // SSR end
 
-    // listen to remote connected event
-    ev_io_start(EV_A_ & remote->send_ctx->io);
-    ev_timer_start(EV_A_ & remote->send_ctx->watcher);
     if (verbose) {
         int port = ((struct sockaddr_in*)&destaddr)->sin_port;
         port = (uint16_t)(port >> 8 | port << 8);
@@ -900,6 +897,8 @@ accept_cb(EV_P_ ev_io *w, int revents)
 
     // listen to remote connected event
     ev_io_start(EV_A_ & remote->send_ctx->io);
+    ev_timer_start(EV_A_ & remote->send_ctx->watcher);
+    ev_io_start(EV_A_ & server->recv_ctx->io);
 }
 
 void
@@ -1106,7 +1105,17 @@ main(int argc, char **argv)
 #ifdef HAVE_SETRLIMIT
         if (nofile == 0) {
             nofile = conf->nofile;
-    }
+    	}
+        /*
+         * no need to check the return value here since we will show
+         * the user an error message if setrlimit(2) fails
+         */
+        if (nofile > 1024) {
+            if (verbose) {
+                LOGI("setting NOFILE to %d", nofile);
+            }
+            set_nofile(nofile);
+        }
 #endif
     }
     if (protocol && strcmp(protocol, "verify_sha1") == 0) {
