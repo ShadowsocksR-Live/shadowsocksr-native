@@ -335,6 +335,7 @@ setfastopen(int fd)
         if (s == -1) {
             if (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT) {
                 LOGE("fast open is not supported on this platform");
+                fast_open = 0;
             } else {
                 ERROR("setsockopt");
             }
