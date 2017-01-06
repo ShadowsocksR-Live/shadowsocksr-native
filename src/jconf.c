@@ -195,6 +195,8 @@ read_jconf(const char *file)
                 conf.password = to_string(value);
             } else if (strcmp(name, "protocol") == 0) { // SSR
                 conf.protocol = to_string(value);
+            } else if (strcmp(name, "protocol_param") == 0) { //SSR
+                conf.protocol_param = to_string(value);
             } else if (strcmp(name, "method") == 0) {
                 conf.method = to_string(value);
             } else if (strcmp(name, "obfs") == 0) { // SSR

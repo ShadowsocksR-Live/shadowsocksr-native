@@ -39,6 +39,7 @@ typedef struct listen_ctx {
 
     // SSR
     char *protocol_name;
+    char *protocol_param;
     char *obfs_name;
     char *obfs_param;
     void **list_protocol_global;
