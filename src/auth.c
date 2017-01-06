@@ -723,50 +723,42 @@ int auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, server_info
     {
         uint8_t uid[4];
 
-        if(server->param != NULL && strcmp("", server->param) != 0)
-        {
-            char *param = server->param;
-            char* delim = strchr(param, ':');
-            if(delim != NULL)
-            {
-                char* uid_str = (char*)malloc(delim - param);
-                memcpy(uid_str, param, delim - param);
-                char* key_str = (char*)malloc(param + (int)strlen(param) - delim);
-                memcpy(key_str, delim + 1, param + (int)strlen(param) - delim);
-                long uid_long = strtol(uid_str, NULL, 10);
-                memintcopy_lt(uid, uid_long);
-                free(uid_str);
+        if (local->user_key == NULL) {
+            if(server->param != NULL && strcmp("", server->param) != 0) {
+                char *param = server->param;
+                char* delim = strchr(param, ':');
+                if(delim != NULL) {
+                    char* uid_str = (char*)malloc(delim - param);
+                    memcpy(uid_str, param, delim - param);
+                    char* key_str = (char*)malloc(param + (int)strlen(param) - delim);
+                    memcpy(key_str, delim + 1, param + (int)strlen(param) - delim);
+                    long uid_long = strtol(uid_str, NULL, 10);
+                    memintcopy_lt(uid, uid_long);
+                    free(uid_str);
 
-                char hash[21] = {0};
-                local->hash(hash, key_str, strlen(key_str));
+                    char hash[21] = {0};
+                    local->hash(hash, key_str, strlen(key_str));
 
-                if (local->user_key == NULL) {
                     local->user_key_len = strlen(hash);
                     local->user_key = (uint8_t*)malloc(local->user_key_len);
                     memset(local->user_key, 0, 21);
                     memcpy(local->user_key, hash, strlen(hash));
-                }
 
-                free(key_str);
-            }
-            else
-            {
-                rand_bytes(uid, 4);
+                    free(key_str);
+                } else {
+                    rand_bytes(uid, 4);
 
-                if (local->user_key == NULL) {
                     local->user_key_len = server->key_len;
                     local->user_key = (uint8_t*)malloc(local->user_key_len);
                     memcpy(local->user_key, server->key, local->user_key_len);
                 }
-            }
-        }
-        else
-        {
-            rand_bytes(uid, 4);
+            } else {
+                rand_bytes(uid, 4);
 
-            local->user_key_len = server->key_len;
-            local->user_key = (uint8_t*)malloc(local->user_key_len);
-            memcpy(local->user_key, server->key, local->user_key_len);
+                local->user_key_len = server->key_len;
+                local->user_key = (uint8_t*)malloc(local->user_key_len);
+                memcpy(local->user_key, server->key, local->user_key_len);
+            }
         }
 
 
@@ -942,48 +934,38 @@ int auth_aes128_sha1_client_udp_pre_encrypt(obfs *self, char **pplaindata, int d
 
     uint8_t uid[4];
 
-    if(self->server.param != NULL && strcmp("", self->server.param) != 0)
-    {
-        char *param = self->server.param;
-        char* delim = strchr(param, ':');
-        if(delim != NULL)
-        {
-            char* uid_str = (char*)malloc(delim - param);
-            memcpy(uid_str, param, delim - param);
-            char* key_str = (char*)malloc(param + (int)strlen(param) - delim);
-            memcpy(key_str, delim + 1, param + (int)strlen(param) - delim);
-            long uid_long = strtol(uid_str, NULL, 10);
-            memintcopy_lt(uid, uid_long);
-            free(uid_str);
+    if (local->user_key == NULL) {
+        if(self->server.param != NULL && strcmp("", self->server.param) != 0) {
+            char *param = self->server.param;
+            char* delim = strchr(param, ':');
+            if(delim != NULL) {
+                char* uid_str = (char*)malloc(delim - param);
+                memcpy(uid_str, param, delim - param);
+                char* key_str = (char*)malloc(param + (int)strlen(param) - delim);
+                memcpy(key_str, delim + 1, param + (int)strlen(param) - delim);
+                long uid_long = strtol(uid_str, NULL, 10);
+                memintcopy_lt(uid, uid_long);
+                free(uid_str);
 
-            char hash[21] = {0};
-            local->hash(hash, key_str, strlen(key_str));
+                char hash[21] = {0};
+                local->hash(hash, key_str, strlen(key_str));
 
-            if (local->user_key == NULL) {
                 local->user_key_len = strlen(hash);
                 local->user_key = (uint8_t*)malloc(local->user_key_len);
                 memset(local->user_key, 0, 21);
                 memcpy(local->user_key, hash, strlen(hash));
-            }
 
-            free(key_str);
-        }
-        else
-        {
-            rand_bytes(uid, 4);
+                free(key_str);
+            } else {
+                rand_bytes(uid, 4);
 
-            if (local->user_key == NULL) {
                 local->user_key_len = self->server.key_len;
                 local->user_key = (uint8_t*)malloc(local->user_key_len);
                 memcpy(local->user_key, self->server.key, local->user_key_len);
             }
-        }
-    }
-    else
-    {
-        rand_bytes(uid, 4);
+        } else {
+            rand_bytes(uid, 4);
 
-        if (local->user_key == NULL) {
             local->user_key_len = self->server.key_len;
             local->user_key = (uint8_t*)malloc(local->user_key_len);
             memcpy(local->user_key, self->server.key, local->user_key_len);
