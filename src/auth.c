@@ -728,7 +728,7 @@ int auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, server_info
         uint8_t uid[4];
 
         if (local->user_key == NULL) {
-            if(server->param != NULL && strcmp("", server->param) != 0) {
+            if(server->param != NULL && server->param[0] != 0) {
                 char *param = server->param;
                 char *delim = strchr(param, ':');
                 if(delim != NULL) {
@@ -929,7 +929,7 @@ int auth_aes128_sha1_client_udp_pre_encrypt(obfs *self, char **pplaindata, int d
     uint8_t uid[4];
 
     if (local->user_key == NULL) {
-        if(self->server.param != NULL && strcmp("", self->server.param) != 0) {
+        if(self->server.param != NULL && self->server.param[0] != 0) {
             char *param = self->server.param;
             char *delim = strchr(param, ':');
             if(delim != NULL) {
@@ -984,7 +984,7 @@ int auth_aes128_sha1_client_udp_post_decrypt(obfs *self, char **pplaindata, int 
     auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
 
     char hash[20];
-    local->hmac(hash, plaindata, datalength - 4, local->user_key, local->user_key_len);
+    local->hmac(hash, plaindata, datalength - 4, self->server.key, self->server.key_len);
 
     if (memcmp(hash, plaindata + datalength - 4, 4))
     {
