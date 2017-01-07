@@ -745,14 +745,9 @@ int auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, server_info
                     memcpy(local->user_key, hash, strlen(hash));
 
                     free(key_str);
-                } else {
-                    rand_bytes(uid, 4);
-
-                    local->user_key_len = server->key_len;
-                    local->user_key = (uint8_t*)malloc(local->user_key_len);
-                    memcpy(local->user_key, server->key, local->user_key_len);
                 }
-            } else {
+            }
+            if (local->user_key == NULL) {
                 rand_bytes(uid, 4);
 
                 local->user_key_len = server->key_len;
@@ -956,14 +951,9 @@ int auth_aes128_sha1_client_udp_pre_encrypt(obfs *self, char **pplaindata, int d
                 memcpy(local->user_key, hash, strlen(hash));
 
                 free(key_str);
-            } else {
-                rand_bytes(uid, 4);
-
-                local->user_key_len = self->server.key_len;
-                local->user_key = (uint8_t*)malloc(local->user_key_len);
-                memcpy(local->user_key, self->server.key, local->user_key_len);
             }
-        } else {
+        }
+        if (local->user_key == NULL) {
             rand_bytes(uid, 4);
 
             local->user_key_len = self->server.key_len;
