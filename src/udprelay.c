@@ -1352,7 +1352,7 @@ init_udprelay(const char *server_host, const char *server_port,
               const ss_addr_t tunnel_addr,
 #endif
 #endif
-              int mtu, int method, int auth, int timeout, const char *iface, const char *protocol)
+              int mtu, int method, int auth, int timeout, const char *iface, const char *protocol, const char *protocol_param)
 {
     // Initialize ev loop
     struct ev_loop *loop = EV_DEFAULT;
@@ -1406,6 +1406,7 @@ init_udprelay(const char *server_host, const char *server_port,
     _server_info.port = ((struct sockaddr_in*)remote_addr)->sin_port;
     _server_info.port = _server_info.port >> 8 | _server_info.port << 8;
     _server_info.g_data = server_ctx->protocol_global;
+    _server_info.param = (char *)protocol_param;
     _server_info.key = enc_get_key();
     _server_info.key_len = enc_get_key_len();
 
