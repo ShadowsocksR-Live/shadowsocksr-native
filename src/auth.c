@@ -18,6 +18,7 @@ typedef struct auth_simple_local_data {
     uint32_t pack_id;
     char * salt;
     uint8_t * user_key;
+    char uid[4];
     int user_key_len;
     hmac_with_key_func hmac;
     hash_func hash;
@@ -725,7 +726,6 @@ int auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, server_info
     encrypt[15] = rand_len >> 8;
 
     {
-        uint8_t uid[4];
 
         if (local->user_key == NULL) {
             if(server->param != NULL && server->param[0] != 0) {
@@ -737,7 +737,7 @@ int auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, server_info
                     char key_str[128];
                     strcpy(key_str, delim + 1);
                     long uid_long = strtol(uid_str, NULL, 10);
-                    memintcopy_lt(uid, uid_long);
+                    memintcopy_lt(local->uid, uid_long);
 
                     char hash[21] = {0};
                     local->hash(hash, key_str, strlen(key_str));
@@ -748,7 +748,7 @@ int auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, server_info
                 }
             }
             if (local->user_key == NULL) {
-                rand_bytes(uid, 4);
+                rand_bytes((uint8_t *)local->uid, 4);
 
                 local->user_key_len = server->key_len;
                 local->user_key = (uint8_t*)malloc(local->user_key_len);
@@ -770,7 +770,7 @@ int auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, server_info
         bytes_to_key_with_size(encrypt_key_base64, enc_key_len, (uint8_t*)enc_key, 16);
         ss_aes_128_cbc(encrypt, encrypt_data, enc_key);
         memcpy(encrypt + 4, encrypt_data, 16);
-        memcpy(encrypt, uid, 4);
+        memcpy(encrypt, local->uid, 4);
     }
 
     {
@@ -926,8 +926,6 @@ int auth_aes128_sha1_client_udp_pre_encrypt(obfs *self, char **pplaindata, int d
     auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
     char * out_buffer = (char*)malloc(datalength + 8);
 
-    uint8_t uid[4];
-
     if (local->user_key == NULL) {
         if(self->server.param != NULL && self->server.param[0] != 0) {
             char *param = self->server.param;
@@ -938,7 +936,7 @@ int auth_aes128_sha1_client_udp_pre_encrypt(obfs *self, char **pplaindata, int d
                 char key_str[128];
                 strcpy(key_str, delim + 1);
                 long uid_long = strtol(uid_str, NULL, 10);
-                memintcopy_lt(uid, uid_long);
+                memintcopy_lt(local->uid, uid_long);
 
                 char hash[21] = {0};
                 local->hash(hash, key_str, strlen(key_str));
@@ -949,7 +947,7 @@ int auth_aes128_sha1_client_udp_pre_encrypt(obfs *self, char **pplaindata, int d
             }
         }
         if (local->user_key == NULL) {
-            rand_bytes(uid, 4);
+            rand_bytes((uint8_t *)local->uid, 4);
 
             local->user_key_len = self->server.key_len;
             local->user_key = (uint8_t*)malloc(local->user_key_len);
@@ -959,7 +957,7 @@ int auth_aes128_sha1_client_udp_pre_encrypt(obfs *self, char **pplaindata, int d
 
     int outlength = datalength + 8;
     memmove(out_buffer, plaindata, datalength);
-    memmove(out_buffer + datalength, uid, 4);
+    memmove(out_buffer + datalength, local->uid, 4);
 
     {
         char hash[20];
