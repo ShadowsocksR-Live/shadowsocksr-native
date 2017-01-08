@@ -78,6 +78,7 @@ set_target_properties(ss_manager PROPERTIES
 
 set (ss_lib_common
         ev
+        m
         libcork)
 
 set (ss_lib_net
