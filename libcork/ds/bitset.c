@@ -25,21 +25,33 @@ bytes_needed(size_t bit_count)
     return bytes_needed;
 }
 
-struct cork_bitset *
-cork_bitset_new(size_t bit_count)
+void
+cork_bitset_init(struct cork_bitset *set, size_t bit_count)
 {
-    struct cork_bitset  *set = cork_new(struct cork_bitset);
     set->bit_count = bit_count;
     set->byte_count = bytes_needed(bit_count);
     set->bits = cork_malloc(set->byte_count);
     memset(set->bits, 0, set->byte_count);
+}
+
+struct cork_bitset *
+cork_bitset_new(size_t bit_count)
+{
+    struct cork_bitset  *set = cork_new(struct cork_bitset);
+    cork_bitset_init(set, bit_count);
     return set;
+}
+
+void
+cork_bitset_done(struct cork_bitset *set)
+{
+    cork_free(set->bits, set->byte_count);
 }
 
 void
 cork_bitset_free(struct cork_bitset *set)
 {
-    cork_free(set->bits, set->byte_count);
+    cork_bitset_done(set);
     cork_delete(struct cork_bitset, set);
 }
 

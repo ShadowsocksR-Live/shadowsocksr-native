@@ -7,6 +7,9 @@
  * ----------------------------------------------------------------------
  */
 
+#ifdef __GNU__
+#define _GNU_SOURCE
+#endif
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
@@ -106,9 +109,16 @@ cork_path_get(const struct cork_path *path)
 int
 cork_path_set_cwd(struct cork_path *path)
 {
+#ifdef __GNU__
+    char *dirname = get_current_dir_name();
+    rip_check_posix(dirname);
+    cork_buffer_set(&path->given, dirname, strlen(dirname));
+    free(dirname);
+#else
     cork_buffer_ensure_size(&path->given, PATH_MAX);
     rip_check_posix(getcwd(path->given.buf, PATH_MAX));
     path->given.size = strlen(path->given.buf);
+#endif
     return 0;
 }
 
@@ -136,10 +146,19 @@ cork_path_set_absolute(struct cork_path *path)
         return 0;
     }
 
+#ifdef __GNU__
+    char *dirname;
+    dirname = get_current_dir_name();
+    ep_check_posix(dirname);
+    cork_buffer_init(&buf);
+    cork_buffer_set(&buf, dirname, strlen(dirname));
+    free(dirname);
+#else
     cork_buffer_init(&buf);
     cork_buffer_ensure_size(&buf, PATH_MAX);
     ep_check_posix(getcwd(buf.buf, PATH_MAX));
     buf.size = strlen(buf.buf);
+#endif
     cork_buffer_append(&buf, "/", 1);
     cork_buffer_append_copy(&buf, &path->given);
     cork_buffer_done(&path->given);

@@ -7,19 +7,22 @@
  * ----------------------------------------------------------------------
  */
 
-#ifndef LIBCORK_CONFIG_VERSION_H
-#define LIBCORK_CONFIG_VERSION_H
+#include "libcork/config.h"
+#include "libcork/core/api.h"
 
 
 /*-----------------------------------------------------------------------
  * Library version
  */
 
-#define CORK_CONFIG_VERSION_MAJOR   0
-#define CORK_CONFIG_VERSION_MINOR   15
-#define CORK_CONFIG_VERSION_PATCH   0
-#define CORK_CONFIG_VERSION_STRING  "0.15.0"
-#define CORK_CONFIG_REVISION        "d6ecc2cfbcdf5013038a72b4544f7d9e6eb8f92d"
+const char *
+cork_version_string(void)
+{
+    return CORK_CONFIG_VERSION_STRING;
+}
 
-
-#endif /* LIBCORK_CONFIG_VERSION_H */
+const char *
+cork_revision_string(void)
+{
+    return CORK_CONFIG_REVISION;
+}

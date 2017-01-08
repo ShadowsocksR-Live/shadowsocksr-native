@@ -12,7 +12,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #ifndef __MINGW32__
-#include <sys/select.h>
+//#include <sys/select.h>
 #include <sys/wait.h>
 #endif
 #include <unistd.h>
@@ -496,10 +496,10 @@ cork_subprocess_is_finished(struct cork_subprocess *self)
         && cork_read_pipe_is_finished(&self->stderr_pipe);
 }
 
-#if defined(__APPLE__) || defined(__MINGW32__) || defined(__CYGWIN__)
+#if defined(__APPLE__) || defined(__MINGW32__)
 #include <pthread.h>
 #define THREAD_YIELD   pthread_yield_np
-#elif defined(__linux__) || defined(BSD) || defined(__sun)
+#elif defined(__linux__) || defined(BSD) || defined(__sun) || defined(__FreeBSD_kernel__) || defined(__GNU__) || defined(__CYGWIN__)
 #include <sched.h>
 #define THREAD_YIELD   sched_yield
 #else

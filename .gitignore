@@ -69,3 +69,5 @@ doc/*.html
 *.tar.bz2
 *.tar.gz
 #
+cmake-build*
+.idea/
