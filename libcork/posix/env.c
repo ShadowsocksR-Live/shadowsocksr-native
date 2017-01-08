@@ -25,10 +25,75 @@
 #include <crt_externs.h>
 #define environ  (*_NSGetEnviron())
 
-#else
+#elif !defined(__MINGW32__)
 /* On all other POSIX platforms, we assume that environ is available in shared
  * libraries. */
 extern char  **environ;
+
+#endif
+
+
+#ifdef __MINGW32__
+
+int setenv(const char *name, const char *value, int replace)
+{
+    int out;
+    size_t namelen, valuelen;
+    char *envstr;
+
+    if (!name || !value) return -1;
+    if (!replace) {
+        char *oldval = NULL;
+        oldval = getenv(name);
+        if (oldval) return 0;
+    }
+
+    namelen = strlen(name);
+    valuelen = strlen(value);
+    envstr = malloc((namelen + valuelen + 2));
+    if (!envstr) return -1;
+
+    memcpy(envstr, name, namelen);
+    envstr[namelen] = '=';
+    memcpy(envstr + namelen + 1, value, valuelen);
+    envstr[namelen + valuelen + 1] = 0;
+
+    out = putenv(envstr);
+    /* putenv(3) makes the argument string part of the environment,
+     * and changing that string modifies the environment --- which
+     * means we do not own that storage anymore.  Do not free
+     * envstr.
+     */
+
+    return out;
+}
+
+int unsetenv(const char *env)
+{
+    char *name;
+    int ret;
+
+    name = malloc(strlen(env)+2);
+    strcat(strcpy(name, env), "=");
+    ret = putenv(name);
+    free(name);
+
+    return ret;
+}
+
+int clearenv(void)
+{
+    char **env = environ;
+    if (!env)
+        return 0;
+    while (*env) {
+        free(*env);
+        env++;
+    }
+    free(env);
+    environ = NULL;
+    return 0;
+}
 
 #endif
 
@@ -173,7 +238,6 @@ cork_env_remove(struct cork_env *env, const char *name)
         }
     }
 }
-
 
 static enum cork_hash_table_map_result
 cork_env_set_vars(void *user_data, struct cork_hash_table_entry *entry)

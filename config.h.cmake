@@ -7,16 +7,16 @@
 #define CONNECT_IN_PROGRESS @CONNECT_IN_PROGRESS@
 
 /* Override libev default fd conversion macro. */
-#undef EV_FD_TO_WIN32_HANDLE
+#define EV_FD_TO_WIN32_HANDLE(fd) (fd)
 
 /* Override libev default fd close macro. */
-#undef EV_WIN32_CLOSE_FD
+#define EV_WIN32_CLOSE_FD(fd) closesocket(fd)
 
 /* Override libev default handle conversion macro. */
-#undef EV_WIN32_HANDLE_TO_FD
+#define EV_WIN32_HANDLE_TO_FD(handle) (handle)
 
 /* Reset max file descriptor size. */
-#undef FD_SETSIZE
+#define FD_SETSIZE 2048
 
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #cmakedefine HAVE_ARPA_INET_H 1

@@ -96,7 +96,7 @@
  * format_index and args_index are 1-based.
  */
 
-#if CORK_CONFIG_HAVE_GCC_ATTRIBUTES
+#if CORK_CONFIG_HAVE_GCC_ATTRIBUTES  && !(defined(__CYGWIN__)||defined(__MINGW32__))
 #define CORK_ATTR_PRINTF(format_index, args_index) \
     __attribute__((format(printf, format_index, args_index)))
 #else
@@ -137,7 +137,7 @@
  * it's internal to the current library.
  */
 
-#if CORK_CONFIG_HAVE_GCC_ATTRIBUTES && !defined(__CYGWIN__)
+#if CORK_CONFIG_HAVE_GCC_ATTRIBUTES && !(defined(__CYGWIN__)||defined(__MINGW32__))
 #define CORK_EXPORT  __attribute__((visibility("default")))
 #define CORK_IMPORT  __attribute__((visibility("default")))
 #define CORK_LOCAL   __attribute__((visibility("hidden")))

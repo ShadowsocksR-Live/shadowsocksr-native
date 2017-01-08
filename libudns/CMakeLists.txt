@@ -16,7 +16,7 @@ set ( UDNS_SRC
   udns_rr_srv.c udns_rr_naptr.c udns_codes.c udns_jran.c
 )
 
-if (CYGWIN)
+if (WIN32)
     list ( APPEND UDNS_LIBS Ws2_32 )
 endif ()
 

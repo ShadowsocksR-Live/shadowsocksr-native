@@ -110,12 +110,12 @@ add_c_library(
         ds/managed-buffer.c
         ds/ring-buffer.c
         ds/slice.c
-        posix/directory-walker.c
-        posix/env.c
-        posix/exec.c
-        posix/files.c
+#        posix/directory-walker.c
+#        posix/env.c
+#        posix/exec.c
+#        posix/files.c
         posix/process.c
-        posix/subprocess.c
+#        posix/subprocess.c
         pthreads/thread.c
         LIBRARIES
         threads

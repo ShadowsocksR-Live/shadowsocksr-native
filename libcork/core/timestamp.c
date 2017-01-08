@@ -139,6 +139,34 @@ cork_timestamp_format_parts(const cork_timestamp ts, struct tm *tm,
     return 0;
 }
 
+#ifdef __MINGW32__
+static struct tm *__cdecl gmtime_r(const time_t *_Time, struct tm *_Tm)
+{
+    struct tm *p = gmtime(_Time);
+    if (!p)
+        return NULL;
+    if (_Tm) {
+        memcpy(_Tm, p, sizeof(struct tm));
+        return _Tm;
+    } else
+        return p;
+}
+
+static struct tm *__cdecl localtime_r(const time_t *_Time, struct tm *_Tm)
+{
+    struct tm *p = localtime(_Time);
+    if (!p)
+        return NULL;
+    if (_Tm) {
+        memcpy(_Tm, p, sizeof(struct tm));
+        return _Tm;
+    } else
+        return p;
+}
+
+#endif
+
+
 int
 cork_timestamp_format_utc(const cork_timestamp ts, const char *format,
                           struct cork_buffer *dest)

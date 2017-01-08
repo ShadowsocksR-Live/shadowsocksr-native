@@ -76,6 +76,10 @@
 #include <arpa/inet.h>
 #endif
 
+#ifdef __MINGW32__
+#include "winsock2.h"
+#endif
+
 #include "cache.h"
 #include "encrypt.h"
 #include "utils.h"

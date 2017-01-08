@@ -5,7 +5,14 @@ if (${with_crypto_library} STREQUAL "openssl")
     find_package(OpenSSL REQUIRED)
     set(USE_CRYPTO_OPENSSL 1)
     set(LIBCRYPTO
+            ${ZLIB_LIBRARIES}
             ${OPENSSL_CRYPTO_LIBRARY})
+
+    include_directories(${ZLIB_INCLUDE_DIR})
+    include_directories(${OPENSSL_INCLUDE_DIR})
+
+    list ( APPEND CMAKE_REQUIRED_INCLUDES ${ZLIB_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR})
+
 elseif(${with_crypto_library} STREQUAL "polarssl")
     find_package(polarssl REQUIRED)
     set(USE_CRYPTO_POLARSSL 1)
@@ -13,6 +20,10 @@ elseif(${with_crypto_library} STREQUAL "mbedtls")
     find_package(mbedtls REQUIRED)
     set(USE_CRYPTO_MBEDTLS 1)
 endif()
+
+find_package(PCRE REQUIRED)
+include_directories(${PCRE_INCLUDE_DIR})
+list ( APPEND CMAKE_REQUIRED_INCLUDES ${PCRE_INCLUDE_DIR})
 
 
 # Platform checks
@@ -102,8 +113,32 @@ check_function_exists ( inet_ntop HAVE_DECL_INET_NTOP )
 check_symbol_exists ( PTHREAD_PRIO_INHERIT "pthread.h" HAVE_PTHREAD_PRIO_INHERIT )
 check_symbol_exists ( PTHREAD_CREATE_JOINABLE "pthread.h" HAVE_PTHREAD_CREATE_JOINABLE )
 check_symbol_exists ( EINPROGRESS "sys/errno.h" HAVE_EINPROGRESS )
-check_symbol_exists ( WSAEWOULDBLOCK "winerrno.h" HAVE_WSAEWOULDBLOCK )
+check_symbol_exists ( WSAEWOULDBLOCK "winerror.h" HAVE_WSAEWOULDBLOCK )
 
+# winsock2.h and ws2_32 should provide these
+if(HAVE_WINSOCK2_H)
+    set(HAVE_GETHOSTNAME ON)
+    set(HAVE_SELECT ON)
+    set(HAVE_SOCKET ON)
+    set(HAVE_INET_NTOA ON)
+    set(HAVE_RECV ON)
+    set(HAVE_SEND ON)
+    set(HAVE_RECVFROM ON)
+    set(HAVE_SENDTO ON)
+    set(HAVE_GETHOSTBYNAME ON)
+    set(HAVE_GETSERVBYNAME ON)
+else(HAVE_WINSOCK2_H)
+    check_function_exists(gethostname HAVE_GETHOSTNAME)
+    check_function_exists(select HAVE_SELECT)
+    check_function_exists(socket HAVE_SOCKET)
+    check_function_exists(inet_ntoa HAVE_INET_NTOA)
+    check_function_exists(recv HAVE_RECV)
+    check_function_exists(send HAVE_SEND)
+    check_function_exists(recvfrom HAVE_RECVFROM)
+    check_function_exists(sendto HAVE_SENDTO)
+    check_function_exists(gethostbyname HAVE_GETHOSTBYNAME)
+    check_function_exists(getservbyname HAVE_GETSERVBYNAME)
+endif(HAVE_WINSOCK2_H)
 
 find_library ( HAVE_LIBPCRE pcre )
 find_library ( HAVE_LIBRT rt )
@@ -152,7 +187,11 @@ elseif(${HAVE_WSAEWOULDBLOCK})
     set (CONNECT_IN_PROGRESS WSAEWOULDBLOCK)
 endif()
 
+#SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
+
+
 
 set (HAVE_IPv6 1)
 
 ADD_DEFINITIONS(-DHAVE_CONFIG_H)
+ADD_DEFINITIONS(-D__USE_MINGW_ANSI_STDIO=1)

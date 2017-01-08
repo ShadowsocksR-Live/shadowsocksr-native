@@ -85,10 +85,14 @@ set (ss_lib_net
         ${ss_lib_common}
         ${LIBCRYPTO}
         libipset
-        pcre
+        ${PCRE_LIBRARIES}
         udns
         sodium
         )
+
+if (WIN32)
+    list ( APPEND ss_lib_net Ws2_32 )
+endif()
 
 target_link_libraries(ss_local
         ${ss_lib_net}

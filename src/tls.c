@@ -40,7 +40,7 @@
 #ifndef __MINGW32__
 #include <sys/socket.h>
 #else
-#include <win32.h>
+#include "win32.h"
 #endif
 
 #include "tls.h"
