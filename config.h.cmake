@@ -6,6 +6,8 @@
 /* errno for incomplete non-blocking connect(2) */
 #define CONNECT_IN_PROGRESS @CONNECT_IN_PROGRESS@
 
+#ifdef _WIN32
+
 /* Override libev default fd conversion macro. */
 #define EV_FD_TO_WIN32_HANDLE(fd) (fd)
 
@@ -17,6 +19,8 @@
 
 /* Reset max file descriptor size. */
 #define FD_SETSIZE 2048
+
+#endif
 
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #cmakedefine HAVE_ARPA_INET_H 1
