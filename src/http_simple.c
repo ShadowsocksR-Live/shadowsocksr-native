@@ -101,14 +101,6 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength, s
             int trans_char = 0;
             p = body_buffer = (char*)malloc(2048);
             for ( ; *body_pointer; ++body_pointer) {
-                if (*body_pointer == '\\') {
-                    trans_char = 1;
-                    continue;
-                } else if (*body_pointer == '\n') {
-                    *p = '\r';
-                    *++p = '\n';
-                    continue;
-                }
                 if (trans_char) {
                     if (*body_pointer == '\\' ) {
                         *p = '\\';
@@ -117,10 +109,18 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength, s
                         *++p = '\n';
                     } else {
                         *p = '\\';
-                        *p = *body_pointer;
+                        *++p = *body_pointer;
                     }
                     trans_char = 0;
                 } else {
+                    if (*body_pointer == '\\') {
+                        trans_char = 1;
+                        continue;
+                    } else if (*body_pointer == '\n') {
+                        *p++ = '\r';
+                        *p++ = '\n';
+                        continue;
+                    }
                     *p = *body_pointer;
                 }
                 ++p;
