@@ -243,14 +243,6 @@ int http_post_client_encode(obfs *self, char **pencryptdata, int datalength, siz
             int trans_char = 0;
             p = body_buffer = (char*)malloc(2048);
             for ( ; *body_pointer; ++body_pointer) {
-                if (*body_pointer == '\\') {
-                    trans_char = 1;
-                    continue;
-                } else if (*body_pointer == '\n') {
-                    *p = '\r';
-                    *++p = '\n';
-                    continue;
-                }
                 if (trans_char) {
                     if (*body_pointer == '\\' ) {
                         *p = '\\';
@@ -259,10 +251,16 @@ int http_post_client_encode(obfs *self, char **pencryptdata, int datalength, siz
                         *++p = '\n';
                     } else {
                         *p = '\\';
-                        *p = *body_pointer;
+                        *++p = *body_pointer;
                     }
                     trans_char = 0;
                 } else {
+                    if (*body_pointer == '\\') {
+                        trans_char = 1;
+                        continue;
+                    } else if (*body_pointer == '\n') {
+                        *p++ = '\r';
+                    }
                     *p = *body_pointer;
                 }
                 ++p;
