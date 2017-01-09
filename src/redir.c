@@ -491,7 +491,8 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
             buffer_t *abuf = &ss_addr_to_send;
             balloc(abuf, BUF_SIZE);
 
-            if (server->hostname_len > 0) { // HTTP/SNI
+            if (server->hostname_len > 0
+                    && validate_hostname(server->hostname, server->hostname_len)) { // HTTP/SNI
                 uint16_t port;
                 if (AF_INET6 == server->destaddr.ss_family) { // IPv6
                     port = (((struct sockaddr_in6 *)&(server->destaddr))->sin6_port);
