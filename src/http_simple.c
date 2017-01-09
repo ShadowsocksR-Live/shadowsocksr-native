@@ -118,8 +118,6 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength, s
                         continue;
                     } else if (*body_pointer == '\n') {
                         *p++ = '\r';
-                        *p++ = '\n';
-                        continue;
                     }
                     *p = *body_pointer;
                 }
