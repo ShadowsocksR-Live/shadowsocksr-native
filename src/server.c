@@ -134,7 +134,10 @@ static struct cork_dllist connections;
 static void
 stat_update_cb(EV_P_ ev_timer *watcher, int revents)
 {
+#ifndef __MINGW32__
     struct sockaddr_un svaddr, claddr;
+#endif
+
     int sfd = -1;
     size_t msgLen;
     char resp[BUF_SIZE];
@@ -150,6 +153,7 @@ stat_update_cb(EV_P_ ev_timer *watcher, int revents)
     parse_addr(manager_address, &ip_addr);
 
     if (ip_addr.host == NULL || ip_addr.port == NULL) {
+#ifndef __MINGW32__
         sfd = socket(AF_UNIX, SOCK_DGRAM, 0);
         if (sfd == -1) {
             ERROR("stat_socket");
@@ -180,6 +184,10 @@ stat_update_cb(EV_P_ ev_timer *watcher, int revents)
         }
 
         unlink(claddr.sun_path);
+#else
+        ERROR("unsupported platform");
+        return;
+#endif
     } else {
         struct sockaddr_storage storage;
         memset(&storage, 0, sizeof(struct sockaddr_storage));
