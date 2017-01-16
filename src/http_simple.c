@@ -224,7 +224,7 @@ int http_post_client_encode(obfs *self, char **pencryptdata, int datalength, siz
     char hostport[128];
     int head_size = self->server.head_len + (xorshift128plus() & 0x3F);
     int outlength;
-    char * out_buffer = (char*)malloc(datalength + 2048);
+    char * out_buffer = (char*)malloc(datalength + 4096);
     char * body_buffer = NULL;
     if (head_size > datalength)
         head_size = datalength;
@@ -272,11 +272,11 @@ int http_post_client_encode(obfs *self, char **pencryptdata, int datalength, siz
     }
     host_num = xorshift128plus() % host_num;
     if (self->server.port == 80)
-        sprintf(hostport, "%s", phost[host_num]);
+        snprintf(hostport, sizeof(hostport), "%s", phost[host_num]);
     else
-        sprintf(hostport, "%s:%d", phost[host_num], self->server.port);
+        snprintf(hostport, sizeof(hostport), "%s:%d", phost[host_num], self->server.port);
     if (body_buffer) {
-        sprintf(out_buffer,
+        snprintf(out_buffer, 2048,
             "POST /%s HTTP/1.1\r\n"
             "Host: %s\r\n"
             "%s\r\n\r\n",
@@ -286,7 +286,7 @@ int http_post_client_encode(obfs *self, char **pencryptdata, int datalength, siz
     } else {
         char result[33] = {0};
         boundary(result);
-        sprintf(out_buffer,
+        snprintf(out_buffer, 2048,
             "POST /%s HTTP/1.1\r\n"
             "Host: %s\r\n"
             "User-Agent: %s\r\n"
