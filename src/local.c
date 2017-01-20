@@ -738,7 +738,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             if (server->obfs_plugin)
                 server->obfs_plugin->set_server_info(server->obfs, &_server_info);
 
-            _server_info.param = NULL;
+            _server_info.param = server->listener->protocol_param;
             _server_info.g_data = server->listener->list_protocol_global[remote->remote_index];
 
             if (server->protocol_plugin)
@@ -1290,6 +1290,7 @@ main(int argc, char **argv)
     char *password = NULL;
     char *timeout = NULL;
     char *protocol = NULL; // SSR
+    char *protocol_param = NULL; // SSR
     char *method = NULL;
     char *obfs = NULL; // SSR
     char *obfs_param = NULL; // SSR
@@ -1377,6 +1378,7 @@ main(int argc, char **argv)
             obfs = optarg;
             break;
         case 'G':
+            protocol_param = optarg;
             break;
         case 'g':
             obfs_param = optarg;
@@ -1466,6 +1468,10 @@ main(int argc, char **argv)
         if (protocol == NULL) {
             protocol = conf->protocol;
             LOGI("protocol %s", protocol);
+        }
+        if (protocol_param == NULL) {
+            protocol_param = conf->protocol_param;
+            LOGI("protocol_param %s", protocol_param);
         }
         if (method == NULL) {
             method = conf->method;
@@ -1601,6 +1607,7 @@ main(int argc, char **argv)
     listen_ctx.iface = iface;
     // SSR beg
     listen_ctx.protocol_name = protocol;
+    listen_ctx.protocol_param = protocol_param;
     listen_ctx.method = m;
     listen_ctx.obfs_name = obfs;
     listen_ctx.obfs_param = obfs_param;
@@ -1647,7 +1654,7 @@ main(int argc, char **argv)
     if (mode != TCP_ONLY) {
         LOGI("udprelay enabled");
         init_udprelay(local_addr, local_port, listen_ctx.remote_addr[0],
-                      get_sockaddr_len(listen_ctx.remote_addr[0]), mtu, m, auth, listen_ctx.timeout, iface, protocol);
+                      get_sockaddr_len(listen_ctx.remote_addr[0]), mtu, m, auth, listen_ctx.timeout, iface, protocol, protocol_param);
     }
 
 #ifdef HAVE_LAUNCHD
@@ -1826,7 +1833,7 @@ start_ss_local_server(profile_t profile)
         LOGI("udprelay enabled");
         struct sockaddr *addr = (struct sockaddr *)storage;
         init_udprelay(local_addr, local_port_str, addr,
-                      get_sockaddr_len(addr), mtu, m, auth, timeout, NULL, NULL);
+                      get_sockaddr_len(addr), mtu, m, auth, timeout, NULL, NULL, NULL);
     }
 
     if (strcmp(local_addr, ":") > 0)

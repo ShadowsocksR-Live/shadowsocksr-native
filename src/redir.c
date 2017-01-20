@@ -882,7 +882,7 @@ accept_cb(EV_P_ ev_io *w, int revents)
     if (server->obfs_plugin)
         server->obfs_plugin->set_server_info(server->obfs, &_server_info);
 
-    _server_info.param = NULL;
+    _server_info.param = listener->protocol_param;
     _server_info.g_data = listener->list_protocol_global[remote->remote_index];
 
     if (server->protocol_plugin)
@@ -923,6 +923,7 @@ main(int argc, char **argv)
     char *password = NULL;
     char *timeout = NULL;
     char *protocol = NULL; // SSR
+    char *protocol_param = NULL; // SSR
     char *method = NULL;
     char *obfs = NULL; // SSR
     char *obfs_param = NULL; // SSR
@@ -994,6 +995,7 @@ main(int argc, char **argv)
             obfs = optarg;
             break;
         case 'G':
+            protocol_param = optarg;
             break;
         case 'g':
             obfs_param = optarg;
@@ -1073,6 +1075,10 @@ main(int argc, char **argv)
         if (protocol == NULL) {
             protocol = conf->protocol;
             LOGI("protocol %s", protocol);
+        }
+        if (protocol_param == NULL) {
+            protocol_param = conf->protocol_param;
+            LOGI("protocol_param %s", protocol_param);
         }
         if (method == NULL) {
             method = conf->method;
@@ -1196,6 +1202,7 @@ main(int argc, char **argv)
     listen_ctx.timeout = atoi(timeout);
     // SSR beg
     listen_ctx.protocol_name = protocol;
+    listen_ctx.protocol_param = protocol_param;
     listen_ctx.method = m;
     listen_ctx.obfs_name = obfs;
     listen_ctx.obfs_param = obfs_param;
@@ -1230,7 +1237,7 @@ main(int argc, char **argv)
     if (mode != TCP_ONLY) {
         LOGI("UDP relay enabled");
         init_udprelay(local_addr, local_port, listen_ctx.remote_addr[0],
-                      get_sockaddr_len(listen_ctx.remote_addr[0]), mtu, m, auth, listen_ctx.timeout, NULL, protocol);
+                      get_sockaddr_len(listen_ctx.remote_addr[0]), mtu, m, auth, listen_ctx.timeout, NULL, protocol, protocol_param);
     }
 
     if (mode == UDP_ONLY) {

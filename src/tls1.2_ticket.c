@@ -152,18 +152,22 @@ int tls12_ticket_auth_client_encode(obfs *self, char **pencryptdata, int datalen
         int pos;
 
         char sni[256] = {0};
-        if (self->server.param && strlen(self->server.param) == 0)
-            self->server.param = NULL;
-        strncpy(hosts, self->server.param ? self->server.param : self->server.host, sizeof hosts);
+        char* param = NULL;
+        if (!self->server.param || strlen(self->server.param) > 0)
+            param = self->server.param;
+        else
+            param = self->server.host;
+        strncpy(hosts, param, sizeof hosts);
         phost[host_num++] = hosts;
         for (pos = 0; hosts[pos]; ++pos) {
             if (hosts[pos] == ',') {
                 phost[host_num++] = &hosts[pos + 1];
+                hosts[pos] = 0;
             }
         }
         host_num = xorshift128plus() % host_num;
 
-        sprintf(sni, "%s", phost[host_num]);
+        snprintf(sni, sizeof sni, "%s", phost[host_num]);
         int sni_len = strlen(sni);
         if (sni_len > 0 && sni[sni_len - 1] >= '0' && sni[sni_len - 1] <= '9')
             sni_len = 0;

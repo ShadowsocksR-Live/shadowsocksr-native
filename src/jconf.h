@@ -54,6 +54,7 @@ typedef struct {
     char *local_port;
     char *password;
     char *protocol; // SSR
+    char *protocol_param; // SSR
     char *method;
     char *obfs; // SSR
     char *obfs_param; // SSR
