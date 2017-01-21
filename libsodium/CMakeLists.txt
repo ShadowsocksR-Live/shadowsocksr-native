@@ -19,13 +19,13 @@ set (DISABLE_ASM ON)
 set (DISABLE_PIE OFF)
 set (DISABLE_SSP ON)
 
-OPTION(LIBSODIUM_BUILD_SHARED_LIBRARIES "Build the library dynamically (ON/TRUE) or statically (OFF/FALSE).")
-OPTION(ENABLE_BLOCKING_RANDOM           "Enable this switch only if /dev/urandom is totally broken on the target platform.")
-OPTION(ENABLE_MINIMAL_BUILD             "Only compile the minimum set of functions required for the high-level API.")
-OPTION(ENABLE_TESTS                     "Enable testing.")
-OPTION(DISABLE_ASM                      "Disable AMD64 assembly implementations.")
-OPTION(DISABLE_PIE                      "Do not produce position independent executables.")
-OPTION(DISABLE_SSP                      "Do not compile with -fstack-protector.")
+#OPTION(LIBSODIUM_BUILD_SHARED_LIBRARIES "Build the library dynamically (ON/TRUE) or statically (OFF/FALSE).")
+#OPTION(ENABLE_BLOCKING_RANDOM           "Enable this switch only if /dev/urandom is totally broken on the target platform.")
+#OPTION(ENABLE_MINIMAL_BUILD             "Only compile the minimum set of functions required for the high-level API.")
+#OPTION(ENABLE_TESTS                     "Enable testing.")
+#OPTION(DISABLE_ASM                      "Disable AMD64 assembly implementations.")
+#OPTION(DISABLE_PIE                      "Do not produce position independent executables.")
+#OPTION(DISABLE_SSP                      "Do not compile with -fstack-protector.")
 
 
 #----------------------------------------------------------
