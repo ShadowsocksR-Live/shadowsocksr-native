@@ -87,7 +87,7 @@ endif()
 #-----------------------------------------------------------------------
 # Include our subdirectories
 
-add_subdirectory(include)
+#add_subdirectory(include)
 #add_subdirectory(src)
 
 add_c_library(
