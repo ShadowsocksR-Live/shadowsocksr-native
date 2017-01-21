@@ -77,7 +77,12 @@ include(GNUInstallDirs)
 
 find_package(Threads)
 set(THREADS_LDFLAGS "${CMAKE_THREAD_LIBS_INIT}")
-set(THREADS_STATIC_LDFLAGS "${CMAKE_THREAD_LIBS_INIT}")
+if(CMAKE_THREAD_LIBS_INIT)
+    set(THREADS_STATIC_LDFLAGS "-static ${CMAKE_THREAD_LIBS_INIT}")
+else()
+    set(THREADS_STATIC_LDFLAGS "-static")
+endif()
+
 
 #-----------------------------------------------------------------------
 # Include our subdirectories
