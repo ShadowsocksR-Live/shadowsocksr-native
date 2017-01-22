@@ -44,6 +44,17 @@ set(SOURCE_FILES_MANAGER
         json.c
         manager.c)
 
+set(SOURCE_FILES_REDIR
+        utils.c
+        jconf.c
+        json.c
+        encrypt.c
+        netutils.c
+        cache.c
+        udprelay.c
+        redir.c
+        ${SOURCE_FILES_SNI})
+
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${libev_include_dirs})
 include_directories(${libcork_include_dirs})
@@ -62,6 +73,7 @@ add_executable(ss_local ${SOURCE_FILES_LOCAL})
 add_executable(ss_tunnel ${SOURCE_FILES_TUNNEL})
 add_executable(ss_server ${SOURCE_FILES_SERVER})
 add_executable(ss_manager ${SOURCE_FILES_MANAGER})
+add_executable(ss_redir ${SOURCE_FILES_REDIR})
 
 set_target_properties(ss_local PROPERTIES
         COMPILE_DEFINITIONS MODULE_LOCAL
@@ -74,6 +86,9 @@ set_target_properties(ss_server PROPERTIES
         )
 set_target_properties(ss_manager PROPERTIES
         COMPILE_DEFINITIONS MODULE_MANAGER
+        )
+set_target_properties(ss_redir PROPERTIES
+        COMPILE_DEFINITIONS MODULE_REDIR
         )
 
 set (ss_lib_common
@@ -105,4 +120,7 @@ target_link_libraries(ss_server
         )
 target_link_libraries(ss_manager
         ${ss_lib_common}
+        )
+target_link_libraries(ss_redir
+        ${ss_lib_net}
         )
