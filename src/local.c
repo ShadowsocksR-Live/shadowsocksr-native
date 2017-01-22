@@ -1585,7 +1585,7 @@ main(int argc, char **argv)
 
     // Setup keys
     LOGI("initializing ciphers... %s", method);
-    int m = enc_init(&cipher_env, password, method);
+    enc_init(&cipher_env, password, method);
 
     // Setup proxy context
     listen_ctx_t listen_ctx;
@@ -1787,7 +1787,7 @@ start_ss_local_server(profile_t profile)
 
     // Setup keys
     LOGI("initializing ciphers... %s", method);
-    int m = enc_init(&cipher_env, password, method);
+    enc_init(&cipher_env, password, method);
 
     struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
     memset(storage, 0, sizeof(struct sockaddr_storage));
