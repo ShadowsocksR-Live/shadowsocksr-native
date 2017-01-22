@@ -107,6 +107,17 @@ typedef struct {
 #endif
 
 typedef struct {
+    uint8_t *enc_table;
+    uint8_t *dec_table;
+    uint8_t enc_key[MAX_KEY_LENGTH];
+    int enc_key_len;
+    int enc_iv_len;
+    int enc_method;
+
+    struct cache *iv_cache;
+} cipher_env_t;
+
+typedef struct {
     cipher_evp_t *evp;
 #ifdef USE_CRYPTO_APPLECC
     cipher_cc_t cc;
@@ -189,34 +200,36 @@ typedef struct enc_ctx {
 
 void bytes_to_key_with_size(const char *pass, size_t len, uint8_t *md, size_t md_size);
 
-int ss_encrypt_all(buffer_t *plaintext, int method, int auth, size_t capacity);
-int ss_decrypt_all(buffer_t *ciphertext, int method, int auth, size_t capacity);
-int ss_encrypt(buffer_t *plaintext, enc_ctx_t *ctx, size_t capacity);
-int ss_decrypt(buffer_t *ciphertext, enc_ctx_t *ctx, size_t capacity);
+int ss_encrypt_all(cipher_env_t* env, buffer_t *plaintext, int auth, size_t capacity);
+int ss_decrypt_all(cipher_env_t* env, buffer_t *ciphertext, int auth, size_t capacity);
+int ss_encrypt(cipher_env_t* env, buffer_t *plaintext, enc_ctx_t *ctx, size_t capacity);
+int ss_decrypt(cipher_env_t* env, buffer_t *ciphertext, enc_ctx_t *ctx, size_t capacity);
 
-void enc_ctx_init(int method, enc_ctx_t *ctx, int enc);
-int enc_init(const char *pass, const char *method);
-int enc_get_iv_len(void);
-uint8_t* enc_get_key(void);
-int enc_get_key_len(void);
-void cipher_context_release(cipher_ctx_t *evp);
+int enc_init(cipher_env_t *env, const char *pass, const char *method);
+void enc_ctx_init(cipher_env_t *env, enc_ctx_t *ctx, int enc);
+void enc_ctx_release(cipher_env_t* env, enc_ctx_t *ctx);
+int enc_get_iv_len(cipher_env_t* env);
+uint8_t* enc_get_key(cipher_env_t* env);
+int enc_get_key_len(cipher_env_t* env);
 unsigned char *enc_md5(const unsigned char *d, size_t n, unsigned char *md);
 
-int ss_md5_hmac(char *auth, char *msg, int msg_len, uint8_t *iv);
+int ss_md5_hmac(cipher_env_t* env, char *auth, char *msg, int msg_len, uint8_t *iv);
 int ss_md5_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len);
 int ss_md5_hash_func(char *auth, char *msg, int msg_len);
-int ss_sha1_hmac(char *auth, char *msg, int msg_len, uint8_t *iv);
+int ss_sha1_hmac(cipher_env_t* env, char *auth, char *msg, int msg_len, uint8_t *iv);
 int ss_sha1_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len);
 int ss_sha1_hash_func(char *auth, char *msg, int msg_len);
 int ss_aes_128_cbc(char *encrypt, char *out_data, char *key);
-int ss_onetimeauth(buffer_t *buf, uint8_t *iv, size_t capacity);
-int ss_onetimeauth_verify(buffer_t *buf, uint8_t *iv);
+int ss_onetimeauth(cipher_env_t* env, buffer_t *buf, uint8_t *iv, size_t capacity);
+int ss_onetimeauth_verify(cipher_env_t* env, buffer_t *buf, uint8_t *iv);
 
-int ss_check_hash(buffer_t *buf, chunk_t *chunk, enc_ctx_t *ctx, size_t capacity);
-int ss_gen_hash(buffer_t *buf, uint32_t *counter, enc_ctx_t *ctx, size_t capacity);
+int ss_check_hash(cipher_env_t* env, buffer_t *buf, chunk_t *chunk, enc_ctx_t *ctx, size_t capacity);
+int ss_gen_hash(cipher_env_t* env, buffer_t *buf, uint32_t *counter, enc_ctx_t *ctx, size_t capacity);
 
 int balloc(buffer_t *ptr, size_t capacity);
 int brealloc(buffer_t *ptr, size_t len, size_t capacity);
 void bfree(buffer_t *ptr);
+
+extern cipher_env_t cipher_env;
 
 #endif // _ENCRYPT_H

@@ -45,7 +45,7 @@
 typedef struct server_ctx {
     ev_io io;
     int fd;
-    int method;
+//    int method;
     int auth;
     int timeout;
     const char *iface;

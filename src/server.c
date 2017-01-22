@@ -668,7 +668,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     // handle incomplete header part 1
     if (server->stage == STAGE_INIT) {
         buf->len += r;
-        if (buf->len <= enc_get_iv_len() + 1) {
+        if (buf->len <= enc_get_iv_len(&cipher_env) + 1) {
             // wait for more
             return;
         }
@@ -676,7 +676,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         buf->len = r;
     }
 
-    int err = ss_decrypt(buf, server->d_ctx, BUF_SIZE);
+    int err = ss_decrypt(&cipher_env, buf, server->d_ctx, BUF_SIZE);
 
     if (err) {
         report_addr(server->fd, MALICIOUS);
@@ -730,7 +730,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     // handshake and transmit data
     if (server->stage == STAGE_STREAM) {
-        if (server->auth && !ss_check_hash(remote->buf, server->chunk, server->d_ctx, BUF_SIZE)) {
+        if (server->auth && !ss_check_hash(&cipher_env, remote->buf, server->chunk, server->d_ctx, BUF_SIZE)) {
             LOGE("hash error");
             report_addr(server->fd, BAD);
             close_and_free_server(EV_A_ server);
@@ -807,7 +807,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             }
 
             server->buf->len = offset + header_len + ONETIMEAUTH_BYTES;
-            if (ss_onetimeauth_verify(server->buf, server->d_ctx->evp.iv)) {
+            if (ss_onetimeauth_verify(&cipher_env, server->buf, server->d_ctx->evp.iv)) {
                 report_addr(server->fd, BAD);
                 close_and_free_server(EV_A_ server);
                 return;
@@ -943,7 +943,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 LOGI("connect to %s:%d", host, ntohs(port));
         }
 
-        if (server->auth && !ss_check_hash(server->buf, server->chunk, server->d_ctx, BUF_SIZE)) {
+        if (server->auth && !ss_check_hash(&cipher_env, server->buf, server->chunk, server->d_ctx, BUF_SIZE)) {
             LOGE("hash error");
             report_addr(server->fd, BAD);
             close_and_free_server(EV_A_ server);
@@ -1187,7 +1187,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     rx += r;
 
     server->buf->len = r;
-    int err = ss_encrypt(server->buf, server->e_ctx, BUF_SIZE);
+    int err = ss_encrypt(&cipher_env, server->buf, server->e_ctx, BUF_SIZE);
 
     if (err) {
         LOGE("invalid password or cipher");
@@ -1403,8 +1403,8 @@ new_server(int fd, listen_ctx_t *listener)
     if (listener->method) {
         server->e_ctx = ss_malloc(sizeof(enc_ctx_t));
         server->d_ctx = ss_malloc(sizeof(enc_ctx_t));
-        enc_ctx_init(listener->method, server->e_ctx, 1);
-        enc_ctx_init(listener->method, server->d_ctx, 0);
+        enc_ctx_init(&cipher_env, server->e_ctx, 1);
+        enc_ctx_init(&cipher_env, server->d_ctx, 0);
     } else {
         server->e_ctx = NULL;
         server->d_ctx = NULL;
@@ -1444,11 +1444,11 @@ free_server(server_t *server)
         server->remote->server = NULL;
     }
     if (server->e_ctx != NULL) {
-        cipher_context_release(&server->e_ctx->evp);
+        enc_ctx_release(&cipher_env, server->e_ctx);
         ss_free(server->e_ctx);
     }
     if (server->d_ctx != NULL) {
-        cipher_context_release(&server->d_ctx->evp);
+        enc_ctx_release(&cipher_env, server->d_ctx);
         ss_free(server->d_ctx);
     }
     if (server->buf != NULL) {
@@ -1820,7 +1820,7 @@ main(int argc, char **argv)
 
     // setup keys
     LOGI("initializing ciphers... %s", method);
-    int m = enc_init(password, method);
+    int m = enc_init(&cipher_env, password, method);
 
     // initialize ev loop
     struct ev_loop *loop = EV_DEFAULT;
@@ -1875,7 +1875,7 @@ main(int argc, char **argv)
 
         // Setup UDP
         if (mode != TCP_ONLY) {
-            init_udprelay(server_host[index], server_port, mtu, m,
+            init_udprelay(server_host[index], server_port, mtu,
                           auth, atoi(timeout), iface, NULL, NULL);
         }
 

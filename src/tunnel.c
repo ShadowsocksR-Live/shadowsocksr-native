@@ -204,7 +204,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     remote->buf->len = r;
 
     if (auth) {
-        ss_gen_hash(remote->buf, &remote->counter, server->e_ctx, BUF_SIZE);
+        ss_gen_hash(&cipher_env, remote->buf, &remote->counter, server->e_ctx, BUF_SIZE);
     }
 
     // SSR beg
@@ -214,7 +214,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             remote->buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
         }
     }
-    int err = ss_encrypt(remote->buf, server->e_ctx, BUF_SIZE);
+    int err = ss_encrypt(&cipher_env, remote->buf, server->e_ctx, BUF_SIZE);
 
     if (err) {
         LOGE("server invalid password or cipher");
@@ -373,7 +373,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     if ( server->buf->len == 0 )
         return;
 
-    int err = ss_decrypt(server->buf, server->d_ctx, BUF_SIZE);
+    int err = ss_decrypt(&cipher_env, server->buf, server->d_ctx, BUF_SIZE);
 
     if (err) {
         LOGE("invalid password or cipher");
@@ -491,7 +491,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
 
             if (auth) {
                 abuf->array[0] |= ONETIMEAUTH_FLAG;
-                ss_onetimeauth(abuf, server->e_ctx->evp.iv, BUF_SIZE);
+                ss_onetimeauth(&cipher_env, abuf, server->e_ctx->evp.iv, BUF_SIZE);
             }
 
             if (remote->buf->len > 0) {
@@ -520,7 +520,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
                 }
             }
 
-            int err = ss_encrypt(remote->buf, server->e_ctx, BUF_SIZE);
+            int err = ss_encrypt(&cipher_env, remote->buf, server->e_ctx, BUF_SIZE);
             if (err) {
                 LOGE("invalid password or cipher");
                 close_and_free_remote(EV_A_ remote);
@@ -669,8 +669,8 @@ new_server(int fd, int method)
     if (method) {
         server->e_ctx = ss_malloc(sizeof(struct enc_ctx));
         server->d_ctx = ss_malloc(sizeof(struct enc_ctx));
-        enc_ctx_init(method, server->e_ctx, 1);
-        enc_ctx_init(method, server->d_ctx, 0);
+        enc_ctx_init(&cipher_env, server->e_ctx, 1);
+        enc_ctx_init(&cipher_env, server->d_ctx, 0);
     } else {
         server->e_ctx = NULL;
         server->d_ctx = NULL;
@@ -690,11 +690,11 @@ free_server(server_t *server)
             server->remote->server = NULL;
         }
         if (server->e_ctx != NULL) {
-            cipher_context_release(&server->e_ctx->evp);
+            enc_ctx_release(&cipher_env, server->e_ctx);
             ss_free(server->e_ctx);
         }
         if (server->d_ctx != NULL) {
-            cipher_context_release(&server->d_ctx->evp);
+            enc_ctx_release(&cipher_env, server->d_ctx);
             ss_free(server->d_ctx);
         }
         if (server->buf) {
@@ -1127,7 +1127,7 @@ main(int argc, char **argv)
 
     // Setup keys
     LOGI("initializing ciphers... %s", method);
-    int m = enc_init(password, method);
+    int m = enc_init(&cipher_env, password, method);
 
     // Setup proxy context
     struct listen_ctx listen_ctx;
@@ -1187,7 +1187,7 @@ main(int argc, char **argv)
         LOGI("UDP relay enabled");
         init_udprelay(local_addr, local_port, listen_ctx.remote_addr[0],
                       get_sockaddr_len(listen_ctx.remote_addr[0]),
-                      tunnel_addr, mtu, m, auth, listen_ctx.timeout, iface, protocol, protocol_param);
+                      tunnel_addr, mtu, auth, listen_ctx.timeout, iface, protocol, protocol_param);
     }
 
     if (mode == UDP_ONLY) {
