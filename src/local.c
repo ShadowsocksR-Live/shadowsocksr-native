@@ -1787,7 +1787,7 @@ start_ss_local_server(profile_t profile)
 
     // Setup keys
     LOGI("initializing ciphers... %s", method);
-    int m = enc_init(password, method);
+    int m = enc_init(&cipher_env, password, method);
 
     struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
     memset(storage, 0, sizeof(struct sockaddr_storage));
@@ -1804,7 +1804,7 @@ start_ss_local_server(profile_t profile)
     listen_ctx.remote_addr    = remote_addr_tmp;
     listen_ctx.remote_addr[0] = (struct sockaddr *)storage;
     listen_ctx.timeout        = timeout;
-    listen_ctx.method         = m;
+//    listen_ctx.method         = m;
     listen_ctx.iface          = NULL;
     listen_ctx.mptcp          = mptcp;
 
@@ -1833,7 +1833,7 @@ start_ss_local_server(profile_t profile)
         LOGI("udprelay enabled");
         struct sockaddr *addr = (struct sockaddr *)storage;
         init_udprelay(local_addr, local_port_str, addr,
-                      get_sockaddr_len(addr), mtu, m, auth, timeout, NULL, NULL, NULL);
+                      get_sockaddr_len(addr), mtu, auth, timeout, NULL, NULL, NULL);
     }
 
     if (strcmp(local_addr, ":") > 0)
