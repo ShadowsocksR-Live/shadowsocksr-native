@@ -99,7 +99,7 @@ dump(char *tag, char *text, int len)
 
 #endif
 
-cipher_env_t cipher_env;
+//cipher_env_t cipher_env;
 
 static const char *supported_ciphers[CIPHER_NUM] = {
     "table",

@@ -102,6 +102,8 @@ char *prefix;
 #endif
 
 #include "includeobfs.h" // I don't want to modify makefile
+#include "jconf.h"
+#include "obfs/obfs.h"
 
 static int acl       = 0;
 static int mode = TCP_ONLY;
@@ -132,9 +134,11 @@ static void free_server(server_t *server);
 static void close_and_free_server(EV_P_ server_t *server);
 
 static remote_t *new_remote(int fd, int timeout);
-static server_t *new_server(int fd);
+static server_t *new_server(int fd, listen_ctx_t* profile);
 
-static struct cork_dllist connections;
+static struct cork_dllist inactive_profiles;
+static listen_ctx_t *current_profile;
+static struct cork_dllist all_connections;
 
 #ifndef __MINGW32__
 int
@@ -237,11 +241,11 @@ static void
 free_connections(struct ev_loop *loop)
 {
     struct cork_dllist_item *curr, *next;
-    cork_dllist_foreach_void(&connections, curr, next) {
-        server_t *server = cork_container_of(curr, server_t, entries);
+    cork_dllist_foreach_void(&all_connections, curr, next) {
+        server_t *server = cork_container_of(curr, server_t, entries_all);
         remote_t *remote = server->remote;
-        close_and_free_server(loop, server);
         close_and_free_remote(loop, remote);
+        close_and_free_server(loop, server);
     }
 }
 
@@ -294,14 +298,15 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             // insert shadowsocks header
             if (!remote->direct) {
+                server_def_t *server_env = server->server_env;
                 // SSR beg
-                if (server->protocol_plugin) {
-                    obfs_class *protocol_plugin = server->protocol_plugin;
+                if (server_env->protocol_plugin) {
+                    obfs_class *protocol_plugin = server_env->protocol_plugin;
                     if (protocol_plugin->client_pre_encrypt) {
                         remote->buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
                     }
                 }
-                int err = ss_encrypt(&cipher_env, remote->buf, server->e_ctx, BUF_SIZE);
+                int err = ss_encrypt(&server_env->cipher, remote->buf, server->e_ctx, BUF_SIZE);
 
                 if (err) {
                     LOGE("server invalid password or cipher");
@@ -310,8 +315,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     return;
                 }
 
-                if (server->obfs_plugin) {
-                    obfs_class *obfs_plugin = server->obfs_plugin;
+                if (server_env->obfs_plugin) {
+                    obfs_class *obfs_plugin = server_env->obfs_plugin;
                     if (obfs_plugin->client_encode) {
                         remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
                     }
@@ -346,7 +351,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 if (!fast_open || remote->direct) {
                     // connecting, wait until connected
-                    int r = connect(remote->fd, (struct sockaddr *)&(remote->addr), remote->addr_len);
+                    int r = connect(remote->fd, (struct sockaddr *)&(remote->direct_addr.addr), remote->direct_addr.addr_len);
 
                     if (r == -1 && errno != CONNECT_IN_PROGRESS) {
                         ERROR("connect");
@@ -700,7 +705,14 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             // Not match ACL
             if (remote == NULL) {
-                remote = create_remote(server->listener, NULL);
+                // pick a server
+                listen_ctx_t *profile = server->listener;
+                int index = rand() % profile->server_num;
+                server_def_t *server_env = &profile->servers[index];
+
+                server->server_env = server_env;
+
+                remote = create_remote(profile, (struct sockaddr *) server_env->addr);
             }
 
             if (remote == NULL) {
@@ -710,40 +722,50 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 return;
             }
 
-            // SSR beg
-            if (server->listener->list_obfs_global[remote->remote_index] == NULL && server->obfs_plugin) {
-                server->listener->list_obfs_global[remote->remote_index] = server->obfs_plugin->init_data();
-            }
-            if (server->listener->list_protocol_global[remote->remote_index] == NULL && server->protocol_plugin) {
-                server->listener->list_protocol_global[remote->remote_index] = server->protocol_plugin->init_data();
-            }
-
-            server_info _server_info;
-            memset(&_server_info, 0, sizeof(server_info));
-            strcpy(_server_info.host, inet_ntoa(((struct sockaddr_in*)&remote->addr)->sin_addr));
-            _server_info.port = ((struct sockaddr_in*)&remote->addr)->sin_port;
-            _server_info.port = _server_info.port >> 8 | _server_info.port << 8;
-            _server_info.param = server->listener->obfs_param;
-            _server_info.g_data = server->listener->list_obfs_global[remote->remote_index];
-            _server_info.head_len = get_head_size(ss_addr_to_send.array, 320, 30);
-            _server_info.iv = server->e_ctx->evp.iv;
-            _server_info.iv_len = enc_get_iv_len(&cipher_env);
-            _server_info.key = enc_get_key(&cipher_env);
-            _server_info.key_len = enc_get_key_len(&cipher_env);
-            _server_info.tcp_mss = 1448;
-            _server_info.buffer_size = BUF_SIZE;
-
-            if (server->obfs_plugin)
-                server->obfs_plugin->set_server_info(server->obfs, &_server_info);
-
-            _server_info.param = server->listener->protocol_param;
-            _server_info.g_data = server->listener->list_protocol_global[remote->remote_index];
-
-            if (server->protocol_plugin)
-                server->protocol_plugin->set_server_info(server->protocol, &_server_info);
-            // SSR end
-
             if (!remote->direct) {
+                server_def_t *server_env = server->server_env;
+
+                // init server cipher
+                if (server_env->cipher.enc_method > TABLE) {
+                    server->e_ctx = ss_malloc(sizeof(struct enc_ctx));
+                    server->d_ctx = ss_malloc(sizeof(struct enc_ctx));
+                    enc_ctx_init(&server_env->cipher, server->e_ctx, 1);
+                    enc_ctx_init(&server_env->cipher, server->d_ctx, 0);
+                } else {
+                    server->e_ctx = NULL;
+                    server->d_ctx = NULL;
+                }
+                // SSR beg
+                server_info _server_info;
+                memset(&_server_info, 0, sizeof(server_info));
+                strcpy(_server_info.host, inet_ntoa(((struct sockaddr_in*)&server_env->addr)->sin_addr));
+                _server_info.port = ((struct sockaddr_in*)&server_env->addr)->sin_port;
+                _server_info.port = _server_info.port >> 8 | _server_info.port << 8;
+                _server_info.param = server_env->obfs_param;
+                _server_info.g_data = server_env->obfs_global;
+                _server_info.head_len = get_head_size(ss_addr_to_send.array, 320, 30);
+                _server_info.iv = server->e_ctx->evp.iv;
+                _server_info.iv_len = enc_get_iv_len(&server_env->cipher);
+                _server_info.key = enc_get_key(&server_env->cipher);
+                _server_info.key_len = enc_get_key_len(&server_env->cipher);
+                _server_info.tcp_mss = 1448;
+                _server_info.buffer_size = BUF_SIZE;
+                _server_info.cipher_env = &server_env->cipher;
+
+                if (server_env->obfs_plugin) {
+                    server->obfs = server_env->obfs_plugin->new_obfs();
+                    server_env->obfs_plugin->set_server_info(server->obfs, &_server_info);
+                }
+
+                _server_info.param = server_env->protocol_param;
+                _server_info.g_data = server_env->protocol_global;
+
+                if (server_env->protocol_plugin) {
+                    server->protocol = server_env->protocol_plugin->new_obfs();
+                    server_env->protocol_plugin->set_server_info(server->protocol, &_server_info);
+                }
+                // SSR end
+
                 brealloc(remote->buf, buf->len + abuf->len, BUF_SIZE);
                 memcpy(remote->buf->array, abuf->array, abuf->len);
                 remote->buf->len = buf->len + abuf->len;
@@ -765,6 +787,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         }
     }
 }
+
 
 static void
 server_send_cb(EV_P_ ev_io *w, int revents)
@@ -840,6 +863,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     remote_ctx_t *remote_recv_ctx = (remote_ctx_t *)w;
     remote_t *remote              = remote_recv_ctx->remote;
     server_t *server              = remote->server;
+    server_def_t *server_env      = server->server_env;
 
     ev_timer_again(EV_A_ & remote->recv_ctx->watcher);
 
@@ -876,8 +900,8 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
         if ( r == 0 )
             return;
         // SSR beg
-        if (server->obfs_plugin) {
-            obfs_class *obfs_plugin = server->obfs_plugin;
+        if (server_env->obfs_plugin) {
+            obfs_class *obfs_plugin = server_env->obfs_plugin;
             if (obfs_plugin->client_decode) {
                 int needsendback;
                 server->buf->len = obfs_plugin->client_decode(server->obfs, &server->buf->array, server->buf->len, &server->buf->capacity, &needsendback);
@@ -888,7 +912,6 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
                     return;
                 }
                 if (needsendback) {
-                    obfs_class *obfs_plugin = server->obfs_plugin;
                     if (obfs_plugin->client_encode) {
                         remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->array, 0, &remote->buf->capacity);
                         ssize_t s = send(remote->fd, remote->buf->array, remote->buf->len, 0);
@@ -917,7 +940,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
             }
         }
         if (server->buf->len > 0) {
-        int err = ss_decrypt(&cipher_env, server->buf, server->d_ctx, BUF_SIZE);
+        int err = ss_decrypt(&server_env->cipher, server->buf, server->d_ctx, BUF_SIZE);
             if (err) {
                 LOGE("remote invalid password or cipher");
                 close_and_free_remote(EV_A_ remote);
@@ -925,8 +948,8 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
                 return;
             }
         }
-        if (server->protocol_plugin) {
-            obfs_class *protocol_plugin = server->protocol_plugin;
+        if (server_env->protocol_plugin) {
+            obfs_class *protocol_plugin = server_env->protocol_plugin;
             if (protocol_plugin->client_post_decrypt) {
                 server->buf->len = protocol_plugin->client_post_decrypt(server->protocol, &server->buf->array, server->buf->len, &server->buf->capacity);
                 if ((int)server->buf->len < 0) {
@@ -1086,13 +1109,14 @@ close_and_free_remote(EV_P_ remote_t *remote)
 }
 
 static server_t *
-new_server(int fd)
+new_server(int fd, listen_ctx_t* profile)
 {
     server_t *server;
     server = ss_malloc(sizeof(server_t));
 
     memset(server, 0, sizeof(server_t));
 
+    server->listener = profile;
     server->recv_ctx            = ss_malloc(sizeof(server_ctx_t));
     server->send_ctx            = ss_malloc(sizeof(server_ctx_t));
     server->buf                 = ss_malloc(sizeof(buffer_t));
@@ -1106,61 +1130,105 @@ new_server(int fd)
     server->recv_ctx->server    = server;
     server->send_ctx->server    = server;
 
-    if (cipher_env.enc_method > TABLE) {
-        server->e_ctx = ss_malloc(sizeof(struct enc_ctx));
-        server->d_ctx = ss_malloc(sizeof(struct enc_ctx));
-        enc_ctx_init(&cipher_env, server->e_ctx, 1);
-        enc_ctx_init(&cipher_env, server->d_ctx, 0);
-    } else {
-        server->e_ctx = NULL;
-        server->d_ctx = NULL;
-    }
+//    if (cipher_env.enc_method > TABLE) {
+//        server->e_ctx = ss_malloc(sizeof(struct enc_ctx));
+//        server->d_ctx = ss_malloc(sizeof(struct enc_ctx));
+//        enc_ctx_init(&cipher_env, server->e_ctx, 1);
+//        enc_ctx_init(&cipher_env, server->d_ctx, 0);
+//    } else {
+//        server->e_ctx = NULL;
+//        server->d_ctx = NULL;
+//    }
 
     ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
     ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
 
-    cork_dllist_add(&connections, &server->entries);
+    cork_dllist_add(&profile->connections_eden, &server->entries);
+    cork_dllist_add(&all_connections, &server->entries_all);
 
     return server;
 }
 
 static void
+check_and_free_profile(listen_ctx_t *profile)
+{
+    int i;
+
+    if(profile == current_profile)
+    {
+        return;
+    }
+    // if this connection is created from an inactive profile, then we need to free the profile
+    // when the last connection of that profile is colsed
+    if(!cork_dllist_is_empty(&profile->connections_eden))
+    {
+        return;
+    }
+
+    for(i = 0; i < profile->server_num; i++)
+    {
+        if(!cork_dllist_is_empty(&profile->servers[i].connections))
+        {
+            return;
+        }
+    }
+
+    // No connections anymore
+    cork_dllist_remove(&profile->entries);
+
+    // TODO: free the profile. Serious memory leak here!
+    ss_free(profile);
+}
+
+static void
 free_server(server_t *server)
 {
+    listen_ctx_t *profile = server->listener;
+    server_def_t *server_env = server->server_env;
+
     cork_dllist_remove(&server->entries);
+    cork_dllist_remove(&server->entries_all);
 
     if (server->remote != NULL) {
         server->remote->server = NULL;
-    }
-    if (server->e_ctx != NULL) {
-        enc_ctx_release(&cipher_env, server->e_ctx);
-        ss_free(server->e_ctx);
-    }
-    if (server->d_ctx != NULL) {
-        enc_ctx_release(&cipher_env, server->d_ctx);
-        ss_free(server->d_ctx);
     }
     if (server->buf != NULL) {
         bfree(server->buf);
         ss_free(server->buf);
     }
-    // SSR beg
-    if (server->obfs_plugin) {
-        server->obfs_plugin->dispose(server->obfs);
-        server->obfs = NULL;
-        free_obfs_class(server->obfs_plugin);
-        server->obfs_plugin = NULL;
+
+    if(server_env)
+    {
+        if (server->e_ctx != NULL) {
+            enc_ctx_release(&server_env->cipher, server->e_ctx);
+            ss_free(server->e_ctx);
+        }
+        if (server->d_ctx != NULL) {
+            enc_ctx_release(&server_env->cipher, server->d_ctx);
+            ss_free(server->d_ctx);
+        }
+        // SSR beg
+        if (server_env->obfs_plugin) {
+            server_env->obfs_plugin->dispose(server->obfs);
+            server->obfs = NULL;
+//            free_obfs_class(server->obfs_plugin);
+//            server->obfs_plugin = NULL;
+        }
+        if (server_env->protocol_plugin) {
+            server_env->protocol_plugin->dispose(server->protocol);
+            server->protocol = NULL;
+//            free_obfs_class(server->protocol_plugin);
+//            server->protocol_plugin = NULL;
+        }
+        // SSR end
     }
-    if (server->protocol_plugin) {
-        server->protocol_plugin->dispose(server->protocol);
-        server->protocol = NULL;
-        free_obfs_class(server->protocol_plugin);
-        server->protocol_plugin = NULL;
-    }
-    // SSR end
+
     ss_free(server->recv_ctx);
     ss_free(server->send_ctx);
     ss_free(server);
+
+    // after free server, we need to check the profile
+    check_and_free_profile(profile);
 }
 
 static void
@@ -1175,19 +1243,21 @@ close_and_free_server(EV_P_ server_t *server)
 }
 
 static remote_t *
-create_remote(listen_ctx_t *listener,
-                               struct sockaddr *addr)
+create_remote(listen_ctx_t *profile, struct sockaddr *addr)
 {
-    struct sockaddr *remote_addr;
+//    struct sockaddr *remote_addr;
+//
+//    server_def_t *server_def;
+//    // currently we use random server allocation
+//    int index = rand() % listener->server_num;
+//    if (addr == NULL) {
+//        remote_addr = listener->remote_addr[index];
+//        server_def = &listener->servers[index];
+//    } else {
+//        remote_addr = addr;
+//    }
 
-    int index = rand() % listener->remote_num;
-    if (addr == NULL) {
-        remote_addr = listener->remote_addr[index];
-    } else {
-        remote_addr = addr;
-    }
-
-    int remotefd = socket(remote_addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
+    int remotefd = socket(addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
 
     if (remotefd == -1) {
         ERROR("socket");
@@ -1200,7 +1270,7 @@ create_remote(listen_ctx_t *listener,
     setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
-    if (listener->mptcp == 1) {
+    if (profile->mptcp == 1) {
         int err = setsockopt(remotefd, SOL_TCP, MPTCP_ENABLED, &opt, sizeof(opt));
         if (err == -1) {
             ERROR("failed to enable multipath TCP");
@@ -1216,10 +1286,10 @@ create_remote(listen_ctx_t *listener,
     }
 #endif
 
-    remote_t *remote = new_remote(remotefd, listener->timeout);
-    remote->addr_len = get_sockaddr_len(remote_addr);
-    memcpy(&(remote->addr), remote_addr, remote->addr_len);
-    remote->remote_index = index;
+    remote_t *remote = new_remote(remotefd, profile->timeout);
+    remote->direct_addr.addr_len = get_sockaddr_len(addr);
+    memcpy(&(remote->direct_addr.addr), addr, remote->direct_addr.addr_len);
+//    remote->direct_addr.remote_index = index;
 
     return remote;
 }
@@ -1255,18 +1325,18 @@ accept_cb(EV_P_ ev_io *w, int revents)
     setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
-    server_t *server = new_server(serverfd);
-    server->listener = listener;
-    // SSR beg
-    server->obfs_plugin = new_obfs_class(listener->obfs_name);
-    if (server->obfs_plugin) {
-        server->obfs = server->obfs_plugin->new_obfs();
-    }
-    server->protocol_plugin = new_obfs_class(listener->protocol_name);
-    if (server->protocol_plugin) {
-        server->protocol = server->protocol_plugin->new_obfs();
-    }
-    // SSR end
+    server_t *server = new_server(serverfd, listener);
+//    server->listener = listener;
+//    // SSR beg
+//    server->obfs_plugin = new_obfs_class(listener->obfs_name);
+//    if (server->obfs_plugin) {
+//        server->obfs = server->obfs_plugin->new_obfs();
+//    }
+//    server->protocol_plugin = new_obfs_class(listener->protocol_name);
+//    if (server->protocol_plugin) {
+//        server->protocol = server->protocol_plugin->new_obfs();
+//    }
+//    // SSR end
 
     ev_io_start(EV_A_ & server->recv_ctx->io);
 }
@@ -1275,6 +1345,24 @@ void
 resolve_int_cb(int dummy)
 {
     keep_resolving = 0;
+}
+
+static void
+init_obfs(server_def_t *serv, char *protocol, char *protocol_param, char *obfs, char *obfs_param)
+{
+    serv->protocol_name = protocol;
+    serv->protocol_param = protocol_param;
+    serv->protocol_plugin = new_obfs_class(protocol);
+    serv->obfs_name = obfs;
+    serv->obfs_param = obfs_param;
+    serv->obfs_plugin = new_obfs_class(obfs);
+
+    if (serv->obfs_plugin) {
+        serv->obfs_global = serv->obfs_plugin->init_data();
+    }
+    if (serv->protocol_plugin) {
+        serv->protocol_global = serv->protocol_plugin->init_data();
+    }
 }
 
 #ifndef LIB_ONLY
@@ -1298,21 +1386,18 @@ main(int argc, char **argv)
     char *pid_path = NULL;
     char *conf_path = NULL;
     char *iface = NULL;
-
-    srand(time(NULL));
-
     int remote_num = 0;
     ss_addr_t remote_addr[MAX_REMOTE_NUM];
     char *remote_port = NULL;
 
     int option_index                    = 0;
     static struct option long_options[] = {
-        { "fast-open", no_argument,       0, 0 },
-        { "acl",       required_argument, 0, 0 },
-        { "mtu",       required_argument, 0, 0 },
-        { "mptcp",     no_argument,       0, 0 },
-        { "help",      no_argument,       0, 0 },
-        {           0,                 0, 0, 0 }
+            { "fast-open", no_argument,       0, 0 },
+            { "acl",       required_argument, 0, 0 },
+            { "mtu",       required_argument, 0, 0 },
+            { "mptcp",     no_argument,       0, 0 },
+            { "help",      no_argument,       0, 0 },
+            {           0,                 0, 0, 0 }
     };
 
     opterr = 0;
@@ -1326,114 +1411,114 @@ main(int argc, char **argv)
 #else
     while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:huUvA6"
                             "O:o:G:g:",
-                            long_options, &option_index)) != -1) 
+                            long_options, &option_index)) != -1)
 #endif
     {
         switch (c) {
-        case 0:
-            if (option_index == 0) {
-                fast_open = 1;
-            } else if (option_index == 1) {
-                LOGI("initializing acl...");
-                acl = !init_acl(optarg);
-            } else if (option_index == 2) {
-                mtu = atoi(optarg);
-                LOGI("set MTU to %d", mtu);
-            } else if (option_index == 3) {
-                mptcp = 1;
-                LOGI("enable multipath TCP");
-            } else if (option_index == 4) {
-                usage();
-                exit(EXIT_SUCCESS);
-            }
-            break;
-        case 's':
-            if (remote_num < MAX_REMOTE_NUM) {
-                remote_addr[remote_num].host   = optarg;
-                remote_addr[remote_num++].port = NULL;
-            }
-            break;
-        case 'p':
-            remote_port = optarg;
-            break;
-        case 'l':
-            local_port = optarg;
-            break;
-        case 'k':
-            password = optarg;
-            break;
-        case 'f':
-            pid_flags = 1;
-            pid_path  = optarg;
-            break;
-        case 't':
-            timeout = optarg;
-            break;
-        // SSR beg
-        case 'O':
-            protocol = optarg;
-            break;
-        case 'm':
-            method = optarg;
-            break;
-        case 'o':
-            obfs = optarg;
-            break;
-        case 'G':
-            protocol_param = optarg;
-            break;
-        case 'g':
-            obfs_param = optarg;
-            break;
-        // SSR end
-        case 'c':
-            conf_path = optarg;
-            break;
-        case 'i':
-            iface = optarg;
-            break;
-        case 'b':
-            local_addr = optarg;
-            break;
-        case 'a':
-            user = optarg;
-            break;
+            case 0:
+                if (option_index == 0) {
+                    fast_open = 1;
+                } else if (option_index == 1) {
+                    LOGI("initializing acl...");
+                    acl = !init_acl(optarg);
+                } else if (option_index == 2) {
+                    mtu = atoi(optarg);
+                    LOGI("set MTU to %d", mtu);
+                } else if (option_index == 3) {
+                    mptcp = 1;
+                    LOGI("enable multipath TCP");
+                } else if (option_index == 4) {
+                    usage();
+                    exit(EXIT_SUCCESS);
+                }
+                break;
+            case 's':
+                if (remote_num < MAX_REMOTE_NUM) {
+                    remote_addr[remote_num].host   = optarg;
+                    remote_addr[remote_num++].port = NULL;
+                }
+                break;
+            case 'p':
+                remote_port = optarg;
+                break;
+            case 'l':
+                local_port = optarg;
+                break;
+            case 'k':
+                password = optarg;
+                break;
+            case 'f':
+                pid_flags = 1;
+                pid_path  = optarg;
+                break;
+            case 't':
+                timeout = optarg;
+                break;
+                // SSR beg
+            case 'O':
+                protocol = optarg;
+                break;
+            case 'm':
+                method = optarg;
+                break;
+            case 'o':
+                obfs = optarg;
+                break;
+            case 'G':
+                protocol_param = optarg;
+                break;
+            case 'g':
+                obfs_param = optarg;
+                break;
+                // SSR end
+            case 'c':
+                conf_path = optarg;
+                break;
+            case 'i':
+                iface = optarg;
+                break;
+            case 'b':
+                local_addr = optarg;
+                break;
+            case 'a':
+                user = optarg;
+                break;
 #ifdef HAVE_SETRLIMIT
-        case 'n':
+            case 'n':
             nofile = atoi(optarg);
             break;
 #endif
-        case 'u':
-            mode = TCP_AND_UDP;
-            break;
-        case 'U':
-            mode = UDP_ONLY;
-            break;
-        case 'v':
-            verbose = 1;
-            break;
-        case 'h':
-            usage();
-            exit(EXIT_SUCCESS);
-        case 'A':
-            LOGI("The 'A' argument is deprecate! Ignored.");
-            break;
-        case '6':
-            ipv6first = 1;
-            break;
+            case 'u':
+                mode = TCP_AND_UDP;
+                break;
+            case 'U':
+                mode = UDP_ONLY;
+                break;
+            case 'v':
+                verbose = 1;
+                break;
+            case 'h':
+                usage();
+                exit(EXIT_SUCCESS);
+            case 'A':
+                LOGI("The 'A' argument is deprecate! Ignored.");
+                break;
+            case '6':
+                ipv6first = 1;
+                break;
 #ifdef ANDROID
-        case 'V':
+            case 'V':
             vpn = 1;
             break;
         case 'P':
             prefix = optarg;
             break;
 #endif
-        case '?':
-            // The option character is not recognized.
-            LOGE("Unrecognized option: %s", optarg);
-            opterr = 1;
-            break;
+            case '?':
+                // The option character is not recognized.
+                LOGE("Unrecognized option: %s", optarg);
+                opterr = 1;
+                break;
         }
     }
 
@@ -1447,47 +1532,56 @@ main(int argc, char **argv)
             conf_path = DEFAULT_CONF_PATH;
         }
     }
+
+    int use_new_profile = 0;
+
+    jconf_t *conf = NULL;
     if (conf_path != NULL) {
-        jconf_t *conf = read_jconf(conf_path);
-        if (remote_num == 0) {
-            remote_num = conf->remote_num;
-            for (i = 0; i < remote_num; i++)
-                remote_addr[i] = conf->remote_addr[i];
+        conf = read_jconf(conf_path);
+        if(conf->conf_ver != CONF_VER_LEGACY){
+            use_new_profile = 1;
+        } else {
+            if (remote_num == 0) {
+                remote_num = conf->server_legacy.remote_num;
+                for (i = 0; i < remote_num; i++)
+                    remote_addr[i] = conf->server_legacy.remote_addr[i];
+            }
+            if (remote_port == NULL) {
+                remote_port = conf->server_legacy.remote_port;
+            }
+            if (local_addr == NULL) {
+                local_addr = conf->server_legacy.local_addr;
+            }
+            if (local_port == NULL) {
+                local_port = conf->server_legacy.local_port;
+            }
+            if (password == NULL) {
+                password = conf->server_legacy.password;
+            }
+            // SSR beg
+            if (protocol == NULL) {
+                protocol = conf->server_legacy.protocol;
+                LOGI("protocol %s", protocol);
+            }
+            if (protocol_param == NULL) {
+                protocol_param = conf->server_legacy.protocol_param;
+                LOGI("protocol_param %s", protocol_param);
+            }
+            if (method == NULL) {
+                method = conf->server_legacy.method;
+                LOGI("method %s", method);
+            }
+            if (obfs == NULL) {
+                obfs = conf->server_legacy.obfs;
+                LOGI("obfs %s", obfs);
+            }
+            if (obfs_param == NULL) {
+                obfs_param = conf->server_legacy.obfs_param;
+                LOGI("obfs_param %s", obfs_param);
+            }
+            // SSR end
         }
-        if (remote_port == NULL) {
-            remote_port = conf->remote_port;
-        }
-        if (local_addr == NULL) {
-            local_addr = conf->local_addr;
-        }
-        if (local_port == NULL) {
-            local_port = conf->local_port;
-        }
-        if (password == NULL) {
-            password = conf->password;
-        }
-        // SSR beg
-        if (protocol == NULL) {
-            protocol = conf->protocol;
-            LOGI("protocol %s", protocol);
-        }
-        if (protocol_param == NULL) {
-            protocol_param = conf->protocol_param;
-            LOGI("protocol_param %s", protocol_param);
-        }
-        if (method == NULL) {
-            method = conf->method;
-            LOGI("method %s", method);
-        }
-        if (obfs == NULL) {
-            obfs = conf->obfs;
-            LOGI("obfs %s", obfs);
-        }
-        if (obfs_param == NULL) {
-            obfs_param = conf->obfs_param;
-            LOGI("obfs_param %s", obfs_param);
-        }
-        // SSR end
+
         if (timeout == NULL) {
             timeout = conf->timeout;
         }
@@ -1518,9 +1612,9 @@ main(int argc, char **argv)
     }
 
     if (remote_num == 0 || remote_port == NULL ||
-#ifndef HAVE_LAUNCHD
+        #ifndef HAVE_LAUNCHD
         local_port == NULL ||
-#endif
+        #endif
         password == NULL) {
         usage();
         exit(EXIT_FAILURE);
@@ -1568,6 +1662,7 @@ main(int argc, char **argv)
     if (ipv6first) {
         LOGI("resolving hostname to IPv6 address first");
     }
+    srand(time(NULL));
 
 #ifdef __MINGW32__
     winsock_init();
@@ -1579,40 +1674,102 @@ main(int argc, char **argv)
     signal(SIGTERM, resolve_int_cb);
 #endif
 
-    // Setup keys
-    LOGI("initializing ciphers... %s", method);
-    enc_init(&cipher_env, password, method);
+    // Setup profiles
+    listen_ctx_t *profile = (listen_ctx_t *)ss_malloc(sizeof(listen_ctx_t));
+    memset(profile, 0, sizeof(listen_ctx_t));
 
-    // Setup proxy context
-    listen_ctx_t listen_ctx;
-    listen_ctx.remote_num  = remote_num;
-    listen_ctx.remote_addr = ss_malloc(sizeof(struct sockaddr *) * remote_num);
-    memset(listen_ctx.remote_addr, 0, sizeof(struct sockaddr *) * remote_num);
-    for (i = 0; i < remote_num; i++) {
-        char *host = remote_addr[i].host;
-        char *port = remote_addr[i].port == NULL ? remote_port :
-                     remote_addr[i].port;
-        struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
-        memset(storage, 0, sizeof(struct sockaddr_storage));
-        if (get_sockaddr(host, port, storage, 1, ipv6first) == -1) {
-            FATAL("failed to resolve the provided hostname");
+    cork_dllist_init(&profile->connections_eden);
+
+    profile->timeout = atoi(timeout);
+    profile->iface = iface;
+    profile->mptcp = mptcp;
+
+    if(use_new_profile) {
+        char port_char[6];
+
+        ss_server_new_1_t *servers = &conf->server_new_1;
+        profile->server_num = servers->server_num;
+        for(i = 0; i < servers->server_num; i++) {
+            server_def_t *serv = &profile->servers[i];
+            ss_server_t *serv_cfg = &servers->servers[i];
+
+            struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
+
+            char *host = serv_cfg->server;
+            char *port = itoa(serv_cfg->server_port, port_char, 10);
+            if (get_sockaddr(host, port, storage, 1, ipv6first) == -1) {
+                FATAL("failed to resolve the provided hostname");
+            }
+
+            serv->addr = serv->addr_udp = storage;
+            serv->addr_len = serv->addr_udp_len = get_sockaddr_len((struct sockaddr *) storage);
+            serv->port = serv->udp_port = serv_cfg->server_port;
+
+            // set udp port
+            if (serv_cfg->server_udp_port != 0 && serv_cfg->server_udp_port != serv_cfg->server_port) {
+                storage = ss_malloc(sizeof(struct sockaddr_storage));
+                port = itoa(serv_cfg->server_udp_port, port_char, 10);
+                if (get_sockaddr(host, port, storage, 1, ipv6first) == -1) {
+                    FATAL("failed to resolve the provided hostname");
+                }
+                serv->addr_udp = storage;
+                serv->addr_udp_len = get_sockaddr_len((struct sockaddr *) storage);
+                serv->udp_port = serv_cfg->server_udp_port;
+            }
+            serv->host = host;
+
+            // Setup keys
+            LOGI("initializing ciphers... %s", serv_cfg->method);
+            enc_init(&serv->cipher, serv_cfg->password, serv_cfg->method);
+            serv->psw = serv_cfg->password;
+            if (serv_cfg->protocol && strcmp(serv_cfg->protocol, "verify_sha1") == 0) {
+                ss_free(serv_cfg->protocol);
+            }
+
+            cork_dllist_init(&serv->connections);
+
+            // init obfs
+            init_obfs(serv, serv_cfg->protocol, serv_cfg->protocol_param, serv_cfg->obfs, serv_cfg->obfs_param);
+
+            serv->enable = serv_cfg->enable;
+            serv->id = serv_cfg->id;
+            serv->group = serv_cfg->group;
+            serv->udp_over_tcp = serv_cfg->udp_over_tcp;
         }
-        listen_ctx.remote_addr[i] = (struct sockaddr *)storage;
+    } else {
+        profile->server_num = remote_num;
+        for(i = 0; i < remote_num; i++) {
+            server_def_t *serv = &profile->servers[i];
+            char *host = remote_addr[i].host;
+            char *port = remote_addr[i].port == NULL ? remote_port :
+                         remote_addr[i].port;
+
+            struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
+            if (get_sockaddr(host, port, storage, 1, ipv6first) == -1) {
+                FATAL("failed to resolve the provided hostname");
+            }
+            serv->host = host;
+            serv->addr = serv->addr_udp = storage;
+            serv->addr_len = serv->addr_udp_len = get_sockaddr_len((struct sockaddr *)storage);
+            serv->port = serv->udp_port = atoi(port);
+
+            // Setup keys
+            LOGI("initializing ciphers... %s", method);
+            enc_init(&serv->cipher, password, method);
+            serv->psw = password;
+
+            cork_dllist_init(&serv->connections);
+
+            // init obfs
+            init_obfs(serv, protocol, protocol_param, obfs, obfs_param);
+
+            serv->enable = 1;
+        }
     }
-    listen_ctx.timeout = atoi(timeout);
-    listen_ctx.iface = iface;
-    // SSR beg
-    listen_ctx.protocol_name = protocol;
-    listen_ctx.protocol_param = protocol_param;
-//    listen_ctx.method = m;
-    listen_ctx.obfs_name = obfs;
-    listen_ctx.obfs_param = obfs_param;
-    listen_ctx.list_protocol_global = malloc(sizeof(void *) * remote_num);
-    listen_ctx.list_obfs_global = malloc(sizeof(void *) * remote_num);
-    memset(listen_ctx.list_protocol_global, 0, sizeof(void *) * remote_num);
-    memset(listen_ctx.list_obfs_global, 0, sizeof(void *) * remote_num);
-    // SSR end
-    listen_ctx.mptcp   = mptcp;
+
+    // Init profiles
+    cork_dllist_init(&inactive_profiles);
+    current_profile = profile;
 
     // Setup signal handler
     struct ev_signal sigint_watcher;
@@ -1623,6 +1780,8 @@ main(int argc, char **argv)
     ev_signal_start(EV_DEFAULT, &sigterm_watcher);
 
     struct ev_loop *loop = EV_DEFAULT;
+
+    listen_ctx_t *listen_ctx = current_profile;
 
     if (mode != UDP_ONLY) {
         // Setup socket
@@ -1640,17 +1799,17 @@ main(int argc, char **argv)
         }
         setnonblocking(listenfd);
 
-        listen_ctx.fd = listenfd;
+        listen_ctx->fd = listenfd;
 
-        ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
-        ev_io_start(loop, &listen_ctx.io);
+        ev_io_init(&listen_ctx->io, accept_cb, listenfd, EV_READ);
+        ev_io_start(loop, &listen_ctx->io);
     }
 
     // Setup UDP
     if (mode != TCP_ONLY) {
         LOGI("udprelay enabled");
-        init_udprelay(local_addr, local_port, listen_ctx.remote_addr[0],
-                      get_sockaddr_len(listen_ctx.remote_addr[0]), mtu, listen_ctx.timeout, iface, protocol, protocol_param);
+        init_udprelay(local_addr, local_port, (struct sockaddr*)listen_ctx->servers[0].addr_udp,
+                      listen_ctx->servers[0].addr_udp_len, mtu, listen_ctx->timeout, iface, &listen_ctx->servers[0].cipher, protocol, protocol_param);
     }
 
 #ifdef HAVE_LAUNCHD
@@ -1674,8 +1833,7 @@ main(int argc, char **argv)
     }
 #endif
 
-    // Init connections
-    cork_dllist_init(&connections);
+    cork_dllist_init(&all_connections);
 
     // Enter the loop
     ev_run(loop, 0);
@@ -1687,24 +1845,24 @@ main(int argc, char **argv)
     // Clean up
 
     if (mode != UDP_ONLY) {
-        ev_io_stop(loop, &listen_ctx.io);
+        ev_io_stop(loop, &listen_ctx->io);
         free_connections(loop);
 
-        for (i = 0; i < remote_num; i++) {
-            ss_free(listen_ctx.remote_addr[i]);
-
-            if (listen_ctx.list_protocol_global[i]) { // SSR
-                free(listen_ctx.list_protocol_global[i]);
-                listen_ctx.list_protocol_global[i] = NULL;
-            }
-            if (listen_ctx.list_obfs_global[i]) { // SSR
-                free(listen_ctx.list_obfs_global[i]);
-                listen_ctx.list_obfs_global[i] = NULL;
-            }
-        }
-        ss_free(listen_ctx.remote_addr);
-        free(listen_ctx.list_protocol_global); // SSR
-        free(listen_ctx.list_obfs_global); // SSR
+//        for (i = 0; i < remote_num; i++) {
+//            ss_free(listen_ctx.remote_addr[i]);
+//
+//            if (listen_ctx.list_protocol_global[i]) { // SSR
+//                free(listen_ctx.list_protocol_global[i]);
+//                listen_ctx.list_protocol_global[i] = NULL;
+//            }
+//            if (listen_ctx.list_obfs_global[i]) { // SSR
+//                free(listen_ctx.list_obfs_global[i]);
+//                listen_ctx.list_obfs_global[i] = NULL;
+//            }
+//        }
+//        ss_free(listen_ctx.remote_addr);
+//        free(listen_ctx.list_protocol_global); // SSR
+//        free(listen_ctx.list_obfs_global); // SSR
     }
 
     if (mode != TCP_ONLY) {

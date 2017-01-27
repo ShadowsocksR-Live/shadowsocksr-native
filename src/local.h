@@ -33,23 +33,53 @@
 
 #include "common.h"
 
-typedef struct listen_ctx {
+typedef struct server_def {
+    char *host;
+    int port;
+    int udp_port;
+    struct sockaddr_storage *addr; // resolved address
+    struct sockaddr_storage *addr_udp; // resolved address
+    int addr_len;
+    int addr_udp_len;
+
+    char *psw; // raw password
+    cipher_env_t cipher;
+
+    struct cork_dllist connections;
+
+    // SSR
+    char *protocol_name; // for logging use only?
+    char *obfs_name; // for logging use only?
+
+    char *protocol_param;
+    char *obfs_param;
+
+    obfs_class *protocol_plugin;
+    obfs_class *obfs_plugin;
+
+    void *protocol_global;
+    void *obfs_global;
+
+    int enable;
+    char *id;
+    char *group;
+    int udp_over_tcp;
+} server_def_t;
+
+// use this as a profile or environment
+typedef struct listen_ctx{
     ev_io io;
+
+    struct cork_dllist_item entries; // for inactive profile list
+    struct cork_dllist connections_eden; // For connections just created but not attach to a server
+
     char *iface;
-    int remote_num;
-//    int method;
     int timeout;
     int fd;
     int mptcp;
-    struct sockaddr **remote_addr;
 
-    // SSR
-    char *protocol_name;
-    char *protocol_param;
-    char *obfs_name;
-    char *obfs_param;
-    void **list_protocol_global;
-    void **list_obfs_global;
+    int server_num;
+    server_def_t servers[MAX_SERVER_NUM];
 } listen_ctx_t;
 
 typedef struct server_ctx {
@@ -68,16 +98,16 @@ typedef struct remote_ctx {
 typedef struct remote {
     int fd;
     buffer_t *buf;
-    int direct;
     remote_ctx_t *recv_ctx;
     remote_ctx_t *send_ctx;
-    struct server *server;
-    struct sockaddr_storage addr;
-    int addr_len;
     uint32_t counter;
+    struct server *server;
 
-    // SSR
-    int remote_index;
+    int direct;
+    struct { // direct = 1
+        struct sockaddr_storage addr;
+        int addr_len;
+    } direct_addr;
 } remote_t;
 
 typedef struct server {
@@ -93,26 +123,13 @@ typedef struct server {
     buffer_t *buf;
 
     struct cork_dllist_item entries;
+    struct cork_dllist_item entries_all; // for all_connections
+
+    server_def_t *server_env;
 
     // SSR
     obfs *protocol;
     obfs *obfs;
-    obfs_class *protocol_plugin;
-    obfs_class *obfs_plugin;
 } server_t;
-
-typedef struct server_def {
-    ss_addr_t host; // address from input (cmd or config file), for log only
-    struct sockaddr_storage *addr; // resolved address
-
-    char *psw; // raw password
-    cipher_env_t cipher;
-
-    // SSR
-    char *protocol_name;
-    char *protocol_param;
-    char *obfs_name;
-    char *obfs_param;
-} server_def_t;
 
 #endif // _LOCAL_H

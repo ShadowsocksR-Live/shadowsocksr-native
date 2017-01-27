@@ -224,6 +224,6 @@ int balloc(buffer_t *ptr, size_t capacity);
 int brealloc(buffer_t *ptr, size_t len, size_t capacity);
 void bfree(buffer_t *ptr);
 
-extern cipher_env_t cipher_env;
+//extern cipher_env_t cipher_env;
 
 #endif // _ENCRYPT_H

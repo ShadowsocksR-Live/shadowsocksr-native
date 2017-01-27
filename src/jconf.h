@@ -24,6 +24,7 @@
 
 #define MAX_PORT_NUM 1024
 #define MAX_REMOTE_NUM 10
+#define MAX_SERVER_NUM 10
 #define MAX_CONF_SIZE 128 * 1024
 #define MAX_DNS_NUM 4
 #define MAX_CONNECT_TIMEOUT 10
@@ -45,6 +46,26 @@ typedef struct {
 } ss_port_password_t;
 
 typedef struct {
+    // address from input (cmd or config file)
+    char *server;
+    int server_port;
+    int server_udp_port;
+
+    char *password; // raw password
+    char *method;
+
+    char *protocol;
+    char *protocol_param;
+    char *obfs;
+    char *obfs_param;
+
+    char *id;
+    char *group;
+    int enable;
+    int udp_over_tcp;
+} ss_server_t;
+
+typedef struct {
     int remote_num;
     ss_addr_t remote_addr[MAX_REMOTE_NUM];
     int port_password_num;
@@ -58,6 +79,22 @@ typedef struct {
     char *method;
     char *obfs; // SSR
     char *obfs_param; // SSR
+} ss_server_legacy_t;
+
+typedef struct {
+    size_t server_num;
+    ss_server_t servers[MAX_SERVER_NUM];
+} ss_server_new_1_t;
+
+#define CONF_VER_LEGACY 0
+#define CONF_VER_1 1
+
+typedef struct {
+    int conf_ver; // 0 for legacy, > 0 for server_new_X
+    union {
+        ss_server_legacy_t server_legacy;
+        ss_server_new_1_t server_new_1;
+    };
     char *timeout;
     char *user;
     int fast_open;

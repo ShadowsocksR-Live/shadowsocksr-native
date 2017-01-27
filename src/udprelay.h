@@ -59,6 +59,7 @@ typedef struct server_ctx {
 #ifdef MODULE_REMOTE
     struct ev_loop *loop;
 #endif
+    cipher_env_t* cipher_env;
     // SSR
     obfs *protocol;
     obfs_class *protocol_plugin;
