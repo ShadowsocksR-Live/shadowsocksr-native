@@ -204,6 +204,7 @@ int ss_encrypt(cipher_env_t* env, buffer_t *plaintext, enc_ctx_t *ctx, size_t ca
 int ss_decrypt(cipher_env_t* env, buffer_t *ciphertext, enc_ctx_t *ctx, size_t capacity);
 
 int enc_init(cipher_env_t *env, const char *pass, const char *method);
+void enc_release(cipher_env_t *env);
 void enc_ctx_init(cipher_env_t *env, enc_ctx_t *ctx, int enc);
 void enc_ctx_release(cipher_env_t* env, enc_ctx_t *ctx);
 int enc_get_iv_len(cipher_env_t* env);

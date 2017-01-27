@@ -1150,6 +1150,33 @@ new_server(int fd, listen_ctx_t* profile)
 }
 
 static void
+release_profile(listen_ctx_t *profile)
+{
+    int i;
+    for(i = 0; i < profile->server_num; i++)
+    {
+        server_def_t *server_env = &profile->servers[i];
+        if(server_env->addr != server_env->addr_udp)
+        {
+            ss_free(server_env->addr_udp);
+        }
+        ss_free(server_env->addr);
+
+        ss_free(server_env->protocol_global);
+        ss_free(server_env->obfs_global);
+        if(server_env->protocol_plugin){
+            free_obfs_class(server_env->protocol_plugin);
+        }
+        if(server_env->obfs_plugin){
+            free_obfs_class(server_env->obfs_plugin);
+        }
+
+        enc_release(&server_env->cipher);
+    }
+    ss_free(profile);
+}
+
+static void
 check_and_free_profile(listen_ctx_t *profile)
 {
     int i;
@@ -1175,9 +1202,7 @@ check_and_free_profile(listen_ctx_t *profile)
 
     // No connections anymore
     cork_dllist_remove(&profile->entries);
-
-    // TODO: free the profile. Serious memory leak here!
-    ss_free(profile);
+    release_profile(profile);
 }
 
 static void
@@ -1843,30 +1868,14 @@ main(int argc, char **argv)
     }
 
     // Clean up
+    if (mode != TCP_ONLY) {
+        free_udprelay(); // udp relay use some data from profile, so we need to release udp first
+    }
 
     if (mode != UDP_ONLY) {
         ev_io_stop(loop, &listen_ctx->io);
-        free_connections(loop);
-
-//        for (i = 0; i < remote_num; i++) {
-//            ss_free(listen_ctx.remote_addr[i]);
-//
-//            if (listen_ctx.list_protocol_global[i]) { // SSR
-//                free(listen_ctx.list_protocol_global[i]);
-//                listen_ctx.list_protocol_global[i] = NULL;
-//            }
-//            if (listen_ctx.list_obfs_global[i]) { // SSR
-//                free(listen_ctx.list_obfs_global[i]);
-//                listen_ctx.list_obfs_global[i] = NULL;
-//            }
-//        }
-//        ss_free(listen_ctx.remote_addr);
-//        free(listen_ctx.list_protocol_global); // SSR
-//        free(listen_ctx.list_obfs_global); // SSR
-    }
-
-    if (mode != TCP_ONLY) {
-        free_udprelay();
+        free_connections(loop); // after this, all inactive profile should be released already, so we only need to release the current_profile
+        release_profile(current_profile);
     }
 
 #ifdef __MINGW32__
