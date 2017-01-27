@@ -653,15 +653,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 memmove(buf->array, buf->array + 3 + abuf_len, buf->len);
             }
 
-            if (verbose) {
-                if (sni_detected || atyp == 3)
-                    LOGI("connect to %s:%s", host, port);
-            else if (atyp == 1)
-                LOGI("connect to %s:%s", ip, port);
-            else if (atyp == 4)
-                LOGI("connect to [%s]:%s", ip, port);
-            }
-
             if (acl) {
                 int host_match = acl_match_host(host);
                 int bypass = 0;
@@ -687,7 +678,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 if (bypass) {
                     if (verbose) {
                         if (sni_detected || atyp == 3)
-                        LOGI("bypass %s:%s", host, port);
+                            LOGI("bypass %s:%s", host, port);
                         else if (atyp == 1)
                             LOGI("bypass %s:%s", ip, port);
                         else if (atyp == 4)
@@ -709,6 +700,15 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 listen_ctx_t *profile = server->listener;
                 int index = rand() % profile->server_num;
                 server_def_t *server_env = &profile->servers[index];
+
+                if (verbose) {
+                    if (sni_detected || atyp == 3)
+                        LOGI("connect to %s:%s via %s:%d", host, port, server_env->host, server_env->port);
+                    else if (atyp == 1)
+                        LOGI("connect to %s:%s via %s:%d", ip, port, server_env->host, server_env->port);
+                    else if (atyp == 4)
+                        LOGI("connect to [%s]:%s via %s:%d", ip, port, server_env->host, server_env->port);
+                }
 
                 server->server_env = server_env;
 
