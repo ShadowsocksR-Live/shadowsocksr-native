@@ -216,6 +216,7 @@ void FATAL(const char *msg);
 void usage(void);
 void daemonize(const char *path);
 char *ss_strndup(const char *s, size_t n);
+char *ss_strdup(const char *s);
 #ifdef HAVE_SETRLIMIT
 int set_nofile(int nofile);
 #endif

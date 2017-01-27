@@ -1153,15 +1153,27 @@ static void
 release_profile(listen_ctx_t *profile)
 {
     int i;
+
+    ss_free(profile->iface);
+
     for(i = 0; i < profile->server_num; i++)
     {
         server_def_t *server_env = &profile->servers[i];
+
+        ss_free(server_env->host);
+
         if(server_env->addr != server_env->addr_udp)
         {
             ss_free(server_env->addr_udp);
         }
         ss_free(server_env->addr);
 
+        ss_free(server_env->psw);
+
+        ss_free(server_env->protocol_name);
+        ss_free(server_env->obfs_name);
+        ss_free(server_env->protocol_param);
+        ss_free(server_env->obfs_param);
         ss_free(server_env->protocol_global);
         ss_free(server_env->obfs_global);
         if(server_env->protocol_plugin){
@@ -1170,6 +1182,8 @@ release_profile(listen_ctx_t *profile)
         if(server_env->obfs_plugin){
             free_obfs_class(server_env->obfs_plugin);
         }
+        ss_free(server_env->id);
+        ss_free(server_env->group);
 
         enc_release(&server_env->cipher);
     }
@@ -1414,6 +1428,8 @@ main(int argc, char **argv)
     int remote_num = 0;
     ss_addr_t remote_addr[MAX_REMOTE_NUM];
     char *remote_port = NULL;
+    int use_new_profile = 0;
+    jconf_t *conf = NULL;
 
     int option_index                    = 0;
     static struct option long_options[] = {
@@ -1558,9 +1574,6 @@ main(int argc, char **argv)
         }
     }
 
-    int use_new_profile = 0;
-
-    jconf_t *conf = NULL;
     if (conf_path != NULL) {
         conf = read_jconf(conf_path);
         if(conf->conf_ver != CONF_VER_LEGACY){
@@ -1706,7 +1719,7 @@ main(int argc, char **argv)
     cork_dllist_init(&profile->connections_eden);
 
     profile->timeout = atoi(timeout);
-    profile->iface = iface;
+    profile->iface = ss_strdup(iface);
     profile->mptcp = mptcp;
 
     if(use_new_profile) {
@@ -1741,12 +1754,12 @@ main(int argc, char **argv)
                 serv->addr_udp_len = get_sockaddr_len((struct sockaddr *) storage);
                 serv->udp_port = serv_cfg->server_udp_port;
             }
-            serv->host = host;
+            serv->host = ss_strdup(host);
 
             // Setup keys
             LOGI("initializing ciphers... %s", serv_cfg->method);
             enc_init(&serv->cipher, serv_cfg->password, serv_cfg->method);
-            serv->psw = serv_cfg->password;
+            serv->psw = ss_strdup(serv_cfg->password);
             if (serv_cfg->protocol && strcmp(serv_cfg->protocol, "verify_sha1") == 0) {
                 ss_free(serv_cfg->protocol);
             }
@@ -1754,11 +1767,11 @@ main(int argc, char **argv)
             cork_dllist_init(&serv->connections);
 
             // init obfs
-            init_obfs(serv, serv_cfg->protocol, serv_cfg->protocol_param, serv_cfg->obfs, serv_cfg->obfs_param);
+            init_obfs(serv, ss_strdup(serv_cfg->protocol), ss_strdup(serv_cfg->protocol_param), ss_strdup(serv_cfg->obfs), ss_strdup(serv_cfg->obfs_param));
 
             serv->enable = serv_cfg->enable;
-            serv->id = serv_cfg->id;
-            serv->group = serv_cfg->group;
+            serv->id = ss_strdup(serv_cfg->id);
+            serv->group = ss_strdup(serv_cfg->group);
             serv->udp_over_tcp = serv_cfg->udp_over_tcp;
         }
     } else {
@@ -1773,7 +1786,7 @@ main(int argc, char **argv)
             if (get_sockaddr(host, port, storage, 1, ipv6first) == -1) {
                 FATAL("failed to resolve the provided hostname");
             }
-            serv->host = host;
+            serv->host = ss_strdup(host);
             serv->addr = serv->addr_udp = storage;
             serv->addr_len = serv->addr_udp_len = get_sockaddr_len((struct sockaddr *)storage);
             serv->port = serv->udp_port = atoi(port);
@@ -1781,12 +1794,12 @@ main(int argc, char **argv)
             // Setup keys
             LOGI("initializing ciphers... %s", method);
             enc_init(&serv->cipher, password, method);
-            serv->psw = password;
+            serv->psw = ss_strdup(password);
 
             cork_dllist_init(&serv->connections);
 
             // init obfs
-            init_obfs(serv, protocol, protocol_param, obfs, obfs_param);
+            init_obfs(serv, ss_strdup(protocol), ss_strdup(protocol_param), ss_strdup(obfs), ss_strdup(obfs_param));
 
             serv->enable = 1;
         }
@@ -1834,7 +1847,7 @@ main(int argc, char **argv)
     if (mode != TCP_ONLY) {
         LOGI("udprelay enabled");
         init_udprelay(local_addr, local_port, (struct sockaddr*)listen_ctx->servers[0].addr_udp,
-                      listen_ctx->servers[0].addr_udp_len, mtu, listen_ctx->timeout, iface, &listen_ctx->servers[0].cipher, protocol, protocol_param);
+                      listen_ctx->servers[0].addr_udp_len, mtu, listen_ctx->timeout, profile->iface, &listen_ctx->servers[0].cipher, listen_ctx->servers[0].protocol_name, listen_ctx->servers[0].protocol_param);
     }
 
 #ifdef HAVE_LAUNCHD
@@ -1859,6 +1872,8 @@ main(int argc, char **argv)
 #endif
 
     cork_dllist_init(&all_connections);
+
+    free_jconf(conf);
 
     // Enter the loop
     ev_run(loop, 0);

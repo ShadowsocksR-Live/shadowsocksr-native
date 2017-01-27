@@ -216,6 +216,15 @@ ss_strndup(const char *s, size_t n)
     return ret;
 }
 
+char *
+ss_strdup(const char *s) {
+    if (!s) {
+        return NULL;
+    }
+
+    return strdup(s);
+}
+
 void
 FATAL(const char *msg)
 {
