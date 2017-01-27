@@ -725,6 +725,10 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             if (!remote->direct) {
                 server_def_t *server_env = server->server_env;
 
+                // expelled from eden
+                cork_dllist_remove(&server->entries);
+                cork_dllist_add(&server_env->connections, &server->entries);
+
                 // init server cipher
                 if (server_env->cipher.enc_method > TABLE) {
                     server->e_ctx = ss_malloc(sizeof(struct enc_ctx));
