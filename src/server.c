@@ -104,14 +104,12 @@ static void close_and_free_server(EV_P_ server_t *server);
 static void server_resolve_cb(struct sockaddr *addr, void *data);
 static void query_free_cb(void *data);
 
-static size_t parse_header_len(const char atyp, const char *data, size_t offset);
 static int is_header_complete(const buffer_t *buf);
 
 int verbose = 0;
 
 static int acl       = 0;
 static int mode      = TCP_ONLY;
-static int auth      = 0;
 static int ipv6first = 0;
 
 static int fast_open = 0;
@@ -227,27 +225,6 @@ free_connections(struct ev_loop *loop)
     }
 }
 
-static size_t
-parse_header_len(const char atyp, const char *data, size_t offset)
-{
-    size_t len = 0;
-    if ((atyp & ADDRTYPE_MASK) == 1) {
-        // IP V4
-        len += sizeof(struct in_addr);
-    } else if ((atyp & ADDRTYPE_MASK) == 3) {
-        // Domain name
-        uint8_t name_len = *(uint8_t *)(data + offset);
-        len += name_len + 1;
-    } else if ((atyp & ADDRTYPE_MASK) == 4) {
-        // IP V6
-        len += sizeof(struct in6_addr);
-    } else {
-        return 0;
-    }
-    len += 2;
-    return len;
-}
-
 static int
 is_header_complete(const buffer_t *buf)
 {
@@ -278,11 +255,6 @@ is_header_complete(const buffer_t *buf)
 
     // len of port
     header_len += 2;
-
-    // size of ONETIMEAUTH_BYTES
-    if (auth || (atyp & ONETIMEAUTH_FLAG)) {
-        header_len += ONETIMEAUTH_BYTES;
-    }
 
     return buf_len >= header_len ? 1 : 0;
 }
@@ -730,13 +702,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     // handshake and transmit data
     if (server->stage == STAGE_STREAM) {
-        if (server->auth && !ss_check_hash(remote->buf, server->chunk, server->d_ctx, BUF_SIZE)) {
-            LOGE("hash error");
-            report_addr(server->fd, BAD);
-            close_and_free_server(EV_A_ server);
-            close_and_free_remote(EV_A_ remote);
-            return;
-        }
         int s = send(remote->fd, remote->buf->array, remote->buf->len, 0);
         if (s == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -760,30 +725,21 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         /*
          * Shadowsocks TCP Relay Header:
          *
-         *    +------+----------+----------+----------------+
-         *    | ATYP | DST.ADDR | DST.PORT |    HMAC-SHA1   |
-         *    +------+----------+----------+----------------+
-         *    |  1   | Variable |    2     |      10        |
-         *    +------+----------+----------+----------------+
-         *
-         *    If ATYP & ONETIMEAUTH_FLAG(0x10) != 0, Authentication (HMAC-SHA1) is enabled.
-         *
-         *    The key of HMAC-SHA1 is (IV + KEY) and the input is the whole header.
-         *    The output of HMAC-SHA is truncated to 10 bytes (leftmost bits).
+         *    +------+----------+----------+
+         *    | ATYP | DST.ADDR | DST.PORT |
+         *    +------+----------+----------+
+         *    |  1   | Variable |    2     |
+         *    +------+----------+----------+
          */
 
         /*
-         * Shadowsocks Request's Chunk Authentication for TCP Relay's payload
-         * (No chunk authentication for response's payload):
+         * TCP Relay's payload
          *
-         *    +------+-----------+-------------+------+
-         *    | LEN  | HMAC-SHA1 |    DATA     |      ...
-         *    +------+-----------+-------------+------+
-         *    |  2   |    10     |  Variable   |      ...
-         *    +------+-----------+-------------+------+
-         *
-         *    The key of HMAC-SHA1 is (IV + CHUNK ID)
-         *    The output of HMAC-SHA is truncated to 10 bytes (leftmost bits).
+         *    +-------------+------+
+         *    |    DATA     |      ...
+         *    +-------------+------+
+         *    |  Variable   |      ...
+         *    +-------------+------+
          */
 
         int offset     = 0;
@@ -795,27 +751,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         struct sockaddr_storage storage;
         memset(&info, 0, sizeof(struct addrinfo));
         memset(&storage, 0, sizeof(struct sockaddr_storage));
-
-        if (auth || (atyp & ONETIMEAUTH_FLAG)) {
-            size_t header_len = parse_header_len(atyp, server->buf->array, offset);
-            size_t len        = server->buf->len;
-
-            if (header_len == 0 || len < offset + header_len + ONETIMEAUTH_BYTES) {
-                report_addr(server->fd, MALFORMED);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
-
-            server->buf->len = offset + header_len + ONETIMEAUTH_BYTES;
-            if (ss_onetimeauth_verify(server->buf, server->d_ctx->evp.iv)) {
-                report_addr(server->fd, BAD);
-                close_and_free_server(EV_A_ server);
-                return;
-            }
-
-            server->buf->len = len;
-            server->auth     = 1;
-        }
 
         // get remote addr and port
         if ((atyp & ADDRTYPE_MASK) == 1) {
@@ -923,10 +858,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
         offset += 2;
 
-        if (server->auth) {
-            offset += ONETIMEAUTH_BYTES;
-        }
-
         if (server->buf->len < offset) {
             report_addr(server->fd, MALFORMED);
             close_and_free_server(EV_A_ server);
@@ -941,13 +872,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 LOGI("connect to [%s]:%d", host, ntohs(port));
             else
                 LOGI("connect to %s:%d", host, ntohs(port));
-        }
-
-        if (server->auth && !ss_check_hash(server->buf, server->chunk, server->d_ctx, BUF_SIZE)) {
-            LOGE("hash error");
-            report_addr(server->fd, BAD);
-            close_and_free_server(EV_A_ server);
-            return;
         }
 
         if (!need_query) {
@@ -1667,7 +1591,7 @@ main(int argc, char **argv)
             usage();
             exit(EXIT_SUCCESS);
         case 'A':
-            auth = 1;
+            LOGI("The 'A' argument is deprecate! Ignored.");
             break;
         case '6':
             ipv6first = 1;
@@ -1712,9 +1636,6 @@ main(int argc, char **argv)
         }
         if (user == NULL) {
             user = conf->user;
-        }
-        if (auth == 0) {
-            auth = conf->auth;
         }
         if (mode == TCP_ONLY) {
             mode = conf->mode;
@@ -1788,10 +1709,6 @@ main(int argc, char **argv)
 #else
         LOGE("tcp fast open is not supported by this environment");
 #endif
-    }
-
-    if (auth) {
-        LOGI("onetime authentication enabled");
     }
 
     if (mode != TCP_ONLY) {
@@ -1876,7 +1793,7 @@ main(int argc, char **argv)
         // Setup UDP
         if (mode != TCP_ONLY) {
             init_udprelay(server_host[index], server_port, mtu, m,
-                          auth, atoi(timeout), iface, NULL, NULL);
+                           atoi(timeout), iface, NULL, NULL);
         }
 
         if (host && strcmp(host, ":") > 0)

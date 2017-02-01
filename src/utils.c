@@ -316,8 +316,6 @@ usage()
 #endif
     printf(
         "       [-U]                       Enable UDP relay and disable TCP relay.\n");
-    printf(
-        "       [-A]                       Enable onetime authentication.\n");
 #ifdef MODULE_REMOTE
     printf(
         "       [-6]                       Resovle hostname to IPv6 address first.\n");

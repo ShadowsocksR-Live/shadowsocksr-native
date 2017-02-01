@@ -58,7 +58,7 @@ int tls12_ticket_pack_auth_data(tls12_ticket_auth_global_data *global, server_in
     rand_bytes((uint8_t*)outdata + 4, 18);
 
     uint8_t *key = (uint8_t*)malloc(server->key_len + 32);
-    char hash[ONETIMEAUTH_BYTES * 2];
+    char hash[SHA1_BYTES];
     memcpy(key, server->key, server->key_len);
     memcpy(key + server->key_len, global->local_client_id, 32);
     ss_sha1_hmac_with_key(hash, outdata, out_size - OBFS_HMAC_SHA1_LEN, key, server->key_len + 32);
@@ -236,7 +236,7 @@ int tls12_ticket_auth_client_encode(obfs *self, char **pencryptdata, int datalen
         pdata += 22;
 
         uint8_t *key = (uint8_t*)malloc(self->server.key_len + 32);
-        char hash[ONETIMEAUTH_BYTES * 2];
+        char hash[SHA1_BYTES];
         memcpy(key, self->server.key, self->server.key_len);
         memcpy(key + self->server.key_len, global->local_client_id, 32);
         ss_sha1_hmac_with_key(hash, out_buffer, pdata - out_buffer, key, self->server.key_len + 32);
@@ -294,7 +294,7 @@ int tls12_ticket_auth_client_decode(obfs *self, char **pencryptdata, int datalen
     }
 
     uint8_t *key = (uint8_t*)malloc(self->server.key_len + 32);
-    char hash[ONETIMEAUTH_BYTES * 2];
+    char hash[SHA1_BYTES];
     memcpy(key, self->server.key, self->server.key_len);
     memcpy(key + self->server.key_len, global->local_client_id, 32);
     ss_sha1_hmac_with_key(hash, encryptdata + 11, 22, key, self->server.key_len + 32);

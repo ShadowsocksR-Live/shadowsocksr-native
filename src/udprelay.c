@@ -686,7 +686,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     buf->len = r;
 
 #ifdef MODULE_LOCAL
-    int err = ss_decrypt_all(buf, server_ctx->method, 0, buf_size);
+    int err = ss_decrypt_all(buf, server_ctx->method, buf_size);
     if (err) {
         // drop the packet silently
         goto CLEAN_UP;
@@ -773,7 +773,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     memcpy(buf->array, addr_header, addr_header_len);
     buf->len += addr_header_len;
 
-    int err = ss_encrypt_all(buf, server_ctx->method, 0, buf_size);
+    int err = ss_encrypt_all(buf, server_ctx->method, buf_size);
     if (err) {
         // drop the packet silently
         goto CLEAN_UP;
@@ -916,7 +916,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 #ifdef MODULE_REMOTE
     tx += buf->len;
 
-    int err = ss_decrypt_all(buf, server_ctx->method, server_ctx->auth, buf_size);
+    int err = ss_decrypt_all(buf, server_ctx->method, buf_size);
     if (err) {
         // drop the packet silently
         goto CLEAN_UP;
@@ -950,16 +950,11 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
      * +----+------+------+----------+----------+----------+
      *
      * shadowsocks UDP Request (before encrypted)
-     * +------+----------+----------+----------+-------------+
-     * | ATYP | DST.ADDR | DST.PORT |   DATA   |  HMAC-SHA1  |
-     * +------+----------+----------+----------+-------------+
-     * |  1   | Variable |    2     | Variable |     10      |
-     * +------+----------+----------+----------+-------------+
-     *
-     * If ATYP & ONETIMEAUTH_FLAG(0x10) != 0, Authentication (HMAC-SHA1) is enabled.
-     *
-     * The key of HMAC-SHA1 is (IV + KEY) and the input is the whole packet.
-     * The output of HMAC-SHA is truncated to 10 bytes (leftmost bits).
+     * +------+----------+----------+----------+
+     * | ATYP | DST.ADDR | DST.PORT |   DATA   |
+     * +------+----------+----------+----------+
+     * |  1   | Variable |    2     | Variable |
+     * +------+----------+----------+----------+
      *
      * shadowsocks UDP Response (before encrypted)
      * +------+----------+----------+----------+
@@ -1189,10 +1184,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         memmove(buf->array, buf->array + offset, buf->len);
     }
 
-    if (server_ctx->auth) {
-        buf->array[0] |= ONETIMEAUTH_FLAG;
-    }
-
     // SSR beg
     if (server_ctx->protocol_plugin) {
         obfs_class *protocol_plugin = server_ctx->protocol_plugin;
@@ -1202,7 +1193,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     }
     //SSR end
 
-    int err = ss_encrypt_all(buf, server_ctx->method, server_ctx->auth, buf->len);
+    int err = ss_encrypt_all(buf, server_ctx->method, buf->len);
 
     if (err) {
         // drop the packet silently
@@ -1352,7 +1343,7 @@ init_udprelay(const char *server_host, const char *server_port,
               const ss_addr_t tunnel_addr,
 #endif
 #endif
-              int mtu, int method, int auth, int timeout, const char *iface, const char *protocol, const char *protocol_param)
+              int mtu, int method, int timeout, const char *iface, const char *protocol, const char *protocol_param)
 {
     // Initialize ev loop
     struct ev_loop *loop = EV_DEFAULT;
@@ -1376,16 +1367,11 @@ init_udprelay(const char *server_host, const char *server_port,
         FATAL("[udp] bind() error");
     }
     setnonblocking(serverfd);
-    if (protocol != NULL && strcmp(protocol, "verify_sha1") == 0) {
-        auth = 1;
-        protocol = NULL;
-    }
 
     server_ctx_t *server_ctx = new_server_ctx(serverfd);
 #ifdef MODULE_REMOTE
     server_ctx->loop = loop;
 #endif
-    server_ctx->auth       = auth;
     server_ctx->timeout    = max(timeout, MIN_UDP_TIMEOUT);
     server_ctx->method     = method;
     server_ctx->iface      = iface;

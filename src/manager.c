@@ -160,10 +160,6 @@ construct_command_line(struct manager_ctx *manager, struct server *server)
         int len = strlen(cmd);
         snprintf(cmd + len, BUF_SIZE - len, " -u");
     }
-    if (manager->auth) {
-        int len = strlen(cmd);
-        snprintf(cmd + len, BUF_SIZE - len, " -A");
-    }
     if (manager->fast_open) {
         int len = strlen(cmd);
         snprintf(cmd + len, BUF_SIZE - len, " --fast-open");
@@ -612,7 +608,6 @@ main(int argc, char **argv)
     char *iface           = NULL;
     char *manager_address = NULL;
 
-    int auth      = 0;
     int fast_open = 0;
     int mode      = TCP_ONLY;
     int mtu       = 0;
@@ -709,7 +704,7 @@ main(int argc, char **argv)
             usage();
             exit(EXIT_SUCCESS);
         case 'A':
-            auth = 1;
+            LOGI("The 'A' argument is deprecate! Ignored.");
             break;
 #ifdef HAVE_SETRLIMIT
         case 'n':
@@ -755,9 +750,6 @@ main(int argc, char **argv)
         if (conf->nameserver != NULL) {
             nameservers[nameserver_num++] = conf->nameserver;
         }
-        if (auth == 0) {
-            auth = conf->auth;
-        }
         if (mode == TCP_ONLY) {
             mode = conf->mode;
         }
@@ -801,10 +793,6 @@ main(int argc, char **argv)
 #endif
     }
 
-    if (auth) {
-        LOGI("onetime authentication enabled");
-    }
-
 #ifdef __MINGW32__
     winsock_init();
 #else
@@ -827,7 +815,6 @@ main(int argc, char **argv)
     manager.fast_open       = fast_open;
     manager.verbose         = verbose;
     manager.mode            = mode;
-    manager.auth            = auth;
     manager.password        = password;
     manager.timeout         = timeout;
     manager.method          = method;

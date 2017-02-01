@@ -242,7 +242,7 @@ int auth_sha1_pack_auth_data(auth_simple_global_data *global, server_info *serve
     memmove(outdata + data_offset + 4, global->local_client_id, 4);
     memintcopy_lt(outdata + data_offset + 8, global->connection_id);
     memmove(outdata + data_offset + 12, data, datalength);
-    char hash[ONETIMEAUTH_BYTES * 2];
+    char hash[SHA1_BYTES];
     ss_sha1_hmac(hash, outdata, out_size - OBFS_HMAC_SHA1_LEN, server->iv);
     memcpy(outdata + out_size - OBFS_HMAC_SHA1_LEN, hash, OBFS_HMAC_SHA1_LEN);
     return out_size;
@@ -380,7 +380,7 @@ int auth_sha1_v2_pack_auth_data(auth_simple_global_data *global, server_info *se
     memmove(outdata + data_offset, global->local_client_id, 8);
     memintcopy_lt(outdata + data_offset + 8, global->connection_id);
     memmove(outdata + data_offset + 12, data, datalength);
-    char hash[ONETIMEAUTH_BYTES * 2];
+    char hash[SHA1_BYTES];
     ss_sha1_hmac(hash, outdata, out_size - OBFS_HMAC_SHA1_LEN, server->iv);
     memcpy(outdata + out_size - OBFS_HMAC_SHA1_LEN, hash, OBFS_HMAC_SHA1_LEN);
     return out_size;
@@ -538,7 +538,7 @@ int auth_sha1_v4_pack_auth_data(auth_simple_global_data *global, server_info *se
     memmove(outdata + data_offset + 4, global->local_client_id, 4);
     memintcopy_lt(outdata + data_offset + 8, global->connection_id);
     memmove(outdata + data_offset + 12, data, datalength);
-    char hash[ONETIMEAUTH_BYTES * 2];
+    char hash[SHA1_BYTES];
     ss_sha1_hmac(hash, outdata, out_size - OBFS_HMAC_SHA1_LEN, server->iv);
     memcpy(outdata + out_size - OBFS_HMAC_SHA1_LEN, hash, OBFS_HMAC_SHA1_LEN);
     return out_size;

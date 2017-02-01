@@ -37,7 +37,6 @@ struct manager_ctx {
     int fast_open;
     int verbose;
     int mode;
-    int auth;
     char *password;
     char *timeout;
     char *method;

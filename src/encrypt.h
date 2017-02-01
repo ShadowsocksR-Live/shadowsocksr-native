@@ -155,14 +155,10 @@ enum crpher_index {
     CIPHER_NUM,
 };
 
-#define ONETIMEAUTH_FLAG 0x10
 #define ADDRTYPE_MASK 0xEF
 
-#define ONETIMEAUTH_BYTES 10U
 #define MD5_BYTES 16U
 #define SHA1_BYTES 20U
-#define CLEN_BYTES 2U
-#define AUTH_BYTES (ONETIMEAUTH_BYTES + CLEN_BYTES)
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
@@ -189,8 +185,8 @@ typedef struct enc_ctx {
 
 void bytes_to_key_with_size(const char *pass, size_t len, uint8_t *md, size_t md_size);
 
-int ss_encrypt_all(buffer_t *plaintext, int method, int auth, size_t capacity);
-int ss_decrypt_all(buffer_t *ciphertext, int method, int auth, size_t capacity);
+int ss_encrypt_all(buffer_t *plaintext, int method, size_t capacity);
+int ss_decrypt_all(buffer_t *ciphertext, int method, size_t capacity);
 int ss_encrypt(buffer_t *plaintext, enc_ctx_t *ctx, size_t capacity);
 int ss_decrypt(buffer_t *ciphertext, enc_ctx_t *ctx, size_t capacity);
 
@@ -209,11 +205,6 @@ int ss_sha1_hmac(char *auth, char *msg, int msg_len, uint8_t *iv);
 int ss_sha1_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len);
 int ss_sha1_hash_func(char *auth, char *msg, int msg_len);
 int ss_aes_128_cbc(char *encrypt, char *out_data, char *key);
-int ss_onetimeauth(buffer_t *buf, uint8_t *iv, size_t capacity);
-int ss_onetimeauth_verify(buffer_t *buf, uint8_t *iv);
-
-int ss_check_hash(buffer_t *buf, chunk_t *chunk, enc_ctx_t *ctx, size_t capacity);
-int ss_gen_hash(buffer_t *buf, uint32_t *counter, enc_ctx_t *ctx, size_t capacity);
 
 int balloc(buffer_t *ptr, size_t capacity);
 int brealloc(buffer_t *ptr, size_t len, size_t capacity);

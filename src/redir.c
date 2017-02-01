@@ -92,7 +92,6 @@ int keep_resolving = 1;
 
 static int ipv6first = 0;
 static int mode = TCP_ONLY;
-static int auth = 0;
 #ifdef HAVE_SETRLIMIT
 static int nofile = 0;
 #endif
@@ -225,10 +224,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         }
 
         LOGI("redir to %s:%d, len=%zu, recv=%zd", ipstr, port, remote->buf->len, r);
-    }
-
-    if (auth) {
-        ss_gen_hash(remote->buf, &remote->counter, server->e_ctx, BUF_SIZE);
     }
 
     if (!remote->send_ctx->connected) {
@@ -532,11 +527,6 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
             }
 
             abuf->len += 2;
-
-            if (auth) {
-                abuf->array[0] |= ONETIMEAUTH_FLAG;
-                ss_onetimeauth(abuf, server->e_ctx->evp.iv, BUF_SIZE);
-            }
 
             if (remote->buf->len > 0) {
                 brealloc(remote->buf, remote->buf->len + abuf->len, BUF_SIZE);
@@ -1028,7 +1018,7 @@ main(int argc, char **argv)
             usage();
             exit(EXIT_SUCCESS);
         case 'A':
-            auth = 1;
+            LOGI("The 'A' argument is deprecate! Ignored.");
             break;
         case '6':
             ipv6first = 1;
@@ -1099,9 +1089,6 @@ main(int argc, char **argv)
         if (user == NULL) {
             user = conf->user;
         }
-        if (auth == 0) {
-            auth = conf->auth;
-        }
         if (mtu == 0) {
             mtu = conf->mtu;
         }
@@ -1125,7 +1112,7 @@ main(int argc, char **argv)
 #endif
     }
     if (protocol && strcmp(protocol, "verify_sha1") == 0) {
-        auth = 1;
+        LOGI("The verify_sha1 protocol is deprecate! Fallback to origin protocol.");
         protocol = NULL;
     }
 
@@ -1167,10 +1154,6 @@ main(int argc, char **argv)
 
     if (ipv6first) {
         LOGI("resolving hostname to IPv6 address first");
-    }
-
-    if (auth) {
-        LOGI("onetime authentication enabled");
     }
 
     // ignore SIGPIPE
@@ -1237,7 +1220,7 @@ main(int argc, char **argv)
     if (mode != TCP_ONLY) {
         LOGI("UDP relay enabled");
         init_udprelay(local_addr, local_port, listen_ctx.remote_addr[0],
-                      get_sockaddr_len(listen_ctx.remote_addr[0]), mtu, m, auth, listen_ctx.timeout, NULL, protocol, protocol_param);
+                      get_sockaddr_len(listen_ctx.remote_addr[0]), mtu, m, listen_ctx.timeout, NULL, protocol, protocol_param);
     }
 
     if (mode == UDP_ONLY) {
