@@ -153,7 +153,7 @@ int tls12_ticket_auth_client_encode(obfs *self, char **pencryptdata, int datalen
 
         char sni[256] = {0};
         char* param = NULL;
-        if (!self->server.param || strlen(self->server.param) > 0)
+        if (self->server.param && strlen(self->server.param) > 0)
             param = self->server.param;
         else
             param = self->server.host;
