@@ -226,6 +226,12 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     }
     // SSR end
 
+    if (r > 0 && remote->buf->len == 0) { // SSR pause recv
+         remote->buf->idx = 0;
+         ev_io_stop(EV_A_ & server_recv_ctx->io);
+         return;
+    }
+
     int s = send(remote->fd, remote->buf->array, remote->buf->len, 0);
 
     if (s == -1) {
@@ -354,14 +360,31 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
                 return;
             }
             if (needsendback) {
-                size_t capacity = BUF_SIZE;
-                char *buf = (char*)malloc(capacity);
                 obfs_class *obfs_plugin = server->obfs_plugin;
                 if (obfs_plugin->client_encode) {
-                    int len = obfs_plugin->client_encode(server->obfs, &buf, 0, &capacity);
-                    send(remote->fd, buf, len, 0);
+                    remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->array, 0, &remote->buf->capacity);
+                    ssize_t s = send(remote->fd, remote->buf->array, remote->buf->len, 0);
+                    if (s == -1) {
+                        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                            ERROR("remote_send_cb_send");
+                            // close and free
+                            close_and_free_remote(EV_A_ remote);
+                            close_and_free_server(EV_A_ server);
+                        }
+                        return;
+                    } else if (s < (ssize_t)(remote->buf->len)) {
+                        // partly sent, move memory, wait for the next time to send
+                        remote->buf->len -= s;
+                        remote->buf->idx += s;
+                        return;
+                    } else {
+                        // all sent out, wait for reading
+                        remote->buf->len = 0;
+                        remote->buf->idx = 0;
+                        ev_io_stop(EV_A_ & remote->send_ctx->io);
+                        ev_io_start(EV_A_ & server->recv_ctx->io);
+                    }
                 }
-                free(buf);
             }
         }
     }
