@@ -4,8 +4,10 @@
  * Copyright (C) 2015 - 2016, Break Wa11 <mmgac001@gmail.com>
  */
 
-#ifndef _HTTP_SIMPLE_H
-#define _HTTP_SIMPLE_H
+#ifndef _OBFS_HTTP_SIMPLE_H
+#define _OBFS_HTTP_SIMPLE_H
+
+struct obfs;
 
 obfs * http_simple_new_obfs();
 void http_simple_dispose(obfs *self);
@@ -15,4 +17,4 @@ int http_simple_client_decode(obfs *self, char **pencryptdata, int datalength, s
 
 int http_post_client_encode(obfs *self, char **pencryptdata, int datalength, size_t* capacity);
 
-#endif // _HTTP_SIMPLE_H
+#endif // _OBFS_HTTP_SIMPLE_H

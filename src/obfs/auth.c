@@ -1,5 +1,11 @@
+#include <string.h>
+#include <time.h>
 
 #include "auth.h"
+#include "obfsutil.h"
+#include "crc32.h"
+#include "base64.h"
+#include "encrypt.h"
 
 static int auth_simple_pack_unit_size = 2000;
 typedef int (*hmac_with_key_func)(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len);

@@ -4,11 +4,13 @@
  * Copyright (C) 2015 - 2016, Break Wa11 <mmgac001@gmail.com>
  */
 
-#ifndef _OBFS_H
-#define _OBFS_H
+#ifndef _OBFS_OBFS_H
+#define _OBFS_OBFS_H
 
 #include <stdint.h>
 #include <unistd.h>
+
+#define OBFS_HMAC_SHA1_LEN 10
 
 typedef struct server_info {
     char host[64];
@@ -72,4 +74,4 @@ void get_server_info(obfs *self, server_info *server);
 obfs * new_obfs();
 void dispose_obfs(obfs *self);
 
-#endif // _OBFS_H
+#endif // _OBFS_OBFS_H

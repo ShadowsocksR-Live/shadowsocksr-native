@@ -185,6 +185,8 @@ typedef struct enc_ctx {
 
 void bytes_to_key_with_size(const char *pass, size_t len, uint8_t *md, size_t md_size);
 
+int rand_bytes(uint8_t *output, int len);
+
 int ss_encrypt_all(buffer_t *plaintext, int method, size_t capacity);
 int ss_decrypt_all(buffer_t *ciphertext, int method, size_t capacity);
 int ss_encrypt(buffer_t *plaintext, enc_ctx_t *ctx, size_t capacity);

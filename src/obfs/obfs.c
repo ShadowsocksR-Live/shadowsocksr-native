@@ -5,15 +5,14 @@
 #include "obfs.h"
 
 int rand_bytes(uint8_t *output, int len);
-#define OBFS_HMAC_SHA1_LEN 10
 
-#include "obfsutil.c"
-#include "crc32.c"
-#include "base64.c"
-#include "http_simple.c"
-#include "tls1.2_ticket.c"
-#include "verify.c"
-#include "auth.c"
+#include "obfsutil.h"
+#include "crc32.h"
+#include "base64.h"
+#include "http_simple.h"
+#include "tls1.2_ticket.h"
+#include "verify.h"
+#include "auth.h"
 
 void * init_data() {
     return malloc(1);

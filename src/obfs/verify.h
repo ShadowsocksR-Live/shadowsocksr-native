@@ -4,8 +4,10 @@
  * Copyright (C) 2015 - 2016, Break Wa11 <mmgac001@gmail.com>
  */
 
-#ifndef _VERIFY_H
-#define _VERIFY_H
+#ifndef _OBFS_VERIFY_H
+#define _OBFS_VERIFY_H
+
+struct obfs;
 
 obfs * verify_simple_new_obfs();
 void verify_simple_dispose(obfs *self);
@@ -13,4 +15,4 @@ void verify_simple_dispose(obfs *self);
 int verify_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength, size_t* capacity);
 int verify_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalength, size_t* capacity);
 
-#endif // _VERIFY_H
+#endif // _OBFS_VERIFY_H

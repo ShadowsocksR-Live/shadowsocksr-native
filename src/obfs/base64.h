@@ -1,5 +1,5 @@
-#ifndef __BASE64_H__
-#define __BASE64_H__
+#ifndef _OBFS_BASE64_H
+#define _OBFS_BASE64_H
 
 enum {BASE64_OK = 0, BASE64_INVALID};
 
@@ -13,4 +13,4 @@ int
 base64_decode(const char *in, unsigned int inlen, unsigned char *out);
 
 
-#endif /* __BASE64_H__ */
+#endif // _OBFS_BASE64_H

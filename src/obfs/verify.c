@@ -1,5 +1,10 @@
+#include <stdlib.h>
 
 #include "verify.h"
+#include "obfs.h"
+#include "obfsutil.h"
+#include "crc32.h"
+#include "encrypt.h"
 
 static int verify_simple_pack_unit_size = 2000;
 
