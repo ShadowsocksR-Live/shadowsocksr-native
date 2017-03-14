@@ -27,7 +27,7 @@
 #include <libcork/ds.h>
 
 #include "encrypt.h"
-#include "obfs.h"
+#include "obfs/obfs.h"
 #include "jconf.h"
 #include "protocol.h"
 

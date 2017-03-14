@@ -71,7 +71,7 @@
 #define IP6T_SO_ORIGINAL_DST 80
 #endif
 
-#include "obfs.c" // I don't want to modify makefile
+#include "includeobfs.h" // I don't want to modify makefile
 
 static void accept_cb(EV_P_ ev_io *w, int revents);
 static void server_recv_cb(EV_P_ ev_io *w, int revents);

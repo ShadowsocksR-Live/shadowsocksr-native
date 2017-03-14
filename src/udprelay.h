@@ -28,7 +28,7 @@
 
 #include "encrypt.h"
 #include "jconf.h"
-#include "obfs.h"
+#include "obfs/obfs.h"
 
 #ifdef MODULE_REMOTE
 #include "resolv.h"

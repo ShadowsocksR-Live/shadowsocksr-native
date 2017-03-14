@@ -25,7 +25,7 @@
 
 #include <ev.h>
 #include "encrypt.h"
-#include "obfs.h"
+#include "obfs/obfs.h"
 #include "jconf.h"
 
 typedef struct listen_ctx {
