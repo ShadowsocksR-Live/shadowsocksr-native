@@ -7,7 +7,7 @@
 #ifndef _OBFS_AUTH_H
 #define _OBFS_AUTH_H
 
-struct obfs;
+typedef struct obfs obfs;
 
 void * auth_simple_init_data();
 obfs * auth_simple_new_obfs();
