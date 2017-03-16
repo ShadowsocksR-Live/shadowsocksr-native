@@ -1,10 +1,9 @@
 #include <stdlib.h>
-
+#include <string.h>
 #include "verify.h"
 #include "obfs.h"
 #include "obfsutil.h"
 #include "crc32.h"
-#include "encrypt.h"
 
 static int verify_simple_pack_unit_size = 2000;
 
@@ -39,18 +38,18 @@ void verify_simple_dispose(obfs *self) {
 int verify_simple_pack_data(char *data, int datalength, char *outdata) {
     unsigned char rand_len = (xorshift128plus() & 0xF) + 1;
     int out_size = rand_len + datalength + 6;
-    outdata[0] = out_size >> 8;
-    outdata[1] = out_size;
-    outdata[2] = rand_len;
+    outdata[0] = (char)(out_size >> 8);
+    outdata[1] = (char)out_size;
+    outdata[2] = (char)rand_len;
     memmove(outdata + rand_len + 2, data, datalength);
-    fillcrc32((unsigned char *)outdata, out_size);
+    fillcrc32((unsigned char *)outdata, (unsigned int)out_size);
     return out_size;
 }
 
 int verify_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength, size_t *capacity) {
     char *plaindata = *pplaindata;
     //verify_simple_local_data *local = (verify_simple_local_data*)self->l_data;
-    char * out_buffer = (char*)malloc(datalength * 2 + 32);
+    char * out_buffer = (char*)malloc((size_t)(datalength * 2 + 32));
     char * buffer = out_buffer;
     char * data = plaindata;
     int len = datalength;
@@ -65,9 +64,9 @@ int verify_simple_client_pre_encrypt(obfs *self, char **pplaindata, int dataleng
         pack_len = verify_simple_pack_data(data, len, buffer);
         buffer += pack_len;
     }
-    len = buffer - out_buffer;
-    if (*capacity < len) {
-        *pplaindata = (char*)realloc(*pplaindata, *capacity = len * 2);
+    len = (int)(buffer - out_buffer);
+    if ((int)*capacity < len) {
+        *pplaindata = (char*)realloc(*pplaindata, *capacity = (size_t)(len * 2));
         plaindata = *pplaindata;
     }
     memmove(plaindata, out_buffer, len);
@@ -84,7 +83,7 @@ int verify_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalen
     memmove(recv_buffer + local->recv_buffer_size, plaindata, datalength);
     local->recv_buffer_size += datalength;
 
-    char * out_buffer = (char*)malloc(local->recv_buffer_size);
+    char * out_buffer = (char*)malloc((size_t)local->recv_buffer_size);
     char * buffer = out_buffer;
     while (local->recv_buffer_size > 2) {
         int length = ((int)recv_buffer[0] << 8) | recv_buffer[1];
@@ -96,7 +95,7 @@ int verify_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalen
         if (length > local->recv_buffer_size)
             break;
 
-        int crc = crc32((unsigned char*)recv_buffer, length);
+        int crc = (int)crc32((unsigned char*)recv_buffer, (unsigned int)length);
         if (crc != -1) {
             free(out_buffer);
             local->recv_buffer_size = 0;
@@ -107,9 +106,9 @@ int verify_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalen
         buffer += data_size;
         memmove(recv_buffer, recv_buffer + length, local->recv_buffer_size -= length);
     }
-    int len = buffer - out_buffer;
-    if (*capacity < len) {
-        *pplaindata = (char*)realloc(*pplaindata, *capacity = len * 2);
+    int len = (int)(buffer - out_buffer);
+    if ((int)*capacity < len) {
+        *pplaindata = (char*)realloc(*pplaindata, *capacity = (size_t)(len * 2));
         plaindata = *pplaindata;
     }
     memmove(plaindata, out_buffer, len);

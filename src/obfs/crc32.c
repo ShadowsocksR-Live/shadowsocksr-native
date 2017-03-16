@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <stdlib.h>
 #include "crc32.h"
 
 static uint32_t crc32_table[256] = {0};
@@ -35,10 +35,10 @@ void fillcrc32to(unsigned char *buffer, unsigned int size, unsigned char *outbuf
         crc = crc32_table[(crc ^ buffer[i]) & 0xff] ^ (crc >> 8);
     }
     crc ^= 0xFFFFFFFF;
-    outbuffer[0] = crc;
-    outbuffer[1] = crc >> 8;
-    outbuffer[2] = crc >> 16;
-    outbuffer[3] = crc >> 24;
+    outbuffer[0] = (unsigned char)crc;
+    outbuffer[1] = (unsigned char)(crc >> 8);
+    outbuffer[2] = (unsigned char)(crc >> 16);
+    outbuffer[3] = (unsigned char)(crc >> 24);
 }
 
 void fillcrc32(unsigned char *buffer, unsigned int size) {
@@ -49,14 +49,14 @@ void fillcrc32(unsigned char *buffer, unsigned int size) {
         crc = crc32_table[(crc ^ buffer[i]) & 0xff] ^ (crc >> 8);
     }
     buffer += size;
-    buffer[0] = crc;
-    buffer[1] = crc >> 8;
-    buffer[2] = crc >> 16;
-    buffer[3] = crc >> 24;
+    buffer[0] = (unsigned char)crc;
+    buffer[1] = (unsigned char)(crc >> 8);
+    buffer[2] = (unsigned char)(crc >> 16);
+    buffer[3] = (unsigned char)(crc >> 24);
 }
 
 void adler32_short(unsigned char *buffer, unsigned int size, uint32_t *a, uint32_t *b) {
-    for (int i = 0; i < size; i++) {
+    for (int i = 0; i < (int)size; i++) {
         *a += buffer[i];
         *b += *a;
     }
@@ -82,10 +82,10 @@ void filladler32(unsigned char *buffer, unsigned int size) {
     size -= 4;
     uint32_t checksum = adler32(buffer, size);
     buffer += size;
-    buffer[0] = checksum;
-    buffer[1] = checksum >> 8;
-    buffer[2] = checksum >> 16;
-    buffer[3] = checksum >> 24;
+    buffer[0] = (unsigned char)checksum;
+    buffer[1] = (unsigned char)(checksum >> 8);
+    buffer[2] = (unsigned char)(checksum >> 16);
+    buffer[3] = (unsigned char)(checksum >> 24);
 }
 
 int checkadler32(unsigned char *buffer, unsigned int size) {

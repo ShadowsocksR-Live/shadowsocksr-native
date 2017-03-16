@@ -101,14 +101,14 @@ base64_decode(const char *in, unsigned int inlen, unsigned char *out)
 
             /* if not last char with padding */
             if (i < (inlen - 3) || in[inlen - 2] != '=')
-                out[j] = ((unsigned int)c & 0xF) << 4; 
+                out[j] = (unsigned char)(((unsigned int)c & 0xF) << 4);
             continue;
         case 2:
             out[j++] += ((unsigned int)c >> 2) & 0xF;
 
             /* if not last char with padding */
             if (i < (inlen - 2) || in[inlen - 1] != '=')
-                out[j] =  ((unsigned int)c & 0x3) << 6;
+                out[j] =  (unsigned char)(((unsigned int)c & 0x3) << 6);
             continue;
         case 3:
             out[j++] += (unsigned char)c;

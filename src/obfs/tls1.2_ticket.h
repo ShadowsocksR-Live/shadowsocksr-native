@@ -7,7 +7,7 @@
 #ifndef _OBFS_TLS1_2_TICKET_H
 #define _OBFS_TLS1_2_TICKET_H
 
-typedef struct obfs obfs;
+typedef struct obfs_struct obfs;
 
 void * tls12_ticket_auth_init_data();
 obfs * tls12_ticket_auth_new_obfs();

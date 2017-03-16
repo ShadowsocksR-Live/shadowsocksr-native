@@ -27,7 +27,7 @@ typedef struct server_info {
     size_t tcp_mss;
 }server_info;
 
-typedef struct obfs {
+typedef struct obfs_struct {
     server_info server;
     void *l_data;
 }obfs;

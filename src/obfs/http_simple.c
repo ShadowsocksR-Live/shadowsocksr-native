@@ -6,7 +6,6 @@
 #include "http_simple.h"
 #include "obfs.h"
 #include "obfsutil.h"
-#include "encrypt.h"
 
 static char* g_useragent[] = {
     "Mozilla/5.0 (Windows NT 6.3; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0",
@@ -65,7 +64,7 @@ char http_simple_hex(char c) {
 
 void http_simple_encode_head(http_simple_local_data *local, char *data, int datalength) {
     if (local->encode_buffer == NULL) {
-        local->encode_buffer = (char*)malloc(datalength * 3 + 1);
+        local->encode_buffer = (char*)malloc((size_t)(datalength * 3 + 1));
     }
     int pos = 0;
     for (; pos < datalength; ++pos) {
@@ -87,9 +86,9 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength, s
     int host_num = 0;
     int pos;
     char hostport[128];
-    int head_size = self->server.head_len + (xorshift128plus() & 0x3F);
+    int head_size = self->server.head_len + (int)(xorshift128plus() & 0x3F);
     int outlength;
-    char * out_buffer = (char*)malloc(datalength + 2048);
+    char * out_buffer = (char*)malloc((size_t)(datalength + 2048));
     char * body_buffer = NULL;
     if (head_size > datalength)
         head_size = datalength;
@@ -135,7 +134,7 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength, s
             break;
         }
     }
-    host_num = xorshift128plus() % host_num;
+    host_num = (int)(xorshift128plus() % (uint64_t)host_num);
     if (self->server.port == 80)
         sprintf(hostport, "%s", phost[host_num]);
     else
@@ -165,12 +164,12 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength, s
             );
     }
     //LOGI("http header: %s", out_buffer);
-    outlength = strlen(out_buffer);
+    outlength = (int)strlen(out_buffer);
     memmove(out_buffer + outlength, encryptdata + head_size, datalength - head_size);
     outlength += datalength - head_size;
     local->has_sent_header = 1;
-    if (*capacity < outlength) {
-        *pencryptdata = (char*)realloc(*pencryptdata, *capacity = outlength * 2);
+    if ((int)*capacity < outlength) {
+        *pencryptdata = (char*)realloc(*pencryptdata, *capacity = (size_t)(outlength * 2));
         encryptdata = *pencryptdata;
     }
     memmove(encryptdata, out_buffer, outlength);
@@ -196,7 +195,7 @@ int http_simple_client_decode(obfs *self, char **pencryptdata, int datalength, s
         int outlength;
         data_begin += 4;
         local->has_recv_header = 1;
-        outlength = datalength - (data_begin - encryptdata);
+        outlength = datalength - (int)(data_begin - encryptdata);
         memmove(encryptdata, data_begin, outlength);
         return outlength;
     } else {
@@ -209,7 +208,7 @@ void boundary(char result[])
     char *str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     int i,lstr;
     char ss[3] = {0};
-    lstr = strlen(str);
+    lstr = (int)strlen(str);
     srand((unsigned int)time((time_t *)NULL));
     for(i = 0; i < 32; ++i)
     {
@@ -229,9 +228,9 @@ int http_post_client_encode(obfs *self, char **pencryptdata, int datalength, siz
     int host_num = 0;
     int pos;
     char hostport[128];
-    int head_size = self->server.head_len + (xorshift128plus() & 0x3F);
+    int head_size = self->server.head_len + (int)(xorshift128plus() & 0x3F);
     int outlength;
-    char * out_buffer = (char*)malloc(datalength + 4096);
+    char * out_buffer = (char*)malloc((size_t)(datalength + 4096));
     char * body_buffer = NULL;
     if (head_size > datalength)
         head_size = datalength;
@@ -277,7 +276,7 @@ int http_post_client_encode(obfs *self, char **pencryptdata, int datalength, siz
             break;
         }
     }
-    host_num = xorshift128plus() % host_num;
+    host_num = (int)(xorshift128plus() % (uint64_t)host_num);
     if (self->server.port == 80)
         snprintf(hostport, sizeof(hostport), "%s", phost[host_num]);
     else
@@ -311,12 +310,12 @@ int http_post_client_encode(obfs *self, char **pencryptdata, int datalength, siz
             );
     }
     //LOGI("http header: %s", out_buffer);
-    outlength = strlen(out_buffer);
+    outlength = (int)strlen(out_buffer);
     memmove(out_buffer + outlength, encryptdata + head_size, datalength - head_size);
     outlength += datalength - head_size;
     local->has_sent_header = 1;
-    if (*capacity < outlength) {
-        *pencryptdata = (char*)realloc(*pencryptdata, *capacity = outlength * 2);
+    if ((int)*capacity < outlength) {
+        *pencryptdata = (char*)realloc(*pencryptdata, *capacity = (size_t)(outlength * 2));
         encryptdata = *pencryptdata;
     }
     memmove(encryptdata, out_buffer, outlength);

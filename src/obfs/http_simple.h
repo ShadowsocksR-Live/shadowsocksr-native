@@ -7,7 +7,7 @@
 #ifndef _OBFS_HTTP_SIMPLE_H
 #define _OBFS_HTTP_SIMPLE_H
 
-typedef struct obfs obfs;
+typedef struct obfs_struct obfs;
 
 obfs * http_simple_new_obfs();
 void http_simple_dispose(obfs *self);
