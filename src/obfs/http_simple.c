@@ -4,7 +4,6 @@
 #include <time.h>
 
 #include "http_simple.h"
-#include "obfs.h"
 #include "obfsutil.h"
 
 static char* g_useragent[] = {

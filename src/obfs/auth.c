@@ -1,6 +1,5 @@
 #include <string.h>
 #include <time.h>
-#include "obfs.h"
 #include "auth.h"
 #include "obfsutil.h"
 #include "crc32.h"

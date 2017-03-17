@@ -4,7 +4,6 @@
 #include <time.h>
 
 #include "tls1.2_ticket.h"
-#include "obfs.h"
 #include "obfsutil.h"
 #include "encrypt.h"
 

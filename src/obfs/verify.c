@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "verify.h"
-#include "obfs.h"
 #include "obfsutil.h"
 #include "crc32.h"
 
