@@ -991,19 +991,19 @@ int ss_md5_hash_func(char *auth, char *msg, int msg_len)
     return 0;
 }
 
-int ss_sha1_hmac(char *auth, char *msg, int msg_len, uint8_t *iv)
+int ss_sha1_hmac(char *auth, char *msg, int msg_len, uint8_t *iv, int _enc_iv_len, uint8_t *_enc_key, int _enc_key_len)
 {
     uint8_t hash[SHA1_BYTES];
     uint8_t auth_key[MAX_IV_LENGTH + MAX_KEY_LENGTH];
-    memcpy(auth_key, iv, enc_iv_len);
-    memcpy(auth_key + enc_iv_len, enc_key, enc_key_len);
+    memcpy(auth_key, iv, _enc_iv_len);
+    memcpy(auth_key + _enc_iv_len, _enc_key, _enc_key_len);
 
 #if defined(USE_CRYPTO_OPENSSL)
-    HMAC(EVP_sha1(), auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash, NULL);
+    HMAC(EVP_sha1(), auth_key, _enc_iv_len + _enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash, NULL);
 #elif defined(USE_CRYPTO_MBEDTLS)
-    mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash);
+    mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), auth_key, _enc_iv_len + _enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash);
 #else
-    sha1_hmac(auth_key, enc_iv_len + enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash);
+    sha1_hmac(auth_key, _enc_iv_len + _enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash);
 #endif
 
     memcpy(auth, hash, SHA1_BYTES);
