@@ -216,8 +216,11 @@ int tls12_ticket_auth_client_encode(obfs *self, char **pencryptdata, int datalen
         tls_data_len += 9 + sni_len;
         memcpy(tls_data + tls_data_len, tls_data2, tls_data2_len);
         tls_data_len += tls_data2_len;
-        rand_bytes(tls_data + tls_data_len, 208);
-        tls_data_len += 208;
+        unsigned ticket_len = (unsigned)(xorshift128plus() % (uint64_t)164) * 2 + 64;
+        tls_data[tls_data_len - 1] = (uint8_t)(ticket_len & 0xff);
+        tls_data[tls_data_len - 2] = (uint8_t)(ticket_len >> 8);
+        rand_bytes(tls_data + tls_data_len, ticket_len);
+        tls_data_len += ticket_len;
         memcpy(tls_data + tls_data_len, tls_data3, tls_data3_len);
         tls_data_len += tls_data3_len;
 
