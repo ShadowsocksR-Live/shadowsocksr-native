@@ -650,8 +650,8 @@ int auth_sha1_v4_client_post_decrypt(obfs *self, char **pplaindata, int dataleng
     return len;
 }
 
-unsigned int get_rand_len(int datalength, int fulldatalength, auth_simple_local_data *local) {
-    if (datalength > 1300 || local->last_data_len > 1300 || fulldatalength >= 1492)
+unsigned int get_rand_len(int datalength, int fulldatalength, auth_simple_local_data *local, server_info *server) {
+    if (datalength > 1300 || local->last_data_len > 1300 || fulldatalength >= (int)server->buffer_size)
         return 0;
     if (datalength > 1100)
         return xorshift128plus() & 0x7F;
@@ -663,7 +663,7 @@ unsigned int get_rand_len(int datalength, int fulldatalength, auth_simple_local_
 }
 
 int auth_aes128_sha1_pack_data(char *data, int datalength, int fulldatalength, char *outdata, auth_simple_local_data *local, server_info *server) {
-    unsigned int rand_len = get_rand_len(datalength, fulldatalength, local) + 1;
+    unsigned int rand_len = get_rand_len(datalength, fulldatalength, local, server) + 1;
     int out_size = (int)rand_len + datalength + 8;
     memcpy(outdata + rand_len + 4, data, datalength);
     outdata[0] = (char)out_size;

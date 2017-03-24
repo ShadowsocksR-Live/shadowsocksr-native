@@ -25,6 +25,7 @@ typedef struct server_info {
     size_t key_len;
     int head_len;
     size_t tcp_mss;
+    size_t buffer_size;
 }server_info;
 
 typedef struct obfs_struct {
