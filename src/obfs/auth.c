@@ -28,6 +28,7 @@ typedef struct auth_simple_local_data {
     hmac_with_key_func hmac;
     hash_func hash;
     int hash_len;
+    int last_data_len;
 }auth_simple_local_data;
 
 void auth_simple_local_data_init(auth_simple_local_data* local) {
@@ -649,9 +650,21 @@ int auth_sha1_v4_client_post_decrypt(obfs *self, char **pplaindata, int dataleng
     return len;
 }
 
+unsigned int get_rand_len(int datalength, auth_simple_local_data *local) {
+    if (datalength > 1300 || local->last_data_len > 1300)
+        return 0;
+    if (datalength > 1100)
+        return xorshift128plus() & 0x7F;
+    if (datalength > 900)
+        return xorshift128plus() & 0xFF;
+    if (datalength > 400)
+        return xorshift128plus() & 0x1FF;
+    return xorshift128plus() & 0x3FF;
+}
 
 int auth_aes128_sha1_pack_data(char *data, int datalength, char *outdata, auth_simple_local_data *local, server_info *server) {
-    unsigned int rand_len = (datalength > 1200 ? 0 : local->pack_id > 4 ? (xorshift128plus() & 0x20) : datalength > 900 ? (xorshift128plus() & 0x80) : (xorshift128plus() & 0x200)) + 1;
+    unsigned int rand_len = get_rand_len(datalength, local) + 1;
+    local->last_data_len = datalength;
     int out_size = (int)rand_len + datalength + 8;
     memcpy(outdata + rand_len + 4, data, datalength);
     outdata[0] = (char)out_size;
@@ -696,7 +709,7 @@ int auth_aes128_sha1_pack_data(char *data, int datalength, char *outdata, auth_s
 }
 
 int auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, server_info *server, auth_simple_local_data *local, char *data, int datalength, char *outdata) {
-    unsigned int rand_len = (datalength > 400 ? (xorshift128plus() & 0x200) : (xorshift128plus() & 0x400));
+    unsigned int rand_len = (datalength > 400 ? (xorshift128plus() & 0x1FF) : (xorshift128plus() & 0x3FF));
     int data_offset = (int)rand_len + 16 + 4 + 4 + 7;
     int out_size = data_offset + datalength + 4;
     const char* salt = local->salt;
@@ -814,6 +827,7 @@ int auth_aes128_sha1_client_pre_encrypt(obfs *self, char **pplaindata, int datal
     char * data = plaindata;
     int len = datalength;
     int pack_len;
+    local->last_data_len = 0;
     if (len > 0 && local->has_sent_header == 0) {
         int head_size = 1200;
         if (head_size > datalength)
