@@ -59,6 +59,7 @@
 #include "netutils.h"
 #include "cache.h"
 #include "udprelay.h"
+#include "encrypt.h"
 
 #ifdef MODULE_REMOTE
 #define MAX_UDP_CONN_NUM 512
@@ -686,7 +687,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     buf->len = r;
 
 #ifdef MODULE_LOCAL
-    int err = ss_decrypt_all(buf, server_ctx->method, buf_size);
+    int err = ss_decrypt_all(&cipher_env, buf, buf_size);
     if (err) {
         // drop the packet silently
         goto CLEAN_UP;
@@ -773,7 +774,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     memcpy(buf->array, addr_header, addr_header_len);
     buf->len += addr_header_len;
 
-    int err = ss_encrypt_all(buf, server_ctx->method, buf_size);
+    int err = ss_encrypt_all(&cipher_env, buf, buf_size);
     if (err) {
         // drop the packet silently
         goto CLEAN_UP;
@@ -916,7 +917,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 #ifdef MODULE_REMOTE
     tx += buf->len;
 
-    int err = ss_decrypt_all(buf, server_ctx->method, buf_size);
+    int err = ss_decrypt_all(&cipher_env, buf, buf_size);
     if (err) {
         // drop the packet silently
         goto CLEAN_UP;
@@ -1193,7 +1194,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     }
     //SSR end
 
-    int err = ss_encrypt_all(buf, server_ctx->method, buf->len);
+    int err = ss_encrypt_all(&cipher_env, buf, buf->len);
 
     if (err) {
         // drop the packet silently
@@ -1343,7 +1344,7 @@ init_udprelay(const char *server_host, const char *server_port,
               const ss_addr_t tunnel_addr,
 #endif
 #endif
-              int mtu, int method, int timeout, const char *iface, const char *protocol, const char *protocol_param)
+              int mtu, int timeout, const char *iface, const char *protocol, const char *protocol_param)
 {
     // Initialize ev loop
     struct ev_loop *loop = EV_DEFAULT;
@@ -1373,7 +1374,6 @@ init_udprelay(const char *server_host, const char *server_port,
     server_ctx->loop = loop;
 #endif
     server_ctx->timeout    = max(timeout, MIN_UDP_TIMEOUT);
-    server_ctx->method     = method;
     server_ctx->iface      = iface;
     server_ctx->conn_cache = conn_cache;
 #ifdef MODULE_LOCAL
@@ -1393,8 +1393,8 @@ init_udprelay(const char *server_host, const char *server_port,
     _server_info.port = _server_info.port >> 8 | _server_info.port << 8;
     _server_info.g_data = server_ctx->protocol_global;
     _server_info.param = (char *)protocol_param;
-    _server_info.key = enc_get_key();
-    _server_info.key_len = enc_get_key_len();
+    _server_info.key = enc_get_key(&cipher_env);
+    _server_info.key_len = enc_get_key_len(&cipher_env);
 
     if (server_ctx->protocol_plugin)
         server_ctx->protocol_plugin->set_server_info(server_ctx->protocol, &_server_info);

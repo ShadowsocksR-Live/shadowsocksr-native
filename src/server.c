@@ -641,7 +641,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     // handle incomplete header part 1
     if (server->stage == STAGE_INIT) {
         buf->len += r;
-        if (buf->len <= enc_get_iv_len() + 1) {
+        if (buf->len <= enc_get_iv_len(&cipher_env) + 1) {
             // wait for more
             return;
         }
@@ -649,7 +649,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         buf->len = r;
     }
 
-    int err = ss_decrypt(buf, server->d_ctx, BUF_SIZE);
+    int err = ss_decrypt(&cipher_env, buf, server->d_ctx, BUF_SIZE);
 
     if (err) {
         report_addr(server->fd, MALICIOUS);
@@ -1112,7 +1112,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     rx += r;
 
     server->buf->len = r;
-    int err = ss_encrypt(server->buf, server->e_ctx, BUF_SIZE);
+    int err = ss_encrypt(&cipher_env, server->buf, server->e_ctx, BUF_SIZE);
 
     if (err) {
         LOGE("invalid password or cipher");
@@ -1328,8 +1328,8 @@ new_server(int fd, listen_ctx_t *listener)
     if (listener->method) {
         server->e_ctx = ss_malloc(sizeof(enc_ctx_t));
         server->d_ctx = ss_malloc(sizeof(enc_ctx_t));
-        enc_ctx_init(listener->method, server->e_ctx, 1);
-        enc_ctx_init(listener->method, server->d_ctx, 0);
+        enc_ctx_init(&cipher_env, server->e_ctx, 1);
+        enc_ctx_init(&cipher_env, server->d_ctx, 0);
     } else {
         server->e_ctx = NULL;
         server->d_ctx = NULL;
@@ -1369,11 +1369,11 @@ free_server(server_t *server)
         server->remote->server = NULL;
     }
     if (server->e_ctx != NULL) {
-        cipher_context_release(&server->e_ctx->evp);
+        enc_ctx_release(&cipher_env, server->e_ctx);
         ss_free(server->e_ctx);
     }
     if (server->d_ctx != NULL) {
-        cipher_context_release(&server->d_ctx->evp);
+        enc_ctx_release(&cipher_env, server->d_ctx);
         ss_free(server->d_ctx);
     }
     if (server->buf != NULL) {
@@ -1739,7 +1739,7 @@ main(int argc, char **argv)
 
     // setup keys
     LOGI("initializing ciphers... %s", method);
-    int m = enc_init(password, method);
+    int m = enc_init(&cipher_env, password, method);
 
     // initialize ev loop
     struct ev_loop *loop = EV_DEFAULT;
@@ -1794,8 +1794,8 @@ main(int argc, char **argv)
 
         // Setup UDP
         if (mode != TCP_ONLY) {
-            init_udprelay(server_host[index], server_port, mtu, m,
-                           atoi(timeout), iface, NULL, NULL);
+            init_udprelay(server_host[index], server_port, mtu,
+                          atoi(timeout), iface, NULL, NULL);
         }
 
         if (host && strcmp(host, ":") > 0)

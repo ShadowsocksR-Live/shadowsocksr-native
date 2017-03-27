@@ -37,7 +37,7 @@ typedef struct listen_ctx {
     ev_io io;
     char *iface;
     int remote_num;
-    int method;
+//    int method;
     int timeout;
     int fd;
     int mptcp;
@@ -58,15 +58,37 @@ typedef struct server_ctx {
     struct server *server;
 } server_ctx_t;
 
+typedef struct remote_ctx {
+    ev_io io;
+    ev_timer watcher;
+    int connected;
+    struct remote *remote;
+} remote_ctx_t;
+
+typedef struct remote {
+    int fd;
+    buffer_t *buf;
+    int direct;
+    remote_ctx_t *recv_ctx;
+    remote_ctx_t *send_ctx;
+    struct server *server;
+    struct sockaddr_storage addr;
+    int addr_len;
+    uint32_t counter;
+
+    // SSR
+    int remote_index;
+} remote_t;
+
 typedef struct server {
     int fd;
     char stage;
-    struct enc_ctx *e_ctx;
-    struct enc_ctx *d_ctx;
-    struct server_ctx *recv_ctx;
-    struct server_ctx *send_ctx;
-    struct listen_ctx *listener;
-    struct remote *remote;
+    enc_ctx_t *e_ctx;
+    enc_ctx_t *d_ctx;
+    server_ctx_t *recv_ctx;
+    server_ctx_t *send_ctx;
+    listen_ctx_t *listener;
+    remote_t *remote;
 
     buffer_t *buf;
 
@@ -79,26 +101,18 @@ typedef struct server {
     obfs_class *obfs_plugin;
 } server_t;
 
-typedef struct remote_ctx {
-    ev_io io;
-    ev_timer watcher;
-    int connected;
-    struct remote *remote;
-} remote_ctx_t;
+typedef struct server_def {
+    ss_addr_t host; // address from input (cmd or config file), for log only
+    struct sockaddr_storage *addr; // resolved address
 
-typedef struct remote {
-    int fd;
-    buffer_t *buf;
-    int direct;
-    struct remote_ctx *recv_ctx;
-    struct remote_ctx *send_ctx;
-    struct server *server;
-    struct sockaddr_storage addr;
-    int addr_len;
-    uint32_t counter;
+    char *psw; // raw password
+    cipher_env_t cipher;
 
     // SSR
-    int remote_index;
-} remote_t;
+    char *protocol_name;
+    char *protocol_param;
+    char *obfs_name;
+    char *obfs_param;
+} server_def_t;
 
 #endif // _LOCAL_H

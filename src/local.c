@@ -132,7 +132,7 @@ static void free_server(server_t *server);
 static void close_and_free_server(EV_P_ server_t *server);
 
 static remote_t *new_remote(int fd, int timeout);
-static server_t *new_server(int fd, int method);
+static server_t *new_server(int fd);
 
 static struct cork_dllist connections;
 
@@ -301,7 +301,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                         remote->buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
                     }
                 }
-                int err = ss_encrypt(remote->buf, server->e_ctx, BUF_SIZE);
+                int err = ss_encrypt(&cipher_env, remote->buf, server->e_ctx, BUF_SIZE);
 
                 if (err) {
                     LOGE("server invalid password or cipher");
@@ -727,9 +727,9 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             _server_info.g_data = server->listener->list_obfs_global[remote->remote_index];
             _server_info.head_len = get_head_size(ss_addr_to_send.array, 320, 30);
             _server_info.iv = server->e_ctx->evp.iv;
-            _server_info.iv_len = enc_get_iv_len();
-            _server_info.key = enc_get_key();
-            _server_info.key_len = enc_get_key_len();
+            _server_info.iv_len = enc_get_iv_len(&cipher_env);
+            _server_info.key = enc_get_key(&cipher_env);
+            _server_info.key_len = enc_get_key_len(&cipher_env);
             _server_info.tcp_mss = 1448;
             _server_info.buffer_size = BUF_SIZE;
 
@@ -917,7 +917,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
             }
         }
         if (server->buf->len > 0) {
-        int err = ss_decrypt(server->buf, server->d_ctx, BUF_SIZE);
+        int err = ss_decrypt(&cipher_env, server->buf, server->d_ctx, BUF_SIZE);
             if (err) {
                 LOGE("remote invalid password or cipher");
                 close_and_free_remote(EV_A_ remote);
@@ -1086,7 +1086,7 @@ close_and_free_remote(EV_P_ remote_t *remote)
 }
 
 static server_t *
-new_server(int fd, int method)
+new_server(int fd)
 {
     server_t *server;
     server = ss_malloc(sizeof(server_t));
@@ -1106,11 +1106,11 @@ new_server(int fd, int method)
     server->recv_ctx->server    = server;
     server->send_ctx->server    = server;
 
-    if (method) {
+    if (cipher_env.enc_method > TABLE) {
         server->e_ctx = ss_malloc(sizeof(struct enc_ctx));
         server->d_ctx = ss_malloc(sizeof(struct enc_ctx));
-        enc_ctx_init(method, server->e_ctx, 1);
-        enc_ctx_init(method, server->d_ctx, 0);
+        enc_ctx_init(&cipher_env, server->e_ctx, 1);
+        enc_ctx_init(&cipher_env, server->d_ctx, 0);
     } else {
         server->e_ctx = NULL;
         server->d_ctx = NULL;
@@ -1133,11 +1133,11 @@ free_server(server_t *server)
         server->remote->server = NULL;
     }
     if (server->e_ctx != NULL) {
-        cipher_context_release(&server->e_ctx->evp);
+        enc_ctx_release(&cipher_env, server->e_ctx);
         ss_free(server->e_ctx);
     }
     if (server->d_ctx != NULL) {
-        cipher_context_release(&server->d_ctx->evp);
+        enc_ctx_release(&cipher_env, server->d_ctx);
         ss_free(server->d_ctx);
     }
     if (server->buf != NULL) {
@@ -1255,7 +1255,7 @@ accept_cb(EV_P_ ev_io *w, int revents)
     setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
-    server_t *server = new_server(serverfd, listener->method);
+    server_t *server = new_server(serverfd);
     server->listener = listener;
     // SSR beg
     server->obfs_plugin = new_obfs_class(listener->obfs_name);
@@ -1581,7 +1581,7 @@ main(int argc, char **argv)
 
     // Setup keys
     LOGI("initializing ciphers... %s", method);
-    int m = enc_init(password, method);
+    enc_init(&cipher_env, password, method);
 
     // Setup proxy context
     listen_ctx_t listen_ctx;
@@ -1604,7 +1604,7 @@ main(int argc, char **argv)
     // SSR beg
     listen_ctx.protocol_name = protocol;
     listen_ctx.protocol_param = protocol_param;
-    listen_ctx.method = m;
+//    listen_ctx.method = m;
     listen_ctx.obfs_name = obfs;
     listen_ctx.obfs_param = obfs_param;
     listen_ctx.list_protocol_global = malloc(sizeof(void *) * remote_num);
@@ -1650,7 +1650,7 @@ main(int argc, char **argv)
     if (mode != TCP_ONLY) {
         LOGI("udprelay enabled");
         init_udprelay(local_addr, local_port, listen_ctx.remote_addr[0],
-                      get_sockaddr_len(listen_ctx.remote_addr[0]), mtu, m, listen_ctx.timeout, iface, protocol, protocol_param);
+                      get_sockaddr_len(listen_ctx.remote_addr[0]), mtu, listen_ctx.timeout, iface, protocol, protocol_param);
     }
 
 #ifdef HAVE_LAUNCHD
@@ -1782,7 +1782,7 @@ start_ss_local_server(profile_t profile)
 
     // Setup keys
     LOGI("initializing ciphers... %s", method);
-    int m = enc_init(password, method);
+    enc_init(&cipher_env, password, method);
 
     struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
     memset(storage, 0, sizeof(struct sockaddr_storage));
@@ -1799,7 +1799,7 @@ start_ss_local_server(profile_t profile)
     listen_ctx.remote_addr    = remote_addr_tmp;
     listen_ctx.remote_addr[0] = (struct sockaddr *)storage;
     listen_ctx.timeout        = timeout;
-    listen_ctx.method         = m;
+//    listen_ctx.method         = m;
     listen_ctx.iface          = NULL;
     listen_ctx.mptcp          = mptcp;
 
@@ -1828,7 +1828,7 @@ start_ss_local_server(profile_t profile)
         LOGI("udprelay enabled");
         struct sockaddr *addr = (struct sockaddr *)storage;
         init_udprelay(local_addr, local_port_str, addr,
-                      get_sockaddr_len(addr), mtu, m, timeout, NULL, NULL, NULL);
+                      get_sockaddr_len(addr), mtu, timeout, NULL, NULL, NULL);
     }
 
     if (strcmp(local_addr, ":") > 0)
