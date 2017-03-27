@@ -932,25 +932,6 @@ cipher_context_update(cipher_ctx_t *ctx, uint8_t *output, size_t *olen,
                                   (uint8_t *)output, olen);
 #endif
 }
-int ss_md5_hmac(cipher_env_t* env, char *auth, char *msg, int msg_len, uint8_t *iv)
-{
-    uint8_t hash[MD5_BYTES];
-    uint8_t auth_key[MAX_IV_LENGTH + MAX_KEY_LENGTH];
-    memcpy(auth_key, iv, env->enc_iv_len);
-    memcpy(auth_key + env->enc_iv_len, env->enc_key, env->enc_key_len);
-
-#if defined(USE_CRYPTO_OPENSSL)
-    HMAC(EVP_md5(), auth_key, env->enc_iv_len + env->enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash, NULL);
-#elif defined(USE_CRYPTO_MBEDTLS)
-    mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_MD5), auth_key, env->enc_iv_len + env->enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash);
-#else
-    md5_hmac(auth_key, env->enc_iv_len + env->enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash);
-#endif
-
-    memcpy(auth, hash, MD5_BYTES);
-
-    return 0;
-}
 
 int ss_md5_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len)
 {
@@ -982,26 +963,6 @@ int ss_md5_hash_func(char *auth, char *msg, int msg_len)
 #endif
 
     memcpy(auth, hash, MD5_BYTES);
-
-    return 0;
-}
-
-int ss_sha1_hmac(cipher_env_t* env, char *auth, char *msg, int msg_len, uint8_t *iv)
-{
-    uint8_t hash[SHA1_BYTES];
-    uint8_t auth_key[MAX_IV_LENGTH + MAX_KEY_LENGTH];
-    memcpy(auth_key, iv, env->enc_iv_len);
-    memcpy(auth_key + env->enc_iv_len, env->enc_key, env->enc_key_len);
-
-#if defined(USE_CRYPTO_OPENSSL)
-    HMAC(EVP_sha1(), auth_key, env->enc_iv_len + env->enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash, NULL);
-#elif defined(USE_CRYPTO_MBEDTLS)
-    mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), auth_key, env->enc_iv_len + env->enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash);
-#else
-    sha1_hmac(auth_key, env->enc_iv_len + env->enc_key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash);
-#endif
-
-    memcpy(auth, hash, SHA1_BYTES);
 
     return 0;
 }

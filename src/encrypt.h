@@ -213,10 +213,8 @@ int enc_get_key_len(cipher_env_t* env);
 void cipher_context_release(cipher_env_t *env, cipher_ctx_t *ctx);
 unsigned char *enc_md5(const unsigned char *d, size_t n, unsigned char *md);
 
-int ss_md5_hmac(cipher_env_t* env, char *auth, char *msg, int msg_len, uint8_t *iv);
 int ss_md5_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len);
 int ss_md5_hash_func(char *auth, char *msg, int msg_len);
-int ss_sha1_hmac(cipher_env_t* env, char *auth, char *msg, int msg_len, uint8_t *iv);
 int ss_sha1_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len);
 int ss_sha1_hash_func(char *auth, char *msg, int msg_len);
 int ss_aes_128_cbc(char *encrypt, char *out_data, char *key);
