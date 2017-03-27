@@ -55,6 +55,7 @@ set(SOURCE_FILES_REDIR
         redir.c
         ${SOURCE_FILES_SNI})
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${libev_include_dirs})
 include_directories(${libcork_include_dirs})
