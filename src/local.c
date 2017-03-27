@@ -104,6 +104,7 @@ char *prefix;
 #include "includeobfs.h" // I don't want to modify makefile
 #include "jconf.h"
 #include "obfs/obfs.h"
+#include <stdlib.h>
 
 static int acl       = 0;
 static int mode = TCP_ONLY;
@@ -331,8 +332,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 #ifdef ANDROID
                 if (vpn) {
                     int not_protect = 0;
-                    if (remote->addr.ss_family == AF_INET) {
-                        struct sockaddr_in *s = (struct sockaddr_in *)&remote->addr;
+                    if (remote->direct_addr.addr.ss_family == AF_INET) {
+                        struct sockaddr_in *s = (struct sockaddr_in *)&remote->direct_addr.addr;
                         if (s->sin_addr.s_addr == inet_addr("127.0.0.1"))
                             not_protect = 1;
                     }
@@ -367,11 +368,11 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 } else {
 #ifdef TCP_FASTOPEN
 #ifdef __APPLE__
-                    ((struct sockaddr_in *)&(remote->addr))->sin_len = sizeof(struct sockaddr_in);
+                    ((struct sockaddr_in *)&(remote->direct_addr.addr))->sin_len = sizeof(struct sockaddr_in);
                     sa_endpoints_t endpoints;
                     memset((char *)&endpoints, 0, sizeof(endpoints));
-                    endpoints.sae_dstaddr    = (struct sockaddr *)&(remote->addr);
-                    endpoints.sae_dstaddrlen = remote->addr_len;
+                    endpoints.sae_dstaddr    = (struct sockaddr *)&(remote->direct_addr.addr);
+                    endpoints.sae_dstaddrlen = remote->direct_addr.addr_len;
 
                     int s = connectx(remote->fd, &endpoints, SAE_ASSOCID_ANY,
                                      CONNECT_RESUME_ON_READ_WRITE | CONNECT_DATA_IDEMPOTENT,
@@ -381,7 +382,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     }
 #else
                     int s = sendto(remote->fd, remote->buf->array, remote->buf->len, MSG_FASTOPEN,
-                                   (struct sockaddr *)&(remote->addr), remote->addr_len);
+                                   (struct sockaddr *)&(remote->direct_addr.addr), remote->direct_addr.addr_len);
 #endif
                     if (s == -1) {
                         if (errno == CONNECT_IN_PROGRESS) {
@@ -1323,8 +1324,8 @@ create_remote(listen_ctx_t *profile, struct sockaddr *addr)
     // Setup
     setnonblocking(remotefd);
 #ifdef SET_INTERFACE
-    if (listener->iface) {
-        if (setinterface(remotefd, listener->iface) == -1)
+    if (profile->iface) {
+        if (setinterface(remotefd, profile->iface) == -1)
             ERROR("setinterface");
     }
 #endif
@@ -1727,7 +1728,7 @@ main(int argc, char **argv)
     profile->mptcp = mptcp;
 
     if(use_new_profile) {
-        char port_char[6];
+        char port[6];
 
         ss_server_new_1_t *servers = &conf->server_new_1;
         profile->server_num = servers->server_num;
@@ -1738,7 +1739,7 @@ main(int argc, char **argv)
             struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
 
             char *host = serv_cfg->server;
-            char *port = itoa(serv_cfg->server_port, port_char, 10);
+            snprintf(port, sizeof(port), "%d", serv_cfg->server_port);
             if (get_sockaddr(host, port, storage, 1, ipv6first) == -1) {
                 FATAL("failed to resolve the provided hostname");
             }
@@ -1750,7 +1751,7 @@ main(int argc, char **argv)
             // set udp port
             if (serv_cfg->server_udp_port != 0 && serv_cfg->server_udp_port != serv_cfg->server_port) {
                 storage = ss_malloc(sizeof(struct sockaddr_storage));
-                port = itoa(serv_cfg->server_udp_port, port_char, 10);
+                snprintf(port, sizeof(port), "%d", serv_cfg->server_udp_port);
                 if (get_sockaddr(host, port, storage, 1, ipv6first) == -1) {
                     FATAL("failed to resolve the provided hostname");
                 }
