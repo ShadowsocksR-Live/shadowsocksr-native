@@ -1966,10 +1966,6 @@ start_ss_local_server(profile_t profile)
     ev_signal_start(EV_DEFAULT, &sigusr1_watcher);
 #endif
 
-    // Setup keys
-    LOGI("initializing ciphers... %s", method);
-    enc_init(&cipher_env, password, method);
-
     struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
     memset(storage, 0, sizeof(struct sockaddr_storage));
     if (get_sockaddr(remote_host, remote_port_str, storage, 0, ipv6first) == -1) {
@@ -1979,13 +1975,14 @@ start_ss_local_server(profile_t profile)
     // Setup proxy context
     struct ev_loop *loop = EV_DEFAULT;
 
-    struct sockaddr **remote_addr_tmp = ss_malloc(sizeof(struct sockaddr *));
     listen_ctx_t listen_ctx;
-    listen_ctx.remote_num     = 1;
-    listen_ctx.remote_addr    = remote_addr_tmp;
-    listen_ctx.remote_addr[0] = (struct sockaddr *)storage;
+    listen_ctx.server_num     = 1;
+    server_def_t *serv = &listen_ctx.servers[0];
+    ss_server_t server_cfg;
+    ss_server_t *serv_cfg = &server_cfg;
+    serv->addr = serv->addr_udp = storage;
+    serv->addr_len = serv->addr_udp_len = get_sockaddr_len((struct sockaddr *) storage);
     listen_ctx.timeout        = timeout;
-//    listen_ctx.method         = m;
     listen_ctx.iface          = NULL;
     listen_ctx.mptcp          = mptcp;
 
@@ -2012,9 +2009,8 @@ start_ss_local_server(profile_t profile)
     // Setup UDP
     if (mode != TCP_ONLY) {
         LOGI("udprelay enabled");
-        struct sockaddr *addr = (struct sockaddr *)storage;
-        init_udprelay(local_addr, local_port_str, addr,
-                      get_sockaddr_len(addr), mtu, timeout, NULL, NULL, NULL);
+        init_udprelay(local_addr, local_port_str, (struct sockaddr*)listen_ctx.servers[0].addr_udp,
+                      listen_ctx.servers[0].addr_udp_len, mtu, listen_ctx.timeout, listen_ctx.iface, &listen_ctx.servers[0].cipher, listen_ctx.servers[0].protocol_name, listen_ctx.servers[0].protocol_param);
     }
 
     if (strcmp(local_addr, ":") > 0)
@@ -2022,8 +2018,17 @@ start_ss_local_server(profile_t profile)
     else
         LOGI("listening at %s:%s", local_addr, local_port_str);
 
+    // Setup keys
+    LOGI("initializing ciphers... %s", method);
+    enc_init(&serv->cipher, password, method);
+
+    // init obfs
+    init_obfs(serv, ss_strdup(serv_cfg->protocol), ss_strdup(serv_cfg->protocol_param), ss_strdup(serv_cfg->obfs), ss_strdup(serv_cfg->obfs_param));
+
     // Init connections
-    cork_dllist_init(&connections);
+    cork_dllist_init(&serv->connections);
+
+    cork_dllist_init(&inactive_profiles); //
 
     // Enter the loop
     ev_run(loop, 0);
@@ -2043,8 +2048,7 @@ start_ss_local_server(profile_t profile)
         close(listen_ctx.fd);
     }
 
-    ss_free(listen_ctx.remote_addr[0]);
-    ss_free(remote_addr_tmp);
+    ss_free(serv->addr);
 
 #ifdef __MINGW32__
     winsock_cleanup();

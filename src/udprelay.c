@@ -774,7 +774,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     memcpy(buf->array, addr_header, addr_header_len);
     buf->len += addr_header_len;
 
-    int err = ss_encrypt_all(&cipher_env, buf, buf_size);
+    int err = ss_decrypt_all(server_ctx->cipher_env, buf, buf_size);
     if (err) {
         // drop the packet silently
         goto CLEAN_UP;
@@ -917,7 +917,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 #ifdef MODULE_REMOTE
     tx += buf->len;
 
-    int err = ss_decrypt_all(&cipher_env, buf, buf_size);
+    int err = ss_decrypt_all(server_ctx->cipher_env, buf, buf_size);
     if (err) {
         // drop the packet silently
         goto CLEAN_UP;

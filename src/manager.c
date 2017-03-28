@@ -726,15 +726,19 @@ main(int argc, char **argv)
     if (conf_path != NULL) {
         conf = read_jconf(conf_path);
         if (server_num == 0) {
-            server_num = conf->remote_num;
-            for (i = 0; i < server_num; i++)
-                server_host[i] = conf->remote_addr[i].host;
+            server_num = conf->server_new_1.server_num;
+            //for (i = 0; i < server_num; i++)
+            //    server_host[i].host = conf->server_new_1.servers[i].server;
+            //    server_host[i].port = conf->server_new_1.servers[i].server_port;
+            //}
+        } else {
+            conf->server_new_1.server_num = 1;
         }
         if (password == NULL) {
-            password = conf->password;
+            password = conf->server_new_1.servers[0].password;
         }
         if (method == NULL) {
-            method = conf->method;
+            method = conf->server_new_1.servers[0].method;
         }
         if (timeout == NULL) {
             timeout = conf->timeout;
@@ -880,11 +884,12 @@ main(int argc, char **argv)
     server_table = cork_string_hash_table_new(MAX_PORT_NUM, 0);
 
     if (conf != NULL) {
-        for (i = 0; i < conf->port_password_num; i++) {
+        for (i = 0; i < conf->server_new_1.server_num; i++) {
             struct server *server = ss_malloc(sizeof(struct server));
             memset(server, 0, sizeof(struct server));
-            strncpy(server->port, conf->port_password[i].port, 8);
-            strncpy(server->password, conf->port_password[i].password, 128);
+            //strncpy(server->port, conf->server_new_1.servers[i].server_port, 8);
+            snprintf(server->port, 8, "%d", conf->server_new_1.servers[i].server_port);
+            strncpy(server->password, conf->server_new_1.servers[i].password, 128);
             add_server(&manager, server);
         }
     }

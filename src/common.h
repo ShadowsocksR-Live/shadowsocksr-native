@@ -32,6 +32,8 @@
 #define MODULE_LOCAL
 #endif
 
+#include "encrypt.h"
+
 int init_udprelay(const char *server_host, const char *server_port,
 #ifdef MODULE_LOCAL
                   const struct sockaddr *remote_addr, const int remote_addr_len,
