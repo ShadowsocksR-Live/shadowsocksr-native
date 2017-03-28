@@ -28,6 +28,8 @@
 #include "obfs/obfs.h"
 #include "jconf.h"
 
+#include "common.h"
+
 typedef struct listen_ctx {
     ev_io io;
     int remote_num;
