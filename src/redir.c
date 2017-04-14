@@ -1445,7 +1445,7 @@ main(int argc, char **argv)
 
         listen_ctx->fd = listenfd;
 
-        ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
+        ev_io_init(&listen_ctx->io, accept_cb, listenfd, EV_READ);
         ev_io_start(loop, &listen_ctx->io);
     }
 
