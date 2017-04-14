@@ -375,6 +375,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     remote_ctx_t *remote_recv_ctx = (remote_ctx_t *)w;
     remote_t *remote              = remote_recv_ctx->remote;
     server_t *server              = remote->server;
+    server_def_t *server_env      = server->server_env;
 
     ev_timer_again(EV_A_ & remote->recv_ctx->watcher);
 
@@ -401,8 +402,8 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     server->buf->len = r;
 
     // SSR beg
-    if (server->obfs_plugin) {
-        obfs_class *obfs_plugin = server->obfs_plugin;
+    if (server_env->obfs_plugin) {
+        obfs_class *obfs_plugin = server_env->obfs_plugin;
         if (obfs_plugin->client_decode) {
             int needsendback;
             server->buf->len = obfs_plugin->client_decode(server->obfs, &server->buf->array, server->buf->len, &server->buf->capacity, &needsendback);
@@ -413,7 +414,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
                 return;
             }
             if (needsendback) {
-                obfs_class *obfs_plugin = server->obfs_plugin;
+                obfs_class *obfs_plugin = server_env->obfs_plugin;
                 if (obfs_plugin->client_encode) {
                     remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->array, 0, &remote->buf->capacity);
                     ssize_t s = send(remote->fd, remote->buf->array, remote->buf->len, 0);
@@ -444,7 +445,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     if ( server->buf->len == 0 )
         return;
 
-    int err = ss_decrypt(&cipher_env, server->buf, server->d_ctx, BUF_SIZE);
+    int err = ss_decrypt(&server_env->cipher, server->buf, server->d_ctx, BUF_SIZE);
     if (err) {
         LOGE("invalid password or cipher");
         close_and_free_remote(EV_A_ remote);
@@ -452,8 +453,8 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
         return;
     }
 
-    if (server->protocol_plugin) {
-        obfs_class *protocol_plugin = server->protocol_plugin;
+    if (server_env->protocol_plugin) {
+        obfs_class *protocol_plugin = server_env->protocol_plugin;
         if (protocol_plugin->client_post_decrypt) {
             server->buf->len = protocol_plugin->client_post_decrypt(server->protocol, &server->buf->array, server->buf->len, &server->buf->capacity);
             if ((int)server->buf->len < 0) {
