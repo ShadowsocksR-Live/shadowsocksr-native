@@ -97,6 +97,10 @@ static int mode = TCP_ONLY;
 static int nofile = 0;
 #endif
 
+static struct cork_dllist inactive_profiles;
+static listen_ctx_t *current_profile;
+static struct cork_dllist all_connections;
+
 int
 getdestaddr(int fd, struct sockaddr_storage *destaddr)
 {
@@ -918,6 +922,24 @@ signal_cb(int dummy)
     exit(-1);
 }
 
+static void
+init_obfs(server_def_t *serv, char *protocol, char *protocol_param, char *obfs, char *obfs_param)
+{
+    serv->protocol_name = protocol;
+    serv->protocol_param = protocol_param;
+    serv->protocol_plugin = new_obfs_class(protocol);
+    serv->obfs_name = obfs;
+    serv->obfs_param = obfs_param;
+    serv->obfs_plugin = new_obfs_class(obfs);
+
+    if (serv->obfs_plugin) {
+        serv->obfs_global = serv->obfs_plugin->init_data();
+    }
+    if (serv->protocol_plugin) {
+        serv->protocol_global = serv->protocol_plugin->init_data();
+    }
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1190,43 +1212,105 @@ main(int argc, char **argv)
     signal(SIGTERM, signal_cb);
 
     // Setup profiles
+    listen_ctx_t *profile = (listen_ctx_t *)ss_malloc(sizeof(listen_ctx_t));
+    memset(profile, 0, sizeof(listen_ctx_t));
 
+    cork_dllist_init(&profile->connections_eden);
 
-    // Setup keys
-    LOGI("initializing ciphers... %s", method);
-    enc_init(&cipher_env, password, method);
+    profile->timeout = atoi(timeout);
+    profile->mptcp = mptcp;
 
-    // Setup proxy context
-    listen_ctx_t listen_ctx;
-    listen_ctx.remote_num  = remote_num;
-    listen_ctx.remote_addr = ss_malloc(sizeof(struct sockaddr *) * remote_num);
-    memset(listen_ctx.remote_addr, 0, sizeof(struct sockaddr *) * remote_num);
-    for (int i = 0; i < remote_num; i++) {
-        char *host = remote_addr[i].host;
-        char *port = remote_addr[i].port == NULL ? remote_port :
-                     remote_addr[i].port;
-        struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
-        memset(storage, 0, sizeof(struct sockaddr_storage));
-        if (get_sockaddr(host, port, storage, 1, ipv6first) == -1) {
-            FATAL("failed to resolve the provided hostname");
+    if(use_new_profile) {
+        char port[6];
+
+        ss_server_new_1_t *servers = &conf->server_new_1;
+        profile->server_num = servers->server_num;
+        for(i = 0; i < servers->server_num; i++){
+            server_def_t *serv = &profile->servers[i];
+            ss_server_t *serv_cfg = &servers->servers[i];
+
+            struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
+
+            char *host = serv_cfg->server;
+            snprintf(port, sizeof(port), "%d", serv_cfg->server_port);
+            if (get_sockaddr(host, port, storage, 1, ipv6first) == -1) {
+                FATAL("failed to resolve the provided hostname");
+            }
+
+            serv->addr = serv->addr_udp = storage;
+            serv->addr_len = serv->addr_udp_len = get_sockaddr_len((struct sockaddr *) storage);
+            serv->port = serv->udp_port = serv_cfg->server_port;
+
+            // set udp port
+            if (serv_cfg->server_udp_port != 0 && serv_cfg->server_udp_port != serv_cfg->server_port) {
+                storage = ss_malloc(sizeof(struct sockaddr_storage));
+                snprintf(port, sizeof(port), "%d", serv_cfg->server_udp_port);
+                if (get_sockaddr(host, port, storage, 1, ipv6first) == -1) {
+                    FATAL("failed to resolve the provided hostname");
+                }
+                serv->addr_udp = storage;
+                serv->addr_udp_len = get_sockaddr_len((struct sockaddr *) storage);
+                serv->udp_port = serv_cfg->server_udp_port;
+            }
+            serv->host = ss_strdup(host);
+
+            // Setup keys
+            LOGI("initializing ciphers... %s", serv_cfg->method);
+            enc_init(&serv->cipher, serv_cfg->password, serv_cfg->method);
+            serv->psw = ss_strdup(serv_cfg->password);
+            if (serv_cfg->protocol && strcmp(serv_cfg->protocol, "verify_sha1") == 0) {
+                ss_free(serv_cfg->protocol);
+            }
+
+            cork_dllist_init(&serv->connections);
+
+            // init obfs
+            init_obfs(serv, ss_strdup(serv_cfg->protocol), ss_strdup(serv_cfg->protocol_param), ss_strdup(serv_cfg->obfs), ss_strdup(serv_cfg->obfs_param));
+
+            serv->enable = serv_cfg->enable;
+            serv->id = ss_strdup(serv_cfg->id);
+            serv->group = ss_strdup(serv_cfg->group);
+            serv->udp_over_tcp = serv_cfg->udp_over_tcp;
         }
-        listen_ctx.remote_addr[i] = (struct sockaddr *)storage;
+    } else {
+        profile->server_num = remote_num;
+        for(i = 0; i < remote_num; i++) {
+            server_def_t *serv = &profile->servers[i];
+            char *host = remote_addr[i].host;
+            char *port = remote_addr[i].port == NULL ? remote_port :
+                         remote_addr[i].port;
+
+            struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
+            if (get_sockaddr(host, port, storage, 1, ipv6first) == -1) {
+                FATAL("failed to resolve the provided hostname");
+            }
+            serv->host = ss_strdup(host);
+            serv->addr = serv->addr_udp = storage;
+            serv->addr_len = serv->addr_udp_len = get_sockaddr_len((struct sockaddr *)storage);
+            serv->port = serv->udp_port = atoi(port);
+
+            // Setup keys
+            LOGI("initializing ciphers... %s", method);
+            enc_init(&serv->cipher, password, method);
+            serv->psw = ss_strdup(password);
+
+            cork_dllist_init(&serv->connections);
+
+            // init obfs
+            init_obfs(serv, ss_strdup(protocol), ss_strdup(protocol_param), ss_strdup(obfs), ss_strdup(obfs_param));
+
+            serv->enable = 1;
+        }
     }
-    listen_ctx.timeout = atoi(timeout);
-    // SSR beg
-    listen_ctx.protocol_name = protocol;
-    listen_ctx.protocol_param = protocol_param;
-//    listen_ctx.method = m;
-    listen_ctx.obfs_name = obfs;
-    listen_ctx.obfs_param = obfs_param;
-    listen_ctx.list_protocol_global = malloc(sizeof(void *) * remote_num);
-    listen_ctx.list_obfs_global = malloc(sizeof(void *) * remote_num);
-    memset(listen_ctx.list_protocol_global, 0, sizeof(void *) * remote_num);
-    memset(listen_ctx.list_obfs_global, 0, sizeof(void *) * remote_num);
-    // SSR end
-    listen_ctx.mptcp   = mptcp;
+
+    // Init profiles
+    cork_dllist_init(&inactive_profiles);
+    current_profile = profile;
+
 
     struct ev_loop *loop = EV_DEFAULT;
+
+    listen_ctx_t *listen_ctx = current_profile;
 
     if (mode != UDP_ONLY) {
         // Setup socket
@@ -1240,17 +1324,17 @@ main(int argc, char **argv)
         }
         setnonblocking(listenfd);
 
-        listen_ctx.fd = listenfd;
+        listen_ctx->fd = listenfd;
 
         ev_io_init(&listen_ctx.io, accept_cb, listenfd, EV_READ);
-        ev_io_start(loop, &listen_ctx.io);
+        ev_io_start(loop, &listen_ctx->io);
     }
 
     // Setup UDP
     if (mode != TCP_ONLY) {
         LOGI("UDP relay enabled");
-        init_udprelay(local_addr, local_port, listen_ctx.remote_addr[0],
-                      get_sockaddr_len(listen_ctx.remote_addr[0]), mtu, listen_ctx.timeout, NULL, protocol, protocol_param);
+        init_udprelay(local_addr, local_port, (struct sockaddr*)listen_ctx->servers[0].addr_udp,
+                      listen_ctx->servers[0].addr_udp_len, mtu, listen_ctx->timeout, NULL, &listen_ctx->servers[0].cipher, listen_ctx->servers[0].protocol_name, listen_ctx->servers[0].protocol_param);
     }
 
     if (mode == UDP_ONLY) {
@@ -1269,6 +1353,8 @@ main(int argc, char **argv)
     }
 
     ev_run(loop, 0);
+
+    // TODO: release?
 
     return 0;
 }
