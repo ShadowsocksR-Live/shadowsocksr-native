@@ -91,8 +91,8 @@ typedef struct server {
     listen_ctx_t *listener;
     remote_t *remote;
 
-//    char *hostname;
-//    size_t hostname_len;
+    char *hostname;
+    size_t hostname_len;
 
     struct cork_dllist_item entries;
     struct cork_dllist_item entries_all; // for all_connections

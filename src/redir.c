@@ -495,6 +495,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
     remote_ctx_t *remote_send_ctx = (remote_ctx_t *)w;
     remote_t *remote              = remote_send_ctx->remote;
     server_t *server              = remote->server;
+    server_def_t *server_env = server->server_env;
 
     if (!remote_send_ctx->connected) {
         struct sockaddr_storage addr;
@@ -565,19 +566,19 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
             
             // SSR beg
             server_info _server_info;
-            if (server->obfs_plugin) {
-                server->obfs_plugin->get_server_info(server->obfs, &_server_info);
+            if (server_env->obfs_plugin) {
+                server_env->obfs_plugin->get_server_info(server->obfs, &_server_info);
                 _server_info.head_len = get_head_size(remote->buf->array, remote->buf->len, 30);
-                server->obfs_plugin->set_server_info(server->obfs, &_server_info);
+                server_env->obfs_plugin->set_server_info(server->obfs, &_server_info);
             }
-            if (server->protocol_plugin) {
-                obfs_class *protocol_plugin = server->protocol_plugin;
+            if (server_env->protocol_plugin) {
+                obfs_class *protocol_plugin = server_env->protocol_plugin;
                 if (protocol_plugin->client_pre_encrypt) {
                     remote->buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
                 }
             }
 
-            int err = ss_encrypt(&cipher_env, remote->buf, server->e_ctx, BUF_SIZE);
+            int err = ss_encrypt(&server_env->cipher, remote->buf, server->e_ctx, BUF_SIZE);
             if (err) {
                 LOGE("invalid password or cipher");
                 close_and_free_remote(EV_A_ remote);
@@ -585,8 +586,8 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
                 return;
             }
 
-            if (server->obfs_plugin) {
-                obfs_class *obfs_plugin = server->obfs_plugin;
+            if (server_env->obfs_plugin) {
+                obfs_class *obfs_plugin = server_env->obfs_plugin;
                 if (obfs_plugin->client_encode) {
                     remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
                 }
@@ -711,8 +712,8 @@ new_server(int fd, listen_ctx_t* profile) {
     server->recv_ctx->server = server;
     server->send_ctx->server = server;
 
-//    server->hostname     = NULL;
-//    server->hostname_len = 0;
+    server->hostname     = NULL;
+    server->hostname_len = 0;
 
 //    if (method) {
 //        server->e_ctx = ss_malloc(sizeof(enc_ctx_t));
@@ -818,11 +819,11 @@ free_server(server_t *server)
             bfree(server->buf);
             ss_free(server->buf);
         }
+        if (server->hostname != NULL) {
+            ss_free(server->hostname);
+        }
 
 //        if (server != NULL) {
-//            if (server->hostname != NULL) {
-//                ss_free(server->hostname);
-//            }
 //            if (server->remote != NULL) {
 //                server->remote->server = NULL;
 //            }
