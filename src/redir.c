@@ -187,6 +187,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     server_ctx_t *server_recv_ctx = (server_ctx_t *)w;
     server_t *server              = server_recv_ctx->server;
     remote_t *remote              = server->remote;
+    server_def_t *server_env = server->server_env;
 
     ssize_t r = recv(server->fd, remote->buf->array + remote->buf->len,
                      BUF_SIZE - remote->buf->len, 0);
@@ -256,13 +257,13 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         return;
     }
     // SSR beg
-    if (server->protocol_plugin) {
-        obfs_class *protocol_plugin = server->protocol_plugin;
+    if (server_env->protocol_plugin) {
+        obfs_class *protocol_plugin = server_env->protocol_plugin;
         if (protocol_plugin->client_pre_encrypt) {
             remote->buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
         }
     }
-    int err = ss_encrypt(&cipher_env, remote->buf, server->e_ctx, BUF_SIZE);
+    int err = ss_encrypt(&server_env->cipher, remote->buf, server->e_ctx, BUF_SIZE);
 
     if (err) {
         LOGE("invalid password or cipher");
@@ -271,8 +272,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         return;
     }
 
-    if (server->obfs_plugin) {
-        obfs_class *obfs_plugin = server->obfs_plugin;
+    if (server_env->obfs_plugin) {
+        obfs_class *obfs_plugin = server_env->obfs_plugin;
         if (obfs_plugin->client_encode) {
             remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
         }
