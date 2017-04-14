@@ -81,7 +81,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_send_cb(EV_P_ ev_io *w, int revents);
 
 static remote_t *new_remote(int fd, int timeout);
-static server_t *new_server(int fd, int method);
+static server_t *new_server(int fd, listen_ctx_t* profile);
 
 static void free_remote(remote_t *remote);
 static void close_and_free_remote(EV_P_ remote_t *remote);
@@ -641,17 +641,17 @@ new_remote(int fd, int timeout)
     remote_t *remote = ss_malloc(sizeof(remote_t));
     memset(remote, 0, sizeof(remote_t));
 
+    remote->buf                 = ss_malloc(sizeof(buffer_t));
     remote->recv_ctx            = ss_malloc(sizeof(remote_ctx_t));
     remote->send_ctx            = ss_malloc(sizeof(remote_ctx_t));
-    remote->buf                 = ss_malloc(sizeof(buffer_t));
     balloc(remote->buf, BUF_SIZE);
     memset(remote->recv_ctx, 0, sizeof(remote_ctx_t));
     memset(remote->send_ctx, 0, sizeof(remote_ctx_t));
+    remote->recv_ctx->connected = 0;
+    remote->send_ctx->connected = 0;
     remote->fd                  = fd;
     remote->recv_ctx->remote    = remote;
-    remote->recv_ctx->connected = 0;
     remote->send_ctx->remote    = remote;
-    remote->send_ctx->connected = 0;
 
     ev_io_init(&remote->recv_ctx->io, remote_recv_cb, fd, EV_READ);
     ev_io_init(&remote->send_ctx->io, remote_send_cb, fd, EV_WRITE);
@@ -694,81 +694,173 @@ close_and_free_remote(EV_P_ remote_t *remote)
 }
 
 static server_t *
-new_server(int fd, int method)
-{
+new_server(int fd, listen_ctx_t* profile) {
     server_t *server = ss_malloc(sizeof(server_t));
     memset(server, 0, sizeof(server_t));
 
-    server->recv_ctx            = ss_malloc(sizeof(server_ctx_t));
-    server->send_ctx            = ss_malloc(sizeof(server_ctx_t));
-    server->buf                 = ss_malloc(sizeof(buffer_t));
+    server->listener = profile;
+    server->recv_ctx = ss_malloc(sizeof(server_ctx_t));
+    server->send_ctx = ss_malloc(sizeof(server_ctx_t));
+    server->buf = ss_malloc(sizeof(buffer_t));
     balloc(server->buf, BUF_SIZE);
     memset(server->recv_ctx, 0, sizeof(server_ctx_t));
     memset(server->send_ctx, 0, sizeof(server_ctx_t));
-    server->fd                  = fd;
-    server->recv_ctx->server    = server;
     server->recv_ctx->connected = 0;
-    server->send_ctx->server    = server;
     server->send_ctx->connected = 0;
+    server->fd = fd;
+    server->recv_ctx->server = server;
+    server->send_ctx->server = server;
 
-    server->hostname     = NULL;
-    server->hostname_len = 0;
+//    server->hostname     = NULL;
+//    server->hostname_len = 0;
 
-    if (method) {
-        server->e_ctx = ss_malloc(sizeof(enc_ctx_t));
-        server->d_ctx = ss_malloc(sizeof(enc_ctx_t));
-        enc_ctx_init(&cipher_env, server->e_ctx, 1);
-        enc_ctx_init(&cipher_env, server->d_ctx, 0);
-    } else {
-        server->e_ctx = NULL;
-        server->d_ctx = NULL;
-    }
+//    if (method) {
+//        server->e_ctx = ss_malloc(sizeof(enc_ctx_t));
+//        server->d_ctx = ss_malloc(sizeof(enc_ctx_t));
+//        enc_ctx_init(&cipher_env, server->e_ctx, 1);
+//        enc_ctx_init(&cipher_env, server->d_ctx, 0);
+//    } else {
+//        server->e_ctx = NULL;
+//        server->d_ctx = NULL;
+//    }
 
     ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
     ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
+
+    cork_dllist_add(&profile->connections_eden, &server->entries);
+    cork_dllist_add(&all_connections, &server->entries_all);
 
     return server;
 }
 
 static void
+release_profile(listen_ctx_t *profile)
+{
+    int i;
+
+    for(i = 0; i < profile->server_num; i++)
+    {
+        server_def_t *server_env = &profile->servers[i];
+
+        ss_free(server_env->host);
+
+        if(server_env->addr != server_env->addr_udp)
+        {
+            ss_free(server_env->addr_udp);
+        }
+        ss_free(server_env->addr);
+
+        ss_free(server_env->psw);
+
+        ss_free(server_env->protocol_name);
+        ss_free(server_env->obfs_name);
+        ss_free(server_env->protocol_param);
+        ss_free(server_env->obfs_param);
+        ss_free(server_env->protocol_global);
+        ss_free(server_env->obfs_global);
+        if(server_env->protocol_plugin){
+            free_obfs_class(server_env->protocol_plugin);
+        }
+        if(server_env->obfs_plugin){
+            free_obfs_class(server_env->obfs_plugin);
+        }
+        ss_free(server_env->id);
+        ss_free(server_env->group);
+
+        enc_release(&server_env->cipher);
+    }
+    ss_free(profile);
+}
+
+static void
+check_and_free_profile(listen_ctx_t *profile)
+{
+    int i;
+
+    if(profile == current_profile)
+    {
+        return;
+    }
+    // if this connection is created from an inactive profile, then we need to free the profile
+    // when the last connection of that profile is colsed
+    if(!cork_dllist_is_empty(&profile->connections_eden))
+    {
+        return;
+    }
+
+    for(i = 0; i < profile->server_num; i++)
+    {
+        if(!cork_dllist_is_empty(&profile->servers[i].connections))
+        {
+            return;
+        }
+    }
+
+    // No connections anymore
+    cork_dllist_remove(&profile->entries);
+    release_profile(profile);
+}
+
+static void
 free_server(server_t *server)
 {
-    if (server != NULL) {
-        if (server->hostname != NULL) {
-            ss_free(server->hostname);
-        }
+    if(server != NULL) {
+        listen_ctx_t *profile = server->listener;
+        server_def_t *server_env = server->server_env;
+
+        cork_dllist_remove(&server->entries);
+        cork_dllist_remove(&server->entries_all);
+
         if (server->remote != NULL) {
             server->remote->server = NULL;
-        }
-        if (server->e_ctx != NULL) {
-            enc_ctx_release(&cipher_env, server->e_ctx);
-            ss_free(server->e_ctx);
-        }
-        if (server->d_ctx != NULL) {
-            enc_ctx_release(&cipher_env, server->d_ctx);
-            ss_free(server->d_ctx);
         }
         if (server->buf != NULL) {
             bfree(server->buf);
             ss_free(server->buf);
         }
-        // SSR beg
-        if (server->obfs_plugin) {
-            server->obfs_plugin->dispose(server->obfs);
-            server->obfs = NULL;
-            free_obfs_class(server->obfs_plugin);
-            server->obfs_plugin = NULL;
+
+//        if (server != NULL) {
+//            if (server->hostname != NULL) {
+//                ss_free(server->hostname);
+//            }
+//            if (server->remote != NULL) {
+//                server->remote->server = NULL;
+//            }
+        if (server_env) {
+            if (server->e_ctx != NULL) {
+                enc_ctx_release(&server_env->cipher, server->e_ctx);
+                ss_free(server->e_ctx);
+            }
+            if (server->d_ctx != NULL) {
+                enc_ctx_release(&server_env->cipher, server->d_ctx);
+                ss_free(server->d_ctx);
+            }
+//            if (server->buf != NULL) {
+//                bfree(server->buf);
+//                ss_free(server->buf);
+//            }
+            // SSR beg
+            if (server_env->obfs_plugin) {
+                server_env->obfs_plugin->dispose(server->obfs);
+                server->obfs = NULL;
+//                free_obfs_class(server->obfs_plugin);
+//                server->obfs_plugin = NULL;
+            }
+            if (server_env->protocol_plugin) {
+                server_env->protocol_plugin->dispose(server->protocol);
+                server->protocol = NULL;
+//                free_obfs_class(server->protocol_plugin);
+//                server->protocol_plugin = NULL;
+            }
+            // SSR end
         }
-        if (server->protocol_plugin) {
-            server->protocol_plugin->dispose(server->protocol);
-            server->protocol = NULL;
-            free_obfs_class(server->protocol_plugin);
-            server->protocol_plugin = NULL;
-        }
-        // SSR end
+
         ss_free(server->recv_ctx);
         ss_free(server->send_ctx);
         ss_free(server);
+
+        // after free server, we need to check the profile
+        check_and_free_profile(profile);
     }
 }
 
@@ -811,8 +903,11 @@ accept_cb(EV_P_ ev_io *w, int revents)
     setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
 #endif
 
-    int index                    = rand() % listener->remote_num;
-    struct sockaddr *remote_addr = listener->remote_addr[index];
+    // pick a server
+    int index = rand() % listener->server_num;
+    server_def_t *server_env = &listener->servers[index];
+
+    struct sockaddr *remote_addr = (struct sockaddr *) server_env->addr;
 
     int remotefd = socket(remote_addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
     if (remotefd == -1) {
@@ -847,11 +942,13 @@ accept_cb(EV_P_ ev_io *w, int revents)
         }
     }
 
-    server_t *server = new_server(serverfd, listener->method);
+    server_t *server = new_server(serverfd, listener);
     remote_t *remote = new_remote(remotefd, listener->timeout);
-    server->remote   = remote;
-    remote->server   = server;
     server->destaddr = destaddr;
+
+    // expelled from eden
+    cork_dllist_remove(&server->entries);
+    cork_dllist_add(&server_env->connections, &server->entries);
 
     int r = connect(remotefd, remote_addr, get_sockaddr_len(remote_addr));
 
@@ -862,46 +959,65 @@ accept_cb(EV_P_ ev_io *w, int revents)
         return;
     }
 
+    // init server cipher
+    if (server_env->cipher.enc_method > TABLE) {
+        server->e_ctx = ss_malloc(sizeof(struct enc_ctx));
+        server->d_ctx = ss_malloc(sizeof(struct enc_ctx));
+        enc_ctx_init(&server_env->cipher, server->e_ctx, 1);
+        enc_ctx_init(&server_env->cipher, server->d_ctx, 0);
+    } else {
+        server->e_ctx = NULL;
+        server->d_ctx = NULL;
+    }
+
     // SSR beg
-    remote->remote_index = index;
-    server->obfs_plugin = new_obfs_class(listener->obfs_name);
-    if (server->obfs_plugin) {
-        server->obfs = server->obfs_plugin->new_obfs();
-    }
-    server->protocol_plugin = new_obfs_class(listener->protocol_name);
-    if (server->protocol_plugin) {
-        server->protocol = server->protocol_plugin->new_obfs();
-    }
-    if (listener->list_obfs_global[remote->remote_index] == NULL && server->obfs_plugin) {
-        listener->list_obfs_global[remote->remote_index] = server->obfs_plugin->init_data();
-    }
-    if (listener->list_protocol_global[remote->remote_index] == NULL && server->protocol_plugin) {
-        listener->list_protocol_global[remote->remote_index] = server->protocol_plugin->init_data();
-    }
+//    remote->remote_index = index;
+//    server->obfs_plugin = new_obfs_class(listener->obfs_name);
+//    if (server->obfs_plugin) {
+//        server->obfs = server->obfs_plugin->new_obfs();
+//    }
+//    server->protocol_plugin = new_obfs_class(listener->protocol_name);
+//    if (server->protocol_plugin) {
+//        server->protocol = server->protocol_plugin->new_obfs();
+//    }
+//    if (listener->list_obfs_global[remote->remote_index] == NULL && server->obfs_plugin) {
+//        listener->list_obfs_global[remote->remote_index] = server->obfs_plugin->init_data();
+//    }
+//    if (listener->list_protocol_global[remote->remote_index] == NULL && server->protocol_plugin) {
+//        listener->list_protocol_global[remote->remote_index] = server->protocol_plugin->init_data();
+//    }
     server_info _server_info;
     memset(&_server_info, 0, sizeof(server_info));
     strcpy(_server_info.host, inet_ntoa(((struct sockaddr_in*)remote_addr)->sin_addr));
     _server_info.port = ((struct sockaddr_in*)remote_addr)->sin_port;
     _server_info.port = _server_info.port >> 8 | _server_info.port << 8;
-    _server_info.param = listener->obfs_param;
-    _server_info.g_data = listener->list_obfs_global[remote->remote_index];
+    _server_info.param = server_env->obfs_param;
+    _server_info.g_data = server_env->obfs_global;
     _server_info.head_len = (AF_INET6 == server->destaddr.ss_family ? 19 : 7);
     _server_info.iv = server->e_ctx->evp.iv;
-    _server_info.iv_len = enc_get_iv_len(&cipher_env);
-    _server_info.key = enc_get_key(&cipher_env);
-    _server_info.key_len = enc_get_key_len(&cipher_env);
+    _server_info.iv_len = enc_get_iv_len(&server_env->cipher);
+    _server_info.key = enc_get_key(&server_env->cipher);
+    _server_info.key_len = enc_get_key_len(&server_env->cipher);
     _server_info.tcp_mss = 1448;
     _server_info.buffer_size = BUF_SIZE;
+    _server_info.cipher_env = &server_env->cipher;
 
-    if (server->obfs_plugin)
-        server->obfs_plugin->set_server_info(server->obfs, &_server_info);
+    if (server_env->obfs_plugin) {
+        server->obfs = server_env->obfs_plugin->new_obfs();
+        server_env->obfs_plugin->set_server_info(server->obfs, &_server_info);
+    }
 
-    _server_info.param = listener->protocol_param;
-    _server_info.g_data = listener->list_protocol_global[remote->remote_index];
+    _server_info.param = server_env->protocol_param;
+    _server_info.g_data = server_env->protocol_global;
 
-    if (server->protocol_plugin)
-        server->protocol_plugin->set_server_info(server->protocol, &_server_info);
+    if (server_env->protocol_plugin) {
+        server->protocol = server_env->protocol_plugin->new_obfs();
+        server_env->protocol_plugin->set_server_info(server->protocol, &_server_info);
+    }
     // SSR end
+
+    server->remote   = remote;
+    remote->server   = server;
 
     if (verbose) {
         int port = ((struct sockaddr_in*)&destaddr)->sin_port;
