@@ -72,6 +72,7 @@
 #endif
 
 #include "includeobfs.h" // I don't want to modify makefile
+#include "jconf.h"
 
 static void accept_cb(EV_P_ ev_io *w, int revents);
 static void server_recv_cb(EV_P_ ev_io *w, int revents);
@@ -938,6 +939,8 @@ main(int argc, char **argv)
     char *obfs_param = NULL; // SSR
     char *pid_path = NULL;
     char *conf_path = NULL;
+    int use_new_profile = 0;
+    jconf_t *conf = NULL;
 
     int remote_num = 0;
     ss_addr_t remote_addr[MAX_REMOTE_NUM];
@@ -1062,46 +1065,51 @@ main(int argc, char **argv)
     }
 
     if (conf_path != NULL) {
-        jconf_t *conf = read_jconf(conf_path);
-        if (remote_num == 0) {
-            remote_num = conf->remote_num;
-            for (i = 0; i < remote_num; i++)
-                remote_addr[i] = conf->remote_addr[i];
+        conf = read_jconf(conf_path);
+        if(conf->conf_ver != CONF_VER_LEGACY){
+            use_new_profile = 1;
+        } else {
+            if (remote_num == 0) {
+                remote_num = conf->server_legacy.remote_num;
+                for (i = 0; i < remote_num; i++)
+                    remote_addr[i] = conf->server_legacy.remote_addr[i];
+            }
+            if (remote_port == NULL) {
+                remote_port = conf->server_legacy.remote_port;
+            }
+            if (local_addr == NULL) {
+                local_addr = conf->server_legacy.local_addr;
+            }
+            if (local_port == NULL) {
+                local_port = conf->server_legacy.local_port;
+            }
+            if (password == NULL) {
+                password = conf->server_legacy.password;
+            }
+            // SSR beg
+            if (protocol == NULL) {
+                protocol = conf->server_legacy.protocol;
+                LOGI("protocol %s", protocol);
+            }
+            if (protocol_param == NULL) {
+                protocol_param = conf->server_legacy.protocol_param;
+                LOGI("protocol_param %s", protocol_param);
+            }
+            if (method == NULL) {
+                method = conf->server_legacy.method;
+                LOGI("method %s", method);
+            }
+            if (obfs == NULL) {
+                obfs = conf->server_legacy.obfs;
+                LOGI("obfs %s", obfs);
+            }
+            if (obfs_param == NULL) {
+                obfs_param = conf->server_legacy.obfs_param;
+                LOGI("obfs_param %s", obfs_param);
+            }
+            // SSR end
         }
-        if (remote_port == NULL) {
-            remote_port = conf->remote_port;
-        }
-        if (local_addr == NULL) {
-            local_addr = conf->local_addr;
-        }
-        if (local_port == NULL) {
-            local_port = conf->local_port;
-        }
-        if (password == NULL) {
-            password = conf->password;
-        }
-        // SSR beg
-        if (protocol == NULL) {
-            protocol = conf->protocol;
-            LOGI("protocol %s", protocol);
-        }
-        if (protocol_param == NULL) {
-            protocol_param = conf->protocol_param;
-            LOGI("protocol_param %s", protocol_param);
-        }
-        if (method == NULL) {
-            method = conf->method;
-            LOGI("method %s", method);
-        }
-        if (obfs == NULL) {
-            obfs = conf->obfs;
-            LOGI("obfs %s", obfs);
-        }
-        if (obfs_param == NULL) {
-            obfs_param = conf->obfs_param;
-            LOGI("obfs_param %s", obfs_param);
-        }
-        // SSR end
+
         if (timeout == NULL) {
             timeout = conf->timeout;
         }
@@ -1180,6 +1188,9 @@ main(int argc, char **argv)
     signal(SIGABRT, SIG_IGN);
     signal(SIGINT, signal_cb);
     signal(SIGTERM, signal_cb);
+
+    // Setup profiles
+
 
     // Setup keys
     LOGI("initializing ciphers... %s", method);
