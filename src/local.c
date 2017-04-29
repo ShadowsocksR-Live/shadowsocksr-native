@@ -1458,7 +1458,7 @@ main(int argc, char **argv)
 #ifdef ANDROID
     while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:P:huUvVA6"
                             "O:o:G:g:",
-                            long_options, &option_index)) != -1) 
+                            long_options, &option_index)) != -1)
 #else
     while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:huUvA6"
                             "O:o:G:g:",
