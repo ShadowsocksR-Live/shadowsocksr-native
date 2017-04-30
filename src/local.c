@@ -654,6 +654,14 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             }
 
             if (acl) {
+                if (outbound_block_match_host(host) == 1) {
+                    if (verbose)
+                        LOGI("outbound blocked %s", host);
+                    close_and_free_remote(EV_A_ remote);
+                    close_and_free_server(EV_A_ server);
+                    return;
+                }
+
                 int host_match = acl_match_host(host);
                 int bypass = 0;
                 if (host_match > 0)
@@ -661,6 +669,36 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 else if (host_match < 0)
                     bypass = 0;                 // proxy hostnames in white list
                 else {
+                    if (outbound_block_match_host(ip) == 1) {
+                        if (verbose)
+                            LOGI("outbound blocked %s", ip);
+                        close_and_free_remote(EV_A_ remote);
+                        close_and_free_server(EV_A_ server);
+                        return;
+                    }
+
+                    if (atyp == 3) {            // resolve domain so we can bypass domain with geoip
+                        struct sockaddr_storage storage;
+                        memset(&storage, 0, sizeof(struct sockaddr_storage));
+
+                        if (get_sockaddr(host, port, &storage, 0, ipv6first) != -1) {
+                            switch(((struct sockaddr*)&storage)->sa_family) {
+                                case AF_INET: {
+                                    struct sockaddr_in *addr_in = (struct sockaddr_in *)&storage;
+                                    dns_ntop(AF_INET, &(addr_in->sin_addr), ip, INET_ADDRSTRLEN);
+                                    break;
+                                }
+                                case AF_INET6: {
+                                    struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)&storage;
+                                    dns_ntop(AF_INET6, &(addr_in6->sin6_addr), ip, INET6_ADDRSTRLEN);
+                                    break;
+                                }
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+
                     int ip_match = acl_match_host(ip);
                     switch (get_acl_mode()) {
                         case BLACK_LIST:
@@ -694,7 +732,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 #endif
                         err = get_sockaddr(ip, port, &storage, 0, ipv6first);
                     if (err != -1) {
-                        remote         = create_remote(server->listener, (struct sockaddr *)&storage);
+                        remote = create_remote(server->listener, (struct sockaddr *)&storage);
                         if (remote != NULL) remote->direct = 1;
                     }
                 }

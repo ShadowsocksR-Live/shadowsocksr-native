@@ -431,6 +431,8 @@ init_acl(const char *path)
                        || strcmp(line, "[proxy_all]") == 0) {
                 acl_mode = BLACK_LIST;
                 continue;
+            } else if (strcmp(line, "[remote_dns]") == 0) {
+                continue;
             }
 
             char host[257];
