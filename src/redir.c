@@ -717,16 +717,6 @@ new_server(int fd, listen_ctx_t* profile) {
     server->hostname     = NULL;
     server->hostname_len = 0;
 
-//    if (method) {
-//        server->e_ctx = ss_malloc(sizeof(enc_ctx_t));
-//        server->d_ctx = ss_malloc(sizeof(enc_ctx_t));
-//        enc_ctx_init(&cipher_env, server->e_ctx, 1);
-//        enc_ctx_init(&cipher_env, server->d_ctx, 0);
-//    } else {
-//        server->e_ctx = NULL;
-//        server->d_ctx = NULL;
-//    }
-
     ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
     ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
 
@@ -948,6 +938,7 @@ accept_cb(EV_P_ ev_io *w, int revents)
     server_t *server = new_server(serverfd, listener);
     remote_t *remote = new_remote(remotefd, listener->timeout);
     server->destaddr = destaddr;
+    server->server_env = server_env;
 
     // expelled from eden
     cork_dllist_remove(&server->entries);
@@ -1266,7 +1257,7 @@ main(int argc, char **argv)
 #ifdef HAVE_SETRLIMIT
         if (nofile == 0) {
             nofile = conf->nofile;
-    	}
+        }
         /*
          * no need to check the return value here since we will show
          * the user an error message if setrlimit(2) fails
@@ -1334,6 +1325,7 @@ main(int argc, char **argv)
     listen_ctx_t *profile = (listen_ctx_t *)ss_malloc(sizeof(listen_ctx_t));
     memset(profile, 0, sizeof(listen_ctx_t));
 
+    cork_dllist_init(&all_connections);
     cork_dllist_init(&profile->connections_eden);
 
     profile->timeout = atoi(timeout);
