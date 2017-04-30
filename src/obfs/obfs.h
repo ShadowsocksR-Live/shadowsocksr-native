@@ -13,7 +13,7 @@
 #define OBFS_HMAC_SHA1_LEN 10
 
 typedef struct {
-    char host[64];
+    char host[256];
     uint16_t port;
     char *param;
     void *g_data;
