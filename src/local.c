@@ -664,24 +664,21 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 int host_match = acl_match_host(host);
                 int bypass = 0;
+                int resolved = 0;
+                struct sockaddr_storage storage;
+                memset(&storage, 0, sizeof(struct sockaddr_storage));
+                int err;
+
                 if (host_match > 0)
                     bypass = 1;                 // bypass hostnames in black list
                 else if (host_match < 0)
                     bypass = 0;                 // proxy hostnames in white list
                 else {
-                    if (outbound_block_match_host(ip) == 1) {
-                        if (verbose)
-                            LOGI("outbound blocked %s", ip);
-                        close_and_free_remote(EV_A_ remote);
-                        close_and_free_server(EV_A_ server);
-                        return;
-                    }
-
+#ifndef ANDROID
                     if (atyp == 3) {            // resolve domain so we can bypass domain with geoip
-                        struct sockaddr_storage storage;
-                        memset(&storage, 0, sizeof(struct sockaddr_storage));
-
-                        if (get_sockaddr(host, port, &storage, 0, ipv6first) != -1) {
+                        err = get_sockaddr(host, port, &storage, 0, ipv6first);
+                        if ( err != -1) {
+                            resolved = 1;
                             switch(((struct sockaddr*)&storage)->sa_family) {
                                 case AF_INET: {
                                     struct sockaddr_in *addr_in = (struct sockaddr_in *)&storage;
@@ -698,7 +695,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                             }
                         }
                     }
-
+#endif
                     int ip_match = acl_match_host(ip);
                     switch (get_acl_mode()) {
                         case BLACK_LIST:
@@ -726,7 +723,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     memset(&storage, 0, sizeof(struct sockaddr_storage));
                     int err;
 #ifndef ANDROID
-                    if (atyp == 3)
+                    if (atyp == 3 && resolved != 1)
                         err = get_sockaddr(host, port, &storage, 0, ipv6first);
                     else
 #endif
