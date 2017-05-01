@@ -345,7 +345,6 @@ LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
-LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -443,8 +442,7 @@ SS_COMMON_LIBS = $(top_builddir)/libipset/libipset.la \
 	$(top_builddir)/libcork/libcork.la $(INET_NTOP_LIB) \
 	$(LIBPCRE_LIBS) $(am__append_2) $(am__append_3)
 #bin_PROGRAMS += ss-tunnel
-#bin_PROGRAMS += ss-manager
-#bin_PROGRAMS += ss-server
+#bin_PROGRAMS += ss-server ss-manager
 sni_src = http.c \
           tls.c \
           rule.c
@@ -460,7 +458,7 @@ ss_local_SOURCES = utils.c jconf.c json.c encrypt.c udprelay.c cache.c \
 #                    cache.c \
 #                    netutils.c \
 #                    tunnel.c
-
+#
 #ss_server_SOURCES = utils.c \
 #                    netutils.c \
 #                    jconf.c \
@@ -472,7 +470,7 @@ ss_local_SOURCES = utils.c jconf.c json.c encrypt.c udprelay.c cache.c \
 #                    resolv.c \
 #                    server.c \
 #                    $(sni_src)
-
+#
 #ss_manager_SOURCES = utils.c \
 #                     jconf.c \
 #                     json.c \

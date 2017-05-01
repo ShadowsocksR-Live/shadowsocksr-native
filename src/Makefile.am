@@ -24,8 +24,7 @@ endif
 bin_PROGRAMS = ss-local
 #bin_PROGRAMS += ss-tunnel
 if !BUILD_WINCOMPAT
-#bin_PROGRAMS += ss-manager
-#bin_PROGRAMS += ss-server
+#bin_PROGRAMS += ss-server ss-manager
 endif
 
 sni_src = http.c \
@@ -51,7 +50,7 @@ ss_local_SOURCES = utils.c \
 #                    cache.c \
 #                    netutils.c \
 #                    tunnel.c
-
+#
 #ss_server_SOURCES = utils.c \
 #                    netutils.c \
 #                    jconf.c \
@@ -63,7 +62,7 @@ ss_local_SOURCES = utils.c \
 #                    resolv.c \
 #                    server.c \
 #                    $(sni_src)
-
+#
 #ss_manager_SOURCES = utils.c \
 #                     jconf.c \
 #                     json.c \
