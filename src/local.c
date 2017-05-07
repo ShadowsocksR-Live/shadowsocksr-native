@@ -2021,6 +2021,10 @@ start_ss_local_server(profile_t profile)
     server_def_t *serv = &listen_ctx.servers[0];
     ss_server_t server_cfg;
     ss_server_t *serv_cfg = &server_cfg;
+    server_cfg.protocol = 0;
+    server_cfg.protocol_param = 0;
+    server_cfg.obfs = 0;
+    server_cfg.obfs_param = 0;
     serv->addr = serv->addr_udp = storage;
     serv->addr_len = serv->addr_udp_len = get_sockaddr_len((struct sockaddr *) storage);
     listen_ctx.timeout        = timeout;
