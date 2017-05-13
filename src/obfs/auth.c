@@ -109,13 +109,6 @@ int auth_simple_pack_data(char *data, int datalength, char *outdata) {
     return out_size;
 }
 
-void memintcopy_lt(void *mem, uint32_t val) {
-    ((uint8_t *)mem)[0] = (uint8_t)(val);
-    ((uint8_t *)mem)[1] = (uint8_t)(val >> 8);
-    ((uint8_t *)mem)[2] = (uint8_t)(val >> 16);
-    ((uint8_t *)mem)[3] = (uint8_t)(val >> 24);
-}
-
 int auth_simple_pack_auth_data(auth_simple_global_data *global, char *data, int datalength, char *outdata) {
     unsigned char rand_len = (xorshift128plus() & 0xF) + 1;
     int out_size = rand_len + datalength + 6 + 12;
@@ -796,11 +789,9 @@ int auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, server_info
     }
 
     {
-        uint8_t rnd[1];
-        rand_bytes(rnd, 1);
-        memcpy(outdata, rnd, 1);
+        rand_bytes(outdata, 1);
         char hash[20];
-        local->hmac(hash, (char *)rnd, 1, key, key_len);
+        local->hmac(hash, (char *)outdata, 1, key, key_len);
         memcpy(outdata + 1, hash, 6);
     }
 

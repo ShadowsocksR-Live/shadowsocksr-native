@@ -56,3 +56,10 @@ int ss_sha1_hmac(char *auth, char *msg, int msg_len, uint8_t *iv, int enc_iv_len
     return ss_sha1_hmac_with_key(auth, msg, msg_len, auth_key, enc_iv_len + enc_key_len);
 }
 
+void memintcopy_lt(void *mem, uint32_t val) {
+    ((uint8_t *)mem)[0] = (uint8_t)(val);
+    ((uint8_t *)mem)[1] = (uint8_t)(val >> 8);
+    ((uint8_t *)mem)[2] = (uint8_t)(val >> 16);
+    ((uint8_t *)mem)[3] = (uint8_t)(val >> 24);
+}
+

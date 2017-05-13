@@ -238,11 +238,11 @@ static const CCMode supported_modes_applecc[CIPHER_NUM] = {
 #endif
 
 static const int supported_ciphers_iv_size[CIPHER_NUM] = {
-    0,  0,  0,  6, 16, 16, 16, 16, 16, 16, 16,  8, 16, 16, 16,  8,  8,  8,  8, 16,  8,  8, 12
+    0 ,  0,  0,  6, 16, 16, 16, 16, 16, 16, 16,  8, 16, 16, 16,  8,  8,  8,  8, 16,  8,  8, 12
 };
 
 static const int supported_ciphers_key_size[CIPHER_NUM] = {
-    0,  0, 16, 16, 16, 16, 24, 32, 16, 24, 32, 16, 16, 24, 32, 16,  8, 16, 16, 16, 32, 32, 32
+    16, 16, 16, 16, 16, 16, 24, 32, 16, 24, 32, 16, 16, 24, 32, 16,  8, 16, 16, 16, 32, 32, 32
 };
 
 int
@@ -1316,6 +1316,40 @@ ss_decrypt(cipher_env_t* env, buffer_t *cipher, enc_ctx_t *ctx, size_t capacity)
         }
         return 0;
     }
+}
+
+int
+ss_encrypt_buffer(cipher_env_t *env, enc_ctx_t *ctx, char *in, size_t in_size, char *out, size_t *out_size)
+{
+    buffer_t cipher;
+    memset(&cipher, 0, sizeof(buffer_t));
+    balloc(&cipher, in_size + 32);
+    cipher.len = in_size;
+    memcpy(cipher.array, in, in_size);
+    int s = ss_encrypt(env, &cipher, ctx, in_size + 32);
+    if (s == 0) {
+        *out_size = cipher.len;
+        memcpy(out, cipher.array, cipher.len);
+    }
+    bfree(&cipher);
+    return s;
+}
+
+int
+ss_decrypt_buffer(cipher_env_t *env, enc_ctx_t *ctx, char *in, size_t in_size, char *out, size_t *out_size)
+{
+    buffer_t cipher;
+    memset(&cipher, 0, sizeof(buffer_t));
+    balloc(&cipher, in_size + 32);
+    cipher.len = in_size;
+    memcpy(cipher.array, in, in_size);
+    int s = ss_decrypt(env, &cipher, ctx, in_size + 32);
+    if (s == 0) {
+        *out_size = cipher.len;
+        memcpy(out, cipher.array, cipher.len);
+    }
+    bfree(&cipher);
+    return s;
 }
 
 void

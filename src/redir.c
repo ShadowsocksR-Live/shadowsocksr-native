@@ -992,7 +992,7 @@ accept_cb(EV_P_ ev_io *w, int revents)
     _server_info.iv_len = enc_get_iv_len(&server_env->cipher);
     _server_info.key = enc_get_key(&server_env->cipher);
     _server_info.key_len = enc_get_key_len(&server_env->cipher);
-    _server_info.tcp_mss = 1448;
+    _server_info.tcp_mss = 1452;
     _server_info.buffer_size = BUF_SIZE;
     _server_info.cipher_env = &server_env->cipher;
 
@@ -1006,6 +1006,8 @@ accept_cb(EV_P_ ev_io *w, int revents)
 
     if (server_env->protocol_plugin) {
         server->protocol = server_env->protocol_plugin->new_obfs();
+        _server_info.overhead = server_env->protocol_plugin->get_overhead(server->protocol)
+            + (server_env->obfs_plugin ? server_env->obfs_plugin->get_overhead(server->obfs) : 0);
         server_env->protocol_plugin->set_server_info(server->protocol, &_server_info);
     }
     // SSR end

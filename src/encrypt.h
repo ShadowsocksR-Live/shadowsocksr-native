@@ -218,6 +218,8 @@ int ss_md5_hash_func(char *auth, char *msg, int msg_len);
 int ss_sha1_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len);
 int ss_sha1_hash_func(char *auth, char *msg, int msg_len);
 int ss_aes_128_cbc(char *encrypt, char *out_data, char *key);
+int ss_encrypt_buffer(cipher_env_t *env, enc_ctx_t *ctx, char *in, size_t in_size, char *out, size_t *out_size);
+int ss_decrypt_buffer(cipher_env_t *env, enc_ctx_t *ctx, char *in, size_t in_size, char *out, size_t *out_size);
 
 int balloc(buffer_t *ptr, size_t capacity);
 int brealloc(buffer_t *ptr, size_t len, size_t capacity);

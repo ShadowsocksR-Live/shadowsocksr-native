@@ -45,7 +45,7 @@ def fromlink(link):
 			for param in params:
 				part = param.split('=', 1)
 				if len(part) == 2:
-					if part[0] in ['obfsparam']:
+					if part[0] in ['obfsparam', 'protoparam']:
 						params_dict[part[0]] = to_str(b64decode(to_bytes(part[1])))
 					else:
 						params_dict[part[0]] = part[1]
@@ -71,6 +71,8 @@ def fromlink(link):
 			result['timeout'] = 300
 			if 'obfsparam' in params_dict:
 				result['obfs_param'] = params_dict['obfsparam']
+			if 'protoparam' in params_dict:
+				result['protocol_param'] = params_dict['protoparam']
 			output = json.dumps(result, sort_keys=True, indent=4, separators=(',', ': '))
 			print(output)
 

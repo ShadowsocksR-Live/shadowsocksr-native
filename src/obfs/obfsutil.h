@@ -11,4 +11,6 @@ int ss_md5_hmac(char *auth, char *msg, int msg_len, uint8_t *iv, int enc_iv_len,
 
 int ss_sha1_hmac(char *auth, char *msg, int msg_len, uint8_t *iv, int enc_iv_len, uint8_t *enc_key, int enc_key_len);
 
+void memintcopy_lt(void *mem, uint32_t val);
+
 #endif // _OBFS_OBFSUTIL_H
