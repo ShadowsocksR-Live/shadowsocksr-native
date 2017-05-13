@@ -83,6 +83,10 @@ obfs * auth_aes128_sha1_new_obfs() {
     return self;
 }
 
+int auth_aes128_sha1_get_overhead(obfs *self) {
+    return 9;
+}
+
 void auth_simple_dispose(obfs *self) {
     auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
     if (local->recv_buffer != NULL) {
@@ -789,7 +793,7 @@ int auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, server_info
     }
 
     {
-        rand_bytes(outdata, 1);
+        rand_bytes((uint8_t*)outdata, 1);
         char hash[20];
         local->hmac(hash, (char *)outdata, 1, key, key_len);
         memcpy(outdata + 1, hash, 6);

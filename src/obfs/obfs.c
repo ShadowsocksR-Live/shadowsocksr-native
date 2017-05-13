@@ -80,7 +80,7 @@ obfs_class * new_obfs_class(char *plugin_name)
         obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
         plugin->init_data = tls12_ticket_auth_init_data;
         plugin->new_obfs = tls12_ticket_auth_new_obfs;
-        plugin->get_overhead = get_overhead;
+        plugin->get_overhead = tls12_ticket_auth_get_overhead;
         plugin->get_server_info = get_server_info;
         plugin->set_server_info = set_server_info;
         plugin->dispose = tls12_ticket_auth_dispose;
@@ -166,7 +166,7 @@ obfs_class * new_obfs_class(char *plugin_name)
         obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
         plugin->init_data = auth_simple_init_data;
         plugin->new_obfs = strcmp(plugin_name, "auth_aes128_md5") == 0 ? auth_aes128_md5_new_obfs : auth_aes128_sha1_new_obfs;
-        plugin->get_overhead = get_overhead;
+        plugin->get_overhead = auth_aes128_sha1_get_overhead;
         plugin->get_server_info = get_server_info;
         plugin->set_server_info = set_server_info;
         plugin->dispose = auth_simple_dispose;

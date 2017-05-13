@@ -40,6 +40,10 @@ obfs * tls12_ticket_auth_new_obfs() {
     return self;
 }
 
+int tls12_ticket_auth_get_overhead(obfs *self) {
+    return 5;
+}
+
 void tls12_ticket_auth_dispose(obfs *self) {
     tls12_ticket_auth_local_data *local = (tls12_ticket_auth_local_data*)self->l_data;
     if (local->send_buffer != NULL) {
