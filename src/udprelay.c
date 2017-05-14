@@ -762,7 +762,8 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     memmove(buf->array, buf->array + len, buf->len);
 #else
 #ifdef ANDROID
-    rx += buf->len;
+    if (r > 0)
+        rx += r;
 #endif
     // Construct packet
     if (server_ctx->tunnel_addr.host && server_ctx->tunnel_addr.port) {
@@ -945,14 +946,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         // drop the packet silently
         goto CLEAN_UP;
     }
-#endif
-
-#ifdef MODULE_LOCAL
-#if !defined(MODULE_TUNNEL) && !defined(MODULE_REDIR)
-#ifdef ANDROID
-    tx += buf->len;
-#endif
-#endif
 #endif
 
     /*
@@ -1239,6 +1232,11 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     if (s == -1) {
         ERROR("[udp] server_recv_sendto");
     }
+#if !defined(MODULE_TUNNEL) && !defined(MODULE_REDIR)
+#ifdef ANDROID
+    tx += buf->len;
+#endif
+#endif
 
 #else
 

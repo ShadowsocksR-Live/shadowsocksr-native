@@ -343,7 +343,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 }
                 // SSR end
 #ifdef ANDROID
-                tx += r;
+                tx += buf->len;
 #endif
             }
 
