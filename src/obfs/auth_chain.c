@@ -476,8 +476,9 @@ int auth_chain_a_client_udp_pre_encrypt(obfs *self, char **pplaindata, int datal
     for (int i = 0; i < 4; ++i) {
         uid[i] = local->uid[i] ^ hash[i];
     }
-    memmove(out_buffer + datalength, auth_data, 3);
-    memmove(out_buffer + datalength + 3, uid, 4);
+    memmove(out_buffer + datalength, rnd_data, rand_len);
+    memmove(out_buffer + outlength - 8, auth_data, 3);
+    memmove(out_buffer + outlength - 5, uid, 4);
 
     ss_md5_hmac_with_key((char*)hash, out_buffer, outlength - 1, local->user_key, local->user_key_len);
     memmove(out_buffer + outlength - 1, hash, 1);
