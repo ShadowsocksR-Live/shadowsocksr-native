@@ -35,6 +35,7 @@
 // use this as a profile or environment
 typedef struct listen_ctx{
     ev_io io;
+    ss_addr_t tunnel_addr;
 
     struct cork_dllist_item entries; // for inactive profile list
     struct cork_dllist connections_eden; // For connections just created but not attach to a server

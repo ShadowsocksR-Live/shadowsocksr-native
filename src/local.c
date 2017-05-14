@@ -287,6 +287,26 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     buf->len += r;
 
+    if (server->stage == STAGE_INIT) {
+        char *host = server->listener->tunnel_addr.host;
+        char *port = server->listener->tunnel_addr.port;
+        if (host && port) {
+            server->stage = STAGE_PARSE;
+            int addr_len = strlen(host);
+            int header_len = addr_len + 3 + 4;
+            int port_num = atoi(port);
+            memmove(buf->array + header_len, buf->array, buf->len);
+            buf->len += header_len;
+            buf->array[0] = 5;
+            buf->array[1] = 1;
+            buf->array[2] = 0;
+            buf->array[3] = 3;
+            buf->array[4] = addr_len;
+            memcpy(buf->array + 5, host, addr_len);
+            buf->array[addr_len + 5] = port_num >> 8;
+            buf->array[addr_len + 6] = port_num;
+        }
+    }
     while (1) {
         // local socks5 server
         if (server->stage == STAGE_STREAM) {
@@ -1177,16 +1197,6 @@ new_server(int fd, listen_ctx_t* profile)
     server->recv_ctx->server    = server;
     server->send_ctx->server    = server;
 
-//    if (cipher_env.enc_method > TABLE) {
-//        server->e_ctx = ss_malloc(sizeof(struct enc_ctx));
-//        server->d_ctx = ss_malloc(sizeof(struct enc_ctx));
-//        enc_ctx_init(&cipher_env, server->e_ctx, 1);
-//        enc_ctx_init(&cipher_env, server->d_ctx, 0);
-//    } else {
-//        server->e_ctx = NULL;
-//        server->d_ctx = NULL;
-//    }
-
     ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
     ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
 
@@ -1331,18 +1341,6 @@ close_and_free_server(EV_P_ server_t *server)
 static remote_t *
 create_remote(listen_ctx_t *profile, struct sockaddr *addr)
 {
-//    struct sockaddr *remote_addr;
-//
-//    server_def_t *server_def;
-//    // currently we use random server allocation
-//    int index = rand() % listener->server_num;
-//    if (addr == NULL) {
-//        remote_addr = listener->remote_addr[index];
-//        server_def = &listener->servers[index];
-//    } else {
-//        remote_addr = addr;
-//    }
-
     int remotefd = socket(addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
 
     if (remotefd == -1) {
@@ -1478,6 +1476,9 @@ main(int argc, char **argv)
     int use_new_profile = 0;
     jconf_t *conf = NULL;
 
+    ss_addr_t tunnel_addr = { .host = NULL, .port = NULL };
+    char *tunnel_addr_str = NULL;
+
     int option_index                    = 0;
     static struct option long_options[] = {
             { "fast-open", no_argument,       0, 0 },
@@ -1493,11 +1494,11 @@ main(int argc, char **argv)
     USE_TTY();
 
 #ifdef ANDROID
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:P:huUvVA6"
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:n:P:huUvVA6"
                             "O:o:G:g:",
                             long_options, &option_index)) != -1)
 #else
-    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:a:n:huUvA6"
+    while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:n:huUvA6"
                             "O:o:G:g:",
                             long_options, &option_index)) != -1)
 #endif
@@ -1567,6 +1568,9 @@ main(int argc, char **argv)
                 break;
             case 'b':
                 local_addr = optarg;
+                break;
+            case 'L':
+                tunnel_addr_str = optarg;
                 break;
             case 'a':
                 user = optarg;
@@ -1673,6 +1677,9 @@ main(int argc, char **argv)
         if (user == NULL) {
             user = conf->user;
         }
+        if (tunnel_addr_str == NULL) {
+            tunnel_addr_str = conf->tunnel_address;
+        }
         if (fast_open == 0) {
             fast_open = conf->fast_open;
         }
@@ -1749,6 +1756,10 @@ main(int argc, char **argv)
     }
     srand(time(NULL));
 
+    // parse tunnel addr
+    if (tunnel_addr_str)
+        parse_addr(tunnel_addr_str, &tunnel_addr);
+
 #ifdef __MINGW32__
     winsock_init();
 #else
@@ -1768,6 +1779,7 @@ main(int argc, char **argv)
     profile->timeout = atoi(timeout);
     profile->iface = ss_strdup(iface);
     profile->mptcp = mptcp;
+    profile->tunnel_addr = tunnel_addr;
 
     if(use_new_profile) {
         char port[6];
@@ -1894,7 +1906,7 @@ main(int argc, char **argv)
     if (mode != TCP_ONLY) {
         LOGI("udprelay enabled");
         init_udprelay(local_addr, local_port, (struct sockaddr*)listen_ctx->servers[0].addr_udp,
-                      listen_ctx->servers[0].addr_udp_len, mtu, listen_ctx->timeout, profile->iface, &listen_ctx->servers[0].cipher, listen_ctx->servers[0].protocol_name, listen_ctx->servers[0].protocol_param);
+                      listen_ctx->servers[0].addr_udp_len, tunnel_addr, mtu, listen_ctx->timeout, profile->iface, &listen_ctx->servers[0].cipher, listen_ctx->servers[0].protocol_name, listen_ctx->servers[0].protocol_param);
     }
 
 #ifdef HAVE_LAUNCHD
@@ -1967,6 +1979,8 @@ start_ss_local_server(profile_t profile)
     int timeout       = profile.timeout;
     int mtu           = 0;
     int mptcp         = 0;
+
+    ss_addr_t tunnel_addr = { .host = NULL, .port = NULL };
 
     mode      = profile.mode;
     fast_open = profile.fast_open;
@@ -2057,7 +2071,7 @@ start_ss_local_server(profile_t profile)
     if (mode != TCP_ONLY) {
         LOGI("udprelay enabled");
         init_udprelay(local_addr, local_port_str, (struct sockaddr*)listen_ctx.servers[0].addr_udp,
-                      listen_ctx.servers[0].addr_udp_len, mtu, listen_ctx.timeout, listen_ctx.iface, &listen_ctx.servers[0].cipher, listen_ctx.servers[0].protocol_name, listen_ctx.servers[0].protocol_param);
+                      listen_ctx.servers[0].addr_udp_len, tunnel_addr, mtu, listen_ctx.timeout, listen_ctx.iface, &listen_ctx.servers[0].cipher, listen_ctx.servers[0].protocol_name, listen_ctx.servers[0].protocol_param);
     }
 
     if (strcmp(local_addr, ":") > 0)

@@ -52,8 +52,8 @@
 #include "tls.h"
 #include "netutils.h"
 #include "utils.h"
-#include "common.h"
 #include "redir.h"
+#include "common.h"
 
 #ifndef EAGAIN
 #define EAGAIN EWOULDBLOCK
@@ -1080,6 +1080,8 @@ main(int argc, char **argv)
     ss_addr_t remote_addr[MAX_REMOTE_NUM];
     char *remote_port = NULL;
 
+    ss_addr_t tunnel_addr = { .host = NULL, .port = NULL };
+
     int option_index                    = 0;
     static struct option long_options[] = {
         { "mtu",   required_argument, 0, 0 },
@@ -1447,7 +1449,7 @@ main(int argc, char **argv)
     if (mode != TCP_ONLY) {
         LOGI("UDP relay enabled");
         init_udprelay(local_addr, local_port, (struct sockaddr*)listen_ctx->servers[0].addr_udp,
-                      listen_ctx->servers[0].addr_udp_len, mtu, listen_ctx->timeout, NULL, &listen_ctx->servers[0].cipher, listen_ctx->servers[0].protocol_name, listen_ctx->servers[0].protocol_param);
+                      listen_ctx->servers[0].addr_udp_len, tunnel_addr, mtu, listen_ctx->timeout, NULL, &listen_ctx->servers[0].cipher, listen_ctx->servers[0].protocol_name, listen_ctx->servers[0].protocol_param);
     }
 
     if (mode == UDP_ONLY) {

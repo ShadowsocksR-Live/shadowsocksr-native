@@ -40,9 +40,7 @@
 int init_udprelay(const char *server_host, const char *server_port,
 #ifdef MODULE_LOCAL
                   const struct sockaddr *remote_addr, const int remote_addr_len,
-#ifdef MODULE_TUNNEL
                   const ss_addr_t tunnel_addr,
-#endif
 #endif
                   int mtu, int timeout, const char *iface,
                   cipher_env_t* cipher_env, const char *protocol, const char *protocol_param);

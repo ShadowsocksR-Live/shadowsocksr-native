@@ -765,10 +765,15 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     rx += buf->len;
 #endif
     // Construct packet
-    brealloc(buf, buf->len + 3, buf_size);
-    memmove(buf->array + 3, buf->array, buf->len);
-    memset(buf->array, 0, 3);
-    buf->len += 3;
+    if (server_ctx->tunnel_addr.host && server_ctx->tunnel_addr.port) {
+        buf->len -= len;
+        memmove(buf->array, buf->array + len, buf->len);
+    } else {
+        brealloc(buf, buf->len + 3, buf_size);
+        memmove(buf->array + 3, buf->array, buf->len);
+        memset(buf->array, 0, 3);
+        buf->len += 3;
+    }
 #endif
 
 #endif
@@ -947,8 +952,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 #ifdef ANDROID
     tx += buf->len;
 #endif
-    uint8_t frag = *(uint8_t *)(buf->array + 2);
-    offset += 3;
 #endif
 #endif
 
@@ -1014,77 +1017,84 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     memcpy(buf->array, addr_header, addr_header_len);
     buf->len += addr_header_len;
 
-#elif MODULE_TUNNEL
-
-    char addr_header[512] = { 0 };
-    char *host            = server_ctx->tunnel_addr.host;
-    char *port            = server_ctx->tunnel_addr.port;
-    uint16_t port_num     = (uint16_t)atoi(port);
-    uint16_t port_net_num = htons(port_num);
-    int addr_header_len   = 0;
-
-    struct cork_ip ip;
-    if (cork_ip_init(&ip, host) != -1) {
-        if (ip.version == 4) {
-            // send as IPv4
-            struct in_addr host_addr;
-            memset(&host_addr, 0, sizeof(struct in_addr));
-            int host_len = sizeof(struct in_addr);
-
-            if (dns_pton(AF_INET, host, &host_addr) == -1) {
-                FATAL("IP parser error");
-            }
-            addr_header[addr_header_len++] = 1;
-            memcpy(addr_header + addr_header_len, &host_addr, host_len);
-            addr_header_len += host_len;
-        } else if (ip.version == 6) {
-            // send as IPv6
-            struct in6_addr host_addr;
-            memset(&host_addr, 0, sizeof(struct in6_addr));
-            int host_len = sizeof(struct in6_addr);
-
-            if (dns_pton(AF_INET6, host, &host_addr) == -1) {
-                FATAL("IP parser error");
-            }
-            addr_header[addr_header_len++] = 4;
-            memcpy(addr_header + addr_header_len, &host_addr, host_len);
-            addr_header_len += host_len;
-        } else {
-            FATAL("IP parser error");
-        }
-    } else {
-        // send as domain
-        int host_len = strlen(host);
-
-        addr_header[addr_header_len++] = 3;
-        addr_header[addr_header_len++] = host_len;
-        memcpy(addr_header + addr_header_len, host, host_len);
-        addr_header_len += host_len;
-    }
-    memcpy(addr_header + addr_header_len, &port_net_num, 2);
-    addr_header_len += 2;
-
-    // reconstruct the buffer
-    brealloc(buf, buf->len + addr_header_len, buf_size);
-    memmove(buf->array + addr_header_len, buf->array, buf->len);
-    memcpy(buf->array, addr_header, addr_header_len);
-    buf->len += addr_header_len;
-
 #else
 
-    char host[257] = { 0 };
-    char port[64]  = { 0 };
-    struct sockaddr_storage dst_addr;
-    memset(&dst_addr, 0, sizeof(struct sockaddr_storage));
+    char addr_header[512] = { 0 };
+    int addr_header_len   = 0;
+    uint8_t frag = 0;
 
-    int addr_header_len = parse_udprealy_header(buf->array + offset, buf->len - offset,
-                                                host, port, &dst_addr);
-    if (addr_header_len == 0) {
-        // error in parse header
-        goto CLEAN_UP;
+    char *host            = server_ctx->tunnel_addr.host;
+    char *port            = server_ctx->tunnel_addr.port;
+    if (host && port) {
+        uint16_t port_num     = (uint16_t)atoi(port);
+        uint16_t port_net_num = htons(port_num);
+
+        struct cork_ip ip;
+        if (cork_ip_init(&ip, host) != -1) {
+            if (ip.version == 4) {
+                // send as IPv4
+                struct in_addr host_addr;
+                memset(&host_addr, 0, sizeof(struct in_addr));
+                int host_len = sizeof(struct in_addr);
+
+                if (dns_pton(AF_INET, host, &host_addr) == -1) {
+                    FATAL("IP parser error");
+                }
+                addr_header[addr_header_len++] = 1;
+                memcpy(addr_header + addr_header_len, &host_addr, host_len);
+                addr_header_len += host_len;
+            } else if (ip.version == 6) {
+                // send as IPv6
+                struct in6_addr host_addr;
+                memset(&host_addr, 0, sizeof(struct in6_addr));
+                int host_len = sizeof(struct in6_addr);
+
+                if (dns_pton(AF_INET6, host, &host_addr) == -1) {
+                    FATAL("IP parser error");
+                }
+                addr_header[addr_header_len++] = 4;
+                memcpy(addr_header + addr_header_len, &host_addr, host_len);
+                addr_header_len += host_len;
+            } else {
+                FATAL("IP parser error");
+            }
+        } else {
+            // send as domain
+            int host_len = strlen(host);
+
+            addr_header[addr_header_len++] = 3;
+            addr_header[addr_header_len++] = host_len;
+            memcpy(addr_header + addr_header_len, host, host_len);
+            addr_header_len += host_len;
+        }
+        memcpy(addr_header + addr_header_len, &port_net_num, 2);
+        addr_header_len += 2;
+
+        // reconstruct the buffer
+        brealloc(buf, buf->len + addr_header_len, buf_size);
+        memmove(buf->array + addr_header_len, buf->array, buf->len);
+        memcpy(buf->array, addr_header, addr_header_len);
+        buf->len += addr_header_len;
+
+    } else {
+
+        frag = *(uint8_t *)(buf->array + 2);
+        offset += 3;
+        char host[257] = { 0 };
+        char port[64]  = { 0 };
+        struct sockaddr_storage dst_addr;
+        memset(&dst_addr, 0, sizeof(struct sockaddr_storage));
+
+        addr_header_len = parse_udprealy_header(buf->array + offset, buf->len - offset,
+                                                    host, port, &dst_addr);
+        if (addr_header_len == 0) {
+            // error in parse header
+            goto CLEAN_UP;
+        }
+
+        //char *addr_header = buf->array + offset;
+        strcpy(addr_header, buf->array + offset);
     }
-
-    char *addr_header = buf->array + offset;
 #endif
 
 #ifdef MODULE_LOCAL
@@ -1358,9 +1368,7 @@ int
 init_udprelay(const char *server_host, const char *server_port,
 #ifdef MODULE_LOCAL
               const struct sockaddr *remote_addr, const int remote_addr_len,
-#ifdef MODULE_TUNNEL
               const ss_addr_t tunnel_addr,
-#endif
 #endif
               int mtu, int timeout, const char *iface,
               cipher_env_t* cipher_env, const char *protocol, const char *protocol_param)
@@ -1420,9 +1428,7 @@ init_udprelay(const char *server_host, const char *server_port,
     if (server_ctx->protocol_plugin)
         server_ctx->protocol_plugin->set_server_info(server_ctx->protocol, &_server_info);
     //SSR end
-#ifdef MODULE_TUNNEL
     server_ctx->tunnel_addr = tunnel_addr;
-#endif
 #endif
 
     ev_io_start(loop, &server_ctx->io);
