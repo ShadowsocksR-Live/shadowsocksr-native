@@ -93,6 +93,7 @@ static void close_and_free_remote(EV_P_ remote_ctx_t *ctx);
 static remote_ctx_t *new_remote(int fd, server_ctx_t *server_ctx);
 
 #ifdef ANDROID
+extern int log_tx_rx;
 extern uint64_t tx;
 extern uint64_t rx;
 extern int vpn;
@@ -762,7 +763,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     memmove(buf->array, buf->array + len, buf->len);
 #else
 #ifdef ANDROID
-    if (r > 0)
+    if (r > 0 && log_tx_rx)
         rx += r;
 #endif
     // Construct packet
@@ -1234,7 +1235,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 #if !defined(MODULE_TUNNEL) && !defined(MODULE_REDIR)
 #ifdef ANDROID
-    tx += buf->len;
+    if (log_tx_rx)
+        tx += buf->len;
 #endif
 #endif
 
