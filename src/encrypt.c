@@ -43,6 +43,10 @@
 #include <polarssl/version.h>
 #define CIPHER_UNSUPPORTED "unsupported"
 
+#ifdef __MINGW32__
+#include "winsock2.h"
+#endif
+
 #include <time.h>
 #ifdef _WIN32
 #include <windows.h>
@@ -74,10 +78,6 @@
 
 #ifndef __MINGW32__
 #include <arpa/inet.h>
-#endif
-
-#ifdef __MINGW32__
-#include "winsock2.h"
 #endif
 
 #include "cache.h"
