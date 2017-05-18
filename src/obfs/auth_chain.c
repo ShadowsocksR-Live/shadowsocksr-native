@@ -6,6 +6,8 @@
 #include "base64.h"
 #include "encrypt.h"
 
+uint32_t g_endian_test = 1;
+
 typedef struct shift128plus_ctx {
     uint64_t v[2];
 }shift128plus_ctx;
@@ -20,10 +22,21 @@ uint64_t shift128plus_next(shift128plus_ctx* ctx) {
     return x + y;
 }
 
+void i64_memcpy(uint8_t* target, uint8_t* source)
+{
+    for (int i = 0; i < 8; ++i)
+        target[i] = source[7 - i];
+}
+
 void shift128plus_init_from_bin(shift128plus_ctx* ctx, uint8_t* bin, int bin_size) {
     uint8_t fill_bin[16] = {0};
     memcpy(fill_bin, bin, bin_size);
-    memcpy(ctx, fill_bin, 16);
+    if (*(uint8_t*)&g_endian_test == 1) {
+        memcpy(ctx, fill_bin, 16);
+    } else {
+        i64_memcpy((uint8_t*)ctx, fill_bin);
+        i64_memcpy((uint8_t*)ctx + 8, fill_bin + 8);
+    }
 }
 
 void shift128plus_init_from_bin_datalen(shift128plus_ctx* ctx, uint8_t* bin, int bin_size, int datalen) {
@@ -31,7 +44,12 @@ void shift128plus_init_from_bin_datalen(shift128plus_ctx* ctx, uint8_t* bin, int
     memcpy(fill_bin, bin, bin_size);
     fill_bin[0] = datalen;
     fill_bin[1] = datalen >> 8;
-    memcpy(ctx, fill_bin, 16);
+    if (*(uint8_t*)&g_endian_test == 1) {
+        memcpy(ctx, fill_bin, 16);
+    } else {
+        i64_memcpy((uint8_t*)ctx, fill_bin);
+        i64_memcpy((uint8_t*)ctx + 8, fill_bin + 8);
+    }
     for (int i = 0; i < 4; ++i) {
         shift128plus_next(ctx);
     }
