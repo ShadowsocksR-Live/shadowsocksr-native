@@ -712,6 +712,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 memset(&storage, 0, sizeof(struct sockaddr_storage));
                 int err;
 
+                LOGI("acl_match_host %s %d", host, host_match);
                 if (host_match > 0)
                     bypass = 1;                 // bypass hostnames in black list
                 else if (host_match < 0)
@@ -740,7 +741,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     }
 #endif
                     int ip_match = acl_match_host(ip);// -1 if IP in white list or 1 if IP in black list
-                    if (ip_match < 0 || (get_acl_mode() == WHITE_LIST && ip_match == 0))
+                    LOGI("acl_match_host ip %d mode %d", ip_match, get_acl_mode());
+                    if (ip_match < 0 || (get_acl_mode() == BLACK_LIST && ip_match == 0))
                         bypass = 1;
                 }
 
