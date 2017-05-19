@@ -154,6 +154,34 @@ setnonblocking(int fd)
 
 #endif
 
+void
+ev_io_remote_send(EV_P_ server_t* server, remote_t* remote)
+{
+    ev_io_stop(EV_A_ & remote->send_ctx->io);
+    ev_io_start(EV_A_ & server->recv_ctx->io);
+}
+
+void
+ev_io_remote_recv(EV_P_ server_t* server, remote_t* remote)
+{
+    ev_io_stop(EV_A_ & remote->recv_ctx->io);
+    ev_io_start(EV_A_ & server->send_ctx->io);
+}
+
+void
+ev_io_server_send(EV_P_ server_t* server, remote_t* remote)
+{
+    ev_io_stop(EV_A_ & server->send_ctx->io);
+    ev_io_start(EV_A_ & remote->recv_ctx->io);
+}
+
+void
+ev_io_server_recv(EV_P_ server_t* server, remote_t* remote)
+{
+    ev_io_stop(EV_A_ & server->recv_ctx->io);
+    ev_io_start(EV_A_ & remote->send_ctx->io);
+}
+
 int
 create_and_bind(const char *addr, const char *port)
 {
@@ -383,8 +411,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     }
 
                     // wait on remote connected event
-                    ev_io_stop(EV_A_ & server_recv_ctx->io);
-                    ev_io_start(EV_A_ & remote->send_ctx->io);
+                    ev_io_server_recv(EV_A_ server, remote);
                     ev_timer_start(EV_A_ & remote->send_ctx->watcher);
                 } else {
 #ifdef TCP_FASTOPEN
@@ -409,8 +436,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                         if (errno == CONNECT_IN_PROGRESS) {
                             // in progress, wait until connected
                             remote->buf->idx = 0;
-                            ev_io_stop(EV_A_ & server_recv_ctx->io);
-                            ev_io_start(EV_A_ & remote->send_ctx->io);
+                            ev_io_server_recv(EV_A_ server, remote);
                             return;
                         } else {
                             ERROR("sendto");
@@ -427,23 +453,21 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                         remote->buf->len -= s;
                         remote->buf->idx  = s;
 
-                        ev_io_stop(EV_A_ & server_recv_ctx->io);
-                        ev_io_start(EV_A_ & remote->send_ctx->io);
+                        ev_io_server_recv(EV_A_ server, remote);
                         ev_timer_start(EV_A_ & remote->send_ctx->watcher);
                         return;
                     } else {
-                    // Just connected
+                        // Just connected
                         remote->buf->idx = 0;
                         remote->buf->len = 0;
 #ifdef __APPLE__
-                        ev_io_stop(EV_A_ & server_recv_ctx->io);
-                        ev_io_start(EV_A_ & remote->send_ctx->io);
+                        ev_io_server_recv(EV_A_ server, remote);
                         ev_timer_start(EV_A_ & remote->send_ctx->watcher);
 #else
-                    remote->send_ctx->connected = 1;
-                    ev_timer_stop(EV_A_ & remote->send_ctx->watcher);
+                        remote->send_ctx->connected = 1;
+                        ev_timer_stop(EV_A_ & remote->send_ctx->watcher);
                         ev_timer_start(EV_A_ & remote->recv_ctx->watcher);
-                    ev_io_start(EV_A_ & remote->recv_ctx->io);
+                        ev_io_start(EV_A_ & remote->recv_ctx->io);
                         return;
 #endif
                     }
@@ -464,8 +488,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     if (errno == EAGAIN || errno == EWOULDBLOCK) {
                         // no data, wait for send
                         remote->buf->idx = 0;
-                        ev_io_stop(EV_A_ & server_recv_ctx->io);
-                        ev_io_start(EV_A_ & remote->send_ctx->io);
+                        ev_io_server_recv(EV_A_ server, remote);
                         return;
                     } else {
                         ERROR("server_recv_cb_send");
@@ -476,8 +499,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 } else if (s < (int)(remote->buf->len)) {
                     remote->buf->len -= s;
                     remote->buf->idx  = s;
-                    ev_io_stop(EV_A_ & server_recv_ctx->io);
-                    ev_io_start(EV_A_ & remote->send_ctx->io);
+                    ev_io_server_recv(EV_A_ server, remote);
                     return;
                 } else {
                     remote->buf->idx = 0;
@@ -889,8 +911,7 @@ server_send_cb(EV_P_ ev_io *w, int revents)
             // all sent out, wait for reading
             server->buf->len = 0;
             server->buf->idx = 0;
-            ev_io_stop(EV_A_ & server_send_ctx->io);
-            ev_io_start(EV_A_ & remote->recv_ctx->io);
+            ev_io_server_send(EV_A_ server, remote);
             return;
         }
     }
@@ -989,7 +1010,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
                         ssize_t s = send(remote->fd, remote->buf->array, remote->buf->len, 0);
                         if (s == -1) {
                             if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                                ERROR("remote_send_cb_send");
+                                ERROR("remote_recv_cb_send");
                                 // close and free
                                 close_and_free_remote(EV_A_ remote);
                                 close_and_free_server(EV_A_ server);
@@ -1004,8 +1025,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
                             // all sent out, wait for reading
                             remote->buf->len = 0;
                             remote->buf->idx = 0;
-                            ev_io_stop(EV_A_ & remote->send_ctx->io);
-                            ev_io_start(EV_A_ & server->recv_ctx->io);
+                            ev_io_remote_send(EV_A_ server, remote);
                         }
                     }
                 }
@@ -1043,8 +1063,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             // no data, wait for send
             server->buf->idx = 0;
-            ev_io_stop(EV_A_ & remote_recv_ctx->io);
-            ev_io_start(EV_A_ & server->send_ctx->io);
+            ev_io_remote_recv(EV_A_ server, remote);
         } else {
             ERROR("remote_recv_cb_send");
             close_and_free_remote(EV_A_ remote);
@@ -1053,8 +1072,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     } else if (s < (int)(server->buf->len)) {
         server->buf->len -= s;
         server->buf->idx  = s;
-        ev_io_stop(EV_A_ & remote_recv_ctx->io);
-        ev_io_start(EV_A_ & server->send_ctx->io);
+        ev_io_remote_recv(EV_A_ server, remote);
     }
 }
 
@@ -1066,10 +1084,10 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
     server_t *server              = remote->server;
 
     if (!remote_send_ctx->connected) {
-        struct sockaddr_storage addr;
-        socklen_t len = sizeof addr;
-        int r         = getpeername(remote->fd, (struct sockaddr *)&addr, &len);
-        if (r == 0) {
+        int err_no = 0;
+        socklen_t len = sizeof err_no;
+        int r         = getsockopt(remote->fd, SOL_SOCKET, SO_ERROR, &err_no, &len);
+        if (r == 0 && err_no == 0) {
             remote_send_ctx->connected = 1;
             ev_timer_stop(EV_A_ & remote_send_ctx->watcher);
             ev_timer_start(EV_A_ & remote->recv_ctx->watcher);
@@ -1077,13 +1095,13 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
 
             // no need to send any data
             if (remote->buf->len == 0) {
-                ev_io_stop(EV_A_ & remote_send_ctx->io);
-                ev_io_start(EV_A_ & server->recv_ctx->io);
+                ev_io_remote_send(EV_A_ server, remote);
                 return;
             }
         } else {
             // not connected
-            ERROR("getpeername");
+            LOGE("getsockopt error code %d %d", r, err_no);
+            ERROR("getsockopt");
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
@@ -1116,8 +1134,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
             // all sent out, wait for reading
             remote->buf->len = 0;
             remote->buf->idx = 0;
-            ev_io_stop(EV_A_ & remote_send_ctx->io);
-            ev_io_start(EV_A_ & server->recv_ctx->io);
+            ev_io_remote_send(EV_A_ server, remote);
         }
     }
 }
@@ -1312,14 +1329,10 @@ free_server(server_t *server)
         if (server_env->obfs_plugin) {
             server_env->obfs_plugin->dispose(server->obfs);
             server->obfs = NULL;
-//            free_obfs_class(server->obfs_plugin);
-//            server->obfs_plugin = NULL;
         }
         if (server_env->protocol_plugin) {
             server_env->protocol_plugin->dispose(server->protocol);
             server->protocol = NULL;
-//            free_obfs_class(server->protocol_plugin);
-//            server->protocol_plugin = NULL;
         }
         // SSR end
     }
@@ -1415,17 +1428,6 @@ accept_cb(EV_P_ ev_io *w, int revents)
 #endif
 
     server_t *server = new_server(serverfd, listener);
-//    server->listener = listener;
-//    // SSR beg
-//    server->obfs_plugin = new_obfs_class(listener->obfs_name);
-//    if (server->obfs_plugin) {
-//        server->obfs = server->obfs_plugin->new_obfs();
-//    }
-//    server->protocol_plugin = new_obfs_class(listener->protocol_name);
-//    if (server->protocol_plugin) {
-//        server->protocol = server->protocol_plugin->new_obfs();
-//    }
-//    // SSR end
 
     ev_io_start(EV_A_ & server->recv_ctx->io);
 }
