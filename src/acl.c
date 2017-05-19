@@ -28,6 +28,11 @@
 #include "cache.h"
 #include "acl.h"
 
+/*
+ * definition:
+ * white list: you can connect directly
+ * black list: you have to connect via proxy, or which has been blocked
+ */
 static struct ip_set white_list_ipv4;
 static struct ip_set white_list_ipv6;
 
@@ -411,14 +416,14 @@ init_acl(const char *path)
                 list_ipv6 = &outbound_block_list_ipv6;
                 rules     = &outbound_block_list_rules;
                 continue;
-            } else if (strcmp(line, "[black_list]") == 0
-                       || strcmp(line, "[bypass_list]") == 0) {
+            } else if (strcmp(line, "[white_list]") == 0
+                       || strcmp(line, "[proxy_list]") == 0) {
                 list_ipv4 = &black_list_ipv4;
                 list_ipv6 = &black_list_ipv6;
                 rules     = &black_list_rules;
                 continue;
-            } else if (strcmp(line, "[white_list]") == 0
-                       || strcmp(line, "[proxy_list]") == 0) {
+            } else if (strcmp(line, "[black_list]") == 0
+                       || strcmp(line, "[bypass_list]") == 0) {
                 list_ipv4 = &white_list_ipv4;
                 list_ipv6 = &white_list_ipv6;
                 rules     = &white_list_rules;
