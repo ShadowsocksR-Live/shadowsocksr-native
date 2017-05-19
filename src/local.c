@@ -686,6 +686,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     }
 
                     ss_free(hostname);
+                } else {
+                    strncpy(host, ip, sizeof(ip));
                 }
             }
 
@@ -713,7 +715,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 int err;
 
                 if (verbose)
-                    LOGI("acl_match_host %s %d", host, host_match);
+                    LOGI("acl_match_host %s result %d", host, host_match);
                 if (host_match > 0)
                     bypass = 0;                 // bypass hostnames in black list
                 else if (host_match < 0)
@@ -741,11 +743,23 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                         }
                     }
 #endif
+                    if (outbound_block_match_host(ip) == 1) {
+                        if (verbose)
+                            LOGI("outbound blocked %s", ip);
+                        close_and_free_remote(EV_A_ remote);
+                        close_and_free_server(EV_A_ server);
+                        return;
+                    }
+
                     int ip_match = acl_match_host(ip);// -1 if IP in white list or 1 if IP in black list
                     if (verbose)
-                        LOGI("acl_match_host ip %d mode %d", ip_match, get_acl_mode());
-                    if (ip_match < 0 || (get_acl_mode() == BLACK_LIST && ip_match == 0))
+                        LOGI("acl_match_host ip %s result %d mode %d", ip, ip_match, get_acl_mode());
+                    if (ip_match < 0)
                         bypass = 1;
+                    else if (ip_match > 0)
+                        bypass = 0;
+                    else
+                        bypass = (get_acl_mode() == BLACK_LIST);
                 }
 
                 if (bypass) {
