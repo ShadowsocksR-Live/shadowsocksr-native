@@ -425,11 +425,11 @@ init_acl(const char *path)
                 continue;
             } else if (strcmp(line, "[reject_all]") == 0
                        || strcmp(line, "[bypass_all]") == 0) {
-                acl_mode = WHITE_LIST;
+                acl_mode = BLACK_LIST;
                 continue;
             } else if (strcmp(line, "[accept_all]") == 0
                        || strcmp(line, "[proxy_all]") == 0) {
-                acl_mode = BLACK_LIST;
+                acl_mode = WHITE_LIST;
                 continue;
             } else if (strcmp(line, "[remote_dns]") == 0) {
                 continue;

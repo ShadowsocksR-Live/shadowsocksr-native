@@ -589,8 +589,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     return;
                 }
                 if (udp_assc) {
-                    close_and_free_remote(EV_A_ remote);
-                    close_and_free_server(EV_A_ server);
+                    // Wait until client closes the connection
                     return;
                 }
             }
@@ -740,18 +739,9 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                         }
                     }
 #endif
-                    int ip_match = acl_match_host(ip);
-                    switch (get_acl_mode()) {
-                        case BLACK_LIST:
-                            if (ip_match > 0)
-                                bypass = 1;               // bypass IPs in black list
-                            break;
-                        case WHITE_LIST:
-                            bypass = 1;
-                            if (ip_match < 0)
-                                bypass = 0;               // proxy IPs in white list
-                            break;
-                    }
+                    int ip_match = acl_match_host(ip);// -1 if IP in white list or 1 if IP in black list
+                    if (ip_match < 0 || get_acl_mode() == WHITE_LIST && ip_match == 0)
+                        bypass = 1;
                 }
 
                 if (bypass) {
