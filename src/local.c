@@ -740,7 +740,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     }
 #endif
                     int ip_match = acl_match_host(ip);// -1 if IP in white list or 1 if IP in black list
-                    if (ip_match < 0 || get_acl_mode() == WHITE_LIST && ip_match == 0)
+                    if (ip_match < 0 || (get_acl_mode() == WHITE_LIST && ip_match == 0))
                         bypass = 1;
                 }
 
