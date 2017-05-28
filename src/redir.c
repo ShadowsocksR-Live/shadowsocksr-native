@@ -1007,8 +1007,7 @@ accept_cb(EV_P_ ev_io *w, int revents)
     if (server_env->protocol_plugin) {
         server->protocol = server_env->protocol_plugin->new_obfs();
         _server_info.overhead = server_env->protocol_plugin->get_overhead(server->protocol)
-            + (server_env->obfs_plugin ? server_env->obfs_plugin->get_overhead(server->obfs) : 0)
-            + _server_info.iv_len;
+            + (server_env->obfs_plugin ? server_env->obfs_plugin->get_overhead(server->obfs) : 0);
         server_env->protocol_plugin->set_server_info(server->protocol, &_server_info);
     }
     // SSR end
