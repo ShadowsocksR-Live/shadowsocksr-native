@@ -520,7 +520,7 @@ int auth_chain_a_client_udp_post_decrypt(obfs *self, char **pplaindata, int data
     uint8_t hash[16];
     ss_md5_hmac_with_key((char*)hash, plaindata, datalength - 1, local->user_key, local->user_key_len);
 
-    if (*hash != plaindata[datalength - 1])
+    if (*hash != ((uint8_t*)plaindata)[datalength - 1])
         return 0;
 
     ss_md5_hmac_with_key((char*)hash, plaindata + datalength - 8, 7, server->key, server->key_len);
