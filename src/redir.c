@@ -982,7 +982,7 @@ accept_cb(EV_P_ ev_io *w, int revents)
 //    }
     server_info _server_info;
     memset(&_server_info, 0, sizeof(server_info));
-    strcpy(_server_info.host, inet_ntoa(((struct sockaddr_in*)remote_addr)->sin_addr));
+    strcpy(_server_info.host, server_env->host);
     _server_info.port = ((struct sockaddr_in*)remote_addr)->sin_port;
     _server_info.port = _server_info.port >> 8 | _server_info.port << 8;
     _server_info.param = server_env->obfs_param;

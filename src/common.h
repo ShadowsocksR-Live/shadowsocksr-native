@@ -48,6 +48,7 @@ int init_udprelay(const char *server_host, const char *server_port,
 void free_udprelay(void);
 
 typedef struct server_def {
+    char *hostname;
     char *host;
     int port;
     int udp_port;
