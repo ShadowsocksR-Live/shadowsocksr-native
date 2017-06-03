@@ -842,8 +842,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 if (verbose) {
                     LOGI("server_info host %s", _server_info.host);
                 }
-                _server_info.port = ((struct sockaddr_in*)&server_env->addr)->sin_port;
-                _server_info.port = _server_info.port >> 8 | _server_info.port << 8;
+                _server_info.port = server_env->port;
                 _server_info.param = server_env->obfs_param;
                 _server_info.g_data = server_env->obfs_global;
                 _server_info.head_len = get_head_size(ss_addr_to_send.array, 320, 30);

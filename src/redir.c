@@ -983,8 +983,7 @@ accept_cb(EV_P_ ev_io *w, int revents)
     server_info _server_info;
     memset(&_server_info, 0, sizeof(server_info));
     strcpy(_server_info.host, server_env->host);
-    _server_info.port = ((struct sockaddr_in*)remote_addr)->sin_port;
-    _server_info.port = _server_info.port >> 8 | _server_info.port << 8;
+    _server_info.port = server_env->port;
     _server_info.param = server_env->obfs_param;
     _server_info.g_data = server_env->obfs_global;
     _server_info.head_len = (AF_INET6 == server->destaddr.ss_family ? 19 : 7);
