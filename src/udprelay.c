@@ -1416,9 +1416,8 @@ init_udprelay(const char *server_host, const char *server_port,
 
     server_info _server_info;
     memset(&_server_info, 0, sizeof(server_info));
-    strcpy(_server_info.host, inet_ntoa(((struct sockaddr_in*)remote_addr)->sin_addr));
-    _server_info.port = ((struct sockaddr_in*)remote_addr)->sin_port;
-    _server_info.port = _server_info.port >> 8 | _server_info.port << 8;
+    strcpy(_server_info.host, server_host);
+    _server_info.port = atoi(server_port);
     _server_info.g_data = server_ctx->protocol_global;
     _server_info.param = (char *)protocol_param;
     _server_info.key = enc_get_key(cipher_env);
