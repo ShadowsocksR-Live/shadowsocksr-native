@@ -1017,9 +1017,11 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     int addr_header_len   = 0;
     uint8_t frag = 0;
 
-    char *host            = server_ctx->tunnel_addr.host;
-    char *port            = server_ctx->tunnel_addr.port;
-    if (host && port) {
+    char host[257] = { 0 };
+    char port[65]  = { 0 };
+    if (server_ctx->tunnel_addr.host && server_ctx->tunnel_addr.port) {
+        strncpy(host, server_ctx->tunnel_addr.host, 256);
+        strncpy(port, server_ctx->tunnel_addr.port, 64);
         uint16_t port_num     = (uint16_t)atoi(port);
         uint16_t port_net_num = htons(port_num);
 
@@ -1074,8 +1076,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
         frag = *(uint8_t *)(buf->array + 2);
         offset += 3;
-        char host[257] = { 0 };
-        char port[64]  = { 0 };
         struct sockaddr_storage dst_addr;
         memset(&dst_addr, 0, sizeof(struct sockaddr_storage));
 
