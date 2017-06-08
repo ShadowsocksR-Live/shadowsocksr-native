@@ -1086,8 +1086,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             goto CLEAN_UP;
         }
 
-        //char *addr_header = buf->array + offset;
-        strcpy(addr_header, buf->array + offset);
+        strncpy(addr_header, buf->array + offset, addr_header_len);
     }
 #endif
 
