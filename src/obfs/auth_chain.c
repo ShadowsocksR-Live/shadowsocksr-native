@@ -383,7 +383,6 @@ int auth_chain_a_client_post_decrypt(obfs *self, char **pplaindata, int dataleng
         if (len >= 4096) {
             local->recv_buffer_size = 0;
             error = 1;
-            LOGE("post_decrypt wrong size %d", local->recv_id);
             break;
         }
         if ((len += 4) > local->recv_buffer_size)
@@ -394,7 +393,6 @@ int auth_chain_a_client_post_decrypt(obfs *self, char **pplaindata, int dataleng
         if (memcmp(hash, recv_buffer + len - 2, 2)) {
             local->recv_buffer_size = 0;
             error = 1;
-            LOGE("post_decrypt wrong HMAC");
             break;
         }
 

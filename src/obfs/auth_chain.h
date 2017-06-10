@@ -4,7 +4,7 @@
  * Copyright (C) 2015 - 2016, Break Wa11 <mmgac001@gmail.com>
  */
 
-#ifndef _OBFS_AUTH_H
+#ifndef _OBFS_AUTH_CHAIN_H
 #define _OBFS_AUTH_CHAIN_H
 
 #include "obfs.h"
