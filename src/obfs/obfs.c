@@ -51,7 +51,7 @@ obfs_class * new_obfs_class(char *plugin_name)
     init_crc32_table();
     init_shift128plus();
     if (strcmp(plugin_name, "http_simple") == 0) {
-        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
+        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs_class));
         plugin->init_data = init_data;
         plugin->new_obfs = http_simple_new_obfs;
         plugin->get_overhead = get_overhead;
@@ -64,7 +64,7 @@ obfs_class * new_obfs_class(char *plugin_name)
 
         return plugin;
     } else if (strcmp(plugin_name, "http_post") == 0) {
-        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
+        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs_class));
         plugin->init_data = init_data;
         plugin->new_obfs = http_simple_new_obfs;
         plugin->get_overhead = get_overhead;
@@ -77,7 +77,7 @@ obfs_class * new_obfs_class(char *plugin_name)
 
         return plugin;
     } else if (strcmp(plugin_name, "tls1.2_ticket_auth") == 0) {
-        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
+        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs_class));
         plugin->init_data = tls12_ticket_auth_init_data;
         plugin->new_obfs = tls12_ticket_auth_new_obfs;
         plugin->get_overhead = tls12_ticket_auth_get_overhead;
@@ -90,7 +90,7 @@ obfs_class * new_obfs_class(char *plugin_name)
 
         return plugin;
     /*} else if (strcmp(plugin_name, "verify_simple") == 0) {
-        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
+        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs_class));
         plugin->init_data = init_data;
         plugin->new_obfs = verify_simple_new_obfs;
         plugin->get_server_info = get_server_info;
@@ -104,7 +104,7 @@ obfs_class * new_obfs_class(char *plugin_name)
 
         return plugin;
     } else if (strcmp(plugin_name, "auth_simple") == 0) {
-        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
+        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs_class));
         plugin->init_data = auth_simple_init_data;
         plugin->new_obfs = auth_simple_new_obfs;
         plugin->get_server_info = get_server_info;
@@ -118,7 +118,7 @@ obfs_class * new_obfs_class(char *plugin_name)
 
         return plugin;*/
     } else if (strcmp(plugin_name, "auth_sha1") == 0) {
-        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
+        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs_class));
         plugin->init_data = auth_simple_init_data;
         plugin->new_obfs = auth_simple_new_obfs;
         plugin->get_overhead = get_overhead;
@@ -133,7 +133,7 @@ obfs_class * new_obfs_class(char *plugin_name)
 
         return plugin;
     } else if (strcmp(plugin_name, "auth_sha1_v2") == 0) {
-        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
+        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs_class));
         plugin->init_data = auth_simple_init_data;
         plugin->new_obfs = auth_simple_new_obfs;
         plugin->get_overhead = get_overhead;
@@ -148,7 +148,7 @@ obfs_class * new_obfs_class(char *plugin_name)
 
         return plugin;
     } else if (strcmp(plugin_name, "auth_sha1_v4") == 0) {
-        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
+        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs_class));
         plugin->init_data = auth_simple_init_data;
         plugin->new_obfs = auth_simple_new_obfs;
         plugin->get_overhead = get_overhead;
@@ -163,7 +163,7 @@ obfs_class * new_obfs_class(char *plugin_name)
 
         return plugin;
     } else if (strcmp(plugin_name, "auth_aes128_md5") == 0 || strcmp(plugin_name, "auth_aes128_sha1") == 0) {
-        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
+        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs_class));
         plugin->init_data = auth_simple_init_data;
         plugin->new_obfs = strcmp(plugin_name, "auth_aes128_md5") == 0 ? auth_aes128_md5_new_obfs : auth_aes128_sha1_new_obfs;
         plugin->get_overhead = auth_aes128_sha1_get_overhead;
@@ -178,7 +178,7 @@ obfs_class * new_obfs_class(char *plugin_name)
 
         return plugin;
     } else if (strcmp(plugin_name, "auth_chain_a") == 0) {
-        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs));
+        obfs_class * plugin = (obfs_class*)malloc(sizeof(obfs_class));
         plugin->init_data = auth_chain_a_init_data;
         plugin->new_obfs = auth_chain_a_new_obfs;
         plugin->get_overhead = auth_chain_a_get_overhead;

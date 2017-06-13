@@ -362,7 +362,7 @@ int auth_chain_a_client_post_decrypt(obfs *self, char **pplaindata, int dataleng
     auth_chain_local_data *local = (auth_chain_local_data*)self->l_data;
     server_info *server = (server_info*)&self->server;
     uint8_t * recv_buffer = (uint8_t *)local->recv_buffer;
-    if (local->recv_buffer_size + datalength > 8192)
+    if (local->recv_buffer_size + datalength > 16384)
         return -1;
     memmove(recv_buffer + local->recv_buffer_size, plaindata, datalength);
     local->recv_buffer_size += datalength;
