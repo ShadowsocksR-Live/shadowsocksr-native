@@ -1099,7 +1099,11 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
     if (!remote_send_ctx->connected) {
         int err_no = 0;
         socklen_t len = sizeof err_no;
-        int r         = getsockopt(remote->fd, SOL_SOCKET, SO_ERROR, &err_no, &len);
+#ifdef __MINGW32__
+        int r = getsockopt(remote->fd, SOL_SOCKET, SO_ERROR, (char *)&err_no, &len);
+#else
+        int r = getsockopt(remote->fd, SOL_SOCKET, SO_ERROR, &err_no, &len);
+#endif
         if (r == 0 && err_no == 0) {
             remote_send_ctx->connected = 1;
             ev_timer_stop(EV_A_ & remote_send_ctx->watcher);
