@@ -1,4 +1,4 @@
-# shadowsocks-libev
+# ShadowsocksR-libev
 
 ## Intro
 
