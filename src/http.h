@@ -29,6 +29,6 @@
 #include <stdio.h>
 #include "protocol.h"
 
-const protocol_t *const http_protocol;
+extern const protocol_t *const http_protocol;
 
 #endif
