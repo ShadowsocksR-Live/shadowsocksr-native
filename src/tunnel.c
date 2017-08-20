@@ -1128,7 +1128,7 @@ main(int argc, char **argv)
 
     // Setup keys
     LOGI("initializing ciphers... %s", method);
-    int m = enc_init(&cipher_env, password, method);
+    enum cipher_index m = enc_init(&cipher_env, password, method);
 
     // Setup proxy context
     struct listen_ctx listen_ctx;

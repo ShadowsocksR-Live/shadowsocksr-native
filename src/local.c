@@ -55,6 +55,8 @@
 
 #include <libcork/core.h>
 #include <udns.h>
+#include <sys/time.h>
+#include <time.h>
 
 #ifdef __MINGW32__
 #include "win32.h"
@@ -1663,8 +1665,9 @@ main(int argc, char **argv)
         } else {
             if (remote_num == 0) {
                 remote_num = conf->server_legacy.remote_num;
-                for (i = 0; i < remote_num; i++)
+                for (i = 0; i < remote_num; i++) {
                     remote_addr[i] = conf->server_legacy.remote_addr[i];
+                }
             }
             if (remote_port == NULL) {
                 remote_port = conf->server_legacy.remote_port;
@@ -1846,9 +1849,9 @@ main(int argc, char **argv)
                 serv->udp_port = serv_cfg->server_udp_port;
             }
             serv->host = ss_strdup(host);
-            if (hostnames[i])
+            if (hostnames[i]) {
                 serv->hostname = hostnames[i];
-
+            }
             // Setup keys
             LOGI("initializing ciphers... %s", serv_cfg->method);
             enc_init(&serv->cipher, serv_cfg->password, serv_cfg->method);
@@ -1880,8 +1883,9 @@ main(int argc, char **argv)
                 FATAL("failed to resolve the provided hostname");
             }
             serv->host = ss_strdup(host);
-            if (hostnames[i])
+            if (hostnames[i]) {
                 serv->hostname = hostnames[i];
+            }
             serv->addr = serv->addr_udp = storage;
             serv->addr_len = serv->addr_udp_len = get_sockaddr_len((struct sockaddr *)storage);
             serv->port = serv->udp_port = atoi(port);

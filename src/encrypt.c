@@ -419,10 +419,11 @@ int
 cipher_iv_size(const cipher_t *cipher)
 {
 #if defined(USE_CRYPTO_OPENSSL)
-    if (cipher->info == NULL)
+    if (cipher->info == NULL) {
         return cipher->iv_len;
-    else
+    } else {
         return EVP_CIPHER_iv_length(cipher->info);
+    }
 #elif defined(USE_CRYPTO_POLARSSL) || defined(USE_CRYPTO_MBEDTLS)
     if (cipher == NULL) {
         return 0;
@@ -435,10 +436,11 @@ int
 cipher_key_size(const cipher_t *cipher)
 {
 #if defined(USE_CRYPTO_OPENSSL)
-    if (cipher->info == NULL)
+    if (cipher->info == NULL) {
         return cipher->key_len;
-    else
+    } else {
         return EVP_CIPHER_key_length(cipher->info);
+    }
 #elif defined(USE_CRYPTO_POLARSSL)
     if (cipher == NULL) {
         return 0;
@@ -500,8 +502,9 @@ bytes_to_key(const cipher_t *cipher, const digest_type_t *md,
     if (cipher != NULL) {
         nkey = cipher_key_size(cipher);
     }
-    if (pass == NULL)
+    if (pass == NULL) {
         return nkey;
+    }
     memset(&c, 0, sizeof(MD5_CTX));
 
     for (j = 0, addmd = 0; j < nkey; addmd++) {
@@ -513,8 +516,9 @@ bytes_to_key(const cipher_t *cipher, const digest_type_t *md,
         MD5_Final(md_buf, &c);
 
         for (i = 0; i < mds; i++, j++) {
-            if (j >= nkey)
+            if (j >= nkey) {
                 break;
+            }
             key[j] = md_buf[i];
         }
     }
@@ -607,7 +611,7 @@ rand_bytes(uint8_t *output, int len)
 }
 
 const cipher_kt_t *
-get_cipher_type(int method)
+get_cipher_type(enum cipher_index method)
 {
     if (method < NONE || method >= CIPHER_NUM) {
         LOGE("get_cipher_type(): Illegal method");
@@ -1370,7 +1374,7 @@ enc_ctx_release(cipher_env_t *env, enc_ctx_t *ctx)
 }
 
 void
-enc_table_init(cipher_env_t * env, int method, const char *pass)
+enc_table_init(cipher_env_t * env, enum cipher_index method, const char *pass)
 {
     uint32_t i;
     uint64_t key = 0;
@@ -1411,7 +1415,7 @@ enc_table_init(cipher_env_t * env, int method, const char *pass)
 }
 
 void
-enc_key_init(cipher_env_t *env, int method, const char *pass)
+enc_key_init(cipher_env_t *env, enum cipher_index method, const char *pass)
 {
     if (method < NONE || method >= CIPHER_NUM) {
         LOGE("enc_key_init(): Illegal method");
@@ -1427,7 +1431,7 @@ enc_key_init(cipher_env_t *env, int method, const char *pass)
     cipher_kt_t cipher_info;
 #endif
 
-    cipher_t cipher;
+    cipher_t cipher = { NULL };
     memset(&cipher, 0, sizeof(cipher_t));
 
     // Initialize sodium for random generator
@@ -1502,15 +1506,16 @@ enc_key_init(cipher_env_t *env, int method, const char *pass)
     env->enc_method = method;
 }
 
-int
+enum cipher_index
 enc_init(cipher_env_t *env, const char *pass, const char *method)
 {
-    int m = NONE;
+    enum cipher_index m = NONE;
     if (method != NULL) {
-        for (m = NONE; m < CIPHER_NUM; m++)
+        for (m = NONE; m < CIPHER_NUM; m++) {
             if (strcmp(method, supported_ciphers[m]) == 0) {
                 break;
             }
+        }
         if (m >= CIPHER_NUM) {
             LOGE("Invalid cipher name: %s, use rc4-md5 instead", method);
             m = RC4_MD5;

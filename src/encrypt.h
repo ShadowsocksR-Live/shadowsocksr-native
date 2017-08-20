@@ -106,40 +106,8 @@ typedef struct {
 
 #endif
 
-typedef struct {
-    uint8_t *enc_table;
-    uint8_t *dec_table;
-    uint8_t enc_key[MAX_KEY_LENGTH];
-    int enc_key_len;
-    int enc_iv_len;
-    int enc_method;
 
-    struct cache *iv_cache;
-} cipher_env_t;
-
-typedef struct {
-    cipher_evp_t *evp;
-#ifdef USE_CRYPTO_APPLECC
-    cipher_cc_t cc;
-#endif
-    uint8_t iv[MAX_IV_LENGTH];
-} cipher_ctx_t;
-
-typedef struct {
-    cipher_kt_t *info;
-    size_t iv_len;
-    size_t key_len;
-} cipher_t;
-
-#ifdef HAVE_STDINT_H
-#include <stdint.h>
-#elif HAVE_INTTYPES_H
-#include <inttypes.h>
-#endif
-
-#define SODIUM_BLOCK_SIZE   64
-
-enum crpher_index {
+enum cipher_index {
     NONE,
     TABLE,
     RC4,
@@ -165,6 +133,39 @@ enum crpher_index {
     CHACHA20IETF,
     CIPHER_NUM,
 };
+
+typedef struct {
+    uint8_t *enc_table;
+    uint8_t *dec_table;
+    uint8_t enc_key[MAX_KEY_LENGTH];
+    int enc_key_len;
+    int enc_iv_len;
+    enum cipher_index enc_method;
+
+    struct cache *iv_cache;
+} cipher_env_t;
+
+typedef struct {
+    cipher_evp_t *evp;
+#ifdef USE_CRYPTO_APPLECC
+    cipher_cc_t cc;
+#endif
+    uint8_t iv[MAX_IV_LENGTH];
+} cipher_ctx_t;
+
+typedef struct {
+    cipher_kt_t *info;
+    size_t iv_len;
+    size_t key_len;
+} cipher_t;
+
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#elif HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
+
+#define SODIUM_BLOCK_SIZE   64
 
 #define ADDRTYPE_MASK 0xEF
 
@@ -203,7 +204,7 @@ int ss_decrypt_all(cipher_env_t* env, buffer_t *ciphertext, size_t capacity);
 int ss_encrypt(cipher_env_t* env, buffer_t *plaintext, enc_ctx_t *ctx, size_t capacity);
 int ss_decrypt(cipher_env_t* env, buffer_t *ciphertext, enc_ctx_t *ctx, size_t capacity);
 
-int enc_init(cipher_env_t *env, const char *pass, const char *method);
+enum cipher_index enc_init(cipher_env_t *env, const char *pass, const char *method);
 void enc_release(cipher_env_t *env);
 void enc_ctx_init(cipher_env_t *env, enc_ctx_t *ctx, int enc);
 void enc_ctx_release(cipher_env_t* env, enc_ctx_t *ctx);

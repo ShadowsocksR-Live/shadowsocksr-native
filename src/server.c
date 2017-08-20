@@ -1739,7 +1739,7 @@ main(int argc, char **argv)
 
     // setup keys
     LOGI("initializing ciphers... %s", method);
-    int m = enc_init(&cipher_env, password, method);
+    enum cipher_index m = enc_init(&cipher_env, password, method);
 
     // initialize ev loop
     struct ev_loop *loop = EV_DEFAULT;

@@ -49,20 +49,20 @@ int
 cache_create(struct cache **dst, const size_t capacity,
              void (*free_cb)(void *key, void *element))
 {
-    struct cache *new = NULL;
+    struct cache *newObj = NULL;
 
     if (!dst) {
         return EINVAL;
     }
 
-    if ((new = malloc(sizeof(*new))) == NULL) {
+    if ((newObj = malloc(sizeof(*newObj))) == NULL) {
         return ENOMEM;
     }
 
-    new->max_entries = capacity;
-    new->entries     = NULL;
-    new->free_cb     = free_cb;
-    *dst             = new;
+    newObj->max_entries = capacity;
+    newObj->entries     = NULL;
+    newObj->free_cb     = free_cb;
+    *dst             = newObj;
     return 0;
 }
 
