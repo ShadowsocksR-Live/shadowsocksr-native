@@ -40,14 +40,17 @@ void dispose_obfs(obfs *self) {
     free(self);
 }
 
-obfs_class * new_obfs_class(char *plugin_name)
+obfs_class * new_obfs_class(const char *plugin_name)
 {
-    if (plugin_name == NULL)
+    if (plugin_name == NULL) {
         return NULL;
-    if (strcmp(plugin_name, "origin") == 0)
+    }
+    if (strcmp(plugin_name, "origin") == 0) {
         return NULL;
-    if (strcmp(plugin_name, "plain") == 0)
+    }
+    if (strcmp(plugin_name, "plain") == 0) {
         return NULL;
+    }
     init_crc32_table();
     init_shift128plus();
     if (strcmp(plugin_name, "http_simple") == 0) {

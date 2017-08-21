@@ -1458,13 +1458,13 @@ resolve_int_cb(int dummy)
 }
 
 static void
-init_obfs(server_def_t *serv, char *protocol, char *protocol_param, char *obfs, char *obfs_param)
+init_obfs(server_def_t *serv, const char *protocol, const char *protocol_param, const char *obfs, const char *obfs_param)
 {
-    serv->protocol_name = protocol;
-    serv->protocol_param = protocol_param;
+    serv->protocol_name = ss_strdup(protocol);
+    serv->protocol_param = ss_strdup(protocol_param);
     serv->protocol_plugin = new_obfs_class(protocol);
-    serv->obfs_name = obfs;
-    serv->obfs_param = obfs_param;
+    serv->obfs_name = ss_strdup(obfs);
+    serv->obfs_param = ss_strdup(obfs_param);
     serv->obfs_plugin = new_obfs_class(obfs);
 
     if (serv->obfs_plugin) {
@@ -1863,7 +1863,7 @@ main(int argc, char **argv)
             cork_dllist_init(&serv->connections);
 
             // init obfs
-            init_obfs(serv, ss_strdup(serv_cfg->protocol), ss_strdup(serv_cfg->protocol_param), ss_strdup(serv_cfg->obfs), ss_strdup(serv_cfg->obfs_param));
+            init_obfs(serv, serv_cfg->protocol, serv_cfg->protocol_param, serv_cfg->obfs, serv_cfg->obfs_param);
 
             serv->enable = serv_cfg->enable;
             serv->id = ss_strdup(serv_cfg->id);
@@ -1898,7 +1898,7 @@ main(int argc, char **argv)
             cork_dllist_init(&serv->connections);
 
             // init obfs
-            init_obfs(serv, ss_strdup(protocol), ss_strdup(protocol_param), ss_strdup(obfs), ss_strdup(obfs_param));
+            init_obfs(serv, protocol, protocol_param, obfs, obfs_param);
 
             serv->enable = 1;
         }
@@ -2124,7 +2124,7 @@ start_ss_local_server(profile_t profile)
     enc_init(&serv->cipher, password, method);
 
     // init obfs
-    init_obfs(serv, ss_strdup(serv_cfg->protocol), ss_strdup(serv_cfg->protocol_param), ss_strdup(serv_cfg->obfs), ss_strdup(serv_cfg->obfs_param));
+    init_obfs(serv, serv_cfg->protocol, serv_cfg->protocol_param, serv_cfg->obfs, serv_cfg->obfs_param);
 
     // Init connections
     cork_dllist_init(&serv->connections);

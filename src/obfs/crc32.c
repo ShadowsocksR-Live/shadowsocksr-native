@@ -9,10 +9,11 @@ void init_crc32_table(void) {
         for (i = 0; i < 256; i++) {
             c = i;
             for (j = 0; j < 8; j++) {
-                if (c & 1)
+                if (c & 1) {
                     c = 0xedb88320L ^ (c >> 1);
-                else
+                } else {
                     c = c >> 1;
+                }
             }
             crc32_table[i] = c;
         }

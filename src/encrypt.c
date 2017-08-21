@@ -437,7 +437,7 @@ cipher_key_size(const cipher_t *cipher)
 {
 #if defined(USE_CRYPTO_OPENSSL)
     if (cipher->info == NULL) {
-        return cipher->key_len;
+        return (int) cipher->key_len;
     } else {
         return EVP_CIPHER_key_length(cipher->info);
     }
