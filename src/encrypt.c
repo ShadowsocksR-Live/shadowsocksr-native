@@ -251,27 +251,29 @@ balloc(buffer_t *ptr, size_t capacity)
     sodium_memzero(ptr, sizeof(buffer_t));
     ptr->array    = ss_malloc(capacity);
     ptr->capacity = capacity;
-    return capacity;
+    return (int) capacity;
 }
 
 int
 brealloc(buffer_t *ptr, size_t len, size_t capacity)
 {
-    if (ptr == NULL)
+    if (ptr == NULL) {
         return -1;
+    }
     size_t real_capacity = max(len, capacity);
     if (ptr->capacity < real_capacity) {
         ptr->array    = ss_realloc(ptr->array, real_capacity);
         ptr->capacity = real_capacity;
     }
-    return real_capacity;
+    return (int) real_capacity;
 }
 
 void
 bfree(buffer_t *ptr)
 {
-    if (ptr == NULL)
+    if (ptr == NULL) {
         return;
+    }
     ptr->idx      = 0;
     ptr->len      = 0;
     ptr->capacity = 0;
@@ -283,7 +285,7 @@ bfree(buffer_t *ptr)
 static int
 crypto_stream_xor_ic(uint8_t *c, const uint8_t *m, uint64_t mlen,
                      const uint8_t *n, uint64_t ic, const uint8_t *k,
-                     int method)
+                     enum cipher_index method)
 {
     switch (method) {
     case SALSA20:
@@ -292,6 +294,8 @@ crypto_stream_xor_ic(uint8_t *c, const uint8_t *m, uint64_t mlen,
         return crypto_stream_chacha20_xor_ic(c, m, mlen, n, ic, k);
     case CHACHA20IETF:
         return crypto_stream_chacha20_ietf_xor_ic(c, m, mlen, n, (uint32_t)ic, k);
+    default:
+        break;
     }
     // always return 0
     return 0;
@@ -303,7 +307,7 @@ random_compare(const void *_x, const void *_y, uint32_t i,
 {
     uint8_t x = *((uint8_t *)_x);
     uint8_t y = *((uint8_t *)_y);
-    return a % (x + i) - a % (y + i);
+    return (int) (a % (x + i) - a % (y + i));
 }
 
 static void
@@ -1030,7 +1034,7 @@ int ss_aes_128_cbc(char *encrypt, char *out_data, char *key)
 int
 ss_encrypt_all(cipher_env_t* env, buffer_t *plain, size_t capacity)
 {
-    int method = env->enc_method;
+    enum cipher_index method = env->enc_method;
     if (method > TABLE) {
         cipher_ctx_t evp;
         cipher_context_init(env, &evp, 1);
