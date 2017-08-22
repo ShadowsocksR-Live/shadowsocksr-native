@@ -245,6 +245,34 @@ static const int supported_ciphers_key_size[CIPHER_NUM] = {
     16, 16, 16, 16, 16, 16, 24, 32, 16, 24, 32, 16, 16, 24, 32, 16,  8, 16, 16, 16, 32, 32, 32
 };
 
+static const char *
+cipher_name_from_index(enum cipher_index index)
+{
+    if (index < NONE || index >= CIPHER_NUM) {
+        LOGE("get_cipher_type(): Illegal method");
+        return NULL;
+    }
+    return supported_ciphers[index];
+}
+
+enum cipher_index
+cipher_index_from_name(const char *name)
+{
+    enum cipher_index m = NONE;
+    if (name != NULL) {
+        for (m = NONE; m < CIPHER_NUM; ++m) {
+            if (strcmp(name, supported_ciphers[m]) == 0) {
+                break;
+            }
+        }
+        if (m >= CIPHER_NUM) {
+            LOGE("Invalid cipher name: %s, use rc4-md5 instead", name);
+            m = RC4_MD5; // TODO: maybe something is wrong.
+        }
+    }
+    return m;
+}
+
 int
 balloc(buffer_t *ptr, size_t capacity)
 {
@@ -617,8 +645,7 @@ rand_bytes(uint8_t *output, int len)
 const cipher_kt_t *
 get_cipher_type(enum cipher_index method)
 {
-    if (method < NONE || method >= CIPHER_NUM) {
-        LOGE("get_cipher_type(): Illegal method");
+    if (method >= SALSA20) {
         return NULL;
     }
 
@@ -626,26 +653,23 @@ get_cipher_type(enum cipher_index method)
         method = RC4;
     }
 
-    if (method >= SALSA20) {
+    const char *cipherName = cipher_name_from_index(method);
+    if (cipherName == NULL) {
         return NULL;
     }
-
-    const char *ciphername = supported_ciphers[method];
 #if defined(USE_CRYPTO_OPENSSL)
-    return EVP_get_cipherbyname(ciphername);
+    return EVP_get_cipherbyname(cipherName);
 #elif defined(USE_CRYPTO_POLARSSL)
     const char *polarname = supported_ciphers_polarssl[method];
     if (strcmp(polarname, CIPHER_UNSUPPORTED) == 0) {
-        LOGE("Cipher %s currently is not supported by PolarSSL library",
-             ciphername);
+        LOGE("Cipher %s currently is not supported by PolarSSL library", polarname);
         return NULL;
     }
     return cipher_info_from_string(polarname);
 #elif defined(USE_CRYPTO_MBEDTLS)
     const char *mbedtlsname = supported_ciphers_mbedtls[method];
     if (strcmp(mbedtlsname, CIPHER_UNSUPPORTED) == 0) {
-        LOGE("Cipher %s currently is not supported by mbed TLS library",
-             ciphername);
+        LOGE("Cipher %s currently is not supported by mbed TLS library", mbedtlsname);
         return NULL;
     }
     return mbedtls_cipher_info_from_string(mbedtlsname);
@@ -674,17 +698,15 @@ cipher_context_init(cipher_env_t *env, cipher_ctx_t *ctx, int enc)
 {
     int method = env->enc_method;
 
-    if (method < NONE || method >= CIPHER_NUM) {
-        LOGE("cipher_context_init(): Illegal method");
-        return;
-    }
-
     if (method >= SALSA20) {
 //        enc_iv_len = supported_ciphers_iv_size[method];
         return;
     }
 
-    const char *ciphername = supported_ciphers[method];
+    const char *cipherName = cipher_name_from_index(method);
+    if (cipherName == NULL) {
+        return;
+    }
 #if defined(USE_CRYPTO_APPLECC)
     cipher_cc_t *cc = &ctx->cc;
     cc->cryptor = NULL;
@@ -715,11 +737,11 @@ cipher_context_init(cipher_env_t *env, cipher_ctx_t *ctx, int enc)
     cipher_evp_t *evp = ctx->evp;
 
     if (cipher == NULL) {
-        LOGE("Cipher %s not found in OpenSSL library", ciphername);
+        LOGE("Cipher %s not found in OpenSSL library", cipherName);
         FATAL("Cannot initialize cipher");
     }
     if (!EVP_CipherInit_ex(evp, cipher, NULL, NULL, NULL, enc)) {
-        LOGE("Cannot initialize cipher %s", ciphername);
+        LOGE("Cannot initialize cipher %s", cipherName);
         exit(EXIT_FAILURE);
     }
     if (!EVP_CIPHER_CTX_set_key_length(evp, env->enc_key_len)) {
@@ -735,7 +757,7 @@ cipher_context_init(cipher_env_t *env, cipher_ctx_t *ctx, int enc)
     cipher_evp_t *evp = ctx->evp;
 
     if (cipher == NULL) {
-        LOGE("Cipher %s not found in PolarSSL library", ciphername);
+        LOGE("Cipher %s not found in PolarSSL library", cipherName);
         FATAL("Cannot initialize PolarSSL cipher");
     }
     if (cipher_init_ctx(evp, cipher) != 0) {
@@ -747,7 +769,7 @@ cipher_context_init(cipher_env_t *env, cipher_ctx_t *ctx, int enc)
     cipher_evp_t *evp = ctx->evp;
 
     if (cipher == NULL) {
-        LOGE("Cipher %s not found in mbed TLS library", ciphername);
+        LOGE("Cipher %s not found in mbed TLS library", cipherName);
         FATAL("Cannot initialize mbed TLS cipher");
     }
     mbedtls_cipher_init(evp);
@@ -1487,7 +1509,7 @@ enc_key_init(cipher_env_t *env, enum cipher_index method, const char *pass)
                 break;
             }
 #endif
-            LOGE("Cipher %s not found in crypto library", supported_ciphers[method]);
+            LOGE("Cipher %s not found in crypto library", cipher_name_from_index(method));
             FATAL("Cannot initialize cipher");
         } while (0);
     }
@@ -1513,18 +1535,7 @@ enc_key_init(cipher_env_t *env, enum cipher_index method, const char *pass)
 enum cipher_index
 enc_init(cipher_env_t *env, const char *pass, const char *method)
 {
-    enum cipher_index m = NONE;
-    if (method != NULL) {
-        for (m = NONE; m < CIPHER_NUM; m++) {
-            if (strcmp(method, supported_ciphers[m]) == 0) {
-                break;
-            }
-        }
-        if (m >= CIPHER_NUM) {
-            LOGE("Invalid cipher name: %s, use rc4-md5 instead", method);
-            m = RC4_MD5;
-        }
-    }
+    enum cipher_index m = cipher_index_from_name(method);
     if (m <= TABLE) {
         enc_table_init(env, m, pass);
     } else {
