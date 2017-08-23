@@ -223,6 +223,7 @@ int set_nofile(int nofile);
 
 void *ss_malloc(size_t size);
 void *ss_realloc(void *ptr, size_t new_size);
+size_t ss_memory_size(void *ptr);
 
 #define ss_free(ptr)     \
     do {                 \

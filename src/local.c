@@ -1954,11 +1954,11 @@ main(int argc, char **argv)
         LOGI("listening through launchd");
     else
 #endif
-    if (strcmp(local_addr, ":") > 0)
+    if (strcmp(local_addr, ":") > 0) {
         LOGI("listening at [%s]:%s", local_addr, local_port);
-    else
+    } else {
         LOGI("listening at %s:%s", local_addr, local_port);
-
+    }
     // setuid
     if (user != NULL && ! run_as(user)) {
         FATAL("failed to switch user");

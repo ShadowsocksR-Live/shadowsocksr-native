@@ -25,6 +25,7 @@
 #endif
 
 #include <stdlib.h>
+#include <malloc.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
@@ -236,21 +237,39 @@ void *
 ss_malloc(size_t size)
 {
     void *tmp = malloc(size);
-    if (tmp == NULL)
+    if (tmp == NULL) {
         exit(EXIT_FAILURE);
+    }
+    memset(tmp, 0, size);
     return tmp;
 }
 
 void *
 ss_realloc(void *ptr, size_t new_size)
 {
-    void *new = realloc(ptr, new_size);
-    if (new == NULL) {
+    size_t old_size = ss_memory_size(ptr);
+
+    void *new_ptr = realloc(ptr, new_size);
+    if (new_ptr == NULL) {
         free(ptr);
-        ptr = NULL;
         exit(EXIT_FAILURE);
     }
-    return new;
+
+    if (new_size > old_size) {
+        memset(((unsigned char *)ptr) + old_size, 0, new_size - old_size);
+    }
+
+    return new_ptr;
+}
+
+size_t ss_memory_size(void *ptr) {
+#if defined(_WIN32) && defined(_MSC_VER)
+    return _msize(ptr);
+#elif defined(_APPLE_)
+    return malloc_size(ptr);
+#else
+    return malloc_usable_size(ptr); // Linux and __MINGW32__
+#endif
 }
 
 void
