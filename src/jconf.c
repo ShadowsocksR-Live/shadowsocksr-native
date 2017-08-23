@@ -104,7 +104,9 @@ parse_addr(const char *str, ss_addr_t *addr)
     }
 }
 
-void parse_ss_server(ss_server_t *server, json_value* json) {
+void
+parse_ss_server(ss_server_t *server, json_value* json)
+{
     unsigned int i;
 
     // TODO: set default value
@@ -303,15 +305,15 @@ read_jconf(const char *file)
                 } else if (strcmp(name, "mode") == 0) {
                     char *mode_str = to_string(value);
 
-                    if (strcmp(mode_str, "tcp_only") == 0)
+                    if (strcmp(mode_str, "tcp_only") == 0) {
                         conf.mode = TCP_ONLY;
-                    else if (strcmp(mode_str, "tcp_and_udp") == 0)
+                    } else if (strcmp(mode_str, "tcp_and_udp") == 0) {
                         conf.mode = TCP_AND_UDP;
-                    else if (strcmp(mode_str, "udp_only") == 0)
+                    } else if (strcmp(mode_str, "udp_only") == 0) {
                         conf.mode = UDP_ONLY;
-                    else
-                        LOGI("ignore unknown mode: %s, use tcp_only as fallback",
-                             mode_str);
+                    } else {
+                        LOGI("ignore unknown mode: %s, use tcp_only as fallback", mode_str);
+                    }
                     ss_free(mode_str);
                 } else if (strcmp(name, "mtu") == 0) {
                     check_json_value_type(value, json_integer,
@@ -337,7 +339,9 @@ read_jconf(const char *file)
     return &conf;
 }
 
-void free_jconf(jconf_t *conf) {
+void
+free_jconf(jconf_t *conf)
+{
     int i;
 
     if (!conf) {

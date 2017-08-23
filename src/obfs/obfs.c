@@ -14,33 +14,46 @@ int rand_bytes(uint8_t *output, int len);
 
 #include "encrypt.h"
 
-void * init_data() {
+void *
+init_data()
+{
     return malloc(1);
 }
 
-obfs * new_obfs() {
+obfs *
+new_obfs()
+{
     obfs * self = (obfs*)malloc(sizeof(obfs));
     self->l_data = NULL;
     return self;
 }
 
-int get_overhead(obfs *self) {
+int
+get_overhead(obfs *self)
+{
     return 0;
 }
 
-void set_server_info(obfs *self, server_info *server) {
+void
+set_server_info(obfs *self, server_info *server)
+{
     memmove(&self->server, server, sizeof(server_info));
 }
 
-void get_server_info(obfs *self, server_info *server) {
+void
+get_server_info(obfs *self, server_info *server)
+{
     memmove(server, &self->server, sizeof(server_info));
 }
 
-void dispose_obfs(obfs *self) {
+void
+dispose_obfs(obfs *self)
+{
     free(self);
 }
 
-obfs_class * new_obfs_class(const char *plugin_name)
+obfs_class *
+new_obfs_class(const char *plugin_name)
 {
     if (plugin_name == NULL) {
         return NULL;
@@ -200,6 +213,8 @@ obfs_class * new_obfs_class(const char *plugin_name)
     return NULL;
 }
 
-void free_obfs_class(obfs_class *plugin) {
+void
+free_obfs_class(obfs_class *plugin)
+{
     free(plugin);
 }

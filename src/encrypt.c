@@ -330,8 +330,7 @@ crypto_stream_xor_ic(uint8_t *c, const uint8_t *m, uint64_t mlen,
 }
 
 static int
-random_compare(const void *_x, const void *_y, uint32_t i,
-               uint64_t a)
+random_compare(const void *_x, const void *_y, uint32_t i, uint64_t a)
 {
     uint8_t x = *((uint8_t *)_x);
     uint8_t y = *((uint8_t *)_y);
@@ -387,8 +386,7 @@ merge(uint8_t *left, int llength, uint8_t *right,
 }
 
 static void
-merge_sort(uint8_t array[], int length,
-           uint32_t salt, uint64_t key)
+merge_sort(uint8_t array[], int length, uint32_t salt, uint64_t key)
 {
     uint8_t middle;
     uint8_t *left, *right;
@@ -416,17 +414,20 @@ enc_get_iv_len(cipher_env_t *env)
     return env->enc_iv_len;
 }
 
-uint8_t* enc_get_key(cipher_env_t *env)
+uint8_t *
+enc_get_key(cipher_env_t *env)
 {
     return env->enc_key;
 }
 
-int enc_get_key_len(cipher_env_t *env)
+int
+enc_get_key_len(cipher_env_t *env)
 {
     return env->enc_key_len;
 }
 
-unsigned char *enc_md5(const unsigned char *d, size_t n, unsigned char *md)
+unsigned char *
+enc_md5(const unsigned char *d, size_t n, unsigned char *md)
 {
 #if defined(USE_CRYPTO_OPENSSL)
     return MD5(d, n, md);
@@ -953,7 +954,8 @@ cipher_context_update(cipher_ctx_t *ctx, uint8_t *output, size_t *olen,
 #endif
 }
 
-int ss_md5_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len)
+int
+ss_md5_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len)
 {
     uint8_t hash[MD5_BYTES];
 
@@ -970,7 +972,8 @@ int ss_md5_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, 
     return 0;
 }
 
-int ss_md5_hash_func(char *auth, char *msg, int msg_len)
+int
+ss_md5_hash_func(char *auth, char *msg, int msg_len)
 {
     uint8_t hash[MD5_BYTES];
 
@@ -987,7 +990,8 @@ int ss_md5_hash_func(char *auth, char *msg, int msg_len)
     return 0;
 }
 
-int ss_sha1_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len)
+int
+ss_sha1_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len)
 {
     uint8_t hash[SHA1_BYTES];
 
@@ -1004,7 +1008,8 @@ int ss_sha1_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key,
     return 0;
 }
 
-int ss_sha1_hash_func(char *auth, char *msg, int msg_len)
+int
+ss_sha1_hash_func(char *auth, char *msg, int msg_len)
 {
     uint8_t hash[SHA1_BYTES];
 #if defined(USE_CRYPTO_OPENSSL)
@@ -1020,7 +1025,8 @@ int ss_sha1_hash_func(char *auth, char *msg, int msg_len)
     return 0;
 }
 
-int ss_aes_128_cbc(char *encrypt, char *out_data, char *key)
+int
+ss_aes_128_cbc(char *encrypt, char *out_data, char *key)
 {
     unsigned char iv[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
@@ -1411,16 +1417,19 @@ enc_table_init(cipher_env_t * env, enum cipher_index method, const char *pass)
 
     digest = enc_md5((const uint8_t *)pass, strlen(pass), NULL);
 
-    for (i = 0; i < 8; i++)
+    for (i = 0; i < 8; i++) {
         key += OFFSET_ROL(digest, i);
-
-    for (i = 0; i < 256; ++i)
+    }
+    for (i = 0; i < 256; ++i) {
         env->enc_table[i] = i;
-    for (i = 1; i < 1024; ++i)
+    }
+    for (i = 1; i < 1024; ++i) {
         merge_sort(env->enc_table, 256, i, key);
-    for (i = 0; i < 256; ++i)
+    }
+    for (i = 0; i < 256; ++i) {
         // gen decrypt table from encrypt table
         env->dec_table[env->enc_table[i]] = i;
+    }
 
     if (method == TABLE) {
         env->enc_key_len = strlen(pass);

@@ -35,17 +35,17 @@
 #define TCP_AND_UDP  1
 #define UDP_ONLY     3
 
-typedef struct {
+typedef struct _ss_addr_t {
     char *host;
     char *port;
 } ss_addr_t;
 
-typedef struct {
+typedef struct _ss_port_password_t {
     char *port;
     char *password;
 } ss_port_password_t;
 
-typedef struct {
+typedef struct _ss_server_t {
     // address from input (cmd or config file)
     char *server;
     int server_port;
@@ -65,7 +65,7 @@ typedef struct {
     int udp_over_tcp;
 } ss_server_t;
 
-typedef struct {
+typedef struct _ss_server_legacy_t {
     int remote_num;
     ss_addr_t remote_addr[MAX_REMOTE_NUM];
     int port_password_num;
@@ -81,7 +81,7 @@ typedef struct {
     char *obfs_param; // SSR
 } ss_server_legacy_t;
 
-typedef struct {
+typedef struct _ss_server_new_1_t {
     size_t server_num;
     ss_server_t servers[MAX_SERVER_NUM];
 } ss_server_new_1_t;
@@ -89,7 +89,7 @@ typedef struct {
 #define CONF_VER_LEGACY 0
 #define CONF_VER_1 1
 
-typedef struct {
+typedef struct _jconf_t {
     int conf_ver; // 0 for legacy, > 0 for server_new_X
     union {
         ss_server_legacy_t server_legacy;

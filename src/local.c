@@ -1161,17 +1161,12 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
 static remote_t *
 new_remote(int fd, int timeout)
 {
-    remote_t *remote;
-    remote = ss_malloc(sizeof(remote_t));
-
-    memset(remote, 0, sizeof(remote_t));
+    remote_t *remote = ss_malloc(sizeof(remote_t));
 
     remote->buf                 = ss_malloc(sizeof(buffer_t));
     remote->recv_ctx            = ss_malloc(sizeof(remote_ctx_t));
     remote->send_ctx            = ss_malloc(sizeof(remote_ctx_t));
     balloc(remote->buf, BUF_SIZE);
-    memset(remote->recv_ctx, 0, sizeof(remote_ctx_t));
-    memset(remote->send_ctx, 0, sizeof(remote_ctx_t));
     remote->recv_ctx->connected = 0;
     remote->send_ctx->connected = 0;
     remote->fd                  = fd;
@@ -1219,18 +1214,13 @@ close_and_free_remote(EV_P_ remote_t *remote)
 static server_t *
 new_server(int fd, listen_ctx_t* profile)
 {
-    server_t *server;
-    server = ss_malloc(sizeof(server_t));
-
-    memset(server, 0, sizeof(server_t));
+    server_t *server = ss_malloc(sizeof(server_t));
 
     server->listener = profile;
     server->recv_ctx            = ss_malloc(sizeof(server_ctx_t));
     server->send_ctx            = ss_malloc(sizeof(server_ctx_t));
     server->buf                 = ss_malloc(sizeof(buffer_t));
     balloc(server->buf, BUF_SIZE);
-    memset(server->recv_ctx, 0, sizeof(server_ctx_t));
-    memset(server->send_ctx, 0, sizeof(server_ctx_t));
     server->stage               = STAGE_INIT;
     server->recv_ctx->connected = 0;
     server->send_ctx->connected = 0;
@@ -1260,8 +1250,7 @@ release_profile(listen_ctx_t *profile)
 
         ss_free(server_env->host);
 
-        if(server_env->addr != server_env->addr_udp)
-        {
+        if(server_env->addr != server_env->addr_udp) {
             ss_free(server_env->addr_udp);
         }
         ss_free(server_env->addr);

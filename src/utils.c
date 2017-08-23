@@ -91,10 +91,12 @@ ss_itoa(int i)
 
 int
 ss_isnumeric(const char *s) {
-    if (!s || !*s)
+    if (!s || !*s) {
         return 0;
-    while (isdigit(*s))
+    }
+    while (isdigit(*s)) {
         ++s;
+    }
     return *s == '\0';
 }
 
@@ -218,11 +220,11 @@ ss_strndup(const char *s, size_t n)
 }
 
 char *
-ss_strdup(const char *s) {
+ss_strdup(const char *s)
+{
     if (!s) {
         return NULL;
     }
-
     return strdup(s);
 }
 
@@ -262,7 +264,9 @@ ss_realloc(void *ptr, size_t new_size)
     return new_ptr;
 }
 
-size_t ss_memory_size(void *ptr) {
+size_t
+ss_memory_size(void *ptr)
+{
     if (ptr == NULL) {
         return 0;
     }

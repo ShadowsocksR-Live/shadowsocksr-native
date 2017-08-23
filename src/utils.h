@@ -151,8 +151,8 @@ extern int use_syslog;
 #define USE_SYSLOG(ident)                          \
     do {                                           \
         use_syslog = 1;                            \
-        openlog((ident), LOG_CONS | LOG_PID, 0); } \
-    while (0)
+        openlog((ident), LOG_CONS | LOG_PID, 0);   \
+    } while (0)
 
 #define LOGI(format, ...)                                                        \
     do {                                                                         \
@@ -170,8 +170,7 @@ extern int use_syslog;
                         ## __VA_ARGS__);                                         \
             }                                                                    \
         }                                                                        \
-    }                                                                            \
-    while (0)
+    } while (0)
 
 #define LOGE(format, ...)                                                         \
     do {                                                                          \
@@ -188,8 +187,8 @@ extern int use_syslog;
                 fprintf(stderr, " %s ERROR: " format "\n", timestr,               \
                         ## __VA_ARGS__);                                          \
             }                                                                     \
-        } }                                                                       \
-    while (0)
+        }                                                                         \
+    } while (0)
 
 #endif
 /* _WIN32 */
