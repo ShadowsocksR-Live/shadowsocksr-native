@@ -256,13 +256,16 @@ ss_realloc(void *ptr, size_t new_size)
     }
 
     if (new_size > old_size) {
-        memset(((unsigned char *)ptr) + old_size, 0, new_size - old_size);
+        memset(((unsigned char *)new_ptr) + old_size, 0, new_size - old_size);
     }
 
     return new_ptr;
 }
 
 size_t ss_memory_size(void *ptr) {
+    if (ptr == NULL) {
+        return 0;
+    }
 #if defined(_WIN32) && defined(_MSC_VER)
     return _msize(ptr);
 #elif defined(_APPLE_)
