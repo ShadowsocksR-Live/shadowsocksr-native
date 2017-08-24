@@ -35,10 +35,10 @@
 #define TCP_AND_UDP  1
 #define UDP_ONLY     3
 
-typedef struct _ss_addr_t {
+typedef struct _ss_host_port {
     char *host;
     char *port;
-} ss_addr_t;
+} ss_host_port;
 
 typedef struct _ss_port_password_t {
     char *port;
@@ -67,7 +67,7 @@ typedef struct _ss_server_t {
 
 typedef struct _ss_server_legacy_t {
     int remote_num;
-    ss_addr_t remote_addr[MAX_REMOTE_NUM];
+    ss_host_port remote_addr[MAX_REMOTE_NUM];
     int port_password_num;
     ss_port_password_t port_password[MAX_PORT_NUM];
     char *remote_port;
@@ -109,7 +109,7 @@ typedef struct _jconf_t {
 
 jconf_t *read_jconf(const char *file);
 void free_jconf(jconf_t *conf);
-void parse_addr(const char *str, ss_addr_t *addr);
-void free_addr(ss_addr_t *addr);
+void parse_addr(const char *str, ss_host_port *addr);
+void free_addr(ss_host_port *addr);
 
 #endif // _JCONF_H

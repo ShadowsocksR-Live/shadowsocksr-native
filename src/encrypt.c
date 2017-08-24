@@ -1555,7 +1555,8 @@ enc_init(cipher_env_t *env, const char *pass, const char *method)
 }
 
 void
-enc_release(cipher_env_t *env) {
+enc_release(cipher_env_t *env)
+{
     if (env->enc_method == TABLE) {
         ss_free(env->enc_table);
         ss_free(env->dec_table);

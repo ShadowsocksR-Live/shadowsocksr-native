@@ -1423,7 +1423,7 @@ void
 accept_cb(EV_P_ ev_io *w, int revents)
 {
     listen_ctx_t *listener = (listen_ctx_t *)w;
-    int serverfd           = accept(listener->fd, NULL, NULL);
+    int serverfd = accept(listener->fd, NULL, NULL);
     if (serverfd == -1) {
         ERROR("accept");
         return;
@@ -1487,12 +1487,12 @@ main(int argc, char **argv)
     char *iface = NULL;
     int remote_num = 0;
     char *hostnames[MAX_REMOTE_NUM] = {NULL};
-    ss_addr_t remote_addr[MAX_REMOTE_NUM];
+    ss_host_port remote_addr[MAX_REMOTE_NUM];
     char *remote_port = NULL;
     int use_new_profile = 0;
     jconf_t *conf = NULL;
 
-    ss_addr_t tunnel_addr = { .host = NULL, .port = NULL };
+    ss_host_port tunnel_addr = { .host = NULL, .port = NULL };
     char *tunnel_addr_str = NULL;
 
     int option_index                    = 0;
@@ -1876,7 +1876,7 @@ main(int argc, char **argv)
                 serv->hostname = hostnames[i];
             }
             serv->addr = serv->addr_udp = storage;
-            serv->addr_len = serv->addr_udp_len = get_sockaddr_len((struct sockaddr *)storage);
+            serv->addr_len = serv->addr_udp_len = (int) get_sockaddr_len((struct sockaddr *)storage);
             serv->port = serv->udp_port = atoi(port);
 
             // Setup keys
@@ -2009,7 +2009,7 @@ start_ss_local_server(profile_t profile)
     int mtu           = 0;
     int mptcp         = 0;
 
-    ss_addr_t tunnel_addr = { .host = NULL, .port = NULL };
+    ss_host_port tunnel_addr = { .host = NULL, .port = NULL };
 
     mode      = profile.mode;
     fast_open = profile.fast_open;

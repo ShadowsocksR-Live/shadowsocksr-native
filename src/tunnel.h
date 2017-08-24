@@ -32,7 +32,7 @@
 
 typedef struct listen_ctx {
     ev_io io;
-    ss_addr_t tunnel_addr;
+    ss_host_port tunnel_addr;
     char *iface;
     int remote_num;
     int method;
@@ -65,7 +65,7 @@ typedef struct server {
     struct server_ctx *recv_ctx;
     struct server_ctx *send_ctx;
     struct remote *remote;
-    ss_addr_t destaddr;
+    ss_host_port destaddr;
 
     // SSR
     obfs *protocol;

@@ -147,7 +147,7 @@ stat_update_cb(EV_P_ ev_timer *watcher, int revents)
     snprintf(resp, BUF_SIZE, "stat: {\"%s\":%" PRIu64 "}", server_port, tx + rx);
     msgLen = strlen(resp) + 1;
 
-    ss_addr_t ip_addr = { .host = NULL, .port = NULL };
+    ss_host_port ip_addr = { .host = NULL, .port = NULL };
     parse_addr(manager_address, &ip_addr);
 
     if (ip_addr.host == NULL || ip_addr.port == NULL) {

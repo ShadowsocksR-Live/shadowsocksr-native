@@ -1076,10 +1076,10 @@ main(int argc, char **argv)
     jconf_t *conf = NULL;
 
     int remote_num = 0;
-    ss_addr_t remote_addr[MAX_REMOTE_NUM];
+    ss_host_port remote_addr[MAX_REMOTE_NUM];
     char *remote_port = NULL;
 
-    ss_addr_t tunnel_addr = { .host = NULL, .port = NULL };
+    ss_host_port tunnel_addr = { .host = NULL, .port = NULL };
 
     int option_index                    = 0;
     static struct option long_options[] = {

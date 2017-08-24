@@ -458,7 +458,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
             buffer_t *abuf = &ss_addr_to_send;
             balloc(abuf, BUF_SIZE);
 
-            ss_addr_t *sa = &server->destaddr;
+            ss_host_port *sa = &server->destaddr;
             struct cork_ip ip;
             if (cork_ip_init(&ip, sa->host) != -1) {
                 if (ip.version == 4) {
@@ -855,10 +855,10 @@ main(int argc, char **argv)
     char *iface      = NULL;
 
     int remote_num = 0;
-    ss_addr_t remote_addr[MAX_REMOTE_NUM];
+    ss_host_port remote_addr[MAX_REMOTE_NUM];
     char *remote_port = NULL;
 
-    ss_addr_t tunnel_addr = { .host = NULL, .port = NULL };
+    ss_host_port tunnel_addr = { .host = NULL, .port = NULL };
     char *tunnel_addr_str = NULL;
 
     int option_index                    = 0;

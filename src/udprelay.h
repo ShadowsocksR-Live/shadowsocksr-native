@@ -52,7 +52,7 @@ typedef struct server_ctx {
 #ifdef MODULE_LOCAL
     const struct sockaddr *remote_addr;
     int remote_addr_len;
-    ss_addr_t tunnel_addr;
+    ss_host_port tunnel_addr;
 #endif
 #ifdef MODULE_REMOTE
     struct ev_loop *loop;

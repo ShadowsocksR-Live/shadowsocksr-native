@@ -895,7 +895,7 @@ main(int argc, char **argv)
     }
 
     int sfd;
-    ss_addr_t ip_addr = { .host = NULL, .port = NULL };
+    ss_host_port ip_addr = { .host = NULL, .port = NULL };
     parse_addr(manager_address, &ip_addr);
 
     if (ip_addr.host == NULL || ip_addr.port == NULL) {
