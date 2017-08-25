@@ -456,7 +456,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
 
             buffer_t ss_addr_to_send;
             buffer_t *abuf = &ss_addr_to_send;
-            balloc(abuf, BUF_SIZE);
+            buffer_alloc(abuf, BUF_SIZE);
 
             ss_host_port *sa = &server->destaddr;
             struct cork_ip ip;
@@ -610,7 +610,7 @@ new_remote(int fd, int timeout)
     remote->buf                 = ss_malloc(sizeof(buffer_t));
     remote->recv_ctx            = ss_malloc(sizeof(remote_ctx_t));
     remote->send_ctx            = ss_malloc(sizeof(remote_ctx_t));
-    balloc(remote->buf, BUF_SIZE);
+    buffer_alloc(remote->buf, BUF_SIZE);
     memset(remote->recv_ctx, 0, sizeof(remote_ctx_t));
     memset(remote->send_ctx, 0, sizeof(remote_ctx_t));
     remote->fd                  = fd;
@@ -665,7 +665,7 @@ new_server(int fd, int method)
     server->buf                 = ss_malloc(sizeof(buffer_t));
     server->recv_ctx            = ss_malloc(sizeof(server_ctx_t));
     server->send_ctx            = ss_malloc(sizeof(server_ctx_t));
-    balloc(server->buf, BUF_SIZE);
+    buffer_alloc(server->buf, BUF_SIZE);
     memset(server->recv_ctx, 0, sizeof(server_ctx_t));
     memset(server->send_ctx, 0, sizeof(server_ctx_t));
     server->fd                  = fd;

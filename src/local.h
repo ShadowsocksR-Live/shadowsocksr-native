@@ -79,7 +79,7 @@ typedef struct remote {
 
 typedef struct server {
     int fd;
-    char stage;
+    enum net_stage stage;
     enc_ctx_t *e_ctx;
     enc_ctx_t *d_ctx;
     server_ctx_t *recv_ctx;

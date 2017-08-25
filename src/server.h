@@ -51,7 +51,7 @@ typedef struct server_ctx {
 
 typedef struct server {
     int fd;
-    int stage;
+    enum net_stage stage;
     buffer_t *buf;
     ssize_t buf_capacity;
     buffer_t *header_buf;

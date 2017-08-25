@@ -55,8 +55,6 @@
 
 #include <libcork/core.h>
 #include <udns.h>
-#include <sys/time.h>
-#include <time.h>
 
 #ifdef __MINGW32__
 #include "win32.h"
@@ -187,11 +185,10 @@ ev_io_server_recv(EV_P_ server_t* server, remote_t* remote)
 int
 create_and_bind(const char *addr, const char *port)
 {
-    struct addrinfo hints;
+    struct addrinfo hints = { 0 };
     struct addrinfo *result, *rp;
     int s, listen_sock;
 
-    memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family   = AF_UNSPEC;   /* Return IPv4 and IPv6 choices */
     hints.ai_socktype = SOCK_STREAM; /* We want a TCP socket */
 
@@ -568,7 +565,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 buffer_t resp_to_send;
                 buffer_t *resp_buf = &resp_to_send;
-                balloc(resp_buf, BUF_SIZE);
+                buffer_alloc(resp_buf, BUF_SIZE);
 
                 memcpy(resp_buf->array, &response, sizeof(struct socks5_response));
                 memcpy(resp_buf->array + sizeof(struct socks5_response),
@@ -600,7 +597,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             buffer_t ss_addr_to_send;
             buffer_t *abuf = &ss_addr_to_send;
-            balloc(abuf, BUF_SIZE);
+            buffer_alloc(abuf, BUF_SIZE);
 
             abuf->array[abuf->len++] = request->atyp;
             int atyp = request->atyp;
@@ -826,8 +823,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 // init server cipher
                 if (server_env->cipher.enc_method > TABLE) {
-                    server->e_ctx = ss_malloc(sizeof(struct enc_ctx));
-                    server->d_ctx = ss_malloc(sizeof(struct enc_ctx));
+                    server->e_ctx = ss_malloc(sizeof(struct _enc_ctx));
+                    server->d_ctx = ss_malloc(sizeof(struct _enc_ctx));
                     enc_ctx_init(&server_env->cipher, server->e_ctx, 1);
                     enc_ctx_init(&server_env->cipher, server->d_ctx, 0);
                 } else {
@@ -1166,7 +1163,7 @@ new_remote(int fd, int timeout)
     remote->buf                 = ss_malloc(sizeof(buffer_t));
     remote->recv_ctx            = ss_malloc(sizeof(remote_ctx_t));
     remote->send_ctx            = ss_malloc(sizeof(remote_ctx_t));
-    balloc(remote->buf, BUF_SIZE);
+    buffer_alloc(remote->buf, BUF_SIZE);
     remote->recv_ctx->connected = 0;
     remote->send_ctx->connected = 0;
     remote->fd                  = fd;
@@ -1220,7 +1217,7 @@ new_server(int fd, listen_ctx_t* profile)
     server->recv_ctx            = ss_malloc(sizeof(server_ctx_t));
     server->send_ctx            = ss_malloc(sizeof(server_ctx_t));
     server->buf                 = ss_malloc(sizeof(buffer_t));
-    balloc(server->buf, BUF_SIZE);
+    buffer_alloc(server->buf, BUF_SIZE);
     server->stage               = STAGE_INIT;
     server->recv_ctx->connected = 0;
     server->send_ctx->connected = 0;

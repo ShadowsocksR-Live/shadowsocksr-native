@@ -274,7 +274,7 @@ cipher_index_from_name(const char *name)
 }
 
 int
-balloc(buffer_t *ptr, size_t capacity)
+buffer_alloc(buffer_t *ptr, size_t capacity)
 {
     sodium_memzero(ptr, sizeof(buffer_t));
     ptr->array    = ss_malloc(capacity);
@@ -1359,7 +1359,7 @@ ss_encrypt_buffer(cipher_env_t *env, enc_ctx_t *ctx, char *in, size_t in_size, c
 {
     buffer_t cipher;
     memset(&cipher, 0, sizeof(buffer_t));
-    balloc(&cipher, in_size + 32);
+    buffer_alloc(&cipher, in_size + 32);
     cipher.len = in_size;
     memcpy(cipher.array, in, in_size);
     int s = ss_encrypt(env, &cipher, ctx, in_size + 32);
@@ -1376,7 +1376,7 @@ ss_decrypt_buffer(cipher_env_t *env, enc_ctx_t *ctx, char *in, size_t in_size, c
 {
     buffer_t cipher;
     memset(&cipher, 0, sizeof(buffer_t));
-    balloc(&cipher, in_size + 32);
+    buffer_alloc(&cipher, in_size + 32);
     cipher.len = in_size;
     memcpy(cipher.array, in, in_size);
     int s = ss_decrypt(env, &cipher, ctx, in_size + 32);

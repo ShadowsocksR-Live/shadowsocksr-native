@@ -134,7 +134,7 @@ enum cipher_index {
     CIPHER_NUM,
 };
 
-typedef struct {
+typedef struct _cipher_env {
     uint8_t *enc_table;
     uint8_t *dec_table;
     uint8_t enc_key[MAX_KEY_LENGTH];
@@ -145,7 +145,7 @@ typedef struct {
     struct cache *iv_cache;
 } cipher_env_t;
 
-typedef struct {
+typedef struct _cipher_ctx {
     cipher_evp_t *evp;
 #ifdef USE_CRYPTO_APPLECC
     cipher_cc_t cc;
@@ -153,7 +153,7 @@ typedef struct {
     uint8_t iv[MAX_IV_LENGTH];
 } cipher_ctx_t;
 
-typedef struct {
+typedef struct _cipher {
     cipher_kt_t *info;
     size_t iv_len;
     size_t key_len;
@@ -175,21 +175,21 @@ typedef struct {
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 
-typedef struct buffer {
+typedef struct _buffer {
     size_t idx;
     size_t len;
     size_t capacity;
     char   *array;
 } buffer_t;
 
-typedef struct chunk {
+typedef struct _chunk {
     uint32_t idx;
     uint32_t len;
     uint32_t counter;
     buffer_t *buf;
 } chunk_t;
 
-typedef struct enc_ctx {
+typedef struct _enc_ctx {
     uint8_t init;
     uint64_t counter;
     cipher_ctx_t evp;
@@ -222,7 +222,7 @@ int ss_aes_128_cbc(char *encrypt, char *out_data, char *key);
 int ss_encrypt_buffer(cipher_env_t *env, enc_ctx_t *ctx, char *in, size_t in_size, char *out, size_t *out_size);
 int ss_decrypt_buffer(cipher_env_t *env, enc_ctx_t *ctx, char *in, size_t in_size, char *out, size_t *out_size);
 
-int balloc(buffer_t *ptr, size_t capacity);
+int buffer_alloc(buffer_t *ptr, size_t capacity);
 int brealloc(buffer_t *ptr, size_t len, size_t capacity);
 void bfree(buffer_t *ptr);
 

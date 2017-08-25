@@ -1249,7 +1249,7 @@ new_remote(int fd)
     remote->recv_ctx            = ss_malloc(sizeof(remote_ctx_t));
     remote->send_ctx            = ss_malloc(sizeof(remote_ctx_t));
     remote->buf                 = ss_malloc(sizeof(buffer_t));
-    balloc(remote->buf, BUF_SIZE);
+    buffer_alloc(remote->buf, BUF_SIZE);
     memset(remote->recv_ctx, 0, sizeof(remote_ctx_t));
     memset(remote->send_ctx, 0, sizeof(remote_ctx_t));
     remote->fd                  = fd;
@@ -1313,8 +1313,8 @@ new_server(int fd, listen_ctx_t *listener)
     server->header_buf          = ss_malloc(sizeof(buffer_t));
     memset(server->recv_ctx, 0, sizeof(server_ctx_t));
     memset(server->send_ctx, 0, sizeof(server_ctx_t));
-    balloc(server->buf, BUF_SIZE);
-    balloc(server->header_buf, BUF_SIZE);
+    buffer_alloc(server->buf, BUF_SIZE);
+    buffer_alloc(server->header_buf, BUF_SIZE);
     server->fd                  = fd;
     server->recv_ctx->server    = server;
     server->recv_ctx->connected = 0;
