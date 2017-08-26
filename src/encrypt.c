@@ -283,7 +283,7 @@ buffer_alloc(buffer_t *ptr, size_t capacity)
 }
 
 int
-brealloc(buffer_t *ptr, size_t len, size_t capacity)
+buffer_realloc(buffer_t *ptr, size_t len, size_t capacity)
 {
     if (ptr == NULL) {
         return -1;
@@ -1071,7 +1071,7 @@ ss_encrypt_all(cipher_env_t* env, buffer_t *plain, size_t capacity)
         int err       = 1;
 
         static buffer_t tmp = { 0, 0, 0, NULL };
-        brealloc(&tmp, iv_len + plain->len, capacity);
+        buffer_realloc(&tmp, iv_len + plain->len, capacity);
         buffer_t *cipher = &tmp;
         cipher->len = plain->len;
 
@@ -1105,7 +1105,7 @@ ss_encrypt_all(cipher_env_t* env, buffer_t *plain, size_t capacity)
 
         cipher_context_release(env, &evp);
 
-        brealloc(plain, iv_len + cipher->len, capacity);
+        buffer_realloc(plain, iv_len + cipher->len, capacity);
         memcpy(plain->array, cipher->array, iv_len + cipher->len);
         plain->len = iv_len + cipher->len;
 
@@ -1136,7 +1136,7 @@ ss_encrypt(cipher_env_t *env, buffer_t *plain, struct enc_ctx *ctx, size_t capac
             iv_len = env->enc_iv_len;
         }
 
-        brealloc(&tmp, iv_len + plain->len, capacity);
+        buffer_realloc(&tmp, iv_len + plain->len, capacity);
         buffer_t *cipher = &tmp;
         cipher->len = plain->len;
 
@@ -1149,9 +1149,9 @@ ss_encrypt(cipher_env_t *env, buffer_t *plain, struct enc_ctx *ctx, size_t capac
 
         if (env->enc_method >= SALSA20) {
             int padding = ctx->counter % SODIUM_BLOCK_SIZE;
-            brealloc(cipher, iv_len + (padding + cipher->len) * 2, capacity);
+            buffer_realloc(cipher, iv_len + (padding + cipher->len) * 2, capacity);
             if (padding) {
-                brealloc(plain, plain->len + padding, capacity);
+                buffer_realloc(plain, plain->len + padding, capacity);
                 memmove(plain->array + padding, plain->array, plain->len);
                 sodium_memzero(plain->array, padding);
             }
@@ -1182,7 +1182,7 @@ ss_encrypt(cipher_env_t *env, buffer_t *plain, struct enc_ctx *ctx, size_t capac
         dump("CIPHER", cipher->array + iv_len, cipher->len);
 #endif
 
-        brealloc(plain, iv_len + cipher->len, capacity);
+        buffer_realloc(plain, iv_len + cipher->len, capacity);
         memcpy(plain->array, cipher->array, iv_len + cipher->len);
         plain->len = iv_len + cipher->len;
 
@@ -1216,7 +1216,7 @@ ss_decrypt_all(cipher_env_t* env, buffer_t *cipher, size_t capacity)
         cipher_context_init(env, &evp, 0);
 
         static buffer_t tmp = { 0, 0, 0, NULL };
-        brealloc(&tmp, cipher->len, capacity);
+        buffer_realloc(&tmp, cipher->len, capacity);
         buffer_t *plain = &tmp;
         plain->len = cipher->len - iv_len;
 
@@ -1248,7 +1248,7 @@ ss_decrypt_all(cipher_env_t* env, buffer_t *cipher, size_t capacity)
 
         cipher_context_release(env, &evp);
 
-        brealloc(cipher, plain->len, capacity);
+        buffer_realloc(cipher, plain->len, capacity);
         memcpy(cipher->array, plain->array, plain->len);
         cipher->len = plain->len;
 
@@ -1276,7 +1276,7 @@ ss_decrypt(cipher_env_t* env, buffer_t *cipher, struct enc_ctx *ctx, size_t capa
         size_t iv_len = 0;
         int err       = 1;
 
-        brealloc(&tmp, cipher->len, capacity);
+        buffer_realloc(&tmp, cipher->len, capacity);
         buffer_t *plain = &tmp;
         plain->len = cipher->len;
 
@@ -1302,10 +1302,10 @@ ss_decrypt(cipher_env_t* env, buffer_t *cipher, struct enc_ctx *ctx, size_t capa
 
         if (env->enc_method >= SALSA20) {
             int padding = ctx->counter % SODIUM_BLOCK_SIZE;
-            brealloc(plain, (plain->len + padding) * 2, capacity);
+            buffer_realloc(plain, (plain->len + padding) * 2, capacity);
 
             if (padding) {
-                brealloc(cipher, cipher->len + padding, capacity);
+                buffer_realloc(cipher, cipher->len + padding, capacity);
                 memmove(cipher->array + iv_len + padding, cipher->array + iv_len,
                         cipher->len - iv_len);
                 sodium_memzero(cipher->array + iv_len, padding);
@@ -1336,7 +1336,7 @@ ss_decrypt(cipher_env_t* env, buffer_t *cipher, struct enc_ctx *ctx, size_t capa
         dump("CIPHER", cipher->array + iv_len, cipher->len - iv_len);
 #endif
 
-        brealloc(cipher, plain->len, capacity);
+        buffer_realloc(cipher, plain->len, capacity);
         memcpy(cipher->array, plain->array, plain->len);
         cipher->len = plain->len;
 

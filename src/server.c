@@ -678,7 +678,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     if (server->stage == STAGE_HANDSHAKE) {
         size_t header_len = server->header_buf->len;
-        brealloc(server->header_buf, server->buf->len + header_len, BUF_SIZE);
+        buffer_realloc(server->header_buf, server->buf->len + header_len, BUF_SIZE);
         memcpy(server->header_buf->array + header_len,
                server->buf->array, server->buf->len);
         server->header_buf->len = server->buf->len + header_len;
@@ -686,7 +686,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         int ret = is_header_complete(server->buf);
 
         if (ret == 1) {
-            brealloc(server->buf, server->header_buf->len, BUF_SIZE);
+            buffer_realloc(server->buf, server->header_buf->len, BUF_SIZE);
             memcpy(server->buf->array, server->header_buf->array, server->header_buf->len);
             server->buf->len = server->header_buf->len;
             bfree(server->header_buf);

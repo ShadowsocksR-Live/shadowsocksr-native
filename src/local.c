@@ -869,7 +869,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 }
                 // SSR end
 
-                brealloc(remote->buf, buf->len + abuf->len, BUF_SIZE);
+                buffer_realloc(remote->buf, buf->len + abuf->len, BUF_SIZE);
                 memcpy(remote->buf->array, abuf->array, abuf->len);
                 remote->buf->len = buf->len + abuf->len;
 
