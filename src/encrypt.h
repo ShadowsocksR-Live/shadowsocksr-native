@@ -182,12 +182,12 @@ struct ss_buffer {
     char   *array;
 };
 
-typedef struct _chunk {
+struct ss_chunk {
     uint32_t idx;
     uint32_t len;
     uint32_t counter;
     struct ss_buffer *buf;
-} chunk_t;
+};
 
 struct enc_ctx {
     uint8_t init;

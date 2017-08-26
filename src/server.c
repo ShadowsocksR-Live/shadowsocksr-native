@@ -1343,8 +1343,8 @@ new_server(int fd, listen_ctx_t *listener)
     ev_timer_init(&server->recv_ctx->watcher, server_timeout_cb,
                   request_timeout, listener->timeout);
 
-    server->chunk = ss_malloc(sizeof(chunk_t));
-    memset(server->chunk, 0, sizeof(chunk_t));
+    server->chunk = ss_malloc(sizeof(struct ss_chunk));
+    memset(server->chunk, 0, sizeof(struct ss_chunk));
     server->chunk->buf = ss_malloc(sizeof(struct ss_buffer));
 
     cork_dllist_add(&connections, &server->entries);
