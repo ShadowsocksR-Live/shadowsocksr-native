@@ -579,7 +579,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 int s = send(server->fd, resp_buf->array, reply_size, 0);
 
-                bfree(resp_buf);
+                buffer_free(resp_buf);
 
                 if (s < reply_size) {
                     LOGE("failed to send fake reply");
@@ -642,7 +642,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     sprintf(port, "%d", p);
                 }
             } else {
-                bfree(abuf);
+                buffer_free(abuf);
                 LOGE("unsupported addrtype: %d", request->atyp);
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
@@ -664,7 +664,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                                                      buf->len - 3 - abuf->len, &hostname);
                 if (ret == -1 && buf->len < BUF_SIZE) {
                     server->stage = STAGE_PARSE;
-                    bfree(abuf);
+                    buffer_free(abuf);
                     return;
                 } else if (ret > 0) {
                     sni_detected = 1;
@@ -808,7 +808,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             }
 
             if (remote == NULL) {
-                bfree(abuf);
+                buffer_free(abuf);
                 LOGE("invalid remote addr");
                 close_and_free_server(EV_A_ server);
                 return;
@@ -886,7 +886,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             server->remote = remote;
             remote->server = server;
 
-            bfree(abuf);
+            buffer_free(abuf);
         }
     }
 }
@@ -1187,7 +1187,7 @@ free_remote(remote_t *remote)
         remote->server->remote = NULL;
     }
     if (remote->buf != NULL) {
-        bfree(remote->buf);
+        buffer_free(remote->buf);
         ss_free(remote->buf);
     }
     ss_free(remote->recv_ctx);
@@ -1316,7 +1316,7 @@ free_server(server_t *server)
         server->remote->server = NULL;
     }
     if (server->buf != NULL) {
-        bfree(server->buf);
+        buffer_free(server->buf);
         ss_free(server->buf);
     }
 

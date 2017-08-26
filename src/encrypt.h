@@ -224,7 +224,7 @@ int ss_decrypt_buffer(cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t i
 
 int buffer_alloc(buffer_t *ptr, size_t capacity);
 int buffer_realloc(buffer_t *ptr, size_t len, size_t capacity);
-void bfree(buffer_t *ptr);
+void buffer_free(buffer_t *ptr);
 
 //extern cipher_env_t cipher_env;
 

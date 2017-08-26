@@ -546,7 +546,7 @@ close_and_free_query(EV_P_ struct query_ctx *ctx)
             ctx->query = NULL;
         }
         if (ctx->buf != NULL) {
-            bfree(ctx->buf);
+            buffer_free(ctx->buf);
             ss_free(ctx->buf);
         }
         ss_free(ctx);
@@ -871,7 +871,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 
 CLEAN_UP:
 
-    bfree(buf);
+    buffer_free(buf);
     ss_free(buf);
 }
 
@@ -1347,7 +1347,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 #endif
 
 CLEAN_UP:
-    bfree(buf);
+    buffer_free(buf);
     ss_free(buf);
 }
 

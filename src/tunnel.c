@@ -512,7 +512,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
                 memcpy(remote->buf->array, abuf->array, abuf->len);
                 remote->buf->len = abuf->len;
             }
-            bfree(abuf);
+            buffer_free(abuf);
 
             // SSR beg
             server_info _server_info;
@@ -635,7 +635,7 @@ free_remote(remote_t *remote)
             remote->server->remote = NULL;
         }
         if (remote->buf) {
-            bfree(remote->buf);
+            buffer_free(remote->buf);
             ss_free(remote->buf);
         }
         ss_free(remote->recv_ctx);
@@ -706,7 +706,7 @@ free_server(server_t *server)
             ss_free(server->d_ctx);
         }
         if (server->buf) {
-            bfree(server->buf);
+            buffer_free(server->buf);
             ss_free(server->buf);
         }
         // SSR beg

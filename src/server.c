@@ -662,7 +662,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     if (server->stage == STAGE_INIT) {
         int ret = is_header_complete(server->buf);
         if (ret == 1) {
-            bfree(server->header_buf);
+            buffer_free(server->header_buf);
             ss_free(server->header_buf);
             server->stage = STAGE_PARSE;
         } else if (ret == -1) {
@@ -689,7 +689,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             buffer_realloc(server->buf, server->header_buf->len, BUF_SIZE);
             memcpy(server->buf->array, server->header_buf->array, server->header_buf->len);
             server->buf->len = server->header_buf->len;
-            bfree(server->header_buf);
+            buffer_free(server->header_buf);
             ss_free(server->header_buf);
             server->stage = STAGE_PARSE;
         } else {
@@ -1272,7 +1272,7 @@ free_remote(remote_t *remote)
         remote->server->remote = NULL;
     }
     if (remote->buf != NULL) {
-        bfree(remote->buf);
+        buffer_free(remote->buf);
         ss_free(remote->buf);
     }
     ss_free(remote->recv_ctx);
@@ -1360,7 +1360,7 @@ free_server(server_t *server)
 
     if (server->chunk != NULL) {
         if (server->chunk->buf != NULL) {
-            bfree(server->chunk->buf);
+            buffer_free(server->chunk->buf);
             ss_free(server->chunk->buf);
         }
         ss_free(server->chunk);
@@ -1377,11 +1377,11 @@ free_server(server_t *server)
         ss_free(server->d_ctx);
     }
     if (server->buf != NULL) {
-        bfree(server->buf);
+        buffer_free(server->buf);
         ss_free(server->buf);
     }
     if (server->header_buf != NULL) {
-        bfree(server->header_buf);
+        buffer_free(server->header_buf);
         ss_free(server->header_buf);
     }
 

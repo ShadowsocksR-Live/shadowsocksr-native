@@ -297,7 +297,7 @@ buffer_realloc(buffer_t *ptr, size_t len, size_t capacity)
 }
 
 void
-bfree(buffer_t *ptr)
+buffer_free(buffer_t *ptr)
 {
     if (ptr == NULL) {
         return;
@@ -1093,7 +1093,7 @@ ss_encrypt_all(cipher_env_t* env, buffer_t *plain, size_t capacity)
         }
 
         if (!err) {
-            bfree(plain);
+            buffer_free(plain);
             cipher_context_release(env, &evp);
             return -1;
         }
@@ -1236,7 +1236,7 @@ ss_decrypt_all(cipher_env_t* env, buffer_t *cipher, size_t capacity)
         }
 
         if (!ret) {
-            bfree(cipher);
+            buffer_free(cipher);
             cipher_context_release(env, &evp);
             return -1;
         }
@@ -1292,7 +1292,7 @@ ss_decrypt(cipher_env_t* env, buffer_t *cipher, struct enc_ctx *ctx, size_t capa
 
             if (env->enc_method > RC4) {
                 if (cache_key_exist(env->iv_cache, (char *)iv, iv_len)) {
-                    bfree(cipher);
+                    buffer_free(cipher);
                     return -1;
                 } else {
                     cache_insert(env->iv_cache, (char *)iv, iv_len, NULL);
@@ -1327,7 +1327,7 @@ ss_decrypt(cipher_env_t* env, buffer_t *cipher, struct enc_ctx *ctx, size_t capa
         }
 
         if (!err) {
-            bfree(cipher);
+            buffer_free(cipher);
             return -1;
         }
 
@@ -1367,7 +1367,7 @@ ss_encrypt_buffer(cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t in_si
         *out_size = cipher.len;
         memcpy(out, cipher.array, cipher.len);
     }
-    bfree(&cipher);
+    buffer_free(&cipher);
     return s;
 }
 
@@ -1384,7 +1384,7 @@ ss_decrypt_buffer(cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t in_si
         *out_size = cipher.len;
         memcpy(out, cipher.array, cipher.len);
     }
-    bfree(&cipher);
+    buffer_free(&cipher);
     return s;
 }
 
