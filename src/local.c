@@ -1084,7 +1084,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
         }
     } else if (s < (int)(server->buf->len)) {
         server->buf->len -= s;
-        server->buf->idx  = s;
+        server->buf->idx  = (size_t)s;
         ev_io_remote_recv(EV_A_ server, remote);
     }
 }
@@ -1242,8 +1242,7 @@ release_profile(listen_ctx_t *profile)
 
     ss_free(profile->iface);
 
-    for(i = 0; i < profile->server_num; i++)
-    {
+    for(i = 0; i < profile->server_num; i++) {
         server_def_t *server_env = &profile->servers[i];
 
         ss_free(server_env->host);
@@ -1280,21 +1279,17 @@ check_and_free_profile(listen_ctx_t *profile)
 {
     int i;
 
-    if(profile == current_profile)
-    {
+    if(profile == current_profile) {
         return;
     }
     // if this connection is created from an inactive profile, then we need to free the profile
     // when the last connection of that profile is colsed
-    if(!cork_dllist_is_empty(&profile->connections_eden))
-    {
+    if(!cork_dllist_is_empty(&profile->connections_eden)) {
         return;
     }
 
-    for(i = 0; i < profile->server_num; i++)
-    {
-        if(!cork_dllist_is_empty(&profile->servers[i].connections))
-        {
+    for(i = 0; i < profile->server_num; i++) {
+        if(!cork_dllist_is_empty(&profile->servers[i].connections)) {
             return;
         }
     }
@@ -1321,8 +1316,7 @@ free_server(server_t *server)
         ss_free(server->buf);
     }
 
-    if(server_env)
-    {
+    if(server_env) {
         if (server->e_ctx != NULL) {
             enc_ctx_release(&server_env->cipher, server->e_ctx);
             ss_free(server->e_ctx);
@@ -1389,8 +1383,9 @@ create_remote(listen_ctx_t *profile, struct sockaddr *addr)
     setnonblocking(remotefd);
 #ifdef SET_INTERFACE
     if (profile->iface) {
-        if (setinterface(remotefd, profile->iface) == -1)
+        if (setinterface(remotefd, profile->iface) == -1) {
             ERROR("setinterface");
+        }
     }
 #endif
 
@@ -1775,7 +1770,7 @@ main(int argc, char **argv)
     if (ipv6first) {
         LOGI("resolving hostname to IPv6 address first");
     }
-    srand(time(NULL));
+    srand((unsigned int)time(NULL));
 
     // parse tunnel addr
     if (tunnel_addr_str) {
