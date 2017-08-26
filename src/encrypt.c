@@ -1125,7 +1125,7 @@ ss_encrypt_all(cipher_env_t* env, buffer_t *plain, size_t capacity)
 }
 
 int
-ss_encrypt(cipher_env_t *env, buffer_t *plain, enc_ctx_t *ctx, size_t capacity)
+ss_encrypt(cipher_env_t *env, buffer_t *plain, struct enc_ctx *ctx, size_t capacity)
 {
     if (ctx != NULL) {
         static buffer_t tmp = { 0, 0, 0, NULL };
@@ -1268,7 +1268,7 @@ ss_decrypt_all(cipher_env_t* env, buffer_t *cipher, size_t capacity)
 }
 
 int
-ss_decrypt(cipher_env_t* env, buffer_t *cipher, enc_ctx_t *ctx, size_t capacity)
+ss_decrypt(cipher_env_t* env, buffer_t *cipher, struct enc_ctx *ctx, size_t capacity)
 {
     if (ctx != NULL) {
         static buffer_t tmp = { 0, 0, 0, NULL };
@@ -1355,7 +1355,7 @@ ss_decrypt(cipher_env_t* env, buffer_t *cipher, enc_ctx_t *ctx, size_t capacity)
 }
 
 int
-ss_encrypt_buffer(cipher_env_t *env, enc_ctx_t *ctx, char *in, size_t in_size, char *out, size_t *out_size)
+ss_encrypt_buffer(cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t in_size, char *out, size_t *out_size)
 {
     buffer_t cipher;
     memset(&cipher, 0, sizeof(buffer_t));
@@ -1372,7 +1372,7 @@ ss_encrypt_buffer(cipher_env_t *env, enc_ctx_t *ctx, char *in, size_t in_size, c
 }
 
 int
-ss_decrypt_buffer(cipher_env_t *env, enc_ctx_t *ctx, char *in, size_t in_size, char *out, size_t *out_size)
+ss_decrypt_buffer(cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t in_size, char *out, size_t *out_size)
 {
     buffer_t cipher;
     memset(&cipher, 0, sizeof(buffer_t));
@@ -1389,9 +1389,9 @@ ss_decrypt_buffer(cipher_env_t *env, enc_ctx_t *ctx, char *in, size_t in_size, c
 }
 
 void
-enc_ctx_init(cipher_env_t *env, enc_ctx_t *ctx, int enc)
+enc_ctx_init(cipher_env_t *env, struct enc_ctx *ctx, int enc)
 {
-    sodium_memzero(ctx, sizeof(enc_ctx_t));
+    sodium_memzero(ctx, sizeof(struct enc_ctx));
     cipher_context_init(env, &ctx->evp, enc);
 
     if (enc) {
@@ -1400,7 +1400,7 @@ enc_ctx_init(cipher_env_t *env, enc_ctx_t *ctx, int enc)
 }
 
 void
-enc_ctx_release(cipher_env_t *env, enc_ctx_t *ctx)
+enc_ctx_release(cipher_env_t *env, struct enc_ctx *ctx)
 {
     cipher_context_release(env, &ctx->evp);
 }

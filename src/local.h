@@ -80,8 +80,8 @@ typedef struct remote {
 typedef struct server {
     int fd;
     enum net_stage stage;
-    enc_ctx_t *e_ctx;
-    enc_ctx_t *d_ctx;
+    struct enc_ctx *e_ctx;
+    struct enc_ctx *d_ctx;
     server_ctx_t *recv_ctx;
     server_ctx_t *send_ctx;
     listen_ctx_t *listener;

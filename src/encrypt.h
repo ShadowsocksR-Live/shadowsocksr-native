@@ -189,11 +189,11 @@ typedef struct _chunk {
     buffer_t *buf;
 } chunk_t;
 
-typedef struct _enc_ctx {
+struct enc_ctx {
     uint8_t init;
     uint64_t counter;
     cipher_ctx_t evp;
-} enc_ctx_t;
+};
 
 void bytes_to_key_with_size(const char *pass, size_t len, uint8_t *md, size_t md_size);
 
@@ -201,13 +201,13 @@ int rand_bytes(uint8_t *output, int len);
 
 int ss_encrypt_all(cipher_env_t* env, buffer_t *plaintext, size_t capacity);
 int ss_decrypt_all(cipher_env_t* env, buffer_t *ciphertext, size_t capacity);
-int ss_encrypt(cipher_env_t* env, buffer_t *plaintext, enc_ctx_t *ctx, size_t capacity);
-int ss_decrypt(cipher_env_t* env, buffer_t *ciphertext, enc_ctx_t *ctx, size_t capacity);
+int ss_encrypt(cipher_env_t* env, buffer_t *plaintext, struct enc_ctx *ctx, size_t capacity);
+int ss_decrypt(cipher_env_t* env, buffer_t *ciphertext, struct enc_ctx *ctx, size_t capacity);
 
 enum cipher_index enc_init(cipher_env_t *env, const char *pass, const char *method);
 void enc_release(cipher_env_t *env);
-void enc_ctx_init(cipher_env_t *env, enc_ctx_t *ctx, int enc);
-void enc_ctx_release(cipher_env_t* env, enc_ctx_t *ctx);
+void enc_ctx_init(cipher_env_t *env, struct enc_ctx *ctx, int enc);
+void enc_ctx_release(cipher_env_t* env, struct enc_ctx *ctx);
 int enc_get_iv_len(cipher_env_t* env);
 uint8_t* enc_get_key(cipher_env_t* env);
 int enc_get_key_len(cipher_env_t* env);
@@ -219,8 +219,8 @@ int ss_md5_hash_func(char *auth, char *msg, int msg_len);
 int ss_sha1_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len);
 int ss_sha1_hash_func(char *auth, char *msg, int msg_len);
 int ss_aes_128_cbc(char *encrypt, char *out_data, char *key);
-int ss_encrypt_buffer(cipher_env_t *env, enc_ctx_t *ctx, char *in, size_t in_size, char *out, size_t *out_size);
-int ss_decrypt_buffer(cipher_env_t *env, enc_ctx_t *ctx, char *in, size_t in_size, char *out, size_t *out_size);
+int ss_encrypt_buffer(cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t in_size, char *out, size_t *out_size);
+int ss_decrypt_buffer(cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t in_size, char *out, size_t *out_size);
 
 int buffer_alloc(buffer_t *ptr, size_t capacity);
 int brealloc(buffer_t *ptr, size_t len, size_t capacity);

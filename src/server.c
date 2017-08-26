@@ -1326,8 +1326,8 @@ new_server(int fd, listen_ctx_t *listener)
     server->remote              = NULL;
 
     if (listener->method) {
-        server->e_ctx = ss_malloc(sizeof(enc_ctx_t));
-        server->d_ctx = ss_malloc(sizeof(enc_ctx_t));
+        server->e_ctx = ss_malloc(sizeof(struct enc_ctx));
+        server->d_ctx = ss_malloc(sizeof(struct enc_ctx));
         enc_ctx_init(&cipher_env, server->e_ctx, 1);
         enc_ctx_init(&cipher_env, server->d_ctx, 0);
     } else {

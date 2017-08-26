@@ -77,8 +77,8 @@ typedef struct auth_chain_local_data {
     shift128plus_ctx random_server;
     int cipher_init_flag;
     cipher_env_t cipher;
-    enc_ctx_t* cipher_client_ctx;
-    enc_ctx_t* cipher_server_ctx;
+    struct enc_ctx *cipher_client_ctx;
+    struct enc_ctx *cipher_server_ctx;
 }auth_chain_local_data;
 
 void auth_chain_local_data_init(auth_chain_local_data* local) {
@@ -306,8 +306,8 @@ int auth_chain_a_pack_auth_data(auth_chain_global_data *global, server_info *ser
     base64_encode(local->last_client_hash, 16, password + strlen(password));
     local->cipher_init_flag = 1;
     enc_init(&local->cipher, password, "rc4");
-    local->cipher_client_ctx = malloc(sizeof(enc_ctx_t));
-    local->cipher_server_ctx = malloc(sizeof(enc_ctx_t));
+    local->cipher_client_ctx = malloc(sizeof(struct enc_ctx));
+    local->cipher_server_ctx = malloc(sizeof(struct enc_ctx));
     enc_ctx_init(&local->cipher, local->cipher_client_ctx, 1);
     enc_ctx_init(&local->cipher, local->cipher_server_ctx, 0);
 
@@ -480,7 +480,7 @@ int auth_chain_a_client_udp_pre_encrypt(obfs *self, char **pplaindata, int datal
 
     {
         enc_init(&local->cipher, password, "rc4");
-        enc_ctx_t ctx;
+        struct enc_ctx ctx;
         enc_ctx_init(&local->cipher, &ctx, 1);
         size_t out_len;
         ss_encrypt_buffer(&local->cipher, &ctx,
@@ -532,7 +532,7 @@ int auth_chain_a_client_udp_post_decrypt(obfs *self, char **pplaindata, int data
 
     {
         enc_init(&local->cipher, password, "rc4");
-        enc_ctx_t ctx;
+        struct enc_ctx ctx;
         enc_ctx_init(&local->cipher, &ctx, 0);
         size_t out_len;
         ss_decrypt_buffer(&local->cipher, &ctx,

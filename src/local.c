@@ -823,8 +823,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 // init server cipher
                 if (server_env->cipher.enc_method > TABLE) {
-                    server->e_ctx = ss_malloc(sizeof(struct _enc_ctx));
-                    server->d_ctx = ss_malloc(sizeof(struct _enc_ctx));
+                    server->e_ctx = ss_malloc(sizeof(struct enc_ctx));
+                    server->d_ctx = ss_malloc(sizeof(struct enc_ctx));
                     enc_ctx_init(&server_env->cipher, server->e_ctx, 1);
                     enc_ctx_init(&server_env->cipher, server->d_ctx, 0);
                 } else {
