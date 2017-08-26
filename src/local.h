@@ -64,7 +64,7 @@ typedef struct remote_ctx {
 
 typedef struct remote {
     int fd;
-    buffer_t *buf;
+    struct ss_buffer *buf;
     remote_ctx_t *recv_ctx;
     remote_ctx_t *send_ctx;
     uint32_t counter;
@@ -87,7 +87,7 @@ typedef struct server {
     listen_ctx_t *listener;
     remote_t *remote;
 
-    buffer_t *buf;
+    struct ss_buffer *buf;
 
     struct cork_dllist_item entries;
     struct cork_dllist_item entries_all; // for all_connections

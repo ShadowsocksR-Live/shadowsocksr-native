@@ -175,18 +175,18 @@ typedef struct _cipher {
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 
-typedef struct _buffer {
+struct ss_buffer {
     size_t idx;
     size_t len;
     size_t capacity;
     char   *array;
-} buffer_t;
+};
 
 typedef struct _chunk {
     uint32_t idx;
     uint32_t len;
     uint32_t counter;
-    buffer_t *buf;
+    struct ss_buffer *buf;
 } chunk_t;
 
 struct enc_ctx {
@@ -199,10 +199,10 @@ void bytes_to_key_with_size(const char *pass, size_t len, uint8_t *md, size_t md
 
 int rand_bytes(uint8_t *output, int len);
 
-int ss_encrypt_all(cipher_env_t* env, buffer_t *plaintext, size_t capacity);
-int ss_decrypt_all(cipher_env_t* env, buffer_t *ciphertext, size_t capacity);
-int ss_encrypt(cipher_env_t* env, buffer_t *plaintext, struct enc_ctx *ctx, size_t capacity);
-int ss_decrypt(cipher_env_t* env, buffer_t *ciphertext, struct enc_ctx *ctx, size_t capacity);
+int ss_encrypt_all(cipher_env_t* env, struct ss_buffer *plaintext, size_t capacity);
+int ss_decrypt_all(cipher_env_t* env, struct ss_buffer *ciphertext, size_t capacity);
+int ss_encrypt(cipher_env_t* env, struct ss_buffer *plaintext, struct enc_ctx *ctx, size_t capacity);
+int ss_decrypt(cipher_env_t* env, struct ss_buffer *ciphertext, struct enc_ctx *ctx, size_t capacity);
 
 enum cipher_index enc_init(cipher_env_t *env, const char *pass, const char *method);
 void enc_release(cipher_env_t *env);
@@ -222,9 +222,9 @@ int ss_aes_128_cbc(char *encrypt, char *out_data, char *key);
 int ss_encrypt_buffer(cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t in_size, char *out, size_t *out_size);
 int ss_decrypt_buffer(cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t in_size, char *out, size_t *out_size);
 
-int buffer_alloc(buffer_t *ptr, size_t capacity);
-int buffer_realloc(buffer_t *ptr, size_t len, size_t capacity);
-void buffer_free(buffer_t *ptr);
+int buffer_alloc(struct ss_buffer *ptr, size_t capacity);
+int buffer_realloc(struct ss_buffer *ptr, size_t len, size_t capacity);
+void buffer_free(struct ss_buffer *ptr);
 
 //extern cipher_env_t cipher_env;
 

@@ -104,7 +104,7 @@ static void close_and_free_server(EV_P_ server_t *server);
 static void server_resolve_cb(struct sockaddr *addr, void *data);
 static void query_free_cb(void *data);
 
-static int is_header_complete(const buffer_t *buf);
+static int is_header_complete(const struct ss_buffer *buf);
 
 int verbose = 0;
 
@@ -226,7 +226,7 @@ free_connections(struct ev_loop *loop)
 }
 
 static int
-is_header_complete(const buffer_t *buf)
+is_header_complete(const struct ss_buffer *buf)
 {
     size_t header_len = 0;
     size_t buf_len    = buf->len;
@@ -590,7 +590,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     remote_t *remote              = NULL;
 
     int len       = server->buf->len;
-    buffer_t *buf = server->buf;
+    struct ss_buffer *buf = server->buf;
 
     if (server->stage > STAGE_PARSE) {
         remote = server->remote;
@@ -1248,7 +1248,7 @@ new_remote(int fd)
 
     remote->recv_ctx            = ss_malloc(sizeof(remote_ctx_t));
     remote->send_ctx            = ss_malloc(sizeof(remote_ctx_t));
-    remote->buf                 = ss_malloc(sizeof(buffer_t));
+    remote->buf                 = ss_malloc(sizeof(struct ss_buffer));
     buffer_alloc(remote->buf, BUF_SIZE);
     memset(remote->recv_ctx, 0, sizeof(remote_ctx_t));
     memset(remote->send_ctx, 0, sizeof(remote_ctx_t));
@@ -1309,8 +1309,8 @@ new_server(int fd, listen_ctx_t *listener)
 
     server->recv_ctx            = ss_malloc(sizeof(server_ctx_t));
     server->send_ctx            = ss_malloc(sizeof(server_ctx_t));
-    server->buf                 = ss_malloc(sizeof(buffer_t));
-    server->header_buf          = ss_malloc(sizeof(buffer_t));
+    server->buf                 = ss_malloc(sizeof(struct ss_buffer));
+    server->header_buf          = ss_malloc(sizeof(struct ss_buffer));
     memset(server->recv_ctx, 0, sizeof(server_ctx_t));
     memset(server->send_ctx, 0, sizeof(server_ctx_t));
     buffer_alloc(server->buf, BUF_SIZE);
@@ -1345,8 +1345,7 @@ new_server(int fd, listen_ctx_t *listener)
 
     server->chunk = ss_malloc(sizeof(chunk_t));
     memset(server->chunk, 0, sizeof(chunk_t));
-    server->chunk->buf = ss_malloc(sizeof(buffer_t));
-    memset(server->chunk->buf, 0, sizeof(buffer_t));
+    server->chunk->buf = ss_malloc(sizeof(struct ss_buffer));
 
     cork_dllist_add(&connections, &server->entries);
 

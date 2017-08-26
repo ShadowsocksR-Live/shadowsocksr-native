@@ -283,7 +283,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     server_ctx_t *server_recv_ctx = (server_ctx_t *)w;
     server_t *server              = server_recv_ctx->server;
     remote_t *remote              = server->remote;
-    buffer_t *buf;
+    struct ss_buffer *buf;
     ssize_t r;
 
     if (remote == NULL) {
@@ -563,8 +563,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 response.rsv  = 0;
                 response.atyp = 1;
 
-                buffer_t resp_to_send;
-                buffer_t *resp_buf = &resp_to_send;
+                struct ss_buffer resp_to_send;
+                struct ss_buffer *resp_buf = &resp_to_send;
                 buffer_alloc(resp_buf, BUF_SIZE);
 
                 memcpy(resp_buf->array, &response, sizeof(struct socks5_response));
@@ -595,8 +595,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             char host[257], ip[INET6_ADDRSTRLEN], port[16];
 
-            buffer_t ss_addr_to_send;
-            buffer_t *abuf = &ss_addr_to_send;
+            struct ss_buffer ss_addr_to_send;
+            struct ss_buffer *abuf = &ss_addr_to_send;
             buffer_alloc(abuf, BUF_SIZE);
 
             abuf->array[abuf->len++] = request->atyp;
@@ -1002,8 +1002,9 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
         if (log_tx_rx)
             rx += server->buf->len;
 #endif
-        if ( r == 0 )
+        if ( r == 0 ) {
             return;
+        }
         // SSR beg
         if (server_env->obfs_plugin) {
             obfs_class *obfs_plugin = server_env->obfs_plugin;
@@ -1160,7 +1161,7 @@ new_remote(int fd, int timeout)
 {
     remote_t *remote = ss_malloc(sizeof(remote_t));
 
-    remote->buf                 = ss_malloc(sizeof(buffer_t));
+    remote->buf                 = ss_malloc(sizeof(struct ss_buffer));
     remote->recv_ctx            = ss_malloc(sizeof(remote_ctx_t));
     remote->send_ctx            = ss_malloc(sizeof(remote_ctx_t));
     buffer_alloc(remote->buf, BUF_SIZE);
@@ -1216,7 +1217,7 @@ new_server(int fd, listen_ctx_t* profile)
     server->listener = profile;
     server->recv_ctx            = ss_malloc(sizeof(server_ctx_t));
     server->send_ctx            = ss_malloc(sizeof(server_ctx_t));
-    server->buf                 = ss_malloc(sizeof(buffer_t));
+    server->buf                 = ss_malloc(sizeof(struct ss_buffer));
     buffer_alloc(server->buf, BUF_SIZE);
     server->stage               = STAGE_INIT;
     server->recv_ctx->connected = 0;

@@ -68,7 +68,7 @@ typedef struct server_ctx {
 typedef struct query_ctx {
     struct ResolvQuery *query;
     struct sockaddr_storage src_addr;
-    buffer_t *buf;
+    struct ss_buffer *buf;
     int addr_header_len;
     char addr_header[384];
     struct server_ctx *server_ctx;

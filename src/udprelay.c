@@ -530,7 +530,7 @@ new_query_ctx(char *buf, size_t len)
 {
     struct query_ctx *ctx = ss_malloc(sizeof(struct query_ctx));
     memset(ctx, 0, sizeof(struct query_ctx));
-    ctx->buf = ss_malloc(sizeof(buffer_t));
+    ctx->buf = ss_malloc(sizeof(struct ss_buffer));
     buffer_alloc(ctx->buf, len);
     memcpy(ctx->buf->array, buf, len);
     ctx->buf->len = len;
@@ -687,7 +687,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     socklen_t src_addr_len = sizeof(struct sockaddr_storage);
     memset(&src_addr, 0, src_addr_len);
 
-    buffer_t *buf = ss_malloc(sizeof(buffer_t));
+    struct ss_buffer *buf = ss_malloc(sizeof(struct ss_buffer));
     buffer_alloc(buf, buf_size);
 
     // recv
@@ -882,7 +882,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     struct sockaddr_storage src_addr;
     memset(&src_addr, 0, sizeof(struct sockaddr_storage));
 
-    buffer_t *buf = ss_malloc(sizeof(buffer_t));
+    struct ss_buffer *buf = ss_malloc(sizeof(struct ss_buffer));
     buffer_alloc(buf, buf_size);
 
     socklen_t src_addr_len = sizeof(struct sockaddr_storage);
