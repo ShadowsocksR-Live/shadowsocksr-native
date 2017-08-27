@@ -128,7 +128,7 @@ static int create_and_bind(const char *addr, const char *port);
 #ifdef HAVE_LAUNCHD
 static int launch_or_create(const char *addr, const char *port);
 #endif
-static remote_t *create_remote(listen_ctx_t *listener, struct sockaddr *addr);
+static remote_t *create_remote(listen_ctx_t *profile, struct sockaddr *addr);
 static void free_remote(remote_t *remote);
 static void close_and_free_remote(EV_P_ remote_t *remote);
 static void free_server(server_t *server);
@@ -187,7 +187,7 @@ create_and_bind(const char *addr, const char *port)
 {
     struct addrinfo hints = { 0 };
     struct addrinfo *result, *rp;
-    int s, listen_sock;
+    int s, listen_sock = 0;
 
     hints.ai_family   = AF_UNSPEC;   /* Return IPv4 and IPv6 choices */
     hints.ai_socktype = SOCK_STREAM; /* We want a TCP socket */
@@ -320,7 +320,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         char *port = server->listener->tunnel_addr.port;
         if (host && port) {
             server->stage = STAGE_PARSE;
-            int addr_len = strlen(host);
+            int addr_len = (int) strlen(host);
             int header_len = addr_len + 3 + 4;
             int port_num = atoi(port);
             memmove(buf->array + header_len, buf->array, buf->len);
@@ -329,10 +329,10 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             buf->array[1] = 1;
             buf->array[2] = 0;
             buf->array[3] = 3;
-            buf->array[4] = addr_len;
-            memcpy(buf->array + 5, host, addr_len);
-            buf->array[addr_len + 5] = port_num >> 8;
-            buf->array[addr_len + 6] = port_num;
+            buf->array[4] = (char) addr_len;
+            memcpy(buf->array + 5, host, (size_t) addr_len);
+            buf->array[addr_len + 5] = (char) (port_num >> 8);
+            buf->array[addr_len + 6] = (char) port_num;
         }
     }
     while (1) {
@@ -371,8 +371,9 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 }
                 // SSR end
 #ifdef ANDROID
-                if (log_tx_rx)
+                if (log_tx_rx) {
                     tx += buf->len;
+                }
 #endif
             }
 
@@ -382,8 +383,9 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     int not_protect = 0;
                     if (remote->direct_addr.addr.ss_family == AF_INET) {
                         struct sockaddr_in *s = (struct sockaddr_in *)&remote->direct_addr.addr;
-                        if (s->sin_addr.s_addr == inet_addr("127.0.0.1"))
+                        if (s->sin_addr.s_addr == inet_addr("127.0.0.1")) {
                             not_protect = 1;
+                        }
                     }
                     if (!not_protect) {
                         if (protect_socket(remote->fd) == -1) {
@@ -536,8 +538,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             if (request->cmd == 3) {
                 udp_assc = 1;
                 socklen_t addr_len = sizeof(sock_addr);
-                getsockname(server->fd, (struct sockaddr *)&sock_addr,
-                            &addr_len);
+                getsockname(server->fd, (struct sockaddr *)&sock_addr, &addr_len);
                 if (verbose) {
                     LOGI("udp assc request accepted");
                 }
@@ -656,12 +657,15 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 char *hostname;
                 uint16_t p = ntohs(*(uint16_t *)(abuf->array + abuf->len - 2));
                 int ret    = 0;
-                if (p == http_protocol->default_port)
-                    ret = http_protocol->parse_packet(buf->array + 3 + abuf->len,
-                                                      buf->len - 3 - abuf->len, &hostname);
-                else if (p == tls_protocol->default_port)
+                if (p == http_protocol->default_port) {
+                    ret = http_protocol->parse_packet(
+                            buf->array + 3 + abuf->len,
+                            buf->len - 3 - abuf->len, &hostname);
+                } else if (p == tls_protocol->default_port) {
                     ret = tls_protocol->parse_packet(buf->array + 3 + abuf->len,
-                                                     buf->len - 3 - abuf->len, &hostname);
+                                                     buf->len - 3 - abuf->len,
+                                                     &hostname);
+                }
                 if (ret == -1 && buf->len < BUF_SIZE) {
                     server->stage = STAGE_PARSE;
                     buffer_free(abuf);
@@ -699,8 +703,9 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             if (acl) {
                 if (outbound_block_match_host(host) == 1) {
-                    if (verbose)
+                    if (verbose) {
                         LOGI("outbound blocked %s", host);
+                    }
                     close_and_free_remote(EV_A_ remote);
                     close_and_free_server(EV_A_ server);
                     return;
@@ -713,13 +718,14 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 memset(&storage, 0, sizeof(struct sockaddr_storage));
                 int err;
 
-                if (verbose)
+                if (verbose) {
                     LOGI("acl_match_host %s result %d", host, host_match);
-                if (host_match > 0)
+                }
+                if (host_match > 0) {
                     bypass = 0;                 // bypass hostnames in black list
-                else if (host_match < 0)
+                } else if (host_match < 0) {
                     bypass = 1;                 // proxy hostnames in white list
-                else {
+                } else {
 #ifndef ANDROID
                     if (atyp == 3) {            // resolve domain so we can bypass domain with geoip
                         err = get_sockaddr(host, port, &storage, 0, ipv6first);
@@ -743,42 +749,49 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     }
 #endif
                     if (outbound_block_match_host(ip) == 1) {
-                        if (verbose)
+                        if (verbose) {
                             LOGI("outbound blocked %s", ip);
+                        }
                         close_and_free_remote(EV_A_ remote);
                         close_and_free_server(EV_A_ server);
                         return;
                     }
 
                     int ip_match = acl_match_host(ip);// -1 if IP in white list or 1 if IP in black list
-                    if (verbose)
-                        LOGI("acl_match_host ip %s result %d mode %d", ip, ip_match, get_acl_mode());
-                    if (ip_match < 0)
+                    if (verbose) {
+                        LOGI("acl_match_host ip %s result %d mode %d",
+                             ip, ip_match, get_acl_mode());
+                    }
+                    if (ip_match < 0) {
                         bypass = 1;
-                    else if (ip_match > 0)
+                    } else if (ip_match > 0) {
                         bypass = 0;
-                    else
+                    } else {
                         bypass = (get_acl_mode() == BLACK_LIST);
+                    }
                 }
 
                 if (bypass) {
                     if (verbose) {
-                        if (sni_detected || atyp == 3)
+                        if (sni_detected || atyp == 3) {
                             LOGI("bypass %s:%s", host, port);
-                        else if (atyp == 1)
+                        } else if (atyp == 1) {
                             LOGI("bypass %s:%s", ip, port);
-                        else if (atyp == 4)
+                        } else if (atyp == 4) {
                             LOGI("bypass [%s]:%s", ip, port);
+                        }
                     }
                     struct sockaddr_storage storage;
                     memset(&storage, 0, sizeof(struct sockaddr_storage));
                     int err;
 #ifndef ANDROID
-                    if (atyp == 3 && resolved != 1)
+                    if (atyp == 3 && resolved != 1) {
                         err = get_sockaddr(host, port, &storage, 0, ipv6first);
-                    else
+                    } else
 #endif
+                    {
                         err = get_sockaddr(ip, port, &storage, 0, ipv6first);
+                    }
                     if (err != -1) {
                         remote = create_remote(server->listener, (struct sockaddr *)&storage);
                         if (remote != NULL) remote->direct = 1;
@@ -794,12 +807,16 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 server_def_t *server_env = &profile->servers[index];
 
                 if (verbose) {
-                    if (sni_detected || atyp == 3)
-                        LOGI("connect to %s:%s via %s:%d", host, port, server_env->host, server_env->port);
-                    else if (atyp == 1)
-                        LOGI("connect to %s:%s via %s:%d", ip, port, server_env->host, server_env->port);
-                    else if (atyp == 4)
-                        LOGI("connect to [%s]:%s via %s:%d", ip, port, server_env->host, server_env->port);
+                    if (sni_detected || atyp == 3) {
+                        LOGI("connect to %s:%s via %s:%d",
+                             host, port, server_env->host, server_env->port);
+                    } else if (atyp == 1) {
+                        LOGI("connect to %s:%s via %s:%d",
+                             ip, port, server_env->host, server_env->port);
+                    } else if (atyp == 4) {
+                        LOGI("connect to [%s]:%s via %s:%d",
+                             ip, port, server_env->host, server_env->port);
+                    }
                 }
 
                 server->server_env = server_env;
@@ -834,10 +851,11 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 // SSR beg
                 server_info _server_info;
                 memset(&_server_info, 0, sizeof(server_info));
-                if (server_env->hostname)
+                if (server_env->hostname) {
                     strcpy(_server_info.host, server_env->hostname);
-                else
+                } else {
                     strcpy(_server_info.host, server_env->host);
+                }
                 if (verbose) {
                     LOGI("server_info host %s", _server_info.host);
                 }
@@ -999,8 +1017,9 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 
     if (!remote->direct) {
 #ifdef ANDROID
-        if (log_tx_rx)
+        if (log_tx_rx) {
             rx += server->buf->len;
+        }
 #endif
         if ( r == 0 ) {
             return;
@@ -1789,7 +1808,6 @@ main(int argc, char **argv)
 
     // Setup profiles
     listen_ctx_t *profile = (listen_ctx_t *)ss_malloc(sizeof(listen_ctx_t));
-    memset(profile, 0, sizeof(listen_ctx_t));
 
     cork_dllist_init(&profile->connections_eden);
 
@@ -1932,14 +1950,16 @@ main(int argc, char **argv)
     }
 
 #ifdef HAVE_LAUNCHD
-    if (local_port == NULL)
+    if (local_port == NULL) {
         LOGI("listening through launchd");
-    else
+    } else
 #endif
-    if (strcmp(local_addr, ":") > 0) {
-        LOGI("listening at [%s]:%s", local_addr, local_port);
-    } else {
-        LOGI("listening at %s:%s", local_addr, local_port);
+    {
+        if (strcmp(local_addr, ":") > 0) {
+            LOGI("listening at [%s]:%s", local_addr, local_port);
+        } else {
+            LOGI("listening at %s:%s", local_addr, local_port);
+        }
     }
     // setuid
     if (user != NULL && ! run_as(user)) {
@@ -2096,10 +2116,11 @@ start_ss_local_server(profile_t profile)
                       listen_ctx.servers[0].addr_udp_len, tunnel_addr, mtu, listen_ctx.timeout, listen_ctx.iface, &listen_ctx.servers[0].cipher, listen_ctx.servers[0].protocol_name, listen_ctx.servers[0].protocol_param);
     }
 
-    if (strcmp(local_addr, ":") > 0)
+    if (strcmp(local_addr, ":") > 0) {
         LOGI("listening at [%s]:%s", local_addr, local_port_str);
-    else
+    } else {
         LOGI("listening at %s:%s", local_addr, local_port_str);
+    }
 
     // Setup keys
     LOGI("initializing ciphers... %s", method);
