@@ -305,8 +305,9 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             // continue to wait for recv
             return;
         } else {
-            if (verbose)
+            if (verbose) {
                 ERROR("server_recv_cb_recv");
+            }
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
             return;
@@ -1064,7 +1065,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
             }
         }
         if (server->buf->len > 0) {
-        int err = ss_decrypt(&server_env->cipher, server->buf, server->d_ctx, BUF_SIZE);
+            int err = ss_decrypt(&server_env->cipher, server->buf, server->d_ctx, BUF_SIZE);
             if (err) {
                 LOGE("remote invalid password or cipher");
                 close_and_free_remote(EV_A_ remote);
@@ -1082,8 +1083,9 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
                     close_and_free_server(EV_A_ server);
                     return;
                 }
-                if ( server->buf->len == 0 )
+                if ( server->buf->len == 0 ) {
                     return;
+                }
             }
         }
         // SSR end
