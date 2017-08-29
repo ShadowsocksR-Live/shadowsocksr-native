@@ -249,7 +249,7 @@ static const char *
 cipher_name_from_index(enum cipher_index index)
 {
     if (index < NONE || index >= CIPHER_NUM) {
-        LOGE("get_cipher_type(): Illegal method");
+        LOGE("cipher_name_from_index(): Illegal method");
         return NULL;
     }
     return supported_ciphers[index];
@@ -644,7 +644,7 @@ rand_bytes(uint8_t *output, int len)
 }
 
 const cipher_core_t *
-get_cipher_type(enum cipher_index method)
+get_cipher_of_type(enum cipher_index method)
 {
     if (method >= SALSA20) {
         return NULL;
@@ -731,7 +731,7 @@ cipher_context_init(cipher_env_t *env, cipher_ctx_t *ctx, int enc)
     }
 #endif
 
-    const cipher_core_t *cipher = get_cipher_type(method);
+    const cipher_core_t *cipher = get_cipher_of_type(method);
 
 #if defined(USE_CRYPTO_OPENSSL)
     ctx->evp = EVP_CIPHER_CTX_new();
@@ -1493,7 +1493,7 @@ enc_key_init(cipher_env_t *env, enum cipher_index method, const char *pass)
         cipher.core->iv_size    = supported_ciphers_iv_size[method];
 #endif
     } else {
-        cipher.core = (cipher_core_t *)get_cipher_type(method);
+        cipher.core = (cipher_core_t *)get_cipher_of_type(method);
     }
 
     if (cipher.core == NULL && cipher.key_len == 0) {
