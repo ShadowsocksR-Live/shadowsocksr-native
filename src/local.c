@@ -1458,6 +1458,9 @@ void
 resolve_int_cb(int dummy)
 {
     keep_resolving = 0;
+
+    LOGI("Terminated by user.");
+    exit(EXIT_SUCCESS);
 }
 
 static void
@@ -1877,8 +1880,7 @@ main(int argc, char **argv)
         for(i = 0; i < remote_num; i++) {
             server_def_t *serv = &profile->servers[i];
             char *host = remote_addr[i].host;
-            char *port = remote_addr[i].port == NULL ? remote_port :
-                         remote_addr[i].port;
+            char *port = remote_addr[i].port ? : remote_port;
 
             struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
             if (get_sockaddr(host, port, storage, 1, ipv6first) == -1) {
