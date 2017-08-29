@@ -449,7 +449,7 @@ enc_md5(const unsigned char *d, size_t n, unsigned char *md)
 }
 
 int
-cipher_iv_size(const cipher_t *cipher)
+cipher_iv_size(const struct ss_cipher *cipher)
 {
 #if defined(USE_CRYPTO_OPENSSL)
     if (cipher->core == NULL) {
@@ -466,7 +466,7 @@ cipher_iv_size(const cipher_t *cipher)
 }
 
 int
-cipher_key_size(const cipher_t *cipher)
+cipher_key_size(const struct ss_cipher *cipher)
 {
 #if defined(USE_CRYPTO_OPENSSL)
     if (cipher->core == NULL) {
@@ -516,7 +516,7 @@ bytes_to_key_with_size(const char *pass, size_t len, uint8_t *md, size_t md_size
 }
 
 int
-bytes_to_key(const cipher_t *cipher, const digest_type_t *md,
+bytes_to_key(const struct ss_cipher *cipher, const digest_type_t *md,
              const uint8_t *pass, uint8_t *key)
 {
     size_t datal;
@@ -1466,8 +1466,7 @@ enc_key_init(cipher_env_t *env, enum cipher_index method, const char *pass)
     cipher_core_t cipher_info;
 #endif
 
-    cipher_t cipher = { NULL };
-    memset(&cipher, 0, sizeof(cipher_t));
+    struct ss_cipher cipher = { NULL };
 
     // Initialize sodium for random generator
     if (sodium_init() == -1) {

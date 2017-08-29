@@ -153,11 +153,11 @@ typedef struct _cipher_ctx {
     uint8_t iv[MAX_IV_LENGTH];
 } cipher_ctx_t;
 
-typedef struct _cipher {
+struct ss_cipher {
     cipher_core_t *core;
     size_t iv_len;
     size_t key_len;
-} cipher_t;
+};
 
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
