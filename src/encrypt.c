@@ -452,16 +452,16 @@ int
 cipher_iv_size(const cipher_t *cipher)
 {
 #if defined(USE_CRYPTO_OPENSSL)
-    if (cipher->info == NULL) {
+    if (cipher->core == NULL) {
         return cipher->iv_len;
     } else {
-        return EVP_CIPHER_iv_length(cipher->info);
+        return EVP_CIPHER_iv_length(cipher->core);
     }
 #elif defined(USE_CRYPTO_POLARSSL) || defined(USE_CRYPTO_MBEDTLS)
     if (cipher == NULL) {
         return 0;
     }
-    return cipher->info->iv_size;
+    return cipher->core->iv_size;
 #endif
 }
 
@@ -469,21 +469,21 @@ int
 cipher_key_size(const cipher_t *cipher)
 {
 #if defined(USE_CRYPTO_OPENSSL)
-    if (cipher->info == NULL) {
+    if (cipher->core == NULL) {
         return (int) cipher->key_len;
     } else {
-        return EVP_CIPHER_key_length(cipher->info);
+        return EVP_CIPHER_key_length(cipher->core);
     }
 #elif defined(USE_CRYPTO_POLARSSL)
     if (cipher == NULL) {
         return 0;
     }
     /* Override PolarSSL 32 bit default key size with sane 128 bit default */
-    if (cipher->info->base != NULL && POLARSSL_CIPHER_ID_BLOWFISH ==
-        cipher->info->base->cipher) {
+    if (cipher->core->base != NULL && POLARSSL_CIPHER_ID_BLOWFISH ==
+        cipher->core->base->cipher) {
         return 128 / 8;
     }
-    return cipher->info->key_length / 8;
+    return cipher->core->key_length / 8;
 #elif defined(USE_CRYPTO_MBEDTLS)
     /*
      * Semi-API changes (technically public, morally private)
@@ -497,7 +497,7 @@ cipher_key_size(const cipher_t *cipher)
         return 0;
     }
     /* From Version 1.2.7 released 2013-04-13 Default Blowfish keysize is now 128-bits */
-    return cipher->info->key_bitlen / 8;
+    return cipher->core->key_bitlen / 8;
 #endif
 }
 
@@ -643,7 +643,7 @@ rand_bytes(uint8_t *output, int len)
     return 0;
 }
 
-const cipher_kt_t *
+const cipher_core_t *
 get_cipher_type(enum cipher_index method)
 {
     if (method >= SALSA20) {
@@ -731,7 +731,7 @@ cipher_context_init(cipher_env_t *env, cipher_ctx_t *ctx, int enc)
     }
 #endif
 
-    const cipher_kt_t *cipher = get_cipher_type(method);
+    const cipher_core_t *cipher = get_cipher_type(method);
 
 #if defined(USE_CRYPTO_OPENSSL)
     ctx->evp = EVP_CIPHER_CTX_new();
@@ -1463,7 +1463,7 @@ enc_key_init(cipher_env_t *env, enum cipher_index method, const char *pass)
 #if defined(USE_CRYPTO_OPENSSL)
     OpenSSL_add_all_algorithms();
 #else
-    cipher_kt_t cipher_info;
+    cipher_core_t cipher_info;
 #endif
 
     cipher_t cipher = { NULL };
@@ -1476,35 +1476,35 @@ enc_key_init(cipher_env_t *env, enum cipher_index method, const char *pass)
 
     if (method == SALSA20 || method == CHACHA20 || method == CHACHA20IETF) {
 #if defined(USE_CRYPTO_OPENSSL)
-        cipher.info    = NULL;
+        cipher.core    = NULL;
         cipher.key_len = supported_ciphers_key_size[method];
         cipher.iv_len  = supported_ciphers_iv_size[method];
 #endif
 #if defined(USE_CRYPTO_POLARSSL)
-        cipher.info             = &cipher_info;
-        cipher.info->base       = NULL;
-        cipher.info->key_length = supported_ciphers_key_size[method] * 8;
-        cipher.info->iv_size    = supported_ciphers_iv_size[method];
+        cipher.core             = &cipher_info;
+        cipher.core->base       = NULL;
+        cipher.core->key_length = supported_ciphers_key_size[method] * 8;
+        cipher.core->iv_size    = supported_ciphers_iv_size[method];
 #endif
 #if defined(USE_CRYPTO_MBEDTLS)
         // XXX: key_length changed to key_bitlen in mbed TLS 2.0.0
-        cipher.info             = &cipher_info;
-        cipher.info->base       = NULL;
-        cipher.info->key_bitlen = supported_ciphers_key_size[method] * 8;
-        cipher.info->iv_size    = supported_ciphers_iv_size[method];
+        cipher.core             = &cipher_info;
+        cipher.core->base       = NULL;
+        cipher.core->key_bitlen = supported_ciphers_key_size[method] * 8;
+        cipher.core->iv_size    = supported_ciphers_iv_size[method];
 #endif
     } else {
-        cipher.info = (cipher_kt_t *)get_cipher_type(method);
+        cipher.core = (cipher_core_t *)get_cipher_type(method);
     }
 
-    if (cipher.info == NULL && cipher.key_len == 0) {
+    if (cipher.core == NULL && cipher.key_len == 0) {
         do {
 #if defined(USE_CRYPTO_POLARSSL) && defined(USE_CRYPTO_APPLECC)
             if (supported_ciphers_applecc[method] != kCCAlgorithmInvalid) {
                 cipher_info.base       = NULL;
                 cipher_info.key_length = supported_ciphers_key_size[method] * 8;
                 cipher_info.iv_size    = supported_ciphers_iv_size[method];
-                cipher.info            = (cipher_kt_t *)&cipher_info;
+                cipher.core            = (cipher_core_t *)&cipher_info;
                 break;
             }
 #endif
@@ -1514,7 +1514,7 @@ enc_key_init(cipher_env_t *env, enum cipher_index method, const char *pass)
                 cipher_info.base       = NULL;
                 cipher_info.key_bitlen = supported_ciphers_key_size[method] * 8;
                 cipher_info.iv_size    = supported_ciphers_iv_size[method];
-                cipher.info            = (cipher_kt_t *)&cipher_info;
+                cipher.core            = (cipher_core_t *)&cipher_info;
                 break;
             }
 #endif

@@ -47,7 +47,7 @@
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 #include <openssl/md5.h>
-typedef EVP_CIPHER cipher_kt_t;
+typedef EVP_CIPHER cipher_core_t;
 typedef EVP_CIPHER_CTX cipher_evp_t;
 typedef EVP_MD digest_type_t;
 #define MAX_KEY_LENGTH EVP_MAX_KEY_LENGTH
@@ -58,7 +58,7 @@ typedef EVP_MD digest_type_t;
 
 #include <polarssl/cipher.h>
 #include <polarssl/md.h>
-typedef cipher_info_t cipher_kt_t;
+typedef cipher_info_t cipher_core_t;
 typedef cipher_context_t cipher_evp_t;
 typedef md_info_t digest_type_t;
 #define MAX_KEY_LENGTH 64
@@ -69,7 +69,7 @@ typedef md_info_t digest_type_t;
 
 #include <mbedtls/cipher.h>
 #include <mbedtls/md.h>
-typedef mbedtls_cipher_info_t cipher_kt_t;
+typedef mbedtls_cipher_info_t cipher_core_t;
 typedef mbedtls_cipher_context_t cipher_evp_t;
 typedef mbedtls_md_info_t digest_type_t;
 #define MAX_KEY_LENGTH 64
@@ -154,7 +154,7 @@ typedef struct _cipher_ctx {
 } cipher_ctx_t;
 
 typedef struct _cipher {
-    cipher_kt_t *info;
+    cipher_core_t *core;
     size_t iv_len;
     size_t key_len;
 } cipher_t;
