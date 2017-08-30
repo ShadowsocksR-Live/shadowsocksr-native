@@ -47,6 +47,10 @@ int init_udprelay(const char *server_host, const char *server_port,
 
 void free_udprelay(void);
 
+#ifndef __weak_ptr
+#define __weak_ptr
+#endif
+
 typedef struct server_def {
     char *hostname;
     char *host;

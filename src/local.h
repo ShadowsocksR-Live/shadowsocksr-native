@@ -52,7 +52,7 @@ struct listen_ctx_t {
 struct server_ctx_t {
     ev_io io;
     int connected;
-    struct server_t *server;
+    __weak_ptr struct server_t *server;
 };
 
 typedef struct remote_ctx {
@@ -84,7 +84,7 @@ struct server_t {
     struct enc_ctx *d_ctx;
     struct server_ctx_t *recv_ctx;
     struct server_ctx_t *send_ctx;
-    struct listen_ctx_t *listener;
+    __weak_ptr struct listen_ctx_t *listener;
     remote_t *remote;
 
     struct ss_buffer *buf;
