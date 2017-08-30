@@ -1466,20 +1466,20 @@ resolve_int_cb(int dummy)
 }
 
 static void
-init_obfs(struct server_env_t *serv, const char *protocol, const char *protocol_param, const char *obfs, const char *obfs_param)
+init_obfs(struct server_env_t *env, const char *protocol, const char *protocol_param, const char *obfs, const char *obfs_param)
 {
-    serv->protocol_name = ss_strdup(protocol);
-    serv->protocol_param = ss_strdup(protocol_param);
-    serv->protocol_plugin = new_obfs_class(protocol);
-    serv->obfs_name = ss_strdup(obfs);
-    serv->obfs_param = ss_strdup(obfs_param);
-    serv->obfs_plugin = new_obfs_class(obfs);
+    env->protocol_name = ss_strdup(protocol);
+    env->protocol_param = ss_strdup(protocol_param);
+    env->protocol_plugin = new_obfs_class(protocol);
+    env->obfs_name = ss_strdup(obfs);
+    env->obfs_param = ss_strdup(obfs_param);
+    env->obfs_plugin = new_obfs_class(obfs);
 
-    if (serv->obfs_plugin) {
-        serv->obfs_global = serv->obfs_plugin->init_data();
+    if (env->obfs_plugin) {
+        env->obfs_global = env->obfs_plugin->init_data();
     }
-    if (serv->protocol_plugin) {
-        serv->protocol_global = serv->protocol_plugin->init_data();
+    if (env->protocol_plugin) {
+        env->protocol_global = env->protocol_plugin->init_data();
     }
 }
 
