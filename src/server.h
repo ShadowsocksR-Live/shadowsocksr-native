@@ -33,7 +33,7 @@
 
 #include "common.h"
 
-struct ss_listen_ctx {
+struct listen_ctx_t {
     ev_io io;
     int fd;
     int timeout;
@@ -62,7 +62,7 @@ typedef struct server {
     struct enc_ctx *d_ctx;
     struct server_ctx_t *recv_ctx;
     struct server_ctx_t *send_ctx;
-    struct ss_listen_ctx *listen_ctx;
+    struct listen_ctx_t *listen_ctx;
     struct remote *remote;
 
     struct ResolvQuery *query;

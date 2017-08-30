@@ -30,7 +30,7 @@
 
 #include "common.h"
 
-struct ss_listen_ctx {
+struct listen_ctx_t {
     ev_io io;
 
     struct cork_dllist_item entries; // for inactive profile list
@@ -88,7 +88,7 @@ typedef struct server {
     struct enc_ctx *d_ctx;
     struct server_ctx_t *recv_ctx;
     struct server_ctx_t *send_ctx;
-    struct ss_listen_ctx *listener;
+    struct listen_ctx_t *listener;
     remote_t *remote;
 
     char *hostname;

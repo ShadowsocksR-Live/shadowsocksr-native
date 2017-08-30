@@ -30,7 +30,7 @@
 
 #include "common.h"
 
-struct ss_listen_ctx {
+struct listen_ctx_t {
     ev_io io;
     ss_host_port tunnel_addr;
     char *iface;
