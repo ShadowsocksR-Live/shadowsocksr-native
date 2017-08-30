@@ -42,12 +42,12 @@ struct ss_listen_ctx {
     struct ev_loop *loop;
 };
 
-typedef struct server_ctx {
+struct server_ctx_t {
     ev_io io;
     ev_timer watcher;
     int connected;
     struct server *server;
-} server_ctx_t;
+};
 
 typedef struct server {
     int fd;
@@ -60,8 +60,8 @@ typedef struct server {
 
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;
-    struct server_ctx *recv_ctx;
-    struct server_ctx *send_ctx;
+    struct server_ctx_t *recv_ctx;
+    struct server_ctx_t *send_ctx;
     struct ss_listen_ctx *listen_ctx;
     struct remote *remote;
 

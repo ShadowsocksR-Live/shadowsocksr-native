@@ -184,7 +184,7 @@ create_and_bind(const char *addr, const char *port)
 static void
 server_recv_cb(EV_P_ ev_io *w, int revents)
 {
-    server_ctx_t *server_recv_ctx = (server_ctx_t *)w;
+    struct server_ctx_t *server_recv_ctx = (struct server_ctx_t *)w;
     server_t *server              = server_recv_ctx->server;
     remote_t *remote              = server->remote;
     server_def_t *server_env = server->server_env;
@@ -321,7 +321,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 static void
 server_send_cb(EV_P_ ev_io *w, int revents)
 {
-    server_ctx_t *server_send_ctx = (server_ctx_t *)w;
+    struct server_ctx_t *server_send_ctx = (struct server_ctx_t *)w;
     server_t *server              = server_send_ctx->server;
     remote_t *remote              = server->remote;
     if (server->buf->len == 0) {
@@ -702,12 +702,12 @@ new_server(int fd, struct ss_listen_ctx* profile) {
     memset(server, 0, sizeof(server_t));
 
     server->listener = profile;
-    server->recv_ctx = ss_malloc(sizeof(server_ctx_t));
-    server->send_ctx = ss_malloc(sizeof(server_ctx_t));
+    server->recv_ctx = ss_malloc(sizeof(struct server_ctx_t));
+    server->send_ctx = ss_malloc(sizeof(struct server_ctx_t));
     server->buf = ss_malloc(sizeof(struct ss_buffer));
     buffer_alloc(server->buf, BUF_SIZE);
-    memset(server->recv_ctx, 0, sizeof(server_ctx_t));
-    memset(server->send_ctx, 0, sizeof(server_ctx_t));
+    memset(server->recv_ctx, 0, sizeof(struct server_ctx_t));
+    memset(server->send_ctx, 0, sizeof(struct server_ctx_t));
     server->recv_ctx->connected = 0;
     server->send_ctx->connected = 0;
     server->fd = fd;

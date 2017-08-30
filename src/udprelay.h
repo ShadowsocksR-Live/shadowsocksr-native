@@ -42,7 +42,7 @@
 
 #define DEFAULT_PACKET_SIZE MAX_UDP_PACKET_SIZE // 1492 - 1 - 28 - 2 - 64 = 1397, the default MTU for UDP relay
 
-typedef struct server_ctx {
+struct server_ctx_t {
     ev_io io;
     int fd;
 //    int method;
@@ -62,7 +62,7 @@ typedef struct server_ctx {
     obfs *protocol;
     obfs_class *protocol_plugin;
     void *protocol_global;
-} server_ctx_t;
+};
 
 #ifdef MODULE_REMOTE
 typedef struct query_ctx {
@@ -71,7 +71,7 @@ typedef struct query_ctx {
     struct ss_buffer *buf;
     int addr_header_len;
     char addr_header[384];
-    struct server_ctx *server_ctx;
+    struct server_ctx_t *server_ctx;
     struct remote_ctx *remote_ctx;
 } query_ctx_t;
 #endif
@@ -87,7 +87,7 @@ typedef struct remote_ctx {
 #ifdef MODULE_REMOTE
     struct sockaddr_storage dst_addr;
 #endif
-    struct server_ctx *server_ctx;
+    struct server_ctx_t *server_ctx;
 } remote_ctx_t;
 
 #endif // _UDPRELAY_H

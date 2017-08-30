@@ -293,7 +293,7 @@ free_connections(struct ev_loop *loop)
 static void
 server_recv_cb(EV_P_ ev_io *w, int revents)
 {
-    server_ctx_t *server_recv_ctx = (server_ctx_t *)w;
+    struct server_ctx_t *server_recv_ctx = (struct server_ctx_t *)w;
     server_t *server              = server_recv_ctx->server;
     remote_t *remote              = server->remote;
     struct ss_buffer *buf;
@@ -927,7 +927,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 static void
 server_send_cb(EV_P_ ev_io *w, int revents)
 {
-    server_ctx_t *server_send_ctx = (server_ctx_t *)w;
+    struct server_ctx_t *server_send_ctx = (struct server_ctx_t *)w;
     server_t *server              = server_send_ctx->server;
     remote_t *remote              = server->remote;
     if (server->buf->len == 0) {
@@ -1249,8 +1249,8 @@ new_server(int fd, struct ss_listen_ctx *profile)
     server_t *server = ss_malloc(sizeof(server_t));
 
     server->listener = profile;
-    server->recv_ctx            = ss_malloc(sizeof(server_ctx_t));
-    server->send_ctx            = ss_malloc(sizeof(server_ctx_t));
+    server->recv_ctx            = ss_malloc(sizeof(struct server_ctx_t));
+    server->send_ctx            = ss_malloc(sizeof(struct server_ctx_t));
     server->buf                 = ss_malloc(sizeof(struct ss_buffer));
     buffer_alloc(server->buf, BUF_SIZE);
     server->stage               = STAGE_INIT;

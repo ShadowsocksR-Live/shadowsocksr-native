@@ -49,11 +49,11 @@ struct ss_listen_ctx {
     server_def_t servers[MAX_SERVER_NUM];
 };
 
-typedef struct server_ctx {
+struct server_ctx_t {
     ev_io io;
     int connected;
     struct server *server;
-} server_ctx_t;
+};
 
 typedef struct remote_ctx {
     ev_io io;
@@ -82,8 +82,8 @@ typedef struct server {
     enum net_stage stage;
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;
-    server_ctx_t *recv_ctx;
-    server_ctx_t *send_ctx;
+    struct server_ctx_t *recv_ctx;
+    struct server_ctx_t *send_ctx;
     struct ss_listen_ctx *listener;
     remote_t *remote;
 

@@ -585,7 +585,7 @@ connect_to_remote(EV_P_ struct addrinfo *res,
 static void
 server_recv_cb(EV_P_ ev_io *w, int revents)
 {
-    server_ctx_t *server_recv_ctx = (server_ctx_t *)w;
+    struct server_ctx_t *server_recv_ctx = (struct server_ctx_t *)w;
     server_t *server              = server_recv_ctx->server;
     remote_t *remote              = NULL;
 
@@ -921,7 +921,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 static void
 server_send_cb(EV_P_ ev_io *w, int revents)
 {
-    server_ctx_t *server_send_ctx = (server_ctx_t *)w;
+    struct server_ctx_t *server_send_ctx = (struct server_ctx_t *)w;
     server_t *server              = server_send_ctx->server;
     remote_t *remote              = server->remote;
 
@@ -982,8 +982,8 @@ block_list_clear_cb(EV_P_ ev_timer *watcher, int revents)
 static void
 server_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 {
-    server_ctx_t *server_ctx
-        = cork_container_of(watcher, server_ctx_t, watcher);
+    struct server_ctx_t *server_ctx
+        = cork_container_of(watcher, struct server_ctx_t, watcher);
     server_t *server = server_ctx->server;
     remote_t *remote = server->remote;
 
@@ -1307,12 +1307,12 @@ new_server(int fd, struct ss_listen_ctx *listener)
 
     memset(server, 0, sizeof(server_t));
 
-    server->recv_ctx            = ss_malloc(sizeof(server_ctx_t));
-    server->send_ctx            = ss_malloc(sizeof(server_ctx_t));
+    server->recv_ctx            = ss_malloc(sizeof(struct server_ctx_t));
+    server->send_ctx            = ss_malloc(sizeof(struct server_ctx_t));
     server->buf                 = ss_malloc(sizeof(struct ss_buffer));
     server->header_buf          = ss_malloc(sizeof(struct ss_buffer));
-    memset(server->recv_ctx, 0, sizeof(server_ctx_t));
-    memset(server->send_ctx, 0, sizeof(server_ctx_t));
+    memset(server->recv_ctx, 0, sizeof(struct server_ctx_t));
+    memset(server->send_ctx, 0, sizeof(struct server_ctx_t));
     buffer_alloc(server->buf, BUF_SIZE);
     buffer_alloc(server->header_buf, BUF_SIZE);
     server->fd                  = fd;

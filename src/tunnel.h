@@ -50,11 +50,11 @@ struct ss_listen_ctx {
     void **list_obfs_global;
 };
 
-typedef struct server_ctx {
+struct server_ctx_t {
     ev_io io;
     int connected;
     struct server *server;
-} server_ctx_t;
+};
 
 typedef struct server {
     int fd;
@@ -62,8 +62,8 @@ typedef struct server {
     ssize_t buf_capacity;
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;
-    struct server_ctx *recv_ctx;
-    struct server_ctx *send_ctx;
+    struct server_ctx_t *recv_ctx;
+    struct server_ctx_t *send_ctx;
     struct remote *remote;
     ss_host_port destaddr;
 

@@ -90,7 +90,7 @@ static char *hash_key(const int af, const struct sockaddr_storage *addr);
 static void query_resolve_cb(struct sockaddr *addr, void *data);
 #endif
 static void close_and_free_remote(EV_P_ remote_ctx_t *ctx);
-static remote_ctx_t *new_remote(int fd, server_ctx_t *server_ctx);
+static remote_ctx_t *new_remote(int fd, struct server_ctx_t *server_ctx);
 
 #ifdef ANDROID
 extern int log_tx_rx;
@@ -108,7 +108,7 @@ extern uint64_t rx;
 static int packet_size                               = DEFAULT_PACKET_SIZE;
 static int buf_size                                  = DEFAULT_PACKET_SIZE * 2;
 static int server_num                                = 0;
-static server_ctx_t *server_ctx_list[MAX_REMOTE_NUM] = { NULL };
+static struct server_ctx_t *server_ctx_list[MAX_REMOTE_NUM] = { NULL };
 
 #ifndef __MINGW32__
 static int
@@ -496,7 +496,7 @@ create_server_socket(const char *host, const char *port)
 }
 
 remote_ctx_t *
-new_remote(int fd, server_ctx_t *server_ctx)
+new_remote(int fd, struct server_ctx_t *server_ctx)
 {
     remote_ctx_t *ctx = ss_malloc(sizeof(remote_ctx_t));
     memset(ctx, 0, sizeof(remote_ctx_t));
@@ -511,11 +511,11 @@ new_remote(int fd, server_ctx_t *server_ctx)
     return ctx;
 }
 
-server_ctx_t *
+struct server_ctx_t *
 new_server_ctx(int fd)
 {
-    server_ctx_t *ctx = ss_malloc(sizeof(server_ctx_t));
-    memset(ctx, 0, sizeof(server_ctx_t));
+    struct server_ctx_t *ctx = ss_malloc(sizeof(struct server_ctx_t));
+    memset(ctx, 0, sizeof(struct server_ctx_t));
 
     ctx->fd = fd;
 
@@ -674,7 +674,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 {
     ssize_t r;
     remote_ctx_t *remote_ctx = (remote_ctx_t *)w;
-    server_ctx_t *server_ctx = remote_ctx->server_ctx;
+    struct server_ctx_t *server_ctx = remote_ctx->server_ctx;
 
     // server has been closed
     if (server_ctx == NULL) {
@@ -878,7 +878,7 @@ CLEAN_UP:
 static void
 server_recv_cb(EV_P_ ev_io *w, int revents)
 {
-    server_ctx_t *server_ctx = (server_ctx_t *)w;
+    struct server_ctx_t *server_ctx = (struct server_ctx_t *)w;
     struct sockaddr_storage src_addr;
     memset(&src_addr, 0, sizeof(struct sockaddr_storage));
 
@@ -1395,7 +1395,7 @@ init_udprelay(const char *server_host, const char *server_port,
     }
     setnonblocking(serverfd);
 
-    server_ctx_t *server_ctx = new_server_ctx(serverfd);
+    struct server_ctx_t *server_ctx = new_server_ctx(serverfd);
 
     server_ctx->cipher_env = cipher_env;
 #ifdef MODULE_REMOTE
@@ -1441,7 +1441,7 @@ free_udprelay()
 {
     struct ev_loop *loop = EV_DEFAULT;
     while (server_num-- > 0) {
-        server_ctx_t *server_ctx = server_ctx_list[server_num];
+        struct server_ctx_t *server_ctx = server_ctx_list[server_num];
 
 #ifdef MODULE_LOCAL
         //SSR beg
