@@ -81,7 +81,7 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_send_cb(EV_P_ ev_io *w, int revents);
 
 static remote_t *new_remote(int fd, int timeout);
-static server_t *new_server(int fd, listen_ctx_t* profile);
+static server_t *new_server(int fd, struct ss_listen_ctx* profile);
 
 static void free_remote(remote_t *remote);
 static void close_and_free_remote(EV_P_ remote_t *remote);
@@ -98,7 +98,7 @@ static int nofile = 0;
 #endif
 
 static struct cork_dllist inactive_profiles;
-static listen_ctx_t *current_profile;
+static struct ss_listen_ctx *current_profile;
 static struct cork_dllist all_connections;
 
 int
@@ -697,7 +697,7 @@ close_and_free_remote(EV_P_ remote_t *remote)
 }
 
 static server_t *
-new_server(int fd, listen_ctx_t* profile) {
+new_server(int fd, struct ss_listen_ctx* profile) {
     server_t *server = ss_malloc(sizeof(server_t));
     memset(server, 0, sizeof(server_t));
 
@@ -727,7 +727,7 @@ new_server(int fd, listen_ctx_t* profile) {
 }
 
 static void
-release_profile(listen_ctx_t *profile)
+release_profile(struct ss_listen_ctx *profile)
 {
     int i;
 
@@ -766,7 +766,7 @@ release_profile(listen_ctx_t *profile)
 }
 
 static void
-check_and_free_profile(listen_ctx_t *profile)
+check_and_free_profile(struct ss_listen_ctx *profile)
 {
     int i;
 
@@ -798,7 +798,7 @@ static void
 free_server(server_t *server)
 {
     if(server != NULL) {
-        listen_ctx_t *profile = server->listener;
+        struct ss_listen_ctx *profile = server->listener;
         server_def_t *server_env = server->server_env;
 
         cork_dllist_remove(&server->entries);
@@ -871,7 +871,7 @@ close_and_free_server(EV_P_ server_t *server)
 static void
 accept_cb(EV_P_ ev_io *w, int revents)
 {
-    listen_ctx_t *listener = (listen_ctx_t *)w;
+    struct ss_listen_ctx *listener = (struct ss_listen_ctx *)w;
     struct sockaddr_storage destaddr;
     memset(&destaddr, 0, sizeof(struct sockaddr_storage));
 
@@ -1325,8 +1325,8 @@ main(int argc, char **argv)
     signal(SIGTERM, signal_cb);
 
     // Setup profiles
-    listen_ctx_t *profile = (listen_ctx_t *)ss_malloc(sizeof(listen_ctx_t));
-    memset(profile, 0, sizeof(listen_ctx_t));
+    struct ss_listen_ctx *profile = (struct ss_listen_ctx *)ss_malloc(sizeof(struct ss_listen_ctx));
+    memset(profile, 0, sizeof(struct ss_listen_ctx));
 
     cork_dllist_init(&all_connections);
     cork_dllist_init(&profile->connections_eden);
@@ -1424,7 +1424,7 @@ main(int argc, char **argv)
 
     struct ev_loop *loop = EV_DEFAULT;
 
-    listen_ctx_t *listen_ctx = current_profile;
+    struct ss_listen_ctx *listen_ctx = current_profile;
 
     if (mode != UDP_ONLY) {
         // Setup socket

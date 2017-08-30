@@ -93,7 +93,7 @@ static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents);
 static void block_list_clear_cb(EV_P_ ev_timer *watcher, int revents);
 
 static remote_t *new_remote(int fd);
-static server_t *new_server(int fd, listen_ctx_t *listener);
+static server_t *new_server(int fd, struct ss_listen_ctx *listener);
 static remote_t *connect_to_remote(EV_P_ struct addrinfo *res,
                                    server_t *server);
 
@@ -1296,7 +1296,7 @@ close_and_free_remote(EV_P_ remote_t *remote)
 }
 
 static server_t *
-new_server(int fd, listen_ctx_t *listener)
+new_server(int fd, struct ss_listen_ctx *listener)
 {
     if (verbose) {
         server_conn++;
@@ -1424,7 +1424,7 @@ signal_cb(EV_P_ ev_signal *w, int revents)
 static void
 accept_cb(EV_P_ ev_io *w, int revents)
 {
-    listen_ctx_t *listener = (listen_ctx_t *)w;
+    struct ss_listen_ctx *listener = (struct ss_listen_ctx *)w;
     int serverfd           = accept(listener->fd, NULL, NULL);
     if (serverfd == -1) {
         ERROR("accept");
@@ -1759,7 +1759,7 @@ main(int argc, char **argv)
         LOGI("using nameserver: %s", nameservers[i]);
 
     // initialize listen context
-    listen_ctx_t listen_ctx_list[server_num];
+    struct ss_listen_ctx listen_ctx_list[server_num];
 
     // bind to each interface
     while (server_num > 0) {
@@ -1778,7 +1778,7 @@ main(int argc, char **argv)
             }
             setfastopen(listenfd);
             setnonblocking(listenfd);
-            listen_ctx_t *listen_ctx = &listen_ctx_list[index];
+            struct ss_listen_ctx *listen_ctx = &listen_ctx_list[index];
 
             // Setup proxy context
             listen_ctx->timeout = atoi(timeout);
@@ -1848,7 +1848,7 @@ main(int argc, char **argv)
 
     // Clean up
     for (int i = 0; i <= server_num; i++) {
-        listen_ctx_t *listen_ctx = &listen_ctx_list[i];
+        struct ss_listen_ctx *listen_ctx = &listen_ctx_list[i];
         if (mode != UDP_ONLY) {
             ev_io_stop(loop, &listen_ctx->io);
             close(listen_ctx->fd);

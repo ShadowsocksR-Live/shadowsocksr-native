@@ -33,7 +33,7 @@
 #include "common.h"
 
 // use this as a profile or environment
-typedef struct listen_ctx{
+struct ss_listen_ctx {
     ev_io io;
     ss_host_port tunnel_addr;
 
@@ -47,7 +47,7 @@ typedef struct listen_ctx{
 
     int server_num;
     server_def_t servers[MAX_SERVER_NUM];
-} listen_ctx_t;
+};
 
 typedef struct server_ctx {
     ev_io io;
@@ -84,7 +84,7 @@ typedef struct server {
     struct enc_ctx *d_ctx;
     server_ctx_t *recv_ctx;
     server_ctx_t *send_ctx;
-    listen_ctx_t *listener;
+    struct ss_listen_ctx *listener;
     remote_t *remote;
 
     struct ss_buffer *buf;

@@ -33,14 +33,14 @@
 
 #include "common.h"
 
-typedef struct listen_ctx {
+struct ss_listen_ctx {
     ev_io io;
     int fd;
     int timeout;
     int method;
     char *iface;
     struct ev_loop *loop;
-} listen_ctx_t;
+};
 
 typedef struct server_ctx {
     ev_io io;
@@ -62,7 +62,7 @@ typedef struct server {
     struct enc_ctx *d_ctx;
     struct server_ctx *recv_ctx;
     struct server_ctx *send_ctx;
-    struct listen_ctx *listen_ctx;
+    struct ss_listen_ctx *listen_ctx;
     struct remote *remote;
 
     struct ResolvQuery *query;

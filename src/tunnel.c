@@ -743,7 +743,7 @@ close_and_free_server(EV_P_ server_t *server)
 static void
 accept_cb(EV_P_ ev_io *w, int revents)
 {
-    struct listen_ctx *listener = (struct listen_ctx *)w;
+    struct ss_listen_ctx *listener = (struct ss_listen_ctx *)w;
     int serverfd                = accept(listener->fd, NULL, NULL);
     if (serverfd == -1) {
         ERROR("accept");
@@ -1131,8 +1131,8 @@ main(int argc, char **argv)
     enum cipher_index m = enc_init(&cipher_env, password, method);
 
     // Setup proxy context
-    struct listen_ctx listen_ctx;
-    memset(&listen_ctx, 0, sizeof(struct listen_ctx));
+    struct ss_listen_ctx listen_ctx;
+    memset(&listen_ctx, 0, sizeof(struct ss_listen_ctx));
     listen_ctx.tunnel_addr = tunnel_addr;
     listen_ctx.remote_num  = remote_num;
     listen_ctx.remote_addr = ss_malloc(sizeof(struct sockaddr *) * remote_num);

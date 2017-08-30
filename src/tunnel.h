@@ -30,7 +30,7 @@
 
 #include "common.h"
 
-typedef struct listen_ctx {
+struct ss_listen_ctx {
     ev_io io;
     ss_host_port tunnel_addr;
     char *iface;
@@ -48,7 +48,7 @@ typedef struct listen_ctx {
     char *obfs_param;
     void **list_protocol_global;
     void **list_obfs_global;
-} listen_ctx_t;
+};
 
 typedef struct server_ctx {
     ev_io io;

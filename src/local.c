@@ -141,17 +141,17 @@ static int create_and_bind(const char *addr, const char *port);
 #ifdef HAVE_LAUNCHD
 static int launch_or_create(const char *addr, const char *port);
 #endif
-static remote_t *create_remote(listen_ctx_t *profile, struct sockaddr *addr);
+static remote_t *create_remote(struct ss_listen_ctx *profile, struct sockaddr *addr);
 static void free_remote(remote_t *remote);
 static void close_and_free_remote(EV_P_ remote_t *remote);
 static void free_server(server_t *server);
 static void close_and_free_server(EV_P_ server_t *server);
 
 static remote_t *new_remote(int fd, int timeout);
-static server_t *new_server(int fd, listen_ctx_t* profile);
+static server_t *new_server(int fd, struct ss_listen_ctx *profile);
 
 static struct cork_dllist inactive_profiles;
-static listen_ctx_t *current_profile;
+static struct ss_listen_ctx *current_profile;
 static struct cork_dllist all_connections;
 
 #ifndef __MINGW32__
@@ -816,7 +816,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             // Not match ACL
             if (remote == NULL) {
                 // pick a server
-                listen_ctx_t *profile = server->listener;
+                struct ss_listen_ctx *profile = server->listener;
                 int index = rand() % profile->server_num;
                 server_def_t *server_env = &profile->servers[index];
 
@@ -1244,7 +1244,7 @@ close_and_free_remote(EV_P_ remote_t *remote)
 }
 
 static server_t *
-new_server(int fd, listen_ctx_t* profile)
+new_server(int fd, struct ss_listen_ctx *profile)
 {
     server_t *server = ss_malloc(sizeof(server_t));
 
@@ -1270,7 +1270,7 @@ new_server(int fd, listen_ctx_t* profile)
 }
 
 static void
-release_profile(listen_ctx_t *profile)
+release_profile(struct ss_listen_ctx *profile)
 {
     int i;
 
@@ -1309,7 +1309,7 @@ release_profile(listen_ctx_t *profile)
 }
 
 static void
-check_and_free_profile(listen_ctx_t *profile)
+check_and_free_profile(struct ss_listen_ctx *profile)
 {
     int i;
 
@@ -1336,7 +1336,7 @@ check_and_free_profile(listen_ctx_t *profile)
 static void
 free_server(server_t *server)
 {
-    listen_ctx_t *profile = server->listener;
+    struct ss_listen_ctx *profile = server->listener;
     server_def_t *server_env = server->server_env;
 
     cork_dllist_remove(&server->entries);
@@ -1391,7 +1391,7 @@ close_and_free_server(EV_P_ server_t *server)
 }
 
 static remote_t *
-create_remote(listen_ctx_t *profile, struct sockaddr *addr)
+create_remote(struct ss_listen_ctx *profile, struct sockaddr *addr)
 {
     int remotefd = socket(addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
 
@@ -1449,7 +1449,7 @@ signal_cb(EV_P_ ev_signal *w, int revents)
 void
 accept_cb(EV_P_ ev_io *w, int revents)
 {
-    listen_ctx_t *listener = container_of(w, listen_ctx_t, io);
+    struct ss_listen_ctx *listener = container_of(w, struct ss_listen_ctx, io);
 
     int serverfd = accept(listener->fd, NULL, NULL);
     if (serverfd == -1) {
@@ -1826,7 +1826,7 @@ main(int argc, char **argv)
 #endif
 
     // Setup profiles
-    listen_ctx_t *profile = (listen_ctx_t *)ss_malloc(sizeof(listen_ctx_t));
+    struct ss_listen_ctx *profile = (struct ss_listen_ctx *)ss_malloc(sizeof(struct ss_listen_ctx));
 
     cork_dllist_init(&profile->connections_eden);
 
@@ -1936,7 +1936,7 @@ main(int argc, char **argv)
 
     struct ev_loop *loop = EV_DEFAULT;
 
-    listen_ctx_t *listen_ctx = current_profile;
+    struct ss_listen_ctx *listen_ctx = current_profile;
 
     if (mode != UDP_ONLY) {
         // Setup socket
@@ -2092,7 +2092,7 @@ start_ss_local_server(profile_t profile)
     // Setup proxy context
     struct ev_loop *loop = EV_DEFAULT;
 
-    listen_ctx_t listen_ctx;
+    struct ss_listen_ctx listen_ctx;
     listen_ctx.server_num     = 1;
     server_def_t *serv = &listen_ctx.servers[0];
     ss_server_t server_cfg;
