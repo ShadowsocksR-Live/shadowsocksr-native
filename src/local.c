@@ -33,6 +33,7 @@
 #include <strings.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <stddef.h>
 
 #ifndef __MINGW32__
 #include <errno.h>
@@ -105,6 +106,18 @@ char *prefix;
 #include "includeobfs.h" // I don't want to modify makefile
 #include "jconf.h"
 #include "obfs/obfs.h"
+
+//#ifndef container_of
+//#define container_of(ptr, type, member) ({                      \
+//        const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
+//        (type *)( (char *)__mptr - offsetof(type,member) );})
+//#endif // container_of
+
+// container_of is CONTAINING_RECORD in Windows
+#ifndef container_of
+#define container_of(address, type, field) \
+((type *)( (char *)(address) - (char *)(&((type *)0)->field)))
+#endif // container_of
 
 static int acl       = 0;
 static int mode = TCP_ONLY;
@@ -1436,7 +1449,8 @@ signal_cb(EV_P_ ev_signal *w, int revents)
 void
 accept_cb(EV_P_ ev_io *w, int revents)
 {
-    listen_ctx_t *listener = (listen_ctx_t *)w;
+    listen_ctx_t *listener = container_of(w, listen_ctx_t, io);
+
     int serverfd = accept(listener->fd, NULL, NULL);
     if (serverfd == -1) {
         ERROR("accept");
