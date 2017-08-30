@@ -187,7 +187,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     struct server_ctx_t *server_recv_ctx = (struct server_ctx_t *)w;
     struct server_t *server = server_recv_ctx->server;
     remote_t *remote              = server->remote;
-    server_def_t *server_env = server->server_env;
+    struct server_env_t *server_env = server->server_env;
 
     ssize_t r = recv(server->fd, remote->buf->array + remote->buf->len,
                      BUF_SIZE - remote->buf->len, 0);
@@ -376,7 +376,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     remote_ctx_t *remote_recv_ctx = (remote_ctx_t *)w;
     remote_t *remote              = remote_recv_ctx->remote;
     struct server_t *server = remote->server;
-    server_def_t *server_env      = server->server_env;
+    struct server_env_t *server_env      = server->server_env;
 
     ev_timer_again(EV_A_ & remote->recv_ctx->watcher);
 
@@ -497,7 +497,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
     remote_ctx_t *remote_send_ctx = (remote_ctx_t *)w;
     remote_t *remote              = remote_send_ctx->remote;
     struct server_t *server = remote->server;
-    server_def_t *server_env = server->server_env;
+    struct server_env_t *server_env = server->server_env;
 
     if (!remote_send_ctx->connected) {
         struct sockaddr_storage addr;
@@ -733,7 +733,7 @@ release_profile(struct listen_ctx_t *profile)
 
     for(i = 0; i < profile->server_num; i++)
     {
-        server_def_t *server_env = &profile->servers[i];
+        struct server_env_t *server_env = &profile->servers[i];
 
         ss_free(server_env->host);
 
@@ -799,7 +799,7 @@ free_server(struct server_t *server)
 {
     if(server != NULL) {
         struct listen_ctx_t *profile = server->listener;
-        server_def_t *server_env = server->server_env;
+        struct server_env_t *server_env = server->server_env;
 
         cork_dllist_remove(&server->entries);
         cork_dllist_remove(&server->entries_all);
@@ -898,7 +898,7 @@ accept_cb(EV_P_ ev_io *w, int revents)
 
     // pick a server
     int index = rand() % listener->server_num;
-    server_def_t *server_env = &listener->servers[index];
+    struct server_env_t *server_env = &listener->servers[index];
 
     struct sockaddr *remote_addr = (struct sockaddr *) server_env->addr;
 
@@ -1034,7 +1034,7 @@ signal_cb(int dummy)
 }
 
 static void
-init_obfs(server_def_t *serv, char *protocol, char *protocol_param, char *obfs, char *obfs_param)
+init_obfs(struct server_env_t *serv, char *protocol, char *protocol_param, char *obfs, char *obfs_param)
 {
     serv->protocol_name = protocol;
     serv->protocol_param = protocol_param;
@@ -1340,7 +1340,7 @@ main(int argc, char **argv)
         ss_server_new_1_t *servers = &conf->server_new_1;
         profile->server_num = servers->server_num;
         for(i = 0; i < servers->server_num; i++){
-            server_def_t *serv = &profile->servers[i];
+            struct server_env_t *serv = &profile->servers[i];
             ss_server_t *serv_cfg = &servers->servers[i];
 
             struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
@@ -1389,7 +1389,7 @@ main(int argc, char **argv)
     } else {
         profile->server_num = remote_num;
         for(i = 0; i < remote_num; i++) {
-            server_def_t *serv = &profile->servers[i];
+            struct server_env_t *serv = &profile->servers[i];
             char *host = remote_addr[i].host;
             char *port = remote_addr[i].port == NULL ? remote_port :
                          remote_addr[i].port;

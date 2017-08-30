@@ -46,7 +46,7 @@ struct listen_ctx_t {
     int mptcp;
 
     int server_num;
-    server_def_t servers[MAX_SERVER_NUM];
+    struct server_env_t servers[MAX_SERVER_NUM];
 };
 
 struct server_ctx_t {
@@ -92,7 +92,7 @@ struct server_t {
     struct cork_dllist_item entries;
     struct cork_dllist_item entries_all; // for all_connections
 
-    server_def_t *server_env;
+    struct server_env_t *server_env;
 
     // SSR
     obfs *protocol;

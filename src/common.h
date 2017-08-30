@@ -51,7 +51,7 @@ void free_udprelay(void);
 #define __weak_ptr
 #endif
 
-typedef struct server_def {
+struct server_env_t {
     char *hostname;
     char *host;
     int port;
@@ -83,7 +83,7 @@ typedef struct server_def {
     char *id;
     char *group;
     int udp_over_tcp;
-} server_def_t;
+};
 
 #ifdef ANDROID
 int protect_socket(int fd);

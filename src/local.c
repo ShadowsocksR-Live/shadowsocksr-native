@@ -348,7 +348,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             // insert shadowsocks header
             if (!remote->direct) {
-                server_def_t *server_env = server->server_env;
+                struct server_env_t *server_env = server->server_env;
                 // SSR beg
                 if (server_env->protocol_plugin) {
                     obfs_class *protocol_plugin = server_env->protocol_plugin;
@@ -806,7 +806,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 // pick a server
                 struct listen_ctx_t *profile = server->listener;
                 int index = rand() % profile->server_num;
-                server_def_t *server_env = &profile->servers[index];
+                struct server_env_t *server_env = &profile->servers[index];
 
                 if (verbose) {
                     if (sni_detected || atyp == 3) {
@@ -834,7 +834,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             }
 
             if (!remote->direct) {
-                server_def_t *server_env = server->server_env;
+                struct server_env_t *server_env = server->server_env;
 
                 // expelled from eden
                 cork_dllist_remove(&server->entries);
@@ -987,7 +987,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     remote_ctx_t *remote_recv_ctx = (remote_ctx_t *)w;
     remote_t *remote              = remote_recv_ctx->remote;
     struct server_t *server       = remote->server;
-    server_def_t *server_env      = server->server_env;
+    struct server_env_t *server_env      = server->server_env;
 
     ev_timer_again(EV_A_ & remote->recv_ctx->watcher);
 
@@ -1265,7 +1265,7 @@ release_profile(struct listen_ctx_t *profile)
     ss_free(profile->iface);
 
     for(i = 0; i < profile->server_num; i++) {
-        server_def_t *server_env = &profile->servers[i];
+        struct server_env_t *server_env = &profile->servers[i];
 
         ss_free(server_env->host);
 
@@ -1325,7 +1325,7 @@ static void
 free_server(struct server_t *server)
 {
     struct listen_ctx_t *profile = server->listener;
-    server_def_t *server_env = server->server_env;
+    struct server_env_t *server_env = server->server_env;
 
     cork_dllist_remove(&server->entries);
     cork_dllist_remove(&server->entries_all);
@@ -1466,7 +1466,7 @@ resolve_int_cb(int dummy)
 }
 
 static void
-init_obfs(server_def_t *serv, const char *protocol, const char *protocol_param, const char *obfs, const char *obfs_param)
+init_obfs(struct server_env_t *serv, const char *protocol, const char *protocol_param, const char *obfs, const char *obfs_param)
 {
     serv->protocol_name = ss_strdup(protocol);
     serv->protocol_param = ss_strdup(protocol_param);
@@ -1829,7 +1829,7 @@ main(int argc, char **argv)
         ss_server_new_1_t *servers = &conf->server_new_1;
         profile->server_num = servers->server_num;
         for(i = 0; i < servers->server_num; i++) {
-            server_def_t *serv = &profile->servers[i];
+            struct server_env_t *serv = &profile->servers[i];
             ss_server_t *serv_cfg = &servers->servers[i];
 
             struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
@@ -1880,7 +1880,7 @@ main(int argc, char **argv)
     } else {
         profile->server_num = remote_num;
         for(i = 0; i < remote_num; i++) {
-            server_def_t *serv = &profile->servers[i];
+            struct server_env_t *serv = &profile->servers[i];
             char *host = remote_addr[i].host;
             char *port = remote_addr[i].port ? : remote_port;
 
@@ -2082,7 +2082,7 @@ start_ss_local_server(profile_t profile)
 
     struct listen_ctx_t listen_ctx;
     listen_ctx.server_num     = 1;
-    server_def_t *serv = &listen_ctx.servers[0];
+    struct server_env_t *serv = &listen_ctx.servers[0];
     ss_server_t server_cfg;
     ss_server_t *serv_cfg = &server_cfg;
     server_cfg.protocol = 0;
