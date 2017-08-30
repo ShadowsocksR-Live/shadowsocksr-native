@@ -53,10 +53,10 @@ struct listen_ctx_t {
 struct server_ctx_t {
     ev_io io;
     int connected;
-    struct server *server;
+    struct server_t *server;
 };
 
-typedef struct server {
+struct server_t {
     int fd;
     struct ss_buffer *buf;
     ssize_t buf_capacity;
@@ -72,7 +72,7 @@ typedef struct server {
     obfs *obfs;
     obfs_class *protocol_plugin;
     obfs_class *obfs_plugin;
-} server_t;
+};
 
 typedef struct remote_ctx {
     ev_io io;
@@ -87,7 +87,7 @@ typedef struct remote {
     ssize_t buf_capacity;
     struct remote_ctx *recv_ctx;
     struct remote_ctx *send_ctx;
-    struct server *server;
+    struct server_t *server;
     uint32_t counter;
 
     // SSR

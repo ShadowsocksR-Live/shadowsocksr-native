@@ -46,10 +46,10 @@ struct server_ctx_t {
     ev_io io;
     ev_timer watcher;
     int connected;
-    struct server *server;
+    struct server_t *server;
 };
 
-typedef struct server {
+struct server_t {
     int fd;
     enum net_stage stage;
     struct ss_buffer *buf;
@@ -68,10 +68,10 @@ typedef struct server {
     struct ResolvQuery *query;
 
     struct cork_dllist_item entries;
-} server_t;
+};
 
 typedef struct query {
-    server_t *server;
+    struct server_t *server;
     char hostname[257];
 } query_t;
 
@@ -87,7 +87,7 @@ typedef struct remote {
     ssize_t buf_capacity;
     struct remote_ctx *recv_ctx;
     struct remote_ctx *send_ctx;
-    struct server *server;
+    struct server_t *server;
 } remote_t;
 
 #endif // _SERVER_H

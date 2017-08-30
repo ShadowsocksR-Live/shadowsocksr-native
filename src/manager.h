@@ -54,7 +54,7 @@ struct manager_ctx {
 #endif
 };
 
-struct server {
+struct server_t {
     char port[8];
     char password[128];
     uint64_t traffic;

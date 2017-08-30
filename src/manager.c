@@ -93,7 +93,7 @@ setnonblocking(int fd)
 #endif
 
 static void
-build_config(char *prefix, struct server *server)
+build_config(char *prefix, struct server_t *server)
 {
     char *path    = NULL;
     int path_size = strlen(prefix) + strlen(server->port) + 20;
@@ -117,7 +117,7 @@ build_config(char *prefix, struct server *server)
 }
 
 static char *
-construct_command_line(struct manager_ctx *manager, struct server *server)
+construct_command_line(struct manager_ctx *manager, struct server_t *server)
 {
     static char cmd[BUF_SIZE];
     int i;
@@ -220,7 +220,7 @@ get_action(char *buf, int len)
     return action;
 }
 
-static struct server *
+static struct server_t *
 get_server(char *buf, int len)
 {
     char *data = get_data(buf, len);
@@ -239,8 +239,8 @@ get_server(char *buf, int len)
         return NULL;
     }
 
-    struct server *server = ss_malloc(sizeof(struct server));
-    memset(server, 0, sizeof(struct server));
+    struct server_t *server = ss_malloc(sizeof(struct server_t));
+    memset(server, 0, sizeof(struct server_t));
     if (obj->type == json_object) {
         int i = 0;
         for (i = 0; i < obj->u.object.length; i++) {
@@ -302,7 +302,7 @@ parse_traffic(char *buf, int len, char *port, uint64_t *traffic)
 }
 
 static void
-add_server(struct manager_ctx *manager, struct server *server)
+add_server(struct manager_ctx *manager, struct server_t *server)
 {
     bool new = false;
     cork_hash_table_put(server_table, (void *)server->port, (void *)server, &new, NULL, NULL);
@@ -362,7 +362,7 @@ static void
 remove_server(char *prefix, char *port)
 {
     char *old_port            = NULL;
-    struct server *old_server = NULL;
+    struct server_t *old_server = NULL;
 
     cork_hash_table_delete(server_table, (void *)port, (void **)&old_port, (void **)&old_server);
 
@@ -378,7 +378,7 @@ update_stat(char *port, uint64_t traffic)
 {
     void *ret = cork_hash_table_get(server_table, (void *)port);
     if (ret != NULL) {
-        struct server *server = (struct server *)ret;
+        struct server_t *server = (struct server_t *)ret;
         server->traffic = traffic;
     }
 }
@@ -412,7 +412,7 @@ manager_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     if (strcmp(action, "add") == 0) {
-        struct server *server = get_server(buf, r);
+        struct server_t *server = get_server(buf, r);
 
         if (server == NULL || server->port[0] == 0 || server->password[0] == 0) {
             LOGE("invalid command: %s:%s", buf, get_data(buf, r));
@@ -430,7 +430,7 @@ manager_recv_cb(EV_P_ ev_io *w, int revents)
             ERROR("add_sendto");
         }
     } else if (strcmp(action, "remove") == 0) {
-        struct server *server = get_server(buf, r);
+        struct server_t *server = get_server(buf, r);
 
         if (server == NULL || server->port[0] == 0) {
             LOGE("invalid command: %s:%s", buf, get_data(buf, r));
@@ -469,7 +469,7 @@ manager_recv_cb(EV_P_ ev_io *w, int revents)
         cork_hash_table_iterator_init(server_table, &server_iter);
 
         while ((entry = cork_hash_table_iterator_next(&server_iter)) != NULL) {
-            struct server *server = (struct server *)entry->value;
+            struct server_t *server = (struct server_t *)entry->value;
             size_t pos            = strlen(buf);
             if (pos > BUF_SIZE / 2) {
                 buf[pos - 1] = '}';
@@ -885,8 +885,8 @@ main(int argc, char **argv)
 
     if (conf != NULL) {
         for (i = 0; i < conf->server_new_1.server_num; i++) {
-            struct server *server = ss_malloc(sizeof(struct server));
-            memset(server, 0, sizeof(struct server));
+            struct server_t *server = ss_malloc(sizeof(struct server_t));
+            memset(server, 0, sizeof(struct server_t));
             //strncpy(server->port, conf->server_new_1.servers[i].server_port, 8);
             snprintf(server->port, 8, "%d", conf->server_new_1.servers[i].server_port);
             strncpy(server->password, conf->server_new_1.servers[i].password, 128);
@@ -949,7 +949,7 @@ main(int argc, char **argv)
     cork_hash_table_iterator_init(server_table, &server_iter);
 
     while ((entry = cork_hash_table_iterator_next(&server_iter)) != NULL) {
-        struct server *server = (struct server *)entry->value;
+        struct server_t *server = (struct server_t *)entry->value;
         stop_server(working_dir, server->port);
     }
 

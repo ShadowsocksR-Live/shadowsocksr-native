@@ -81,12 +81,12 @@ static void remote_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_send_cb(EV_P_ ev_io *w, int revents);
 
 static remote_t *new_remote(int fd, int timeout);
-static server_t *new_server(int fd, struct listen_ctx_t *profile);
+static struct server_t *new_server(int fd, struct listen_ctx_t *profile);
 
 static void free_remote(remote_t *remote);
 static void close_and_free_remote(EV_P_ remote_t *remote);
-static void free_server(server_t *server);
-static void close_and_free_server(EV_P_ server_t *server);
+static void free_server(struct server_t *server);
+static void close_and_free_server(EV_P_ struct server_t *server);
 
 int verbose        = 0;
 int keep_resolving = 1;
@@ -185,7 +185,7 @@ static void
 server_recv_cb(EV_P_ ev_io *w, int revents)
 {
     struct server_ctx_t *server_recv_ctx = (struct server_ctx_t *)w;
-    server_t *server              = server_recv_ctx->server;
+    struct server_t *server = server_recv_ctx->server;
     remote_t *remote              = server->remote;
     server_def_t *server_env = server->server_env;
 
@@ -322,7 +322,7 @@ static void
 server_send_cb(EV_P_ ev_io *w, int revents)
 {
     struct server_ctx_t *server_send_ctx = (struct server_ctx_t *)w;
-    server_t *server              = server_send_ctx->server;
+    struct server_t *server = server_send_ctx->server;
     remote_t *remote              = server->remote;
     if (server->buf->len == 0) {
         // close and free
@@ -362,7 +362,7 @@ remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
         = cork_container_of(watcher, remote_ctx_t, watcher);
 
     remote_t *remote = remote_ctx->remote;
-    server_t *server = remote->server;
+    struct server_t *server = remote->server;
 
     ev_timer_stop(EV_A_ watcher);
 
@@ -375,7 +375,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 {
     remote_ctx_t *remote_recv_ctx = (remote_ctx_t *)w;
     remote_t *remote              = remote_recv_ctx->remote;
-    server_t *server              = remote->server;
+    struct server_t *server = remote->server;
     server_def_t *server_env      = server->server_env;
 
     ev_timer_again(EV_A_ & remote->recv_ctx->watcher);
@@ -496,7 +496,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
 {
     remote_ctx_t *remote_send_ctx = (remote_ctx_t *)w;
     remote_t *remote              = remote_send_ctx->remote;
-    server_t *server              = remote->server;
+    struct server_t *server = remote->server;
     server_def_t *server_env = server->server_env;
 
     if (!remote_send_ctx->connected) {
@@ -696,10 +696,10 @@ close_and_free_remote(EV_P_ remote_t *remote)
     }
 }
 
-static server_t *
+static struct server_t *
 new_server(int fd, struct listen_ctx_t *profile) {
-    server_t *server = ss_malloc(sizeof(server_t));
-    memset(server, 0, sizeof(server_t));
+    struct server_t *server = ss_malloc(sizeof(struct server_t));
+    memset(server, 0, sizeof(struct server_t));
 
     server->listener = profile;
     server->recv_ctx = ss_malloc(sizeof(struct server_ctx_t));
@@ -795,7 +795,7 @@ check_and_free_profile(struct listen_ctx_t *profile)
 }
 
 static void
-free_server(server_t *server)
+free_server(struct server_t *server)
 {
     if(server != NULL) {
         struct listen_ctx_t *profile = server->listener;
@@ -858,7 +858,7 @@ free_server(server_t *server)
 }
 
 static void
-close_and_free_server(EV_P_ server_t *server)
+close_and_free_server(EV_P_ struct server_t *server)
 {
     if (server != NULL) {
         ev_io_stop(EV_A_ & server->send_ctx->io);
@@ -935,7 +935,7 @@ accept_cb(EV_P_ ev_io *w, int revents)
         }
     }
 
-    server_t *server = new_server(serverfd, listener);
+    struct server_t *server = new_server(serverfd, listener);
     remote_t *remote = new_remote(remotefd, listener->timeout);
     server->destaddr = destaddr;
     server->server_env = server_env;

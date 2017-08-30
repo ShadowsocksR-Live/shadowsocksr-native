@@ -93,14 +93,14 @@ static void server_timeout_cb(EV_P_ ev_timer *watcher, int revents);
 static void block_list_clear_cb(EV_P_ ev_timer *watcher, int revents);
 
 static remote_t *new_remote(int fd);
-static server_t *new_server(int fd, struct listen_ctx_t *listener);
+static struct server_t *new_server(int fd, struct listen_ctx_t *listener);
 static remote_t *connect_to_remote(EV_P_ struct addrinfo *res,
-                                   server_t *server);
+                                   struct server_t *server);
 
 static void free_remote(remote_t *remote);
 static void close_and_free_remote(EV_P_ remote_t *remote);
-static void free_server(server_t *server);
-static void close_and_free_server(EV_P_ server_t *server);
+static void free_server(struct server_t *server);
+static void close_and_free_server(EV_P_ struct server_t *server);
 static void server_resolve_cb(struct sockaddr *addr, void *data);
 static void query_free_cb(void *data);
 
@@ -218,7 +218,7 @@ free_connections(struct ev_loop *loop)
 {
     struct cork_dllist_item *curr, *next;
     cork_dllist_foreach_void(&connections, curr, next) {
-        server_t *server = cork_container_of(curr, server_t, entries);
+        struct server_t *server = cork_container_of(curr, struct server_t, entries);
         remote_t *remote = server->remote;
         close_and_free_server(loop, server);
         close_and_free_remote(loop, remote);
@@ -458,7 +458,7 @@ create_and_bind(const char *host, const char *port, int mptcp)
 
 static remote_t *
 connect_to_remote(EV_P_ struct addrinfo *res,
-                  server_t *server)
+                  struct server_t *server)
 {
     int sockfd;
 #ifdef SET_INTERFACE
@@ -586,7 +586,7 @@ static void
 server_recv_cb(EV_P_ ev_io *w, int revents)
 {
     struct server_ctx_t *server_recv_ctx = (struct server_ctx_t *)w;
-    server_t *server              = server_recv_ctx->server;
+    struct server_t *server              = server_recv_ctx->server;
     remote_t *remote              = NULL;
 
     int len       = server->buf->len;
@@ -922,7 +922,7 @@ static void
 server_send_cb(EV_P_ ev_io *w, int revents)
 {
     struct server_ctx_t *server_send_ctx = (struct server_ctx_t *)w;
-    server_t *server              = server_send_ctx->server;
+    struct server_t *server              = server_send_ctx->server;
     remote_t *remote              = server->remote;
 
     if (remote == NULL) {
@@ -984,7 +984,7 @@ server_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 {
     struct server_ctx_t *server_ctx
         = cork_container_of(watcher, struct server_ctx_t, watcher);
-    server_t *server = server_ctx->server;
+    struct server_t *server = server_ctx->server;
     remote_t *remote = server->remote;
 
     if (verbose) {
@@ -1020,7 +1020,7 @@ static void
 server_resolve_cb(struct sockaddr *addr, void *data)
 {
     query_t *query       = (query_t *)data;
-    server_t *server     = query->server;
+    struct server_t *server     = query->server;
     struct ev_loop *loop = server->listen_ctx->loop;
 
     server->query = NULL;
@@ -1076,7 +1076,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 {
     remote_ctx_t *remote_recv_ctx = (remote_ctx_t *)w;
     remote_t *remote              = remote_recv_ctx->remote;
-    server_t *server              = remote->server;
+    struct server_t *server              = remote->server;
 
     if (server == NULL) {
         LOGE("invalid server");
@@ -1152,7 +1152,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
 {
     remote_ctx_t *remote_send_ctx = (remote_ctx_t *)w;
     remote_t *remote              = remote_send_ctx->remote;
-    server_t *server              = remote->server;
+    struct server_t *server              = remote->server;
 
     if (server == NULL) {
         LOGE("invalid server");
@@ -1295,17 +1295,17 @@ close_and_free_remote(EV_P_ remote_t *remote)
     }
 }
 
-static server_t *
+static struct server_t *
 new_server(int fd, struct listen_ctx_t *listener)
 {
     if (verbose) {
         server_conn++;
     }
 
-    server_t *server;
-    server = ss_malloc(sizeof(server_t));
+    struct server_t *server;
+    server = ss_malloc(sizeof(struct server_t));
 
-    memset(server, 0, sizeof(server_t));
+    memset(server, 0, sizeof(struct server_t));
 
     server->recv_ctx            = ss_malloc(sizeof(struct server_ctx_t));
     server->send_ctx            = ss_malloc(sizeof(struct server_ctx_t));
@@ -1353,7 +1353,7 @@ new_server(int fd, struct listen_ctx_t *listener)
 }
 
 static void
-free_server(server_t *server)
+free_server(struct server_t *server)
 {
     cork_dllist_remove(&server->entries);
 
@@ -1390,7 +1390,7 @@ free_server(server_t *server)
 }
 
 static void
-close_and_free_server(EV_P_ server_t *server)
+close_and_free_server(EV_P_ struct server_t *server)
 {
     if (server != NULL) {
         if (server->query != NULL) {
@@ -1465,7 +1465,7 @@ accept_cb(EV_P_ ev_io *w, int revents)
         LOGI("accept a connection");
     }
 
-    server_t *server = new_server(serverfd, listener);
+    struct server_t *server = new_server(serverfd, listener);
     ev_io_start(EV_A_ & server->recv_ctx->io);
     ev_timer_start(EV_A_ & server->recv_ctx->watcher);
 }

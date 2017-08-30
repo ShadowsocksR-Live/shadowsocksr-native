@@ -52,7 +52,7 @@ struct listen_ctx_t {
 struct server_ctx_t {
     ev_io io;
     int connected;
-    struct server *server;
+    struct server_t *server;
 };
 
 typedef struct remote_ctx {
@@ -68,7 +68,7 @@ typedef struct remote {
     remote_ctx_t *recv_ctx;
     remote_ctx_t *send_ctx;
     uint32_t counter;
-    struct server *server;
+    struct server_t *server;
 
     int direct;
     struct { // direct = 1
@@ -77,7 +77,7 @@ typedef struct remote {
     } direct_addr;
 } remote_t;
 
-typedef struct server {
+struct server_t {
     int fd;
     enum net_stage stage;
     struct enc_ctx *e_ctx;
@@ -97,6 +97,6 @@ typedef struct server {
     // SSR
     obfs *protocol;
     obfs *obfs;
-} server_t;
+};
 
 #endif // _LOCAL_H
