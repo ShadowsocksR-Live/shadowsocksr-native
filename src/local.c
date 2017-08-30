@@ -118,8 +118,6 @@ static int nofile = 0;
 #endif
 #endif
 
-static void server_recv_cb(EV_P_ ev_io *w, int revents);
-static void server_send_cb(EV_P_ ev_io *w, int revents);
 static void remote_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_send_cb(EV_P_ ev_io *w, int revents);
 static void accept_cb(EV_P_ ev_io *w, int revents);
@@ -281,9 +279,9 @@ free_connections(struct ev_loop *loop)
 static void
 server_recv_cb(EV_P_ ev_io *w, int revents)
 {
-    struct server_ctx_t *server_recv_ctx = (struct server_ctx_t *)w;
-    struct server_t *server              = server_recv_ctx->server;
-    remote_t *remote              = server->remote;
+    struct server_ctx_t *server_ctx = cork_container_of(w, struct server_ctx_t, io);
+    struct server_t *server = server_ctx->server;
+    remote_t *remote = server->remote;
     struct ss_buffer *buf;
     ssize_t r;
 
@@ -307,7 +305,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             return;
         } else {
             if (verbose) {
-                ERROR("server_recv_cb_recv");
+                ERROR("server recieve callback for recv");
             }
             close_and_free_remote(EV_A_ remote);
             close_and_free_server(EV_A_ server);
@@ -483,7 +481,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             } else {
                 if (r > 0 && remote->buf->len == 0) {
                     remote->buf->idx = 0;
-                    ev_io_stop(EV_A_ & server_recv_ctx->io);
+                    ev_io_stop(EV_A_ & server_ctx->io);
                     return;
                 }
                 int s = send(remote->fd, remote->buf->array, remote->buf->len, 0);
@@ -494,7 +492,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                         ev_io_server_recv(EV_A_ server, remote);
                         return;
                     } else {
-                        ERROR("server_recv_cb_send");
+                        ERROR("server recieve callback for send");
                         close_and_free_remote(EV_A_ remote);
                         close_and_free_server(EV_A_ server);
                         return;
@@ -915,34 +913,34 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 static void
 server_send_cb(EV_P_ ev_io *w, int revents)
 {
-    struct server_ctx_t *server_send_ctx = (struct server_ctx_t *)w;
-    struct server_t *server              = server_send_ctx->server;
-    remote_t *remote              = server->remote;
-    if (server->buf->len == 0) {
+    struct server_ctx_t *server_ctx = cork_container_of(w, struct server_ctx_t, io);
+    struct server_t *server = server_ctx->server;
+    remote_t *remote = server->remote;
+    struct ss_buffer *buf = server->buf;
+    if (buf->len == 0) {
         // close and free
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
     } else {
         // has data to send
-        ssize_t s = send(server->fd, server->buf->array + server->buf->idx,
-                         server->buf->len, 0);
+        ssize_t s = send(server->fd, buf->array + buf->idx, buf->len, 0);
         if (s == -1) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                ERROR("server_send_cb_send");
+                ERROR("server send callback for send");
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
             }
             return;
-        } else if (s < (ssize_t)(server->buf->len)) {
+        } else if (s < (ssize_t)(buf->len)) {
             // partly sent, move memory, wait for the next time to send
-            server->buf->len -= s;
-            server->buf->idx += s;
+            buf->len -= s;
+            buf->idx += s;
             return;
         } else {
             // all sent out, wait for reading
-            server->buf->len = 0;
-            server->buf->idx = 0;
+            buf->len = 0;
+            buf->idx = 0;
             ev_io_server_send(EV_A_ server, remote);
             return;
         }
