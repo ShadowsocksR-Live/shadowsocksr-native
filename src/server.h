@@ -75,18 +75,18 @@ typedef struct query {
     char hostname[257];
 } query_t;
 
-typedef struct remote_ctx {
+struct remote_ctx_t {
     ev_io io;
     int connected;
     struct remote *remote;
-} remote_ctx_t;
+};
 
 typedef struct remote {
     int fd;
     struct ss_buffer *buf;
     ssize_t buf_capacity;
-    struct remote_ctx *recv_ctx;
-    struct remote_ctx *send_ctx;
+    struct remote_ctx_t *recv_ctx;
+    struct remote_ctx_t *send_ctx;
     struct server_t *server;
 } remote_t;
 

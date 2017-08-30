@@ -358,8 +358,8 @@ server_send_cb(EV_P_ ev_io *w, int revents)
 static void
 remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 {
-    remote_ctx_t *remote_ctx
-        = cork_container_of(watcher, remote_ctx_t, watcher);
+    struct remote_ctx_t *remote_ctx
+        = cork_container_of(watcher, struct remote_ctx_t, watcher);
 
     remote_t *remote = remote_ctx->remote;
     struct server_t *server = remote->server;
@@ -373,7 +373,7 @@ remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 static void
 remote_recv_cb(EV_P_ ev_io *w, int revents)
 {
-    remote_ctx_t *remote_recv_ctx = (remote_ctx_t *)w;
+    struct remote_ctx_t *remote_recv_ctx = (struct remote_ctx_t *)w;
     remote_t *remote              = remote_recv_ctx->remote;
     struct server_t *server = remote->server;
     struct server_env_t *server_env      = server->server_env;
@@ -494,7 +494,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 static void
 remote_send_cb(EV_P_ ev_io *w, int revents)
 {
-    remote_ctx_t *remote_send_ctx = (remote_ctx_t *)w;
+    struct remote_ctx_t *remote_send_ctx = (struct remote_ctx_t *)w;
     remote_t *remote              = remote_send_ctx->remote;
     struct server_t *server = remote->server;
     struct server_env_t *server_env = server->server_env;
@@ -645,11 +645,11 @@ new_remote(int fd, int timeout)
     memset(remote, 0, sizeof(remote_t));
 
     remote->buf                 = ss_malloc(sizeof(struct ss_buffer));
-    remote->recv_ctx            = ss_malloc(sizeof(remote_ctx_t));
-    remote->send_ctx            = ss_malloc(sizeof(remote_ctx_t));
+    remote->recv_ctx            = ss_malloc(sizeof(struct remote_ctx_t));
+    remote->send_ctx            = ss_malloc(sizeof(struct remote_ctx_t));
     buffer_alloc(remote->buf, BUF_SIZE);
-    memset(remote->recv_ctx, 0, sizeof(remote_ctx_t));
-    memset(remote->send_ctx, 0, sizeof(remote_ctx_t));
+    memset(remote->recv_ctx, 0, sizeof(struct remote_ctx_t));
+    memset(remote->send_ctx, 0, sizeof(struct remote_ctx_t));
     remote->recv_ctx->connected = 0;
     remote->send_ctx->connected = 0;
     remote->fd                  = fd;

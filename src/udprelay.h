@@ -72,11 +72,11 @@ typedef struct query_ctx {
     int addr_header_len;
     char addr_header[384];
     struct server_ctx_t *server_ctx;
-    struct remote_ctx *remote_ctx;
+    struct remote_ctx_t *remote_ctx;
 } query_ctx_t;
 #endif
 
-typedef struct remote_ctx {
+struct remote_ctx_t {
     ev_io io;
     ev_timer watcher;
     int af;
@@ -88,6 +88,6 @@ typedef struct remote_ctx {
     struct sockaddr_storage dst_addr;
 #endif
     struct server_ctx_t *server_ctx;
-} remote_ctx_t;
+};
 
 #endif // _UDPRELAY_H

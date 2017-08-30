@@ -89,8 +89,8 @@ static char *hash_key(const int af, const struct sockaddr_storage *addr);
 #ifdef MODULE_REMOTE
 static void query_resolve_cb(struct sockaddr *addr, void *data);
 #endif
-static void close_and_free_remote(EV_P_ remote_ctx_t *ctx);
-static remote_ctx_t *new_remote(int fd, struct server_ctx_t *server_ctx);
+static void close_and_free_remote(EV_P_ struct remote_ctx_t *ctx);
+static struct remote_ctx_t *new_remote(int fd, struct server_ctx_t *server_ctx);
 
 #ifdef ANDROID
 extern int log_tx_rx;
@@ -495,11 +495,11 @@ create_server_socket(const char *host, const char *port)
     return server_sock;
 }
 
-remote_ctx_t *
+struct remote_ctx_t *
 new_remote(int fd, struct server_ctx_t *server_ctx)
 {
-    remote_ctx_t *ctx = ss_malloc(sizeof(remote_ctx_t));
-    memset(ctx, 0, sizeof(remote_ctx_t));
+    struct remote_ctx_t *ctx = ss_malloc(sizeof(struct remote_ctx_t));
+    memset(ctx, 0, sizeof(struct remote_ctx_t));
 
     ctx->fd         = fd;
     ctx->server_ctx = server_ctx;
@@ -556,7 +556,7 @@ close_and_free_query(EV_P_ struct query_ctx *ctx)
 #endif
 
 void
-close_and_free_remote(EV_P_ remote_ctx_t *ctx)
+close_and_free_remote(EV_P_ struct remote_ctx_t *ctx)
 {
     if (ctx != NULL) {
         ev_timer_stop(EV_A_ & ctx->watcher);
@@ -569,8 +569,8 @@ close_and_free_remote(EV_P_ remote_ctx_t *ctx)
 static void
 remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 {
-    remote_ctx_t *remote_ctx
-        = cork_container_of(watcher, remote_ctx_t, watcher);
+    struct remote_ctx_t *remote_ctx
+        = cork_container_of(watcher, struct remote_ctx_t, watcher);
 
     if (verbose) {
         LOGI("[udp] connection timeout");
@@ -596,7 +596,7 @@ query_resolve_cb(struct sockaddr *addr, void *data)
     if (addr == NULL) {
         LOGE("[udp] udns returned an error");
     } else {
-        remote_ctx_t *remote_ctx = query_ctx->remote_ctx;
+        struct remote_ctx_t *remote_ctx = query_ctx->remote_ctx;
         int cache_hit            = 0;
 
         // Lookup in the conn cache
@@ -673,7 +673,7 @@ static void
 remote_recv_cb(EV_P_ ev_io *w, int revents)
 {
     ssize_t r;
-    remote_ctx_t *remote_ctx = (remote_ctx_t *)w;
+    struct remote_ctx_t *remote_ctx = (struct remote_ctx_t *)w;
     struct server_ctx_t *server_ctx = remote_ctx->server_ctx;
 
     // server has been closed
@@ -1098,7 +1098,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     struct cache *conn_cache = server_ctx->conn_cache;
 
-    remote_ctx_t *remote_ctx = NULL;
+    struct remote_ctx_t *remote_ctx = NULL;
     cache_lookup(conn_cache, key, HASH_KEY_LEN, (void *)&remote_ctx);
 
     if (remote_ctx != NULL) {
@@ -1354,7 +1354,7 @@ CLEAN_UP:
 void
 free_cb(void *key, void *element)
 {
-    remote_ctx_t *remote_ctx = (remote_ctx_t *)element;
+    struct remote_ctx_t *remote_ctx = (struct remote_ctx_t *)element;
 
     if (verbose) {
         LOGI("[udp] one connection freed");

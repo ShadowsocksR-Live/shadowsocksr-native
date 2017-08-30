@@ -61,18 +61,18 @@ struct server_ctx_t {
     struct server_t *server;
 };
 
-typedef struct remote_ctx {
+struct remote_ctx_t {
     ev_io io;
     ev_timer watcher;
     int connected;
     struct remote *remote;
-} remote_ctx_t;
+};
 
 typedef struct remote {
     int fd;
     struct ss_buffer *buf;
-    struct remote_ctx *recv_ctx;
-    struct remote_ctx *send_ctx;
+    struct remote_ctx_t *recv_ctx;
+    struct remote_ctx_t *send_ctx;
     uint32_t counter;
     struct server_t *server;
 

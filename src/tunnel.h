@@ -74,19 +74,19 @@ struct server_t {
     obfs_class *obfs_plugin;
 };
 
-typedef struct remote_ctx {
+struct remote_ctx_t {
     ev_io io;
     ev_timer watcher;
     int connected;
     struct remote *remote;
-} remote_ctx_t;
+};
 
 typedef struct remote {
     int fd;
     struct ss_buffer *buf;
     ssize_t buf_capacity;
-    struct remote_ctx *recv_ctx;
-    struct remote_ctx *send_ctx;
+    struct remote_ctx_t *recv_ctx;
+    struct remote_ctx_t *send_ctx;
     struct server_t *server;
     uint32_t counter;
 

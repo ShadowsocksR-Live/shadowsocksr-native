@@ -55,18 +55,18 @@ struct server_ctx_t {
     __weak_ptr struct server_t *server;
 };
 
-typedef struct remote_ctx {
+struct remote_ctx_t {
     ev_io io;
     ev_timer watcher;
     int connected;
     struct remote *remote;
-} remote_ctx_t;
+};
 
 typedef struct remote {
     int fd;
     struct ss_buffer *buf;
-    remote_ctx_t *recv_ctx;
-    remote_ctx_t *send_ctx;
+    struct remote_ctx_t *recv_ctx;
+    struct remote_ctx_t *send_ctx;
     uint32_t counter;
     struct server_t *server;
 
