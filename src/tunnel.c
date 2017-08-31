@@ -454,8 +454,8 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
             ev_io_stop(EV_A_ & remote_send_ctx->io);
             ev_timer_stop(EV_A_ & remote_send_ctx->watcher);
 
-            struct ss_buffer ss_addr_to_send;
-            struct ss_buffer *abuf = &ss_addr_to_send;
+            struct buffer_t ss_addr_to_send;
+            struct buffer_t *abuf = &ss_addr_to_send;
             buffer_alloc(abuf, BUF_SIZE);
 
             ss_host_port *sa = &server->destaddr;
@@ -607,7 +607,7 @@ new_remote(int fd, int timeout)
 
     memset(remote, 0, sizeof(remote_t));
 
-    remote->buf                 = ss_malloc(sizeof(struct ss_buffer));
+    remote->buf                 = ss_malloc(sizeof(struct buffer_t));
     remote->recv_ctx            = ss_malloc(sizeof(struct remote_ctx_t));
     remote->send_ctx            = ss_malloc(sizeof(struct remote_ctx_t));
     buffer_alloc(remote->buf, BUF_SIZE);
@@ -662,7 +662,7 @@ new_server(int fd, int method)
     struct server_t *server = ss_malloc(sizeof(struct server_t));
     memset(server, 0, sizeof(struct server_t));
 
-    server->buf                 = ss_malloc(sizeof(struct ss_buffer));
+    server->buf                 = ss_malloc(sizeof(struct buffer_t));
     server->recv_ctx            = ss_malloc(sizeof(struct server_ctx_t));
     server->send_ctx            = ss_malloc(sizeof(struct server_ctx_t));
     buffer_alloc(server->buf, BUF_SIZE);

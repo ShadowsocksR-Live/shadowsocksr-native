@@ -70,7 +70,7 @@ struct remote_ctx_t {
 
 typedef struct remote {
     int fd;
-    struct ss_buffer *buf;
+    struct buffer_t *buf;
     struct remote_ctx_t *recv_ctx;
     struct remote_ctx_t *send_ctx;
     uint32_t counter;
@@ -82,7 +82,7 @@ typedef struct remote {
 
 struct server_t {
     int fd;
-    struct ss_buffer *buf;
+    struct buffer_t *buf;
     struct sockaddr_storage destaddr;
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;

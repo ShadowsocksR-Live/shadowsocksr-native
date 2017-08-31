@@ -530,7 +530,7 @@ new_query_ctx(char *buf, size_t len)
 {
     struct query_ctx *ctx = ss_malloc(sizeof(struct query_ctx));
     memset(ctx, 0, sizeof(struct query_ctx));
-    ctx->buf = ss_malloc(sizeof(struct ss_buffer));
+    ctx->buf = ss_malloc(sizeof(struct buffer_t));
     buffer_alloc(ctx->buf, len);
     memcpy(ctx->buf->array, buf, len);
     ctx->buf->len = len;
@@ -687,7 +687,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     socklen_t src_addr_len = sizeof(struct sockaddr_storage);
     memset(&src_addr, 0, src_addr_len);
 
-    struct ss_buffer *buf = ss_malloc(sizeof(struct ss_buffer));
+    struct buffer_t *buf = ss_malloc(sizeof(struct buffer_t));
     buffer_alloc(buf, buf_size);
 
     // recv
@@ -882,7 +882,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     struct sockaddr_storage src_addr;
     memset(&src_addr, 0, sizeof(struct sockaddr_storage));
 
-    struct ss_buffer *buf = ss_malloc(sizeof(struct ss_buffer));
+    struct buffer_t *buf = ss_malloc(sizeof(struct buffer_t));
     buffer_alloc(buf, buf_size);
 
     socklen_t src_addr_len = sizeof(struct sockaddr_storage);
@@ -1370,7 +1370,7 @@ init_udprelay(const char *server_host, const char *server_port,
               const ss_host_port tunnel_addr,
 #endif
               int mtu, int timeout, const char *iface,
-              cipher_env_t* cipher_env, const char *protocol, const char *protocol_param)
+              struct cipher_env_t *cipher_env, const char *protocol, const char *protocol_param)
 {
     // Initialize ev loop
     struct ev_loop *loop = EV_DEFAULT;

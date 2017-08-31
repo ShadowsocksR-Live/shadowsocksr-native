@@ -27,7 +27,7 @@ typedef struct _server_info {
     uint16_t tcp_mss;
     uint16_t overhead;
     uint32_t buffer_size;
-    cipher_env_t *cipher_env;
+    struct cipher_env_t *cipher_env;
 } server_info;
 
 typedef struct _obfs {

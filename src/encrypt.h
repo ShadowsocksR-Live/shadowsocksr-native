@@ -134,7 +134,7 @@ enum cipher_index {
     CIPHER_NUM,
 };
 
-typedef struct _cipher_env {
+struct cipher_env_t {
     uint8_t *enc_table;
     uint8_t *dec_table;
     uint8_t enc_key[MAX_KEY_LENGTH];
@@ -143,7 +143,7 @@ typedef struct _cipher_env {
     enum cipher_index enc_method;
 
     struct cache *iv_cache;
-} cipher_env_t;
+};
 
 typedef struct _cipher_ctx {
     cipher_evp_t *evp;
@@ -175,7 +175,7 @@ struct ss_cipher {
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 
-struct ss_buffer {
+struct buffer_t {
     size_t idx;
     size_t len;
     size_t capacity;
@@ -186,7 +186,7 @@ struct ss_chunk {
     uint32_t idx;
     uint32_t len;
     uint32_t counter;
-    struct ss_buffer *buf;
+    struct buffer_t *buf;
 };
 
 struct enc_ctx {
@@ -199,19 +199,19 @@ void bytes_to_key_with_size(const char *pass, size_t len, uint8_t *md, size_t md
 
 int rand_bytes(uint8_t *output, int len);
 
-int ss_encrypt_all(cipher_env_t* env, struct ss_buffer *plaintext, size_t capacity);
-int ss_decrypt_all(cipher_env_t* env, struct ss_buffer *ciphertext, size_t capacity);
-int ss_encrypt(cipher_env_t* env, struct ss_buffer *plaintext, struct enc_ctx *ctx, size_t capacity);
-int ss_decrypt(cipher_env_t* env, struct ss_buffer *ciphertext, struct enc_ctx *ctx, size_t capacity);
+int ss_encrypt_all(struct cipher_env_t* env, struct buffer_t *plaintext, size_t capacity);
+int ss_decrypt_all(struct cipher_env_t* env, struct buffer_t *ciphertext, size_t capacity);
+int ss_encrypt(struct cipher_env_t* env, struct buffer_t *plaintext, struct enc_ctx *ctx, size_t capacity);
+int ss_decrypt(struct cipher_env_t* env, struct buffer_t *ciphertext, struct enc_ctx *ctx, size_t capacity);
 
-enum cipher_index enc_init(cipher_env_t *env, const char *pass, const char *method);
-void enc_release(cipher_env_t *env);
-void enc_ctx_init(cipher_env_t *env, struct enc_ctx *ctx, int enc);
-void enc_ctx_release(cipher_env_t* env, struct enc_ctx *ctx);
-int enc_get_iv_len(cipher_env_t* env);
-uint8_t* enc_get_key(cipher_env_t* env);
-int enc_get_key_len(cipher_env_t* env);
-void cipher_context_release(cipher_env_t *env, cipher_ctx_t *ctx);
+enum cipher_index enc_init(struct cipher_env_t *env, const char *pass, const char *method);
+void enc_release(struct cipher_env_t *env);
+void enc_ctx_init(struct cipher_env_t *env, struct enc_ctx *ctx, int enc);
+void enc_ctx_release(struct cipher_env_t* env, struct enc_ctx *ctx);
+int enc_get_iv_len(struct cipher_env_t* env);
+uint8_t* enc_get_key(struct cipher_env_t* env);
+int enc_get_key_len(struct cipher_env_t* env);
+void cipher_context_release(struct cipher_env_t *env, cipher_ctx_t *ctx);
 unsigned char *enc_md5(const unsigned char *d, size_t n, unsigned char *md);
 
 int ss_md5_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len);
@@ -219,13 +219,13 @@ int ss_md5_hash_func(char *auth, char *msg, int msg_len);
 int ss_sha1_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len);
 int ss_sha1_hash_func(char *auth, char *msg, int msg_len);
 int ss_aes_128_cbc(char *encrypt, char *out_data, char *key);
-int ss_encrypt_buffer(cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t in_size, char *out, size_t *out_size);
-int ss_decrypt_buffer(cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t in_size, char *out, size_t *out_size);
+int ss_encrypt_buffer(struct cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t in_size, char *out, size_t *out_size);
+int ss_decrypt_buffer(struct cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t in_size, char *out, size_t *out_size);
 
-int buffer_alloc(struct ss_buffer *ptr, size_t capacity);
-int buffer_realloc(struct ss_buffer *ptr, size_t len, size_t capacity);
-void buffer_free(struct ss_buffer *ptr);
+int buffer_alloc(struct buffer_t *ptr, size_t capacity);
+int buffer_realloc(struct buffer_t *ptr, size_t len, size_t capacity);
+void buffer_free(struct buffer_t *ptr);
 
-//extern cipher_env_t cipher_env;
+//extern struct cipher_env_t cipher_env;
 
 #endif // _ENCRYPT_H

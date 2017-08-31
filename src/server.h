@@ -52,9 +52,9 @@ struct server_ctx_t {
 struct server_t {
     int fd;
     enum net_stage stage;
-    struct ss_buffer *buf;
+    struct buffer_t *buf;
     ssize_t buf_capacity;
-    struct ss_buffer *header_buf;
+    struct buffer_t *header_buf;
 
     struct chunk *chunk;
 
@@ -83,7 +83,7 @@ struct remote_ctx_t {
 
 typedef struct remote {
     int fd;
-    struct ss_buffer *buf;
+    struct buffer_t *buf;
     ssize_t buf_capacity;
     struct remote_ctx_t *recv_ctx;
     struct remote_ctx_t *send_ctx;

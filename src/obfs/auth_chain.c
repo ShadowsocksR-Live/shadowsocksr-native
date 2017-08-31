@@ -76,7 +76,7 @@ typedef struct auth_chain_local_data {
     shift128plus_ctx random_client;
     shift128plus_ctx random_server;
     int cipher_init_flag;
-    cipher_env_t cipher;
+    struct cipher_env_t cipher;
     struct enc_ctx *cipher_client_ctx;
     struct enc_ctx *cipher_server_ctx;
 }auth_chain_local_data;

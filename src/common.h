@@ -43,7 +43,7 @@ int init_udprelay(const char *server_host, const char *server_port,
                   const ss_host_port tunnel_addr,
 #endif
                   int mtu, int timeout, const char *iface,
-                  cipher_env_t* cipher_env, const char *protocol, const char *protocol_param);
+                  struct cipher_env_t *cipher_env, const char *protocol, const char *protocol_param);
 
 void free_udprelay(void);
 
@@ -62,7 +62,7 @@ struct server_env_t {
     int addr_udp_len;
 
     char *psw; // raw password
-    cipher_env_t cipher;
+    struct cipher_env_t cipher;
 
     struct cork_dllist connections;
 

@@ -57,7 +57,7 @@ struct server_ctx_t {
 #ifdef MODULE_REMOTE
     struct ev_loop *loop;
 #endif
-    cipher_env_t* cipher_env;
+    struct cipher_env_t *cipher_env;
     // SSR
     obfs *protocol;
     obfs_class *protocol_plugin;
@@ -68,7 +68,7 @@ struct server_ctx_t {
 typedef struct query_ctx {
     struct ResolvQuery *query;
     struct sockaddr_storage src_addr;
-    struct ss_buffer *buf;
+    struct buffer_t *buf;
     int addr_header_len;
     char addr_header[384];
     struct server_ctx_t *server_ctx;

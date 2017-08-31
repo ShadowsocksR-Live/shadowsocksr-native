@@ -282,7 +282,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     struct server_ctx_t *server_ctx = cork_container_of(w, struct server_ctx_t, io);
     struct server_t *server = server_ctx->server;
     remote_t *remote = server->remote;
-    struct ss_buffer *buf;
+    struct buffer_t *buf;
     ssize_t r;
 
     if (remote == NULL) {
@@ -530,8 +530,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             return;
         } else if (server->stage == STAGE_HANDSHAKE || server->stage == STAGE_PARSE) {
             struct socks5_request *request = (struct socks5_request *)buf->array;
-            struct sockaddr_in sock_addr;
-            memset(&sock_addr, 0, sizeof(sock_addr));
+            struct sockaddr_in sock_addr = { 0 };
 
             int udp_assc = 0;
 
@@ -564,8 +563,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 response.rsv  = 0;
                 response.atyp = 1;
 
-                struct ss_buffer resp_to_send;
-                struct ss_buffer *resp_buf = &resp_to_send;
+                struct buffer_t resp_to_send;
+                struct buffer_t *resp_buf = &resp_to_send;
                 buffer_alloc(resp_buf, BUF_SIZE);
 
                 memcpy(resp_buf->array, &response, sizeof(struct socks5_response));
@@ -596,8 +595,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             char host[257], ip[INET6_ADDRSTRLEN], port[16];
 
-            struct ss_buffer ss_addr_to_send;
-            struct ss_buffer *abuf = &ss_addr_to_send;
+            struct buffer_t ss_addr_to_send;
+            struct buffer_t *abuf = &ss_addr_to_send;
             buffer_alloc(abuf, BUF_SIZE);
 
             abuf->array[abuf->len++] = request->atyp;
@@ -916,7 +915,7 @@ server_send_cb(EV_P_ ev_io *w, int revents)
     struct server_ctx_t *server_ctx = cork_container_of(w, struct server_ctx_t, io);
     struct server_t *server = server_ctx->server;
     remote_t *remote = server->remote;
-    struct ss_buffer *buf = server->buf;
+    struct buffer_t *buf = server->buf;
     if (buf->len == 0) {
         // close and free
         close_and_free_remote(EV_A_ remote);
@@ -1181,7 +1180,7 @@ new_remote(int fd, int timeout)
 {
     remote_t *remote = ss_malloc(sizeof(remote_t));
 
-    remote->buf                 = ss_malloc(sizeof(struct ss_buffer));
+    remote->buf                 = ss_malloc(sizeof(struct buffer_t));
     remote->recv_ctx            = ss_malloc(sizeof(struct remote_ctx_t));
     remote->send_ctx            = ss_malloc(sizeof(struct remote_ctx_t));
     buffer_alloc(remote->buf, BUF_SIZE);
@@ -1237,7 +1236,7 @@ new_server(int fd, struct listen_ctx_t *profile)
     server->listener = profile;
     server->recv_ctx            = ss_malloc(sizeof(struct server_ctx_t));
     server->send_ctx            = ss_malloc(sizeof(struct server_ctx_t));
-    server->buf                 = ss_malloc(sizeof(struct ss_buffer));
+    server->buf                 = ss_malloc(sizeof(struct buffer_t));
     buffer_alloc(server->buf, BUF_SIZE);
     server->stage               = STAGE_INIT;
     server->recv_ctx->connected = 0;

@@ -58,7 +58,7 @@ struct server_ctx_t {
 
 struct server_t {
     int fd;
-    struct ss_buffer *buf;
+    struct buffer_t *buf;
     ssize_t buf_capacity;
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;
@@ -83,7 +83,7 @@ struct remote_ctx_t {
 
 typedef struct remote {
     int fd;
-    struct ss_buffer *buf;
+    struct buffer_t *buf;
     ssize_t buf_capacity;
     struct remote_ctx_t *recv_ctx;
     struct remote_ctx_t *send_ctx;
