@@ -697,7 +697,7 @@ get_digest_type(const char *digest)
 void
 cipher_context_init(struct cipher_env_t *env, cipher_ctx_t *ctx, int enc)
 {
-    int method = env->enc_method;
+    enum cipher_index method = env->enc_method;
 
     if (method >= SALSA20) {
 //        enc_iv_len = supported_ciphers_iv_size[method];

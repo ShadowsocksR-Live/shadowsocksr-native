@@ -567,15 +567,15 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 struct buffer_t *resp_buf = &resp_to_send;
                 buffer_alloc(resp_buf, BUF_SIZE);
 
-                memcpy(resp_buf->array, &response, sizeof(struct socks5_response));
-                memcpy(resp_buf->array + sizeof(struct socks5_response),
-                       &sock_addr.sin_addr, sizeof(sock_addr.sin_addr));
-                memcpy(resp_buf->array + sizeof(struct socks5_response) +
-                       sizeof(sock_addr.sin_addr),
-                       &sock_addr.sin_port, sizeof(sock_addr.sin_port));
+                char *iter = (char *) resp_buf->array;
+                memcpy(iter, &response, sizeof(struct socks5_response));
+                iter += sizeof(struct socks5_response);
+                memcpy(iter, &sock_addr.sin_addr, sizeof(sock_addr.sin_addr));
+                iter += sizeof(sock_addr.sin_addr);
+                memcpy(iter, &sock_addr.sin_port, sizeof(sock_addr.sin_port));
+                iter += sizeof(sock_addr.sin_port);
 
-                int reply_size = sizeof(struct socks5_response) +
-                                 sizeof(sock_addr.sin_addr) + sizeof(sock_addr.sin_port);
+                int reply_size = (int)(iter - resp_buf->array);
 
                 int s = send(server->fd, resp_buf->array, reply_size, 0);
 
@@ -1192,10 +1192,10 @@ new_remote(int fd, int timeout)
 
     ev_io_init(&remote->recv_ctx->io, remote_recv_cb, fd, EV_READ);
     ev_io_init(&remote->send_ctx->io, remote_send_cb, fd, EV_WRITE);
-    ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb,
-                  min(MAX_CONNECT_TIMEOUT, timeout), 0);
-    ev_timer_init(&remote->recv_ctx->watcher, remote_timeout_cb,
-                  timeout, timeout);
+
+    int timeMax = min(MAX_CONNECT_TIMEOUT, timeout);
+    ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb, timeMax, 0);
+    ev_timer_init(&remote->recv_ctx->watcher, remote_timeout_cb, timeout, timeout);
 
     return remote;
 }
@@ -1409,8 +1409,9 @@ create_remote(struct listen_ctx_t *profile, struct sockaddr *addr)
 #endif
 
     struct remote_t *remote = new_remote(remotefd, profile->timeout);
-    remote->direct_addr.addr_len = get_sockaddr_len(addr);
-    memcpy(&(remote->direct_addr.addr), addr, remote->direct_addr.addr_len);
+    int addr_len = get_sockaddr_len(addr);
+    remote->direct_addr.addr_len = addr_len;
+    memcpy(&(remote->direct_addr.addr), addr, addr_len);
 //    remote->direct_addr.remote_index = index;
 
     return remote;
