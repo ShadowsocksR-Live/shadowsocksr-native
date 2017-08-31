@@ -63,7 +63,7 @@ struct server_t {
     struct server_ctx_t *recv_ctx;
     struct server_ctx_t *send_ctx;
     struct listen_ctx_t *listen_ctx;
-    struct remote *remote;
+    struct remote_t *remote;
 
     struct ResolvQuery *query;
 
@@ -78,16 +78,16 @@ typedef struct query {
 struct remote_ctx_t {
     ev_io io;
     int connected;
-    struct remote *remote;
+    struct remote_t *remote;
 };
 
-typedef struct remote {
+struct remote_t {
     int fd;
     struct buffer_t *buf;
     ssize_t buf_capacity;
     struct remote_ctx_t *recv_ctx;
     struct remote_ctx_t *send_ctx;
     struct server_t *server;
-} remote_t;
+};
 
 #endif // _SERVER_H

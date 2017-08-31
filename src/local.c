@@ -127,13 +127,13 @@ static int create_and_bind(const char *addr, const char *port);
 #ifdef HAVE_LAUNCHD
 static int launch_or_create(const char *addr, const char *port);
 #endif
-static remote_t *create_remote(struct listen_ctx_t *profile, struct sockaddr *addr);
-static void free_remote(remote_t *remote);
-static void close_and_free_remote(EV_P_ remote_t *remote);
+static struct remote_t *create_remote(struct listen_ctx_t *profile, struct sockaddr *addr);
+static void free_remote(struct remote_t *remote);
+static void close_and_free_remote(EV_P_ struct remote_t *remote);
 static void free_server(struct server_t *server);
 static void close_and_free_server(EV_P_ struct server_t *server);
 
-static remote_t *new_remote(int fd, int timeout);
+static struct remote_t *new_remote(int fd, int timeout);
 static struct server_t *new_server(int fd, struct listen_ctx_t *profile);
 
 static struct cork_dllist inactive_profiles;
@@ -154,28 +154,28 @@ setnonblocking(int fd)
 #endif
 
 void
-ev_io_remote_send(EV_P_ struct server_t* server, remote_t* remote)
+ev_io_remote_send(EV_P_ struct server_t* server, struct remote_t* remote)
 {
     ev_io_stop(EV_A_ & remote->send_ctx->io);
     ev_io_start(EV_A_ & server->recv_ctx->io);
 }
 
 void
-ev_io_remote_recv(EV_P_ struct server_t* server, remote_t* remote)
+ev_io_remote_recv(EV_P_ struct server_t* server, struct remote_t* remote)
 {
     ev_io_stop(EV_A_ & remote->recv_ctx->io);
     ev_io_start(EV_A_ & server->send_ctx->io);
 }
 
 void
-ev_io_server_send(EV_P_ struct server_t* server, remote_t* remote)
+ev_io_server_send(EV_P_ struct server_t* server, struct remote_t* remote)
 {
     ev_io_stop(EV_A_ & server->send_ctx->io);
     ev_io_start(EV_A_ & remote->recv_ctx->io);
 }
 
 void
-ev_io_server_recv(EV_P_ struct server_t* server, remote_t* remote)
+ev_io_server_recv(EV_P_ struct server_t* server, struct remote_t* remote)
 {
     ev_io_stop(EV_A_ & server->recv_ctx->io);
     ev_io_start(EV_A_ & remote->send_ctx->io);
@@ -270,7 +270,7 @@ free_connections(struct ev_loop *loop)
     struct cork_dllist_item *curr, *next;
     cork_dllist_foreach_void(&all_connections, curr, next) {
         struct server_t *server = cork_container_of(curr, struct server_t, entries_all);
-        remote_t *remote = server->remote;
+        struct remote_t *remote = server->remote;
         close_and_free_remote(loop, remote);
         close_and_free_server(loop, server);
     }
@@ -281,7 +281,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 {
     struct server_ctx_t *server_ctx = cork_container_of(w, struct server_ctx_t, io);
     struct server_t *server = server_ctx->server;
-    remote_t *remote = server->remote;
+    struct remote_t *remote = server->remote;
     struct buffer_t *buf;
     ssize_t r;
 
@@ -914,7 +914,7 @@ server_send_cb(EV_P_ ev_io *w, int revents)
 {
     struct server_ctx_t *server_ctx = cork_container_of(w, struct server_ctx_t, io);
     struct server_t *server = server_ctx->server;
-    remote_t *remote = server->remote;
+    struct remote_t *remote = server->remote;
     struct buffer_t *buf = server->buf;
     if (buf->len == 0) {
         // close and free
@@ -967,7 +967,7 @@ remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
     struct remote_ctx_t *remote_ctx
         = cork_container_of(watcher, struct remote_ctx_t, watcher);
 
-    remote_t *remote = remote_ctx->remote;
+    struct remote_t *remote = remote_ctx->remote;
     struct server_t *server = remote->server;
 
     if (verbose) {
@@ -982,7 +982,7 @@ static void
 remote_recv_cb(EV_P_ ev_io *w, int revents)
 {
     struct remote_ctx_t *remote_recv_ctx = (struct remote_ctx_t *)w;
-    remote_t *remote              = remote_recv_ctx->remote;
+    struct remote_t *remote              = remote_recv_ctx->remote;
     struct server_t *server       = remote->server;
     struct server_env_t *server_env      = server->server_env;
 
@@ -1112,7 +1112,7 @@ static void
 remote_send_cb(EV_P_ ev_io *w, int revents)
 {
     struct remote_ctx_t *remote_send_ctx = (struct remote_ctx_t *)w;
-    remote_t *remote              = remote_send_ctx->remote;
+    struct remote_t *remote              = remote_send_ctx->remote;
     struct server_t *server       = remote->server;
 
     if (!remote_send_ctx->connected) {
@@ -1175,10 +1175,10 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
     }
 }
 
-static remote_t *
+static struct remote_t *
 new_remote(int fd, int timeout)
 {
-    remote_t *remote = ss_malloc(sizeof(remote_t));
+    struct remote_t *remote = ss_malloc(sizeof(struct remote_t));
 
     remote->buf                 = ss_malloc(sizeof(struct buffer_t));
     remote->recv_ctx            = ss_malloc(sizeof(struct remote_ctx_t));
@@ -1201,7 +1201,7 @@ new_remote(int fd, int timeout)
 }
 
 static void
-free_remote(remote_t *remote)
+free_remote(struct remote_t *remote)
 {
     if (remote->server != NULL) {
         remote->server->remote = NULL;
@@ -1216,7 +1216,7 @@ free_remote(remote_t *remote)
 }
 
 static void
-close_and_free_remote(EV_P_ remote_t *remote)
+close_and_free_remote(EV_P_ struct remote_t *remote)
 {
     if (remote != NULL) {
         ev_timer_stop(EV_A_ & remote->send_ctx->watcher);
@@ -1375,7 +1375,7 @@ close_and_free_server(EV_P_ struct server_t *server)
     }
 }
 
-static remote_t *
+static struct remote_t *
 create_remote(struct listen_ctx_t *profile, struct sockaddr *addr)
 {
     int remotefd = socket(addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
@@ -1408,7 +1408,7 @@ create_remote(struct listen_ctx_t *profile, struct sockaddr *addr)
     }
 #endif
 
-    remote_t *remote = new_remote(remotefd, profile->timeout);
+    struct remote_t *remote = new_remote(remotefd, profile->timeout);
     remote->direct_addr.addr_len = get_sockaddr_len(addr);
     memcpy(&(remote->direct_addr.addr), addr, remote->direct_addr.addr_len);
 //    remote->direct_addr.remote_index = index;

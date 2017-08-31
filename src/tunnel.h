@@ -64,7 +64,7 @@ struct server_t {
     struct enc_ctx *d_ctx;
     struct server_ctx_t *recv_ctx;
     struct server_ctx_t *send_ctx;
-    struct remote *remote;
+    struct remote_t *remote;
     ss_host_port destaddr;
 
     // SSR
@@ -78,10 +78,10 @@ struct remote_ctx_t {
     ev_io io;
     ev_timer watcher;
     int connected;
-    struct remote *remote;
+    struct remote_t *remote;
 };
 
-typedef struct remote {
+struct remote_t {
     int fd;
     struct buffer_t *buf;
     ssize_t buf_capacity;
@@ -92,6 +92,6 @@ typedef struct remote {
 
     // SSR
     int remote_index;
-} remote_t;
+};
 
 #endif // _TUNNEL_H

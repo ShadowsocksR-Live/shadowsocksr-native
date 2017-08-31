@@ -59,10 +59,10 @@ struct remote_ctx_t {
     ev_io io;
     ev_timer watcher;
     int connected;
-    struct remote *remote;
+    struct remote_t *remote;
 };
 
-typedef struct remote {
+struct remote_t {
     int fd;
     struct buffer_t *buf;
     struct remote_ctx_t *recv_ctx;
@@ -75,7 +75,7 @@ typedef struct remote {
         struct sockaddr_storage addr;
         int addr_len;
     } direct_addr;
-} remote_t;
+};
 
 struct server_t {
     int fd;
@@ -85,7 +85,7 @@ struct server_t {
     struct server_ctx_t *recv_ctx;
     struct server_ctx_t *send_ctx;
     __weak_ptr struct listen_ctx_t *listener;
-    remote_t *remote;
+    struct remote_t *remote;
 
     struct buffer_t *buf;
 
