@@ -1414,17 +1414,19 @@ init_udprelay(const char *server_host, const char *server_port,
         server_ctx->protocol_global = server_ctx->protocol_plugin->init_data();
     }
 
-    server_info _server_info;
-    memset(&_server_info, 0, sizeof(server_info));
-    strcpy(_server_info.host, server_host);
-    _server_info.port = atoi(server_port);
-    _server_info.g_data = server_ctx->protocol_global;
-    _server_info.param = (char *)protocol_param;
-    _server_info.key = enc_get_key(cipher_env);
-    _server_info.key_len = enc_get_key_len(cipher_env);
+    struct server_info_t server_info;
+    memset(&server_info, 0, sizeof(struct server_info_t));
+    strcpy(server_info.host, server_host);
+    server_info.port = atoi(server_port);
+    server_info.g_data = server_ctx->protocol_global;
+    server_info.param = (char *)protocol_param;
+    server_info.key = enc_get_key(cipher_env);
+    server_info.key_len = enc_get_key_len(cipher_env);
 
-    if (server_ctx->protocol_plugin)
-        server_ctx->protocol_plugin->set_server_info(server_ctx->protocol, &_server_info);
+    if (server_ctx->protocol_plugin) {
+        server_ctx->protocol_plugin->set_server_info(server_ctx->protocol,
+                                                     &server_info);
+    }
     //SSR end
     server_ctx->tunnel_addr = tunnel_addr;
 #endif

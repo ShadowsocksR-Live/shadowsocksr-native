@@ -515,11 +515,11 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
             buffer_free(abuf);
 
             // SSR beg
-            server_info _server_info;
+            struct server_info_t server_info;
             if (server->obfs_plugin) {
-                server->obfs_plugin->get_server_info(server->obfs, &_server_info);
-                _server_info.head_len = get_head_size(remote->buf->array, remote->buf->len, 30);
-                server->obfs_plugin->set_server_info(server->obfs, &_server_info);
+                server->obfs_plugin->get_server_info(server->obfs, &server_info);
+                server_info.head_len = get_head_size(remote->buf->array, remote->buf->len, 30);
+                server->obfs_plugin->set_server_info(server->obfs, &server_info);
             }
             if (server->protocol_plugin) {
                 obfs_class *protocol_plugin = server->protocol_plugin;

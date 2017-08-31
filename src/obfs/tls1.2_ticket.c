@@ -58,7 +58,7 @@ void tls12_ticket_auth_dispose(obfs *self) {
     dispose_obfs(self);
 }
 
-int tls12_ticket_pack_auth_data(tls12_ticket_auth_global_data *global, server_info *server, char *outdata) {
+int tls12_ticket_pack_auth_data(tls12_ticket_auth_global_data *global, struct server_info_t *server, char *outdata) {
     int out_size = 32;
     time_t t = time(NULL);
     outdata[0] = (char)(t >> 24);

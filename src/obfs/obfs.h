@@ -12,7 +12,7 @@
 
 #define OBFS_HMAC_SHA1_LEN 10
 
-typedef struct _server_info {
+struct server_info_t {
     char host[256];
     uint16_t port;
     char *param;
@@ -28,10 +28,10 @@ typedef struct _server_info {
     uint16_t overhead;
     uint32_t buffer_size;
     struct cipher_env_t *cipher_env;
-} server_info;
+};
 
 typedef struct _obfs {
-    server_info server;
+    struct server_info_t server;
     void *l_data;
 } obfs;
 
@@ -39,8 +39,8 @@ typedef struct _obfs_class {
     void * (*init_data)();
     obfs * (*new_obfs)();
     int  (*get_overhead)(obfs *self);
-    void (*get_server_info)(obfs *self, server_info *server);
-    void (*set_server_info)(obfs *self, server_info *server);
+    void (*get_server_info)(obfs *self, struct server_info_t *server);
+    void (*set_server_info)(obfs *self, struct server_info_t *server);
     void (*dispose)(obfs *self);
 
     int (*client_pre_encrypt)(obfs *self,
@@ -73,8 +73,8 @@ typedef struct _obfs_class {
 obfs_class * new_obfs_class(const char *plugin_name);
 void free_obfs_class(obfs_class *plugin);
 
-void set_server_info(obfs *self, server_info *server);
-void get_server_info(obfs *self, server_info *server);
+void set_server_info(obfs *self, struct server_info_t *server);
+void get_server_info(obfs *self, struct server_info_t *server);
 obfs * new_obfs();
 void dispose_obfs(obfs *self);
 

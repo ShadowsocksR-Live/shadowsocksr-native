@@ -35,15 +35,15 @@ get_overhead(obfs *self)
 }
 
 void
-set_server_info(obfs *self, server_info *server)
+set_server_info(obfs *self, struct server_info_t *server)
 {
-    memmove(&self->server, server, sizeof(server_info));
+    memmove(&self->server, server, sizeof(struct server_info_t));
 }
 
 void
-get_server_info(obfs *self, server_info *server)
+get_server_info(obfs *self, struct server_info_t *server)
 {
-    memmove(server, &self->server, sizeof(server_info));
+    memmove(server, &self->server, sizeof(struct server_info_t));
 }
 
 void

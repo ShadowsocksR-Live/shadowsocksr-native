@@ -848,41 +848,41 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     server->d_ctx = NULL;
                 }
                 // SSR beg
-                server_info _server_info;
-                memset(&_server_info, 0, sizeof(server_info));
+                struct server_info_t server_info;
+                memset(&server_info, 0, sizeof(struct server_info_t));
                 if (server_env->hostname) {
-                    strcpy(_server_info.host, server_env->hostname);
+                    strcpy(server_info.host, server_env->hostname);
                 } else {
-                    strcpy(_server_info.host, server_env->host);
+                    strcpy(server_info.host, server_env->host);
                 }
                 if (verbose) {
-                    LOGI("server_info host %s", _server_info.host);
+                    LOGI("struct server_info_t host %s", server_info.host);
                 }
-                _server_info.port = server_env->port;
-                _server_info.param = server_env->obfs_param;
-                _server_info.g_data = server_env->obfs_global;
-                _server_info.head_len = get_head_size(ss_addr_to_send.array, 320, 30);
-                _server_info.iv = server->e_ctx->evp.iv;
-                _server_info.iv_len = enc_get_iv_len(&server_env->cipher);
-                _server_info.key = enc_get_key(&server_env->cipher);
-                _server_info.key_len = enc_get_key_len(&server_env->cipher);
-                _server_info.tcp_mss = 1452;
-                _server_info.buffer_size = BUF_SIZE;
-                _server_info.cipher_env = &server_env->cipher;
+                server_info.port = server_env->port;
+                server_info.param = server_env->obfs_param;
+                server_info.g_data = server_env->obfs_global;
+                server_info.head_len = get_head_size(ss_addr_to_send.array, 320, 30);
+                server_info.iv = server->e_ctx->evp.iv;
+                server_info.iv_len = enc_get_iv_len(&server_env->cipher);
+                server_info.key = enc_get_key(&server_env->cipher);
+                server_info.key_len = enc_get_key_len(&server_env->cipher);
+                server_info.tcp_mss = 1452;
+                server_info.buffer_size = BUF_SIZE;
+                server_info.cipher_env = &server_env->cipher;
 
                 if (server_env->obfs_plugin) {
                     server->obfs = server_env->obfs_plugin->new_obfs();
-                    server_env->obfs_plugin->set_server_info(server->obfs, &_server_info);
+                    server_env->obfs_plugin->set_server_info(server->obfs, &server_info);
                 }
 
-                _server_info.param = server_env->protocol_param;
-                _server_info.g_data = server_env->protocol_global;
+                server_info.param = server_env->protocol_param;
+                server_info.g_data = server_env->protocol_global;
 
                 if (server_env->protocol_plugin) {
                     server->protocol = server_env->protocol_plugin->new_obfs();
-                    _server_info.overhead = server_env->protocol_plugin->get_overhead(server->protocol)
+                    server_info.overhead = server_env->protocol_plugin->get_overhead(server->protocol)
                         + (server_env->obfs_plugin ? server_env->obfs_plugin->get_overhead(server->obfs) : 0);
-                    server_env->protocol_plugin->set_server_info(server->protocol, &_server_info);
+                    server_env->protocol_plugin->set_server_info(server->protocol, &server_info);
                 }
                 // SSR end
 

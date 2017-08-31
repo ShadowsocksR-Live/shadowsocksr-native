@@ -253,7 +253,7 @@ auth_sha1_pack_data(char *data, int datalength, char *outdata)
 }
 
 int
-auth_sha1_pack_auth_data(auth_simple_global_data *global, server_info *server, char *data, int datalength, char *outdata)
+auth_sha1_pack_auth_data(auth_simple_global_data *global, struct server_info_t *server, char *data, int datalength, char *outdata)
 {
     unsigned char rand_len = (xorshift128plus() & 0x7F) + 1;
     int data_offset = rand_len + 4 + 2;
@@ -385,7 +385,7 @@ auth_sha1_v2_pack_data(char *data, int datalength, char *outdata)
 }
 
 int
-auth_sha1_v2_pack_auth_data(auth_simple_global_data *global, server_info *server, char *data, int datalength, char *outdata)
+auth_sha1_v2_pack_auth_data(auth_simple_global_data *global, struct server_info_t *server, char *data, int datalength, char *outdata)
 {
     unsigned int rand_len = (datalength > 1300 ? 0 : datalength > 400 ? (xorshift128plus() & 0x7F) : (xorshift128plus() & 0x3FF)) + 1;
     int data_offset = (int)rand_len + 4 + 2;
@@ -541,7 +541,7 @@ auth_sha1_v4_pack_data(char *data, int datalength, char *outdata)
 }
 
 int
-auth_sha1_v4_pack_auth_data(auth_simple_global_data *global, server_info *server, char *data, int datalength, char *outdata)
+auth_sha1_v4_pack_auth_data(auth_simple_global_data *global, struct server_info_t *server, char *data, int datalength, char *outdata)
 {
     unsigned int rand_len = (datalength > 1300 ? 0 : datalength > 400 ? (xorshift128plus() & 0x7F) : (xorshift128plus() & 0x3FF)) + 1;
     int data_offset = (int)rand_len + 4 + 2;
@@ -684,7 +684,7 @@ auth_sha1_v4_client_post_decrypt(obfs *self, char **pplaindata, int datalength, 
 }
 
 unsigned int
-get_rand_len(int datalength, int fulldatalength, auth_simple_local_data *local, server_info *server)
+get_rand_len(int datalength, int fulldatalength, auth_simple_local_data *local, struct server_info_t *server)
 {
     if (datalength > 1300 || local->last_data_len > 1300 || fulldatalength >= (int)server->buffer_size) {
         return 0;
@@ -702,7 +702,7 @@ get_rand_len(int datalength, int fulldatalength, auth_simple_local_data *local, 
 }
 
 int
-auth_aes128_sha1_pack_data(char *data, int datalength, int fulldatalength, char *outdata, auth_simple_local_data *local, server_info *server)
+auth_aes128_sha1_pack_data(char *data, int datalength, int fulldatalength, char *outdata, auth_simple_local_data *local, struct server_info_t *server)
 {
     unsigned int rand_len = get_rand_len(datalength, fulldatalength, local, server) + 1;
     int out_size = (int)rand_len + datalength + 8;
@@ -746,7 +746,7 @@ auth_aes128_sha1_pack_data(char *data, int datalength, int fulldatalength, char 
 }
 
 int
-auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, server_info *server, auth_simple_local_data *local, char *data, int datalength, char *outdata)
+auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_info_t *server, auth_simple_local_data *local, char *data, int datalength, char *outdata)
 {
     unsigned int rand_len = (datalength > 400 ? (xorshift128plus() & 0x1FF) : (xorshift128plus() & 0x3FF));
     int data_offset = (int)rand_len + 16 + 4 + 4 + 7;
@@ -902,7 +902,7 @@ auth_aes128_sha1_client_post_decrypt(obfs *self, char **pplaindata, int dataleng
 {
     char *plaindata = *pplaindata;
     auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
-    //server_info *server = (server_info*)&self->server;
+    //struct server_info_t *server = (struct server_info_t *)&self->server;
     uint8_t * recv_buffer = (uint8_t *)local->recv_buffer;
     if (local->recv_buffer_size + datalength > 16384) {
         return -1;
