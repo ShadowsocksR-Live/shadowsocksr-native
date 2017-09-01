@@ -10,9 +10,9 @@
 #include "obfs.h"
 
 struct obfs_t * verify_simple_new_obfs();
-void verify_simple_dispose(struct obfs_t *self);
+void verify_simple_dispose(struct obfs_t *obfs);
 
-int verify_simple_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int datalength, size_t* capacity);
-int verify_simple_client_post_decrypt(struct obfs_t *self, char **pplaindata, int datalength, size_t* capacity);
+int verify_simple_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity);
+int verify_simple_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity);
 
 #endif // _OBFS_VERIFY_H

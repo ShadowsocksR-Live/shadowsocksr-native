@@ -38,9 +38,9 @@ struct obfs_t {
 typedef struct _obfs_class {
     void * (*init_data)();
     struct obfs_t * (*new_obfs)();
-    int  (*get_overhead)(struct obfs_t *self);
-    void (*get_server_info)(struct obfs_t *self, struct server_info_t *server);
-    void (*set_server_info)(struct obfs_t *self, struct server_info_t *server);
+    int  (*get_overhead)(struct obfs_t *obfs);
+    void (*get_server_info)(struct obfs_t *obfs, struct server_info_t *server);
+    void (*set_server_info)(struct obfs_t *obfs, struct server_info_t *server);
     void (*dispose)(struct obfs_t *self);
 
     int (*client_pre_encrypt)(struct obfs_t *self,

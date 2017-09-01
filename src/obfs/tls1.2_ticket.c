@@ -34,18 +34,18 @@ void * tls12_ticket_auth_init_data() {
 }
 
 struct obfs_t * tls12_ticket_auth_new_obfs() {
-    struct obfs_t * self = new_obfs();
-    self->l_data = malloc(sizeof(tls12_ticket_auth_local_data));
-    tls12_ticket_auth_local_data_init((tls12_ticket_auth_local_data*)self->l_data);
-    return self;
+    struct obfs_t * obfs = new_obfs();
+    obfs->l_data = malloc(sizeof(tls12_ticket_auth_local_data));
+    tls12_ticket_auth_local_data_init((tls12_ticket_auth_local_data*)obfs->l_data);
+    return obfs;
 }
 
-int tls12_ticket_auth_get_overhead(struct obfs_t *self) {
+int tls12_ticket_auth_get_overhead(struct obfs_t *obfs) {
     return 5;
 }
 
-void tls12_ticket_auth_dispose(struct obfs_t *self) {
-    tls12_ticket_auth_local_data *local = (tls12_ticket_auth_local_data*)self->l_data;
+void tls12_ticket_auth_dispose(struct obfs_t *obfs) {
+    tls12_ticket_auth_local_data *local = (tls12_ticket_auth_local_data*)obfs->l_data;
     if (local->send_buffer != NULL) {
         free(local->send_buffer);
         local->send_buffer = NULL;
@@ -55,7 +55,7 @@ void tls12_ticket_auth_dispose(struct obfs_t *self) {
         local->recv_buffer = NULL;
     }
     free(local);
-    dispose_obfs(self);
+    dispose_obfs(obfs);
 }
 
 int tls12_ticket_pack_auth_data(tls12_ticket_auth_global_data *global, struct server_info_t *server, char *outdata) {
@@ -86,10 +86,10 @@ void tls12_ticket_auth_pack_data(char *encryptdata, int start, int len, char *ou
     memcpy(out_buffer + outlength + 5, encryptdata + start, len);
 }
 
-int tls12_ticket_auth_client_encode(struct obfs_t *self, char **pencryptdata, int datalength, size_t* capacity) {
+int tls12_ticket_auth_client_encode(struct obfs_t *obfs, char **pencryptdata, int datalength, size_t* capacity) {
     char *encryptdata = *pencryptdata;
-    tls12_ticket_auth_local_data *local = (tls12_ticket_auth_local_data*)self->l_data;
-    tls12_ticket_auth_global_data *global = (tls12_ticket_auth_global_data*)self->server.g_data;
+    tls12_ticket_auth_local_data *local = (tls12_ticket_auth_local_data*)obfs->l_data;
+    tls12_ticket_auth_global_data *global = (tls12_ticket_auth_global_data*)obfs->server.g_data;
     char * out_buffer = NULL;
 
     if (local->handshake_status == 8) {
@@ -189,10 +189,10 @@ int tls12_ticket_auth_client_encode(struct obfs_t *self, char **pencryptdata, in
 
         char sni[256] = {0};
         char* param = NULL;
-        if (self->server.param && strlen(self->server.param) > 0)
-            param = self->server.param;
+        if (obfs->server.param && strlen(obfs->server.param) > 0)
+            param = obfs->server.param;
         else
-            param = self->server.host;
+            param = obfs->server.host;
         strncpy(hosts, param, sizeof hosts);
         phost[host_num++] = hosts;
         for (pos = 0; hosts[pos]; ++pos) {
@@ -242,7 +242,7 @@ int tls12_ticket_auth_client_encode(struct obfs_t *self, char **pencryptdata, in
         pdata -= 32; len += 32;
         pdata[-1] = 0x20;
         pdata -= 1; len += 1;
-        tls12_ticket_pack_auth_data(global, &self->server, pdata - 32);
+        tls12_ticket_pack_auth_data(global, &obfs->server, pdata - 32);
         pdata -= 32; len += 32;
         pdata[-1] = 0x3;
         pdata[-2] = 0x3; // tls version
@@ -274,11 +274,11 @@ int tls12_ticket_auth_client_encode(struct obfs_t *self, char **pencryptdata, in
         rand_bytes((uint8_t*)pdata, 22);
         pdata += 22;
 
-        uint8_t *key = (uint8_t*)malloc(self->server.key_len + 32);
+        uint8_t *key = (uint8_t*)malloc(obfs->server.key_len + 32);
         char hash[SHA1_BYTES];
-        memcpy(key, self->server.key, self->server.key_len);
-        memcpy(key + self->server.key_len, global->local_client_id, 32);
-        ss_sha1_hmac_with_key(hash, out_buffer, (int)(pdata - out_buffer), key, (int)(self->server.key_len + 32));
+        memcpy(key, obfs->server.key, obfs->server.key_len);
+        memcpy(key + obfs->server.key_len, global->local_client_id, 32);
+        ss_sha1_hmac_with_key(hash, out_buffer, (int)(pdata - out_buffer), key, (int)(obfs->server.key_len + 32));
         free(key);
         memcpy(pdata, hash, OBFS_HMAC_SHA1_LEN);
 
@@ -300,10 +300,10 @@ int tls12_ticket_auth_client_encode(struct obfs_t *self, char **pencryptdata, in
     return datalength;
 }
 
-int tls12_ticket_auth_client_decode(struct obfs_t *self, char **pencryptdata, int datalength, size_t* capacity, int *needsendback) {
+int tls12_ticket_auth_client_decode(struct obfs_t *obfs, char **pencryptdata, int datalength, size_t* capacity, int *needsendback) {
     char *encryptdata = *pencryptdata;
-    tls12_ticket_auth_local_data *local = (tls12_ticket_auth_local_data*)self->l_data;
-    tls12_ticket_auth_global_data *global = (tls12_ticket_auth_global_data*)self->server.g_data;
+    tls12_ticket_auth_local_data *local = (tls12_ticket_auth_local_data*)obfs->l_data;
+    tls12_ticket_auth_global_data *global = (tls12_ticket_auth_global_data*)obfs->server.g_data;
 
     *needsendback = 0;
     if (local->handshake_status == 8) {
@@ -332,11 +332,11 @@ int tls12_ticket_auth_client_decode(struct obfs_t *self, char **pencryptdata, in
         return -1;
     }
 
-    uint8_t *key = (uint8_t*)malloc(self->server.key_len + 32);
+    uint8_t *key = (uint8_t*)malloc(obfs->server.key_len + 32);
     char hash[SHA1_BYTES];
-    memcpy(key, self->server.key, self->server.key_len);
-    memcpy(key + self->server.key_len, global->local_client_id, 32);
-    ss_sha1_hmac_with_key(hash, encryptdata + 11, 22, key, (int)self->server.key_len + 32);
+    memcpy(key, obfs->server.key, obfs->server.key_len);
+    memcpy(key + obfs->server.key_len, global->local_client_id, 32);
+    ss_sha1_hmac_with_key(hash, encryptdata + 11, 22, key, (int)obfs->server.key_len + 32);
     free(key);
 
     if (memcmp(encryptdata + 33, hash, OBFS_HMAC_SHA1_LEN)) {

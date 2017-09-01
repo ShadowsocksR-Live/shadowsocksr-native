@@ -17,21 +17,21 @@ void verify_simple_local_data_init(verify_simple_local_data* local) {
 }
 
 struct obfs_t * verify_simple_new_obfs() {
-    struct obfs_t * self = new_obfs();
-    self->l_data = malloc(sizeof(verify_simple_local_data));
-    verify_simple_local_data_init((verify_simple_local_data*)self->l_data);
-    return self;
+    struct obfs_t * obfs = new_obfs();
+    obfs->l_data = malloc(sizeof(verify_simple_local_data));
+    verify_simple_local_data_init((verify_simple_local_data*)obfs->l_data);
+    return obfs;
 }
 
-void verify_simple_dispose(struct obfs_t *self) {
-    verify_simple_local_data *local = (verify_simple_local_data*)self->l_data;
+void verify_simple_dispose(struct obfs_t *obfs) {
+    verify_simple_local_data *local = (verify_simple_local_data*)obfs->l_data;
     if (local->recv_buffer != NULL) {
         free(local->recv_buffer);
         local->recv_buffer = NULL;
     }
     free(local);
-    self->l_data = NULL;
-    dispose_obfs(self);
+    obfs->l_data = NULL;
+    dispose_obfs(obfs);
 }
 
 int verify_simple_pack_data(char *data, int datalength, char *outdata) {
@@ -45,9 +45,9 @@ int verify_simple_pack_data(char *data, int datalength, char *outdata) {
     return out_size;
 }
 
-int verify_simple_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int datalength, size_t *capacity) {
+int verify_simple_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t *capacity) {
     char *plaindata = *pplaindata;
-    //verify_simple_local_data *local = (verify_simple_local_data*)self->l_data;
+    //verify_simple_local_data *local = (verify_simple_local_data*)obfs->l_data;
     char * out_buffer = (char*)malloc((size_t)(datalength * 2 + 32));
     char * buffer = out_buffer;
     char * data = plaindata;
@@ -73,9 +73,9 @@ int verify_simple_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int
     return len;
 }
 
-int verify_simple_client_post_decrypt(struct obfs_t *self, char **pplaindata, int datalength, size_t *capacity) {
+int verify_simple_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t *capacity) {
     char *plaindata = *pplaindata;
-    verify_simple_local_data *local = (verify_simple_local_data*)self->l_data;
+    verify_simple_local_data *local = (verify_simple_local_data*)obfs->l_data;
     uint8_t * recv_buffer = (uint8_t *)local->recv_buffer;
     if (local->recv_buffer_size + datalength > 16384)
         return -1;
