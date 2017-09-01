@@ -95,8 +95,8 @@ struct server_t {
     __weak_ptr struct server_env_t *server_env;
 
     // SSR
-    obfs *protocol;
-    obfs *obfs;
+    struct obfs_t *protocol;
+    struct obfs_t *obfs;
 };
 
 #endif // _LOCAL_H

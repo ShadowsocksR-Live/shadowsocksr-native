@@ -16,14 +16,14 @@ void verify_simple_local_data_init(verify_simple_local_data* local) {
     local->recv_buffer_size = 0;
 }
 
-obfs * verify_simple_new_obfs() {
-    obfs * self = new_obfs();
+struct obfs_t * verify_simple_new_obfs() {
+    struct obfs_t * self = new_obfs();
     self->l_data = malloc(sizeof(verify_simple_local_data));
     verify_simple_local_data_init((verify_simple_local_data*)self->l_data);
     return self;
 }
 
-void verify_simple_dispose(obfs *self) {
+void verify_simple_dispose(struct obfs_t *self) {
     verify_simple_local_data *local = (verify_simple_local_data*)self->l_data;
     if (local->recv_buffer != NULL) {
         free(local->recv_buffer);
@@ -45,7 +45,7 @@ int verify_simple_pack_data(char *data, int datalength, char *outdata) {
     return out_size;
 }
 
-int verify_simple_client_pre_encrypt(obfs *self, char **pplaindata, int datalength, size_t *capacity) {
+int verify_simple_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int datalength, size_t *capacity) {
     char *plaindata = *pplaindata;
     //verify_simple_local_data *local = (verify_simple_local_data*)self->l_data;
     char * out_buffer = (char*)malloc((size_t)(datalength * 2 + 32));
@@ -73,7 +73,7 @@ int verify_simple_client_pre_encrypt(obfs *self, char **pplaindata, int dataleng
     return len;
 }
 
-int verify_simple_client_post_decrypt(obfs *self, char **pplaindata, int datalength, size_t *capacity) {
+int verify_simple_client_post_decrypt(struct obfs_t *self, char **pplaindata, int datalength, size_t *capacity) {
     char *plaindata = *pplaindata;
     verify_simple_local_data *local = (verify_simple_local_data*)self->l_data;
     uint8_t * recv_buffer = (uint8_t *)local->recv_buffer;

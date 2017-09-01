@@ -39,14 +39,14 @@ void http_simple_local_data_init(http_simple_local_data* local) {
     }
 }
 
-obfs * http_simple_new_obfs() {
-    obfs * self = new_obfs();
+struct obfs_t * http_simple_new_obfs() {
+    struct obfs_t * self = new_obfs();
     self->l_data = malloc(sizeof(http_simple_local_data));
     http_simple_local_data_init((http_simple_local_data*)self->l_data);
     return self;
 }
 
-void http_simple_dispose(obfs *self) {
+void http_simple_dispose(struct obfs_t *self) {
     http_simple_local_data *local = (http_simple_local_data*)self->l_data;
     if (local->encode_buffer != NULL) {
         free(local->encode_buffer);
@@ -74,7 +74,7 @@ void http_simple_encode_head(http_simple_local_data *local, char *data, int data
     local->encode_buffer[pos * 3] = 0;
 }
 
-int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength, size_t* capacity) {
+int http_simple_client_encode(struct obfs_t *self, char **pencryptdata, int datalength, size_t* capacity) {
     char *encryptdata = *pencryptdata;
     http_simple_local_data *local = (http_simple_local_data*)self->l_data;
     if (local->has_sent_header) {
@@ -182,7 +182,7 @@ int http_simple_client_encode(obfs *self, char **pencryptdata, int datalength, s
     return outlength;
 }
 
-int http_simple_client_decode(obfs *self, char **pencryptdata, int datalength, size_t* capacity, int *needsendback) {
+int http_simple_client_decode(struct obfs_t *self, char **pencryptdata, int datalength, size_t* capacity, int *needsendback) {
     char *encryptdata = *pencryptdata;
     http_simple_local_data *local = (http_simple_local_data*)self->l_data;
     *needsendback = 0;
@@ -216,7 +216,7 @@ void boundary(char result[])
     }
 }
 
-int http_post_client_encode(obfs *self, char **pencryptdata, int datalength, size_t* capacity) {
+int http_post_client_encode(struct obfs_t *self, char **pencryptdata, int datalength, size_t* capacity) {
     char *encryptdata = *pencryptdata;
     http_simple_local_data *local = (http_simple_local_data*)self->l_data;
     if (local->has_sent_header) {

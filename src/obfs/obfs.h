@@ -30,41 +30,41 @@ struct server_info_t {
     struct cipher_env_t *cipher_env;
 };
 
-typedef struct _obfs {
+struct obfs_t {
     struct server_info_t server;
     void *l_data;
-} obfs;
+};
 
 typedef struct _obfs_class {
     void * (*init_data)();
-    obfs * (*new_obfs)();
-    int  (*get_overhead)(obfs *self);
-    void (*get_server_info)(obfs *self, struct server_info_t *server);
-    void (*set_server_info)(obfs *self, struct server_info_t *server);
-    void (*dispose)(obfs *self);
+    struct obfs_t * (*new_obfs)();
+    int  (*get_overhead)(struct obfs_t *self);
+    void (*get_server_info)(struct obfs_t *self, struct server_info_t *server);
+    void (*set_server_info)(struct obfs_t *self, struct server_info_t *server);
+    void (*dispose)(struct obfs_t *self);
 
-    int (*client_pre_encrypt)(obfs *self,
+    int (*client_pre_encrypt)(struct obfs_t *self,
             char **pplaindata,
             int datalength,
             size_t* capacity);
-    int (*client_encode)(obfs *self,
+    int (*client_encode)(struct obfs_t *self,
             char **pencryptdata,
             int datalength,
             size_t* capacity);
-    int (*client_decode)(obfs *self,
+    int (*client_decode)(struct obfs_t *self,
             char **pencryptdata,
             int datalength,
             size_t* capacity,
             int *needsendback);
-    int (*client_post_decrypt)(obfs *self,
+    int (*client_post_decrypt)(struct obfs_t *self,
             char **pplaindata,
             int datalength,
             size_t* capacity);
-    int (*client_udp_pre_encrypt)(obfs *self,
+    int (*client_udp_pre_encrypt)(struct obfs_t *self,
             char **pplaindata,
             int datalength,
             size_t* capacity);
-    int (*client_udp_post_decrypt)(obfs *self,
+    int (*client_udp_post_decrypt)(struct obfs_t *self,
             char **pplaindata,
             int datalength,
             size_t* capacity);
@@ -73,9 +73,9 @@ typedef struct _obfs_class {
 obfs_class * new_obfs_class(const char *plugin_name);
 void free_obfs_class(obfs_class *plugin);
 
-void set_server_info(obfs *self, struct server_info_t *server);
-void get_server_info(obfs *self, struct server_info_t *server);
-obfs * new_obfs();
-void dispose_obfs(obfs *self);
+void set_server_info(struct obfs_t *self, struct server_info_t *server);
+void get_server_info(struct obfs_t *self, struct server_info_t *server);
+struct obfs_t * new_obfs();
+void dispose_obfs(struct obfs_t *self);
 
 #endif // _OBFS_OBFS_H

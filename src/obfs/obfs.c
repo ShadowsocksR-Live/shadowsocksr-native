@@ -20,34 +20,34 @@ init_data()
     return malloc(1);
 }
 
-obfs *
+struct obfs_t *
 new_obfs()
 {
-    obfs * self = (obfs*)malloc(sizeof(obfs));
+    struct obfs_t * self = (struct obfs_t*)malloc(sizeof(struct obfs_t));
     self->l_data = NULL;
     return self;
 }
 
 int
-get_overhead(obfs *self)
+get_overhead(struct obfs_t *self)
 {
     return 0;
 }
 
 void
-set_server_info(obfs *self, struct server_info_t *server)
+set_server_info(struct obfs_t *self, struct server_info_t *server)
 {
     memmove(&self->server, server, sizeof(struct server_info_t));
 }
 
 void
-get_server_info(obfs *self, struct server_info_t *server)
+get_server_info(struct obfs_t *self, struct server_info_t *server)
 {
     memmove(server, &self->server, sizeof(struct server_info_t));
 }
 
 void
-dispose_obfs(obfs *self)
+dispose_obfs(struct obfs_t *self)
 {
     free(self);
 }
