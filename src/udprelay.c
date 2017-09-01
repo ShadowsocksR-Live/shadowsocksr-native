@@ -714,7 +714,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 
     //SSR beg
     if (server_ctx->protocol_plugin) {
-        obfs_class *protocol_plugin = server_ctx->protocol_plugin;
+        struct obfs_manager *protocol_plugin = server_ctx->protocol_plugin;
         if (protocol_plugin->client_udp_post_decrypt) {
             buf->len = protocol_plugin->client_udp_post_decrypt(server_ctx->protocol, &buf->array, buf->len, &buf->capacity);
             if ((int)buf->len < 0) {
@@ -1208,7 +1208,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     // SSR beg
     if (server_ctx->protocol_plugin) {
-        obfs_class *protocol_plugin = server_ctx->protocol_plugin;
+        struct obfs_manager *protocol_plugin = server_ctx->protocol_plugin;
         if (protocol_plugin->client_udp_pre_encrypt) {
             buf->len = protocol_plugin->client_udp_pre_encrypt(server_ctx->protocol, &buf->array, buf->len, &buf->capacity);
         }
@@ -1408,7 +1408,7 @@ init_udprelay(const char *server_host, const char *server_port,
     server_ctx->remote_addr     = remote_addr;
     server_ctx->remote_addr_len = remote_addr_len;
     //SSR beg
-    server_ctx->protocol_plugin = new_obfs_class((char *)protocol);
+    server_ctx->protocol_plugin = new_obfs_manager((char *)protocol);
     if (server_ctx->protocol_plugin) {
         server_ctx->protocol = server_ctx->protocol_plugin->new_obfs();
         server_ctx->protocol_global = server_ctx->protocol_plugin->init_data();
@@ -1450,7 +1450,7 @@ free_udprelay()
         if (server_ctx->protocol_plugin) {
             server_ctx->protocol_plugin->dispose(server_ctx->protocol);
             server_ctx->protocol = NULL;
-            free_obfs_class(server_ctx->protocol_plugin);
+            free_obfs_manager(server_ctx->protocol_plugin);
             server_ctx->protocol_plugin = NULL;
         }
         //SSR end

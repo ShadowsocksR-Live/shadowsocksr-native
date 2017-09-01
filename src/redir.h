@@ -100,10 +100,10 @@ struct server_t {
     struct server_env_t *server_env;
 
     // SSR
-    obfs *protocol;
-    obfs *obfs;
-//    obfs_class *protocol_plugin;
-//    obfs_class *obfs_plugin;
+    struct obfs_t *protocol;
+    struct obfs_t *obfs;
+//    struct obfs_manager *protocol_plugin;
+//    struct obfs_manager *obfs_plugin;
 };
 
 #endif // _LOCAL_H

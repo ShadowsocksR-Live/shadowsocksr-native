@@ -258,7 +258,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     }
     // SSR beg
     if (server_env->protocol_plugin) {
-        obfs_class *protocol_plugin = server_env->protocol_plugin;
+        struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
         if (protocol_plugin->client_pre_encrypt) {
             remote->buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
         }
@@ -273,7 +273,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     if (server_env->obfs_plugin) {
-        obfs_class *obfs_plugin = server_env->obfs_plugin;
+        struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
         if (obfs_plugin->client_encode) {
             remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
         }
@@ -404,7 +404,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 
     // SSR beg
     if (server_env->obfs_plugin) {
-        obfs_class *obfs_plugin = server_env->obfs_plugin;
+        struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
         if (obfs_plugin->client_decode) {
             int needsendback;
             server->buf->len = obfs_plugin->client_decode(server->obfs, &server->buf->array, server->buf->len, &server->buf->capacity, &needsendback);
@@ -415,7 +415,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
                 return;
             }
             if (needsendback) {
-                obfs_class *obfs_plugin = server_env->obfs_plugin;
+                struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
                 if (obfs_plugin->client_encode) {
                     remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->array, 0, &remote->buf->capacity);
                     ssize_t s = send(remote->fd, remote->buf->array, remote->buf->len, 0);
@@ -455,7 +455,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     if (server_env->protocol_plugin) {
-        obfs_class *protocol_plugin = server_env->protocol_plugin;
+        struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
         if (protocol_plugin->client_post_decrypt) {
             server->buf->len = protocol_plugin->client_post_decrypt(server->protocol, &server->buf->array, server->buf->len, &server->buf->capacity);
             if ((int)server->buf->len < 0) {
@@ -574,7 +574,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
                 server_env->obfs_plugin->set_server_info(server->obfs, &server_info);
             }
             if (server_env->protocol_plugin) {
-                obfs_class *protocol_plugin = server_env->protocol_plugin;
+                struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
                 if (protocol_plugin->client_pre_encrypt) {
                     remote->buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
                 }
@@ -589,7 +589,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
             }
 
             if (server_env->obfs_plugin) {
-                obfs_class *obfs_plugin = server_env->obfs_plugin;
+                struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
                 if (obfs_plugin->client_encode) {
                     remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
                 }
@@ -752,10 +752,10 @@ release_profile(struct listen_ctx_t *profile)
         ss_free(server_env->protocol_global);
         ss_free(server_env->obfs_global);
         if(server_env->protocol_plugin){
-            free_obfs_class(server_env->protocol_plugin);
+            free_obfs_manager(server_env->protocol_plugin);
         }
         if(server_env->obfs_plugin){
-            free_obfs_class(server_env->obfs_plugin);
+            free_obfs_manager(server_env->obfs_plugin);
         }
         ss_free(server_env->id);
         ss_free(server_env->group);
@@ -836,13 +836,13 @@ free_server(struct server_t *server)
             if (server_env->obfs_plugin) {
                 server_env->obfs_plugin->dispose(server->obfs);
                 server->obfs = NULL;
-//                free_obfs_class(server->obfs_plugin);
+//                free_obfs_manager(server->obfs_plugin);
 //                server->obfs_plugin = NULL;
             }
             if (server_env->protocol_plugin) {
                 server_env->protocol_plugin->dispose(server->protocol);
                 server->protocol = NULL;
-//                free_obfs_class(server->protocol_plugin);
+//                free_obfs_manager(server->protocol_plugin);
 //                server->protocol_plugin = NULL;
             }
             // SSR end
@@ -966,11 +966,11 @@ accept_cb(EV_P_ ev_io *w, int revents)
 
     // SSR beg
 //    remote->remote_index = index;
-//    server->obfs_plugin = new_obfs_class(listener->obfs_name);
+//    server->obfs_plugin = new_obfs_manager(listener->obfs_name);
 //    if (server->obfs_plugin) {
 //        server->obfs = server->obfs_plugin->new_obfs();
 //    }
-//    server->protocol_plugin = new_obfs_class(listener->protocol_name);
+//    server->protocol_plugin = new_obfs_manager(listener->protocol_name);
 //    if (server->protocol_plugin) {
 //        server->protocol = server->protocol_plugin->new_obfs();
 //    }
@@ -1038,10 +1038,10 @@ init_obfs(struct server_env_t *serv, char *protocol, char *protocol_param, char 
 {
     serv->protocol_name = protocol;
     serv->protocol_param = protocol_param;
-    serv->protocol_plugin = new_obfs_class(protocol);
+    serv->protocol_plugin = new_obfs_manager(protocol);
     serv->obfs_name = obfs;
     serv->obfs_param = obfs_param;
-    serv->obfs_plugin = new_obfs_class(obfs);
+    serv->obfs_plugin = new_obfs_manager(obfs);
 
     if (serv->obfs_plugin) {
         serv->obfs_global = serv->obfs_plugin->init_data();

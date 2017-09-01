@@ -349,7 +349,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 struct server_env_t *server_env = server->server_env;
                 // SSR beg
                 if (server_env->protocol_plugin) {
-                    obfs_class *protocol_plugin = server_env->protocol_plugin;
+                    struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
                     if (protocol_plugin->client_pre_encrypt) {
                         remote->buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
                     }
@@ -364,7 +364,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 }
 
                 if (server_env->obfs_plugin) {
-                    obfs_class *obfs_plugin = server_env->obfs_plugin;
+                    struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
                     if (obfs_plugin->client_encode) {
                         remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
                     }
@@ -1025,7 +1025,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
         }
         // SSR beg
         if (server_env->obfs_plugin) {
-            obfs_class *obfs_plugin = server_env->obfs_plugin;
+            struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
             if (obfs_plugin->client_decode) {
                 int needsendback;
                 server->buf->len = obfs_plugin->client_decode(server->obfs, &server->buf->array, server->buf->len, &server->buf->capacity, &needsendback);
@@ -1072,7 +1072,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
             }
         }
         if (server_env->protocol_plugin) {
-            obfs_class *protocol_plugin = server_env->protocol_plugin;
+            struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
             if (protocol_plugin->client_post_decrypt) {
                 server->buf->len = protocol_plugin->client_post_decrypt(server->protocol, &server->buf->array, server->buf->len, &server->buf->capacity);
                 if ((int)server->buf->len < 0) {
@@ -1280,10 +1280,10 @@ release_profile(struct listen_ctx_t *profile)
         ss_free(server_env->protocol_global);
         ss_free(server_env->obfs_global);
         if(server_env->protocol_plugin){
-            free_obfs_class(server_env->protocol_plugin);
+            free_obfs_manager(server_env->protocol_plugin);
         }
         if(server_env->obfs_plugin){
-            free_obfs_class(server_env->obfs_plugin);
+            free_obfs_manager(server_env->obfs_plugin);
         }
         ss_free(server_env->id);
         ss_free(server_env->group);
@@ -1468,10 +1468,10 @@ init_obfs(struct server_env_t *env, const char *protocol, const char *protocol_p
 {
     env->protocol_name = ss_strdup(protocol);
     env->protocol_param = ss_strdup(protocol_param);
-    env->protocol_plugin = new_obfs_class(protocol);
+    env->protocol_plugin = new_obfs_manager(protocol);
     env->obfs_name = ss_strdup(obfs);
     env->obfs_param = ss_strdup(obfs_param);
-    env->obfs_plugin = new_obfs_class(obfs);
+    env->obfs_plugin = new_obfs_manager(obfs);
 
     if (env->obfs_plugin) {
         env->obfs_global = env->obfs_plugin->init_data();

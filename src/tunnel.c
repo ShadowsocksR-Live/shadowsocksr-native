@@ -204,7 +204,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     // SSR beg
     if (server->protocol_plugin) {
-        obfs_class *protocol_plugin = server->protocol_plugin;
+        struct obfs_manager *protocol_plugin = server->protocol_plugin;
         if (protocol_plugin->client_pre_encrypt) {
             remote->buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
         }
@@ -219,7 +219,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     if (server->obfs_plugin) {
-        obfs_class *obfs_plugin = server->obfs_plugin;
+        struct obfs_manager *obfs_plugin = server->obfs_plugin;
         if (obfs_plugin->client_encode) {
             remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
         }
@@ -349,7 +349,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 
     // SSR beg
     if (server->obfs_plugin) {
-        obfs_class *obfs_plugin = server->obfs_plugin;
+        struct obfs_manager *obfs_plugin = server->obfs_plugin;
         if (obfs_plugin->client_decode) {
             int needsendback;
             server->buf->len = obfs_plugin->client_decode(server->obfs, &server->buf->array, server->buf->len, &server->buf->capacity, &needsendback);
@@ -360,7 +360,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
                 return;
             }
             if (needsendback) {
-                obfs_class *obfs_plugin = server->obfs_plugin;
+                struct obfs_manager *obfs_plugin = server->obfs_plugin;
                 if (obfs_plugin->client_encode) {
                     remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->array, 0, &remote->buf->capacity);
                     ssize_t s = send(remote->fd, remote->buf->array, remote->buf->len, 0);
@@ -401,7 +401,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     if (server->protocol_plugin) {
-        obfs_class *protocol_plugin = server->protocol_plugin;
+        struct obfs_manager *protocol_plugin = server->protocol_plugin;
         if (protocol_plugin->client_post_decrypt) {
             server->buf->len = protocol_plugin->client_post_decrypt(server->protocol, &server->buf->array, server->buf->len, &server->buf->capacity);
             if ((int)server->buf->len < 0) {
@@ -522,7 +522,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
                 server->obfs_plugin->set_server_info(server->obfs, &server_info);
             }
             if (server->protocol_plugin) {
-                obfs_class *protocol_plugin = server->protocol_plugin;
+                struct obfs_manager *protocol_plugin = server->protocol_plugin;
                 if (protocol_plugin->client_pre_encrypt) {
                     remote->buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
                 }
@@ -537,7 +537,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
             }
 
             if (server->obfs_plugin) {
-                obfs_class *obfs_plugin = server->obfs_plugin;
+                struct obfs_manager *obfs_plugin = server->obfs_plugin;
                 if (obfs_plugin->client_encode) {
                     remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
                 }
@@ -713,13 +713,13 @@ free_server(struct server_t *server)
         if (server->obfs_plugin) {
             server->obfs_plugin->dispose(server->obfs);
             server->obfs = NULL;
-            free_obfs_class(server->obfs_plugin);
+            free_obfs_manager(server->obfs_plugin);
             server->obfs_plugin = NULL;
         }
         if (server->protocol_plugin) {
             server->protocol_plugin->dispose(server->protocol);
             server->protocol = NULL;
-            free_obfs_class(server->protocol_plugin);
+            free_obfs_manager(server->protocol_plugin);
             server->protocol_plugin = NULL;
         }
         // SSR end

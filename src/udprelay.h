@@ -60,7 +60,7 @@ struct server_ctx_t {
     struct cipher_env_t *cipher_env;
     // SSR
     struct obfs_t *protocol;
-    obfs_class *protocol_plugin;
+    struct obfs_manager *protocol_plugin;
     void *protocol_global;
 };
 

@@ -70,8 +70,8 @@ struct server_t {
     // SSR
     obfs *protocol;
     obfs *obfs;
-    obfs_class *protocol_plugin;
-    obfs_class *obfs_plugin;
+    struct obfs_manager *protocol_plugin;
+    struct obfs_manager *obfs_plugin;
 };
 
 struct remote_ctx_t {

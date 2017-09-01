@@ -35,7 +35,7 @@ struct obfs_t {
     void *l_data;
 };
 
-typedef struct _obfs_class {
+struct obfs_manager {
     void * (*init_data)(void);
     struct obfs_t * (*new_obfs)(void);
     int  (*get_overhead)(struct obfs_t *obfs);
@@ -68,10 +68,10 @@ typedef struct _obfs_class {
             char **pplaindata,
             int datalength,
             size_t* capacity);
-} obfs_class;
+};
 
-obfs_class * new_obfs_class(const char *plugin_name);
-void free_obfs_class(obfs_class *plugin);
+struct obfs_manager * new_obfs_manager(const char *plugin_name);
+void free_obfs_manager(struct obfs_manager *plugin);
 
 void set_server_info(struct obfs_t *obfs, struct server_info_t *server);
 void get_server_info(struct obfs_t *obfs, struct server_info_t *server);
