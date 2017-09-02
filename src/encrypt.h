@@ -145,15 +145,15 @@ struct cipher_env_t {
     struct cache *iv_cache;
 };
 
-typedef struct _cipher_ctx {
+struct cipher_ctx_t {
     cipher_evp_t *evp;
 #ifdef USE_CRYPTO_APPLECC
     cipher_cc_t cc;
 #endif
     uint8_t iv[MAX_IV_LENGTH];
-} cipher_ctx_t;
+};
 
-struct ss_cipher {
+struct cipher_wrapper {
     cipher_core_t *core;
     size_t iv_len;
     size_t key_len;
@@ -179,10 +179,10 @@ struct buffer_t {
     size_t idx;
     size_t len;
     size_t capacity;
-    char   *array;
+    char   *buffer;
 };
 
-struct ss_chunk {
+struct chunk_t {
     uint32_t idx;
     uint32_t len;
     uint32_t counter;
@@ -192,7 +192,7 @@ struct ss_chunk {
 struct enc_ctx {
     uint8_t init;
     uint64_t counter;
-    cipher_ctx_t evp;
+    struct cipher_ctx_t evp;
 };
 
 void bytes_to_key_with_size(const char *pass, size_t len, uint8_t *md, size_t md_size);
@@ -211,7 +211,7 @@ void enc_ctx_release(struct cipher_env_t* env, struct enc_ctx *ctx);
 int enc_get_iv_len(struct cipher_env_t* env);
 uint8_t* enc_get_key(struct cipher_env_t* env);
 int enc_get_key_len(struct cipher_env_t* env);
-void cipher_context_release(struct cipher_env_t *env, cipher_ctx_t *ctx);
+void cipher_context_release(struct cipher_env_t *env, struct cipher_ctx_t *ctx);
 unsigned char *enc_md5(const unsigned char *d, size_t n, unsigned char *md);
 
 int ss_md5_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len);

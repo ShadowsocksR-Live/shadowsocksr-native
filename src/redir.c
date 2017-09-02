@@ -189,7 +189,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     struct remote_t *remote              = server->remote;
     struct server_env_t *server_env = server->server_env;
 
-    ssize_t r = recv(server->fd, remote->buf->array + remote->buf->len,
+    ssize_t r = recv(server->fd, remote->buf->buffer + remote->buf->len,
                      BUF_SIZE - remote->buf->len, 0);
 
     if (r == 0) {
@@ -243,10 +243,10 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             port = ntohs(((struct sockaddr_in *)&(server->destaddr))->sin_port);
         }
         if (port == http_protocol->default_port)
-            ret = http_protocol->parse_packet(remote->buf->array,
+            ret = http_protocol->parse_packet(remote->buf->buffer,
                                               remote->buf->len, &server->hostname);
         else if (port == tls_protocol->default_port)
-            ret = tls_protocol->parse_packet(remote->buf->array,
+            ret = tls_protocol->parse_packet(remote->buf->buffer,
                                              remote->buf->len, &server->hostname);
         if (ret > 0) {
             server->hostname_len = ret;
@@ -260,7 +260,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     if (server_env->protocol_plugin) {
         struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
         if (protocol_plugin->client_pre_encrypt) {
-            remote->buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
+            remote->buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->buffer, remote->buf->len, &remote->buf->capacity);
         }
     }
     int err = ss_encrypt(&server_env->cipher, remote->buf, server->e_ctx, BUF_SIZE);
@@ -275,7 +275,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     if (server_env->obfs_plugin) {
         struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
         if (obfs_plugin->client_encode) {
-            remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
+            remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->buffer, remote->buf->len, &remote->buf->capacity);
         }
     }
     // SSR end
@@ -291,7 +291,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         ev_io_stop(EV_A_ & server_recv_ctx->io);
         return;
     }
-    int s = send(remote->fd, remote->buf->array, remote->buf->len, 0);
+    int s = send(remote->fd, remote->buf->buffer, remote->buf->len, 0);
 
     if (s == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -331,7 +331,7 @@ server_send_cb(EV_P_ ev_io *w, int revents)
         return;
     } else {
         // has data to send
-        ssize_t s = send(server->fd, server->buf->array + server->buf->idx,
+        ssize_t s = send(server->fd, server->buf->buffer + server->buf->idx,
                          server->buf->len, 0);
         if (s == -1) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
@@ -380,7 +380,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 
     ev_timer_again(EV_A_ & remote->recv_ctx->watcher);
 
-    ssize_t r = recv(remote->fd, server->buf->array, BUF_SIZE, 0);
+    ssize_t r = recv(remote->fd, server->buf->buffer, BUF_SIZE, 0);
 
     if (r == 0) {
         // connection closed
@@ -407,7 +407,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
         struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
         if (obfs_plugin->client_decode) {
             int needsendback;
-            server->buf->len = obfs_plugin->client_decode(server->obfs, &server->buf->array, server->buf->len, &server->buf->capacity, &needsendback);
+            server->buf->len = obfs_plugin->client_decode(server->obfs, &server->buf->buffer, server->buf->len, &server->buf->capacity, &needsendback);
             if ((int)server->buf->len < 0) {
                 LOGE("client_decode");
                 close_and_free_remote(EV_A_ remote);
@@ -417,8 +417,8 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
             if (needsendback) {
                 struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
                 if (obfs_plugin->client_encode) {
-                    remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->array, 0, &remote->buf->capacity);
-                    ssize_t s = send(remote->fd, remote->buf->array, remote->buf->len, 0);
+                    remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->buffer, 0, &remote->buf->capacity);
+                    ssize_t s = send(remote->fd, remote->buf->buffer, remote->buf->len, 0);
                     if (s == -1) {
                         if (errno != EAGAIN && errno != EWOULDBLOCK) {
                             ERROR("remote_send_cb_send");
@@ -457,7 +457,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     if (server_env->protocol_plugin) {
         struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
         if (protocol_plugin->client_post_decrypt) {
-            server->buf->len = protocol_plugin->client_post_decrypt(server->protocol, &server->buf->array, server->buf->len, &server->buf->capacity);
+            server->buf->len = protocol_plugin->client_post_decrypt(server->protocol, &server->buf->buffer, server->buf->len, &server->buf->capacity);
             if ((int)server->buf->len < 0) {
                 LOGE("client_post_decrypt");
                 close_and_free_remote(EV_A_ remote);
@@ -470,7 +470,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     }
     // SSR end
 
-    int s = send(server->fd, server->buf->array, server->buf->len, 0);
+    int s = send(server->fd, server->buf->buffer, server->buf->len, 0);
 
     if (s == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -525,30 +525,30 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
                     port = (((struct sockaddr_in *)&(server->destaddr))->sin_port);
                 }
 
-                abuf->array[abuf->len++] = 3;          // Type 3 is hostname
-                abuf->array[abuf->len++] = server->hostname_len;
-                memcpy(abuf->array + abuf->len, server->hostname, server->hostname_len);
+                abuf->buffer[abuf->len++] = 3;          // Type 3 is hostname
+                abuf->buffer[abuf->len++] = server->hostname_len;
+                memcpy(abuf->buffer + abuf->len, server->hostname, server->hostname_len);
                 abuf->len += server->hostname_len;
-                memcpy(abuf->array + abuf->len, &port, 2);
+                memcpy(abuf->buffer + abuf->len, &port, 2);
             } else if (AF_INET6 == server->destaddr.ss_family) { // IPv6
-                abuf->array[abuf->len++] = 4;          // Type 4 is IPv6 address
+                abuf->buffer[abuf->len++] = 4;          // Type 4 is IPv6 address
 
                 size_t in6_addr_len = sizeof(struct in6_addr);
-                memcpy(abuf->array + abuf->len,
+                memcpy(abuf->buffer + abuf->len,
                        &(((struct sockaddr_in6 *)&(server->destaddr))->sin6_addr),
                        in6_addr_len);
                 abuf->len += in6_addr_len;
-                memcpy(abuf->array + abuf->len,
+                memcpy(abuf->buffer + abuf->len,
                        &(((struct sockaddr_in6 *)&(server->destaddr))->sin6_port),
                        2);
             } else {                             // IPv4
-                abuf->array[abuf->len++] = 1; // Type 1 is IPv4 address
+                abuf->buffer[abuf->len++] = 1; // Type 1 is IPv4 address
 
                 size_t in_addr_len = sizeof(struct in_addr);
-                memcpy(abuf->array + abuf->len,
+                memcpy(abuf->buffer + abuf->len,
                        &((struct sockaddr_in *)&(server->destaddr))->sin_addr, in_addr_len);
                 abuf->len += in_addr_len;
-                memcpy(abuf->array + abuf->len,
+                memcpy(abuf->buffer + abuf->len,
                        &((struct sockaddr_in *)&(server->destaddr))->sin_port, 2);
             }
 
@@ -556,12 +556,12 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
 
             if (remote->buf->len > 0) {
                 buffer_realloc(remote->buf, remote->buf->len + abuf->len, BUF_SIZE);
-                memmove(remote->buf->array + abuf->len, remote->buf->array, remote->buf->len);
-                memcpy(remote->buf->array, abuf->array, abuf->len);
+                memmove(remote->buf->buffer + abuf->len, remote->buf->buffer, remote->buf->len);
+                memcpy(remote->buf->buffer, abuf->buffer, abuf->len);
                 remote->buf->len += abuf->len;
             } else {
                 buffer_realloc(remote->buf, abuf->len, BUF_SIZE);
-                memcpy(remote->buf->array, abuf->array, abuf->len);
+                memcpy(remote->buf->buffer, abuf->buffer, abuf->len);
                 remote->buf->len = abuf->len;
             }
             buffer_free(abuf);
@@ -570,13 +570,13 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
             struct server_info_t server_info;
             if (server_env->obfs_plugin) {
                 server_env->obfs_plugin->get_server_info(server->obfs, &server_info);
-                server_info.head_len = get_head_size(remote->buf->array, remote->buf->len, 30);
+                server_info.head_len = get_head_size(remote->buf->buffer, remote->buf->len, 30);
                 server_env->obfs_plugin->set_server_info(server->obfs, &server_info);
             }
             if (server_env->protocol_plugin) {
                 struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
                 if (protocol_plugin->client_pre_encrypt) {
-                    remote->buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
+                    remote->buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->buffer, remote->buf->len, &remote->buf->capacity);
                 }
             }
 
@@ -591,7 +591,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
             if (server_env->obfs_plugin) {
                 struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
                 if (obfs_plugin->client_encode) {
-                    remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->array, remote->buf->len, &remote->buf->capacity);
+                    remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->buffer, remote->buf->len, &remote->buf->capacity);
                 }
             }
             // SSR end
@@ -613,7 +613,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
         return;
     } else {
         // has data to send
-        ssize_t s = send(remote->fd, remote->buf->array + remote->buf->idx,
+        ssize_t s = send(remote->fd, remote->buf->buffer + remote->buf->idx,
                          remote->buf->len, 0);
         if (s == -1) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {

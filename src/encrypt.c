@@ -277,7 +277,7 @@ int
 buffer_alloc(struct buffer_t *ptr, size_t capacity)
 {
     sodium_memzero(ptr, sizeof(struct buffer_t));
-    ptr->array    = ss_malloc(capacity);
+    ptr->buffer    = ss_malloc(capacity);
     ptr->capacity = capacity;
     return (int) capacity;
 }
@@ -290,7 +290,7 @@ buffer_realloc(struct buffer_t *ptr, size_t len, size_t capacity)
     }
     size_t real_capacity = max(len, capacity);
     if (ptr->capacity < real_capacity) {
-        ptr->array    = ss_realloc(ptr->array, real_capacity);
+        ptr->buffer    = ss_realloc(ptr->buffer, real_capacity);
         ptr->capacity = real_capacity;
     }
     return (int) real_capacity;
@@ -305,8 +305,8 @@ buffer_free(struct buffer_t *ptr)
     ptr->idx      = 0;
     ptr->len      = 0;
     ptr->capacity = 0;
-    if (ptr->array != NULL) {
-        ss_free(ptr->array);
+    if (ptr->buffer != NULL) {
+        ss_free(ptr->buffer);
     }
 }
 
@@ -449,7 +449,7 @@ enc_md5(const unsigned char *d, size_t n, unsigned char *md)
 }
 
 int
-cipher_iv_size(const struct ss_cipher *cipher)
+cipher_iv_size(const struct cipher_wrapper *cipher)
 {
 #if defined(USE_CRYPTO_OPENSSL)
     if (cipher->core == NULL) {
@@ -466,7 +466,7 @@ cipher_iv_size(const struct ss_cipher *cipher)
 }
 
 int
-cipher_key_size(const struct ss_cipher *cipher)
+cipher_key_size(const struct cipher_wrapper *cipher)
 {
 #if defined(USE_CRYPTO_OPENSSL)
     if (cipher->core == NULL) {
@@ -516,7 +516,7 @@ bytes_to_key_with_size(const char *pass, size_t len, uint8_t *md, size_t md_size
 }
 
 int
-bytes_to_key(const struct ss_cipher *cipher, const digest_type_t *md,
+bytes_to_key(const struct cipher_wrapper *cipher, const digest_type_t *md,
              const uint8_t *pass, uint8_t *key)
 {
     size_t datal;
@@ -695,7 +695,7 @@ get_digest_type(const char *digest)
 }
 
 void
-cipher_context_init(struct cipher_env_t *env, cipher_ctx_t *ctx, int enc)
+cipher_context_init(struct cipher_env_t *env, struct cipher_ctx_t *ctx, int enc)
 {
     enum cipher_index method = env->enc_method;
 
@@ -781,7 +781,7 @@ cipher_context_init(struct cipher_env_t *env, cipher_ctx_t *ctx, int enc)
 }
 
 void
-cipher_context_set_iv(struct cipher_env_t *env, cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len,
+cipher_context_set_iv(struct cipher_env_t *env, struct cipher_ctx_t *ctx, uint8_t *iv, size_t iv_len,
                       int enc)
 {
     const unsigned char *true_key;
@@ -895,7 +895,7 @@ cipher_context_set_iv(struct cipher_env_t *env, cipher_ctx_t *ctx, uint8_t *iv, 
 }
 
 void
-cipher_context_release(struct cipher_env_t *env, cipher_ctx_t *ctx)
+cipher_context_release(struct cipher_env_t *env, struct cipher_ctx_t *ctx)
 {
     if (env->enc_method >= SALSA20) {
         return;
@@ -926,7 +926,7 @@ cipher_context_release(struct cipher_env_t *env, cipher_ctx_t *ctx)
 }
 
 static int
-cipher_context_update(cipher_ctx_t *ctx, uint8_t *output, size_t *olen,
+cipher_context_update(struct cipher_ctx_t *ctx, uint8_t *output, size_t *olen,
                       const uint8_t *input, size_t ilen)
 {
 #ifdef USE_CRYPTO_APPLECC
@@ -1064,7 +1064,7 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
 {
     enum cipher_index method = env->enc_method;
     if (method > TABLE) {
-        cipher_ctx_t evp;
+        struct cipher_ctx_t evp;
         cipher_context_init(env, &evp, 1);
 
         size_t iv_len = env->enc_iv_len;
@@ -1079,16 +1079,16 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
 
         rand_bytes(iv, iv_len);
         cipher_context_set_iv(env, &evp, iv, iv_len, 1);
-        memcpy(cipher->array, iv, iv_len);
+        memcpy(cipher->buffer, iv, iv_len);
 
         if (method >= SALSA20) {
-            crypto_stream_xor_ic((uint8_t *)(cipher->array + iv_len),
-                                 (const uint8_t *)plain->array, (uint64_t)(plain->len),
+            crypto_stream_xor_ic((uint8_t *)(cipher->buffer + iv_len),
+                                 (const uint8_t *)plain->buffer, (uint64_t)(plain->len),
                                  (const uint8_t *)iv,
                                  0, env->enc_key, method);
         } else {
-            err = cipher_context_update(&evp, (uint8_t *)(cipher->array + iv_len),
-                                        &cipher->len, (const uint8_t *)plain->array,
+            err = cipher_context_update(&evp, (uint8_t *)(cipher->buffer + iv_len),
+                                        &cipher->len, (const uint8_t *)plain->buffer,
                                         plain->len);
         }
 
@@ -1099,21 +1099,21 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
         }
 
 #ifdef DEBUG
-        dump("PLAIN", plain->array, plain->len);
-        dump("CIPHER", cipher->array + iv_len, cipher->len);
+        dump("PLAIN", plain->buffer, plain->len);
+        dump("CIPHER", cipher->buffer + iv_len, cipher->len);
 #endif
 
         cipher_context_release(env, &evp);
 
         buffer_realloc(plain, iv_len + cipher->len, capacity);
-        memcpy(plain->array, cipher->array, iv_len + cipher->len);
+        memcpy(plain->buffer, cipher->buffer, iv_len + cipher->len);
         plain->len = iv_len + cipher->len;
 
         return 0;
     } else {
         if (env->enc_method == TABLE) {
-            char *begin = plain->array;
-            char *ptr   = plain->array;
+            char *begin = plain->buffer;
+            char *ptr   = plain->buffer;
             while (ptr < begin + plain->len) {
                 *ptr = (char)env->enc_table[(uint8_t)*ptr];
                 ptr++;
@@ -1142,7 +1142,7 @@ ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx
 
         if (!ctx->init) {
             cipher_context_set_iv(env, &ctx->evp, ctx->evp.iv, iv_len, 1);
-            memcpy(cipher->array, ctx->evp.iv, iv_len);
+            memcpy(cipher->buffer, ctx->evp.iv, iv_len);
             ctx->counter = 0;
             ctx->init    = 1;
         }
@@ -1152,25 +1152,25 @@ ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx
             buffer_realloc(cipher, iv_len + (padding + cipher->len) * 2, capacity);
             if (padding) {
                 buffer_realloc(plain, plain->len + padding, capacity);
-                memmove(plain->array + padding, plain->array, plain->len);
-                sodium_memzero(plain->array, padding);
+                memmove(plain->buffer + padding, plain->buffer, plain->len);
+                sodium_memzero(plain->buffer, padding);
             }
-            crypto_stream_xor_ic((uint8_t *)(cipher->array + iv_len),
-                                 (const uint8_t *)plain->array,
+            crypto_stream_xor_ic((uint8_t *)(cipher->buffer + iv_len),
+                                 (const uint8_t *)plain->buffer,
                                  (uint64_t)(plain->len + padding),
                                  (const uint8_t *)ctx->evp.iv,
                                  ctx->counter / SODIUM_BLOCK_SIZE, env->enc_key,
                                  env->enc_method);
             ctx->counter += plain->len;
             if (padding) {
-                memmove(cipher->array + iv_len,
-                        cipher->array + iv_len + padding, cipher->len);
+                memmove(cipher->buffer + iv_len,
+                        cipher->buffer + iv_len + padding, cipher->len);
             }
         } else {
             err =
                 cipher_context_update(&ctx->evp,
-                                      (uint8_t *)(cipher->array + iv_len),
-                                      &cipher->len, (const uint8_t *)plain->array,
+                                      (uint8_t *)(cipher->buffer + iv_len),
+                                      &cipher->len, (const uint8_t *)plain->buffer,
                                       plain->len);
             if (!err) {
                 return -1;
@@ -1178,19 +1178,19 @@ ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx
         }
 
 #ifdef DEBUG
-        dump("PLAIN", plain->array, plain->len);
-        dump("CIPHER", cipher->array + iv_len, cipher->len);
+        dump("PLAIN", plain->buffer, plain->len);
+        dump("CIPHER", cipher->buffer + iv_len, cipher->len);
 #endif
 
         buffer_realloc(plain, iv_len + cipher->len, capacity);
-        memcpy(plain->array, cipher->array, iv_len + cipher->len);
+        memcpy(plain->buffer, cipher->buffer, iv_len + cipher->len);
         plain->len = iv_len + cipher->len;
 
         return 0;
     } else {
         if (env->enc_method == TABLE) {
-            char *begin = plain->array;
-            char *ptr   = plain->array;
+            char *begin = plain->buffer;
+            char *ptr   = plain->buffer;
             while (ptr < begin + plain->len) {
                 *ptr = (char)env->enc_table[(uint8_t)*ptr];
                 ptr++;
@@ -1212,7 +1212,7 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
             return -1;
         }
 
-        cipher_ctx_t evp;
+        struct cipher_ctx_t evp;
         cipher_context_init(env, &evp, 0);
 
         static struct buffer_t tmp = { 0, 0, 0, NULL };
@@ -1221,17 +1221,17 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
         plain->len = cipher->len - iv_len;
 
         uint8_t iv[MAX_IV_LENGTH];
-        memcpy(iv, cipher->array, iv_len);
+        memcpy(iv, cipher->buffer, iv_len);
         cipher_context_set_iv(env, &evp, iv, iv_len, 0);
 
         if (method >= SALSA20) {
-            crypto_stream_xor_ic((uint8_t *)plain->array,
-                                 (const uint8_t *)(cipher->array + iv_len),
+            crypto_stream_xor_ic((uint8_t *)plain->buffer,
+                                 (const uint8_t *)(cipher->buffer + iv_len),
                                  (uint64_t)(cipher->len - iv_len),
                                  (const uint8_t *)iv, 0, env->enc_key, method);
         } else {
-            ret = cipher_context_update(&evp, (uint8_t *)plain->array, &plain->len,
-                                        (const uint8_t *)(cipher->array + iv_len),
+            ret = cipher_context_update(&evp, (uint8_t *)plain->buffer, &plain->len,
+                                        (const uint8_t *)(cipher->buffer + iv_len),
                                         cipher->len - iv_len);
         }
 
@@ -1242,21 +1242,21 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
         }
 
 #ifdef DEBUG
-        dump("PLAIN", plain->array, plain->len);
-        dump("CIPHER", cipher->array + iv_len, cipher->len - iv_len);
+        dump("PLAIN", plain->buffer, plain->len);
+        dump("CIPHER", cipher->buffer + iv_len, cipher->len - iv_len);
 #endif
 
         cipher_context_release(env, &evp);
 
         buffer_realloc(cipher, plain->len, capacity);
-        memcpy(cipher->array, plain->array, plain->len);
+        memcpy(cipher->buffer, plain->buffer, plain->len);
         cipher->len = plain->len;
 
         return 0;
     } else {
         if (method == TABLE) {
-            char *begin = cipher->array;
-            char *ptr   = cipher->array;
+            char *begin = cipher->buffer;
+            char *ptr   = cipher->buffer;
             while (ptr < begin + cipher->len) {
                 *ptr = (char)env->dec_table[(uint8_t)*ptr];
                 ptr++;
@@ -1285,7 +1285,7 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
             iv_len      = env->enc_iv_len;
             plain->len -= iv_len;
 
-            memcpy(iv, cipher->array, iv_len);
+            memcpy(iv, cipher->buffer, iv_len);
             cipher_context_set_iv(env, &ctx->evp, iv, iv_len, 0);
             ctx->counter = 0;
             ctx->init    = 1;
@@ -1306,23 +1306,23 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
 
             if (padding) {
                 buffer_realloc(cipher, cipher->len + padding, capacity);
-                memmove(cipher->array + iv_len + padding, cipher->array + iv_len,
+                memmove(cipher->buffer + iv_len + padding, cipher->buffer + iv_len,
                         cipher->len - iv_len);
-                sodium_memzero(cipher->array + iv_len, padding);
+                sodium_memzero(cipher->buffer + iv_len, padding);
             }
-            crypto_stream_xor_ic((uint8_t *)plain->array,
-                                 (const uint8_t *)(cipher->array + iv_len),
+            crypto_stream_xor_ic((uint8_t *)plain->buffer,
+                                 (const uint8_t *)(cipher->buffer + iv_len),
                                  (uint64_t)(cipher->len - iv_len + padding),
                                  (const uint8_t *)ctx->evp.iv,
                                  ctx->counter / SODIUM_BLOCK_SIZE, env->enc_key,
                                  env->enc_method);
             ctx->counter += cipher->len - iv_len;
             if (padding) {
-                memmove(plain->array, plain->array + padding, plain->len);
+                memmove(plain->buffer, plain->buffer + padding, plain->len);
             }
         } else {
-            err = cipher_context_update(&ctx->evp, (uint8_t *)plain->array, &plain->len,
-                                        (const uint8_t *)(cipher->array + iv_len),
+            err = cipher_context_update(&ctx->evp, (uint8_t *)plain->buffer, &plain->len,
+                                        (const uint8_t *)(cipher->buffer + iv_len),
                                         cipher->len - iv_len);
         }
 
@@ -1332,19 +1332,19 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
         }
 
 #ifdef DEBUG
-        dump("PLAIN", plain->array, plain->len);
-        dump("CIPHER", cipher->array + iv_len, cipher->len - iv_len);
+        dump("PLAIN", plain->buffer, plain->len);
+        dump("CIPHER", cipher->buffer + iv_len, cipher->len - iv_len);
 #endif
 
         buffer_realloc(cipher, plain->len, capacity);
-        memcpy(cipher->array, plain->array, plain->len);
+        memcpy(cipher->buffer, plain->buffer, plain->len);
         cipher->len = plain->len;
 
         return 0;
     } else {
         if(env->enc_method == TABLE) {
-            char *begin = cipher->array;
-            char *ptr   = cipher->array;
+            char *begin = cipher->buffer;
+            char *ptr   = cipher->buffer;
             while (ptr < begin + cipher->len) {
                 *ptr = (char)env->dec_table[(uint8_t)*ptr];
                 ptr++;
@@ -1361,11 +1361,11 @@ ss_encrypt_buffer(struct cipher_env_t *env, struct enc_ctx *ctx, char *in, size_
     memset(&cipher, 0, sizeof(struct buffer_t));
     buffer_alloc(&cipher, in_size + 32);
     cipher.len = in_size;
-    memcpy(cipher.array, in, in_size);
+    memcpy(cipher.buffer, in, in_size);
     int s = ss_encrypt(env, &cipher, ctx, in_size + 32);
     if (s == 0) {
         *out_size = cipher.len;
-        memcpy(out, cipher.array, cipher.len);
+        memcpy(out, cipher.buffer, cipher.len);
     }
     buffer_free(&cipher);
     return s;
@@ -1378,11 +1378,11 @@ ss_decrypt_buffer(struct cipher_env_t *env, struct enc_ctx *ctx, char *in, size_
     memset(&cipher, 0, sizeof(struct buffer_t));
     buffer_alloc(&cipher, in_size + 32);
     cipher.len = in_size;
-    memcpy(cipher.array, in, in_size);
+    memcpy(cipher.buffer, in, in_size);
     int s = ss_decrypt(env, &cipher, ctx, in_size + 32);
     if (s == 0) {
         *out_size = cipher.len;
-        memcpy(out, cipher.array, cipher.len);
+        memcpy(out, cipher.buffer, cipher.len);
     }
     buffer_free(&cipher);
     return s;
@@ -1466,7 +1466,7 @@ enc_key_init(struct cipher_env_t *env, enum cipher_index method, const char *pas
     cipher_core_t cipher_info;
 #endif
 
-    struct ss_cipher cipher = { NULL };
+    struct cipher_wrapper cipher = { NULL };
 
     // Initialize sodium for random generator
     if (sodium_init() == -1) {

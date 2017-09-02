@@ -231,7 +231,7 @@ is_header_complete(const struct buffer_t *buf)
     size_t header_len = 0;
     size_t buf_len    = buf->len;
 
-    char atyp = buf->array[header_len];
+    char atyp = buf->buffer[header_len];
 
     // 1 byte for atyp
     header_len++;
@@ -244,7 +244,7 @@ is_header_complete(const struct buffer_t *buf)
         // domain len + len of domain
         if (buf_len < header_len + 1)
             return 0;
-        uint8_t name_len = *(uint8_t *)(buf->array + header_len);
+        uint8_t name_len = *(uint8_t *)(buf->buffer + header_len);
         header_len += name_len + 1;
     } else if ((atyp & ADDRTYPE_MASK) == 4) {
         // IP V6
@@ -533,7 +533,7 @@ connect_to_remote(EV_P_ struct addrinfo *res,
         endpoints.sae_dstaddrlen = res->ai_addrlen;
 
         struct iovec iov;
-        iov.iov_base = server->buf->array + server->buf->idx;
+        iov.iov_base = server->buf->buffer + server->buf->idx;
         iov.iov_len  = server->buf->len;
         size_t len;
         int s = connectx(sockfd, &endpoints, SAE_ASSOCID_ANY, CONNECT_DATA_IDEMPOTENT,
@@ -542,7 +542,7 @@ connect_to_remote(EV_P_ struct addrinfo *res,
             s = len;
         }
 #else
-        ssize_t s = sendto(sockfd, server->buf->array + server->buf->idx,
+        ssize_t s = sendto(sockfd, server->buf->buffer + server->buf->idx,
                            server->buf->len, MSG_FASTOPEN, res->ai_addr,
                            res->ai_addrlen);
 #endif
@@ -607,7 +607,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         return;
     }
 
-    ssize_t r = recv(server->fd, buf->array + len, BUF_SIZE - len, 0);
+    ssize_t r = recv(server->fd, buf->buffer + len, BUF_SIZE - len, 0);
 
     if (r == 0) {
         // connection closed
@@ -679,15 +679,15 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     if (server->stage == STAGE_HANDSHAKE) {
         size_t header_len = server->header_buf->len;
         buffer_realloc(server->header_buf, server->buf->len + header_len, BUF_SIZE);
-        memcpy(server->header_buf->array + header_len,
-               server->buf->array, server->buf->len);
+        memcpy(server->header_buf->buffer + header_len,
+               server->buf->buffer, server->buf->len);
         server->header_buf->len = server->buf->len + header_len;
 
         int ret = is_header_complete(server->buf);
 
         if (ret == 1) {
             buffer_realloc(server->buf, server->header_buf->len, BUF_SIZE);
-            memcpy(server->buf->array, server->header_buf->array, server->header_buf->len);
+            memcpy(server->buf->buffer, server->header_buf->buffer, server->header_buf->len);
             server->buf->len = server->header_buf->len;
             buffer_free(server->header_buf);
             ss_free(server->header_buf);
@@ -703,7 +703,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     // handshake and transmit data
     if (server->stage == STAGE_STREAM) {
-        int s = send(remote->fd, remote->buf->array, remote->buf->len, 0);
+        int s = send(remote->fd, remote->buf->buffer, remote->buf->len, 0);
         if (s == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 // no data, wait for send
@@ -745,7 +745,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
         int offset     = 0;
         int need_query = 0;
-        char atyp      = server->buf->array[offset++];
+        char atyp      = server->buf->buffer[offset++];
         char host[257] = { 0 };
         uint16_t port  = 0;
         struct addrinfo info;
@@ -760,8 +760,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             size_t in_addr_len       = sizeof(struct in_addr);
             addr->sin_family = AF_INET;
             if (server->buf->len >= in_addr_len + 3) {
-                addr->sin_addr = *(struct in_addr *)(server->buf->array + offset);
-                dns_ntop(AF_INET, (const void *)(server->buf->array + offset),
+                addr->sin_addr = *(struct in_addr *)(server->buf->buffer + offset);
+                dns_ntop(AF_INET, (const void *)(server->buf->buffer + offset),
                          host, INET_ADDRSTRLEN);
                 offset += in_addr_len;
             } else {
@@ -770,7 +770,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 close_and_free_server(EV_A_ server);
                 return;
             }
-            addr->sin_port   = *(uint16_t *)(server->buf->array + offset);
+            addr->sin_port   = *(uint16_t *)(server->buf->buffer + offset);
             info.ai_family   = AF_INET;
             info.ai_socktype = SOCK_STREAM;
             info.ai_protocol = IPPROTO_TCP;
@@ -778,9 +778,9 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             info.ai_addr     = (struct sockaddr *)addr;
         } else if ((atyp & ADDRTYPE_MASK) == 3) {
             // Domain name
-            uint8_t name_len = *(uint8_t *)(server->buf->array + offset);
+            uint8_t name_len = *(uint8_t *)(server->buf->buffer + offset);
             if (name_len + 4 <= server->buf->len) {
-                memcpy(host, server->buf->array + offset + 1, name_len);
+                memcpy(host, server->buf->buffer + offset + 1, name_len);
                 offset += name_len + 1;
             } else {
                 LOGE("invalid name length: %d", name_len);
@@ -801,7 +801,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 if (ip.version == 4) {
                     struct sockaddr_in *addr = (struct sockaddr_in *)&storage;
                     dns_pton(AF_INET, host, &(addr->sin_addr));
-                    addr->sin_port   = *(uint16_t *)(server->buf->array + offset);
+                    addr->sin_port   = *(uint16_t *)(server->buf->buffer + offset);
                     addr->sin_family = AF_INET;
                     info.ai_family   = AF_INET;
                     info.ai_addrlen  = sizeof(struct sockaddr_in);
@@ -809,7 +809,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 } else if (ip.version == 6) {
                     struct sockaddr_in6 *addr = (struct sockaddr_in6 *)&storage;
                     dns_pton(AF_INET6, host, &(addr->sin6_addr));
-                    addr->sin6_port   = *(uint16_t *)(server->buf->array + offset);
+                    addr->sin6_port   = *(uint16_t *)(server->buf->buffer + offset);
                     addr->sin6_family = AF_INET6;
                     info.ai_family    = AF_INET6;
                     info.ai_addrlen   = sizeof(struct sockaddr_in6);
@@ -830,8 +830,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             size_t in6_addr_len       = sizeof(struct in6_addr);
             addr->sin6_family = AF_INET6;
             if (server->buf->len >= in6_addr_len + 3) {
-                addr->sin6_addr = *(struct in6_addr *)(server->buf->array + offset);
-                dns_ntop(AF_INET6, (const void *)(server->buf->array + offset),
+                addr->sin6_addr = *(struct in6_addr *)(server->buf->buffer + offset);
+                dns_ntop(AF_INET6, (const void *)(server->buf->buffer + offset),
                          host, INET6_ADDRSTRLEN);
                 offset += in6_addr_len;
             } else {
@@ -840,7 +840,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 close_and_free_server(EV_A_ server);
                 return;
             }
-            addr->sin6_port  = *(uint16_t *)(server->buf->array + offset);
+            addr->sin6_port  = *(uint16_t *)(server->buf->buffer + offset);
             info.ai_family   = AF_INET6;
             info.ai_socktype = SOCK_STREAM;
             info.ai_protocol = IPPROTO_TCP;
@@ -855,7 +855,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             return;
         }
 
-        port = (*(uint16_t *)(server->buf->array + offset));
+        port = (*(uint16_t *)(server->buf->buffer + offset));
 
         offset += 2;
 
@@ -865,7 +865,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             return;
         } else {
             server->buf->len -= offset;
-            memmove(server->buf->array, server->buf->array + offset, server->buf->len);
+            memmove(server->buf->buffer, server->buf->buffer + offset, server->buf->len);
         }
 
         if (verbose) {
@@ -888,7 +888,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 // XXX: should handle buffer carefully
                 if (server->buf->len > 0) {
-                    memcpy(remote->buf->array, server->buf->array, server->buf->len);
+                    memcpy(remote->buf->buffer, server->buf->buffer, server->buf->len);
                     remote->buf->len = server->buf->len;
                     remote->buf->idx = 0;
                     server->buf->len = 0;
@@ -941,7 +941,7 @@ server_send_cb(EV_P_ ev_io *w, int revents)
         return;
     } else {
         // has data to send
-        ssize_t s = send(server->fd, server->buf->array + server->buf->idx,
+        ssize_t s = send(server->fd, server->buf->buffer + server->buf->idx,
                          server->buf->len, 0);
         if (s == -1) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
@@ -1057,7 +1057,7 @@ server_resolve_cb(struct sockaddr *addr, void *data)
 
             // XXX: should handle buffer carefully
             if (server->buf->len > 0) {
-                memcpy(remote->buf->array, server->buf->array + server->buf->idx,
+                memcpy(remote->buf->buffer, server->buf->buffer + server->buf->idx,
                        server->buf->len);
                 remote->buf->len = server->buf->len;
                 remote->buf->idx = 0;
@@ -1086,7 +1086,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 
     ev_timer_again(EV_A_ & server->recv_ctx->watcher);
 
-    ssize_t r = recv(remote->fd, server->buf->array, BUF_SIZE, 0);
+    ssize_t r = recv(remote->fd, server->buf->buffer, BUF_SIZE, 0);
 
     if (r == 0) {
         // connection closed
@@ -1121,7 +1121,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
         return;
     }
 
-    int s = send(server->fd, server->buf->array, server->buf->len, 0);
+    int s = send(server->fd, server->buf->buffer, server->buf->len, 0);
 
     if (s == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -1200,7 +1200,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
         return;
     } else {
         // has data to send
-        ssize_t s = send(remote->fd, remote->buf->array + remote->buf->idx,
+        ssize_t s = send(remote->fd, remote->buf->buffer + remote->buf->idx,
                          remote->buf->len, 0);
         if (s == -1) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
@@ -1341,8 +1341,8 @@ new_server(int fd, struct listen_ctx_t *listener)
     ev_timer_init(&server->recv_ctx->watcher, server_timeout_cb,
                   request_timeout, listener->timeout);
 
-    server->chunk = ss_malloc(sizeof(struct ss_chunk));
-    memset(server->chunk, 0, sizeof(struct ss_chunk));
+    server->chunk = ss_malloc(sizeof(struct chunk_t));
+    memset(server->chunk, 0, sizeof(struct chunk_t));
     server->chunk->buf = ss_malloc(sizeof(struct buffer_t));
 
     cork_dllist_add(&connections, &server->entries);

@@ -532,7 +532,7 @@ new_query_ctx(char *buf, size_t len)
     memset(ctx, 0, sizeof(struct query_ctx));
     ctx->buf = ss_malloc(sizeof(struct buffer_t));
     buffer_alloc(ctx->buf, len);
-    memcpy(ctx->buf->array, buf, len);
+    memcpy(ctx->buf->buffer, buf, len);
     ctx->buf->len = len;
     return ctx;
 }
@@ -643,7 +643,7 @@ query_resolve_cb(struct sockaddr *addr, void *data)
             memcpy(&remote_ctx->dst_addr, addr, sizeof(struct sockaddr_storage));
 
             size_t addr_len = get_sockaddr_len(addr);
-            int s           = sendto(remote_ctx->fd, query_ctx->buf->array, query_ctx->buf->len,
+            int s           = sendto(remote_ctx->fd, query_ctx->buf->buffer, query_ctx->buf->len,
                                      0, addr, addr_len);
 
             if (s == -1) {
@@ -691,7 +691,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     buffer_alloc(buf, buf_size);
 
     // recv
-    r = recvfrom(remote_ctx->fd, buf->array, buf_size, 0, (struct sockaddr *)&src_addr, &src_addr_len);
+    r = recvfrom(remote_ctx->fd, buf->buffer, buf_size, 0, (struct sockaddr *)&src_addr, &src_addr_len);
 
     if (r == -1) {
         // error on recv
@@ -716,7 +716,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     if (server_ctx->protocol_plugin) {
         struct obfs_manager *protocol_plugin = server_ctx->protocol_plugin;
         if (protocol_plugin->client_udp_post_decrypt) {
-            buf->len = protocol_plugin->client_udp_post_decrypt(server_ctx->protocol, &buf->array, buf->len, &buf->capacity);
+            buf->len = protocol_plugin->client_udp_post_decrypt(server_ctx->protocol, &buf->buffer, buf->len, &buf->capacity);
             if ((int)buf->len < 0) {
                 LOGE("client_udp_post_decrypt");
                 close_and_free_remote(EV_A_ remote_ctx);
@@ -731,7 +731,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 #ifdef MODULE_REDIR
     struct sockaddr_storage dst_addr;
     memset(&dst_addr, 0, sizeof(struct sockaddr_storage));
-    int len = parse_udprealy_header(buf->array, buf->len, NULL, NULL, &dst_addr);
+    int len = parse_udprealy_header(buf->buffer, buf->len, NULL, NULL, &dst_addr);
 
     if (dst_addr.ss_family != AF_INET && dst_addr.ss_family != AF_INET6) {
         LOGI("[udp] ss-redir does not support domain name");
@@ -746,7 +746,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
         LOGI("[udp] recv %s via %s", dst, src);
     }
 #else
-    int len = parse_udprealy_header(buf->array, buf->len, NULL, NULL, NULL);
+    int len = parse_udprealy_header(buf->buffer, buf->len, NULL, NULL, NULL);
 #endif
 
     if (len == 0) {
@@ -760,7 +760,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 #if defined(MODULE_TUNNEL) || defined(MODULE_REDIR)
     // Construct packet
     buf->len -= len;
-    memmove(buf->array, buf->array + len, buf->len);
+    memmove(buf->buffer, buf->buffer + len, buf->len);
 #else
 #ifdef ANDROID
     if (r > 0 && log_tx_rx)
@@ -769,11 +769,11 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     // Construct packet
     if (server_ctx->tunnel_addr.host && server_ctx->tunnel_addr.port) {
         buf->len -= len;
-        memmove(buf->array, buf->array + len, buf->len);
+        memmove(buf->buffer, buf->buffer + len, buf->len);
     } else {
         buffer_realloc(buf, buf->len + 3, buf_size);
-        memmove(buf->array + 3, buf->array, buf->len);
-        memset(buf->array, 0, 3);
+        memmove(buf->buffer + 3, buf->buffer, buf->len);
+        memset(buf->buffer, 0, 3);
         buf->len += 3;
     }
 #endif
@@ -795,8 +795,8 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 
     // Construct packet
     buffer_realloc(buf, buf->len + addr_header_len, buf_size);
-    memmove(buf->array + addr_header_len, buf->array, buf->len);
-    memcpy(buf->array, addr_header, addr_header_len);
+    memmove(buf->buffer + addr_header_len, buf->buffer, buf->len);
+    memcpy(buf->buffer, addr_header, addr_header_len);
     buf->len += addr_header_len;
 
     int err = ss_decrypt_all(server_ctx->cipher_env, buf, buf_size);
@@ -845,7 +845,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
         goto CLEAN_UP;
     }
 
-    int s = sendto(src_fd, buf->array, buf->len, 0,
+    int s = sendto(src_fd, buf->buffer, buf->len, 0,
                    (struct sockaddr *)&remote_ctx->src_addr, remote_src_addr_len);
     if (s == -1) {
         ERROR("[udp] remote_recv_sendto");
@@ -856,7 +856,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 
 #else
 
-    int s = sendto(server_ctx->fd, buf->array, buf->len, 0,
+    int s = sendto(server_ctx->fd, buf->buffer, buf->len, 0,
                    (struct sockaddr *)&remote_ctx->src_addr, remote_src_addr_len);
     if (s == -1) {
         ERROR("[udp] remote_recv_sendto");
@@ -901,7 +901,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     msg.msg_control    = control_buffer;
     msg.msg_controllen = sizeof(control_buffer);
 
-    iov[0].iov_base = buf->array;
+    iov[0].iov_base = buf->buffer;
     iov[0].iov_len  = buf_size;
     msg.msg_iov     = iov;
     msg.msg_iovlen  = 1;
@@ -923,7 +923,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     src_addr_len = msg.msg_namelen;
 #else
     ssize_t r;
-    r = recvfrom(server_ctx->fd, buf->array, buf_size,
+    r = recvfrom(server_ctx->fd, buf->buffer, buf_size,
                  0, (struct sockaddr *)&src_addr, &src_addr_len);
 
     if (r == -1) {
@@ -1007,8 +1007,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     // reconstruct the buffer
     buffer_realloc(buf, buf->len + addr_header_len, buf_size);
-    memmove(buf->array + addr_header_len, buf->array, buf->len);
-    memcpy(buf->array, addr_header, addr_header_len);
+    memmove(buf->buffer + addr_header_len, buf->buffer, buf->len);
+    memcpy(buf->buffer, addr_header, addr_header_len);
     buf->len += addr_header_len;
 
 #else
@@ -1068,25 +1068,25 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
         // reconstruct the buffer
         buffer_realloc(buf, buf->len + addr_header_len, buf_size);
-        memmove(buf->array + addr_header_len, buf->array, buf->len);
-        memcpy(buf->array, addr_header, addr_header_len);
+        memmove(buf->buffer + addr_header_len, buf->buffer, buf->len);
+        memcpy(buf->buffer, addr_header, addr_header_len);
         buf->len += addr_header_len;
 
     } else {
 
-        frag = *(uint8_t *)(buf->array + 2);
+        frag = *(uint8_t *)(buf->buffer + 2);
         offset += 3;
         struct sockaddr_storage dst_addr;
         memset(&dst_addr, 0, sizeof(struct sockaddr_storage));
 
-        addr_header_len = parse_udprealy_header(buf->array + offset, buf->len - offset,
+        addr_header_len = parse_udprealy_header(buf->buffer + offset, buf->len - offset,
                                                     host, port, &dst_addr);
         if (addr_header_len == 0) {
             // error in parse header
             goto CLEAN_UP;
         }
 
-        strncpy(addr_header, buf->array + offset, addr_header_len);
+        strncpy(addr_header, buf->buffer + offset, addr_header_len);
     }
 #endif
 
@@ -1203,14 +1203,14 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     if (offset > 0) {
         buf->len -= offset;
-        memmove(buf->array, buf->array + offset, buf->len);
+        memmove(buf->buffer, buf->buffer + offset, buf->len);
     }
 
     // SSR beg
     if (server_ctx->protocol_plugin) {
         struct obfs_manager *protocol_plugin = server_ctx->protocol_plugin;
         if (protocol_plugin->client_udp_pre_encrypt) {
-            buf->len = protocol_plugin->client_udp_pre_encrypt(server_ctx->protocol, &buf->array, buf->len, &buf->capacity);
+            buf->len = protocol_plugin->client_udp_pre_encrypt(server_ctx->protocol, &buf->buffer, buf->len, &buf->capacity);
         }
     }
     //SSR end
@@ -1227,7 +1227,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         goto CLEAN_UP;
     }
 
-    int s = sendto(remote_ctx->fd, buf->array, buf->len, 0, remote_addr, remote_addr_len);
+    int s = sendto(remote_ctx->fd, buf->buffer, buf->len, 0, remote_addr, remote_addr_len);
 
     if (s == -1) {
         ERROR("[udp] server_recv_sendto");
@@ -1297,7 +1297,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     if (remote_ctx != NULL && !need_query) {
         size_t addr_len = get_sockaddr_len((struct sockaddr *)&dst_addr);
-        int s           = sendto(remote_ctx->fd, buf->array + addr_header_len,
+        int s           = sendto(remote_ctx->fd, buf->buffer + addr_header_len,
                                  buf->len - addr_header_len, 0,
                                  (struct sockaddr *)&dst_addr, addr_len);
 
@@ -1324,7 +1324,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         hints.ai_socktype = SOCK_DGRAM;
         hints.ai_protocol = IPPROTO_UDP;
 
-        struct query_ctx *query_ctx = new_query_ctx(buf->array + addr_header_len,
+        struct query_ctx *query_ctx = new_query_ctx(buf->buffer + addr_header_len,
                                                     buf->len - addr_header_len);
         query_ctx->server_ctx      = server_ctx;
         query_ctx->addr_header_len = addr_header_len;
