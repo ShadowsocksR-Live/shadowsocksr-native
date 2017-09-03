@@ -18,17 +18,41 @@
  * You should have received a copy of the GNU General Public License
  * along with shadowsocks-libev; see the file COPYING. If not, see
  * <http://www.gnu.org/licenses/>.
+ *
+ * https://fossies.org/dox/socat-2.0.0-b9/xio-socks5_8h_source.html
+ *
  */
 
 #ifndef _SOCKS5_H
 #define _SOCKS5_H
 
-#define SVERSION 0x05
-#define CONNECT 0x01
-#define IPV4 0x01
-#define DOMAIN 0x03
-#define IPV6 0x04
-#define CMD_NOT_SUPPORTED 0x07
+#define SOCKS5_VERSION 0x05
+
+#define SOCKS5_METHOD_NOAUTH    0x00
+#define SOCKS5_METHOD_GSSAPI    0x01
+#define SOCKS5_METHOD_USERPASS  0x02
+#define SOCKS5_METHOD_AVENTAIL  0x86
+#define SOCKS5_METHOD_NONE      0xff
+
+#define SOCKS5_COMMAND_CONNECT  0x01
+#define SOCKS5_COMMAND_BIND     0x02
+#define SOCKS5_COMMAND_UDPASSOC 0x03
+
+#define SOCKS5_ADDRTYPE_IPV4    0x01
+#define SOCKS5_ADDRTYPE_NAME    0x03
+#define SOCKS5_ADDRTYPE_IPV6    0x04
+
+#define SOCKS5_REPLY_SUCCESS    0x00
+#define SOCKS5_REPLY_FAILURE    0x01
+#define SOCKS5_REPLY_DENIED     0x02
+#define SOCKS5_REPLY_NETUNREACH 0x03
+#define SOCKS5_REPLY_HOSTUNREACH 0x04
+#define SOCKS5_REPLY_REFUSED    0x05
+#define SOCKS5_REPLY_TTLEXPIRED 0x06
+#define SOCKS5_REPLY_CMDUNSUPP  0x07
+#define SOCKS5_REPLY_ADDRUNSUPP 0x08
+
+#define SOCKS5_USERPASS_VERSION 0x01
 
 #pragma pack(push)
 #pragma pack(1)
@@ -48,14 +72,14 @@ struct socks5_request {
     char ver;
     char cmd;
     char rsv;
-    char atyp;
+    char addr_type;
 };
 
 struct socks5_response {
     char ver;
     char rep;
     char rsv;
-    char atyp;
+    char addr_type;
 };
 
 #pragma pack(pop)

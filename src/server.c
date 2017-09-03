@@ -231,22 +231,22 @@ is_header_complete(const struct buffer_t *buf)
     size_t header_len = 0;
     size_t buf_len    = buf->len;
 
-    char atyp = buf->buffer[header_len];
+    char addr_type = buf->buffer[header_len];
 
-    // 1 byte for atyp
+    // 1 byte for addr_type
     header_len++;
 
-    if ((atyp & ADDRTYPE_MASK) == 1) {
+    if ((addr_type & ADDRTYPE_MASK) == 1) {
         // IP V4
         header_len += sizeof(struct in_addr);
-    } else if ((atyp & ADDRTYPE_MASK) == 3) {
+    } else if ((addr_type & ADDRTYPE_MASK) == 3) {
         // Domain name
         // domain len + len of domain
         if (buf_len < header_len + 1)
             return 0;
         uint8_t name_len = *(uint8_t *)(buf->buffer + header_len);
         header_len += name_len + 1;
-    } else if ((atyp & ADDRTYPE_MASK) == 4) {
+    } else if ((addr_type & ADDRTYPE_MASK) == 4) {
         // IP V6
         header_len += sizeof(struct in6_addr);
     } else {
@@ -745,7 +745,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
         int offset     = 0;
         int need_query = 0;
-        char atyp      = server->buf->buffer[offset++];
+        char addr_type = server->buf->buffer[offset++];
         char host[257] = { 0 };
         uint16_t port  = 0;
         struct addrinfo info;
@@ -754,7 +754,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         memset(&storage, 0, sizeof(struct sockaddr_storage));
 
         // get remote addr and port
-        if ((atyp & ADDRTYPE_MASK) == 1) {
+        if ((addr_type & ADDRTYPE_MASK) == 1) {
             // IP V4
             struct sockaddr_in *addr = (struct sockaddr_in *)&storage;
             size_t in_addr_len       = sizeof(struct in_addr);
@@ -765,7 +765,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                          host, INET_ADDRSTRLEN);
                 offset += in_addr_len;
             } else {
-                LOGE("invalid header with addr type %d", atyp);
+                LOGE("invalid header with addr type %d", addr_type);
                 report_addr(server->fd, MALFORMED);
                 close_and_free_server(EV_A_ server);
                 return;
@@ -776,7 +776,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             info.ai_protocol = IPPROTO_TCP;
             info.ai_addrlen  = sizeof(struct sockaddr_in);
             info.ai_addr     = (struct sockaddr *)addr;
-        } else if ((atyp & ADDRTYPE_MASK) == 3) {
+        } else if ((addr_type & ADDRTYPE_MASK) == 3) {
             // Domain name
             uint8_t name_len = *(uint8_t *)(server->buf->buffer + offset);
             if (name_len + 4 <= server->buf->len) {
@@ -824,7 +824,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 }
                 need_query = 1;
             }
-        } else if ((atyp & ADDRTYPE_MASK) == 4) {
+        } else if ((addr_type & ADDRTYPE_MASK) == 4) {
             // IP V6
             struct sockaddr_in6 *addr = (struct sockaddr_in6 *)&storage;
             size_t in6_addr_len       = sizeof(struct in6_addr);
@@ -835,7 +835,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                          host, INET6_ADDRSTRLEN);
                 offset += in6_addr_len;
             } else {
-                LOGE("invalid header with addr type %d", atyp);
+                LOGE("invalid header with addr type %d", addr_type);
                 report_addr(server->fd, MALFORMED);
                 close_and_free_server(EV_A_ server);
                 return;
@@ -849,7 +849,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         }
 
         if (offset == 1) {
-            LOGE("invalid header with addr type %d", atyp);
+            LOGE("invalid header with addr type %d", addr_type);
             report_addr(server->fd, MALFORMED);
             close_and_free_server(EV_A_ server);
             return;
@@ -869,7 +869,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         }
 
         if (verbose) {
-            if ((atyp & ADDRTYPE_MASK) == 4)
+            if ((addr_type & ADDRTYPE_MASK) == 4)
                 LOGI("connect to [%s]:%d", host, ntohs(port));
             else
                 LOGI("connect to %s:%d", host, ntohs(port));

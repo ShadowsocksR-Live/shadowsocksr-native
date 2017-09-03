@@ -60,6 +60,7 @@
 #include "cache.h"
 #include "udprelay.h"
 #include "encrypt.h"
+#include "socks5.h"
 
 #ifdef MODULE_REMOTE
 #define MAX_UDP_CONN_NUM 512
@@ -235,11 +236,11 @@ static int
 parse_udprealy_header(const char *buf, const size_t buf_len,
                       char *host, char *port, struct sockaddr_storage *storage)
 {
-    const uint8_t atyp = *(uint8_t *)buf;
+    const uint8_t addr_type = *(uint8_t *)buf;
     int offset         = 1;
 
     // get remote addr and port
-    if ((atyp & ADDRTYPE_MASK) == 1) {
+    if ((addr_type & ADDRTYPE_MASK) == SOCKS5_ADDRTYPE_IPV4) {
         // IP V4
         size_t in_addr_len = sizeof(struct in_addr);
         if (buf_len >= in_addr_len + 3) {
@@ -255,7 +256,7 @@ parse_udprealy_header(const char *buf, const size_t buf_len,
             }
             offset += in_addr_len;
         }
-    } else if ((atyp & ADDRTYPE_MASK) == 3) {
+    } else if ((addr_type & ADDRTYPE_MASK) == SOCKS5_ADDRTYPE_NAME) {
         // Domain name
         uint8_t name_len = *(uint8_t *)(buf + offset);
         if (name_len + 4 <= buf_len) {
@@ -282,7 +283,7 @@ parse_udprealy_header(const char *buf, const size_t buf_len,
             }
             offset += 1 + name_len;
         }
-    } else if ((atyp & ADDRTYPE_MASK) == 4) {
+    } else if ((addr_type & ADDRTYPE_MASK) == SOCKS5_ADDRTYPE_IPV6) {
         // IP V6
         size_t in6_addr_len = sizeof(struct in6_addr);
         if (buf_len >= in6_addr_len + 3) {
@@ -301,7 +302,7 @@ parse_udprealy_header(const char *buf, const size_t buf_len,
     }
 
     if (offset == 1) {
-        LOGE("[udp] invalid header with addr type %d", atyp);
+        LOGE("[udp] invalid header with addr type %d", addr_type);
         return 0;
     }
 

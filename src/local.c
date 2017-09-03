@@ -325,10 +325,13 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             int port_num = atoi(port);
             memmove(buf->buffer + header_len, buf->buffer, buf->len);
             buf->len += header_len;
-            buf->buffer[0] = 5;
-            buf->buffer[1] = 1;
-            buf->buffer[2] = 0;
-            buf->buffer[3] = 3;
+
+            struct socks5_request *request = (struct socks5_request *)buf->buffer;
+            request->ver = SOCKS5_VERSION;
+            request->cmd = SOCKS5_COMMAND_CONNECT;
+            request->rsv = 0;
+            request->addr_type = SOCKS5_ADDRTYPE_NAME;
+
             buf->buffer[4] = (char) addr_len;
             memcpy(buf->buffer + 5, host, (size_t) addr_len);
             buf->buffer[addr_len + 5] = (char) (port_num >> 8);
@@ -511,11 +514,12 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             // all processed
             return;
         } else if (server->stage == STAGE_INIT) {
-            struct method_select_response response;
-            response.ver    = SVERSION;
-            response.method = 0;
-            char *send_buf = (char *)&response;
-            send(server->fd, send_buf, sizeof(response), 0);
+            struct method_select_response response = { 0 };
+            response.ver    = SOCKS5_VERSION;
+            response.method = SOCKS5_METHOD_NOAUTH;
+
+            send(server->fd, &response, sizeof(response), 0);
+
             server->stage = STAGE_HANDSHAKE;
 
             int off = (buf->buffer[1] & 0xff) + 2;
@@ -534,22 +538,22 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             int udp_assc = 0;
 
-            if (request->cmd == 3) {
+            if (request->cmd == SOCKS5_COMMAND_UDPASSOC) {
                 udp_assc = 1;
                 socklen_t addr_len = sizeof(sock_addr);
                 getsockname(server->fd, (struct sockaddr *)&sock_addr, &addr_len);
                 if (verbose) {
                     LOGI("udp assc request accepted");
                 }
-            } else if (request->cmd != 1) {
+            } else if (request->cmd != SOCKS5_COMMAND_CONNECT) {
                 LOGE("unsupported cmd: %d", request->cmd);
-                struct socks5_response response;
-                response.ver  = SVERSION;
-                response.rep  = CMD_NOT_SUPPORTED;
-                response.rsv  = 0;
-                response.atyp = 1;
-                char *send_buf = (char *)&response;
-                send(server->fd, send_buf, sizeof(response), 0);
+                struct socks5_response response = { 0 };
+                response.ver  = SOCKS5_VERSION;
+                response.rep  = SOCKS5_REPLY_CMDUNSUPP;
+                response.addr_type = SOCKS5_ADDRTYPE_IPV4;
+
+                send(server->fd, &response, sizeof(response), 0);
+
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
                 return;
@@ -557,11 +561,10 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             // Fake reply
             if (server->stage == STAGE_HANDSHAKE) {
-                struct socks5_response response;
-                response.ver  = SVERSION;
-                response.rep  = 0;
-                response.rsv  = 0;
-                response.atyp = 1;
+                struct socks5_response response = { 0 };
+                response.ver  = SOCKS5_VERSION;
+                response.rep  = SOCKS5_REPLY_SUCCESS;
+                response.addr_type = SOCKS5_ADDRTYPE_IPV4;
 
                 struct buffer_t resp_to_send;
                 struct buffer_t *resp_buf = &resp_to_send;
@@ -599,11 +602,12 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             struct buffer_t *abuf = &ss_addr_to_send;
             buffer_alloc(abuf, BUF_SIZE);
 
-            abuf->buffer[abuf->len++] = request->atyp;
-            int atyp = request->atyp;
+            int addr_type = request->addr_type;
+
+            abuf->buffer[abuf->len++] = addr_type;
 
             // get remote addr and port
-            if (atyp == 1) {
+            if (addr_type == SOCKS5_ADDRTYPE_IPV4) {
                 // IP V4
                 size_t in_addr_len = sizeof(struct in_addr);
                 memcpy(abuf->buffer + abuf->len, buf->buffer + 4, in_addr_len + 2);
@@ -611,11 +615,10 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 if (acl || verbose) {
                     uint16_t p = ntohs(*(uint16_t *)(buf->buffer + 4 + in_addr_len));
-                    dns_ntop(AF_INET, (const void *)(buf->buffer + 4),
-                         ip, INET_ADDRSTRLEN);
+                    dns_ntop(AF_INET, (const void *)(buf->buffer + 4), ip, INET_ADDRSTRLEN);
                     sprintf(port, "%d", p);
                 }
-            } else if (atyp == 3) {
+            } else if (addr_type == SOCKS5_ADDRTYPE_NAME) {
                 // Domain name
                 uint8_t name_len = *(uint8_t *)(buf->buffer + 4);
                 abuf->buffer[abuf->len++] = name_len;
@@ -623,13 +626,12 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 abuf->len += name_len + 2;
 
                 if (acl || verbose) {
-                    uint16_t p =
-                        ntohs(*(uint16_t *)(buf->buffer + 4 + 1 + name_len));
+                    uint16_t p = ntohs(*(uint16_t *)(buf->buffer + 4 + 1 + name_len));
                     memcpy(host, buf->buffer + 4 + 1, name_len);
                     host[name_len] = '\0';
                     sprintf(port, "%d", p);
                 }
-            } else if (atyp == 4) {
+            } else if (addr_type == SOCKS5_ADDRTYPE_IPV6) {
                 // IP V6
                 size_t in6_addr_len = sizeof(struct in6_addr);
                 memcpy(abuf->buffer + abuf->len, buf->buffer + 4, in6_addr_len + 2);
@@ -637,13 +639,12 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 if (acl || verbose) {
                     uint16_t p = ntohs(*(uint16_t *)(buf->buffer + 4 + in6_addr_len));
-                    dns_ntop(AF_INET6, (const void *)(buf->buffer + 4),
-                         ip, INET6_ADDRSTRLEN);
+                    dns_ntop(AF_INET6, (const void *)(buf->buffer + 4), ip, INET6_ADDRSTRLEN);
                     sprintf(port, "%d", p);
                 }
             } else {
                 buffer_free(abuf);
-                LOGE("unsupported addrtype: %d", request->atyp);
+                LOGE("unsupported addrtype: %d", addr_type);
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
                 return;
@@ -652,7 +653,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             size_t abuf_len  = abuf->len;
             int sni_detected = 0;
 
-            if (atyp == 1 || atyp == 4) {
+            if (addr_type == SOCKS5_ADDRTYPE_IPV4 || addr_type == SOCKS5_ADDRTYPE_IPV6) {
                 char *hostname;
                 uint16_t p = ntohs(*(uint16_t *)(abuf->buffer + abuf->len - 2));
                 int ret    = 0;
@@ -726,7 +727,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     bypass = 1;                 // proxy hostnames in white list
                 } else {
 #ifndef ANDROID
-                    if (atyp == 3) {            // resolve domain so we can bypass domain with geoip
+                    if (addr_type == SOCKS5_ADDRTYPE_NAME) {            // resolve domain so we can bypass domain with geoip
                         err = get_sockaddr(host, port, &storage, 0, ipv6first);
                         if ( err != -1) {
                             resolved = 1;
@@ -772,11 +773,11 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 if (bypass) {
                     if (verbose) {
-                        if (sni_detected || atyp == 3) {
+                        if (sni_detected || addr_type == SOCKS5_ADDRTYPE_NAME) {
                             LOGI("bypass %s:%s", host, port);
-                        } else if (atyp == 1) {
+                        } else if (addr_type == SOCKS5_ADDRTYPE_IPV4) {
                             LOGI("bypass %s:%s", ip, port);
-                        } else if (atyp == 4) {
+                        } else if (addr_type == SOCKS5_ADDRTYPE_IPV6) {
                             LOGI("bypass [%s]:%s", ip, port);
                         }
                     }
@@ -784,7 +785,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     memset(&storage, 0, sizeof(struct sockaddr_storage));
                     int err;
 #ifndef ANDROID
-                    if (atyp == 3 && resolved != 1) {
+                    if (addr_type == SOCKS5_ADDRTYPE_NAME && resolved != 1) {
                         err = get_sockaddr(host, port, &storage, 0, ipv6first);
                     } else
 #endif
@@ -806,13 +807,13 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 struct server_env_t *server_env = &profile->servers[index];
 
                 if (verbose) {
-                    if (sni_detected || atyp == 3) {
+                    if (sni_detected || addr_type == SOCKS5_ADDRTYPE_NAME) {
                         LOGI("connect to %s:%s via %s:%d",
                              host, port, server_env->host, server_env->port);
-                    } else if (atyp == 1) {
+                    } else if (addr_type == SOCKS5_ADDRTYPE_IPV4) {
                         LOGI("connect to %s:%s via %s:%d",
                              ip, port, server_env->host, server_env->port);
-                    } else if (atyp == 4) {
+                    } else if (addr_type == SOCKS5_ADDRTYPE_IPV6) {
                         LOGI("connect to [%s]:%s via %s:%d",
                              ip, port, server_env->host, server_env->port);
                     }
