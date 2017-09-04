@@ -735,7 +735,7 @@ cipher_context_init(struct cipher_env_t *env, struct cipher_ctx_t *ctx, int enc)
 
 #if defined(USE_CRYPTO_OPENSSL)
     ctx->evp = EVP_CIPHER_CTX_new();
-    cipher_evp_t *evp = ctx->evp;
+    cipher_core_ctx_t *evp = ctx->evp;
 
     if (cipher == NULL) {
         LOGE("Cipher %s not found in OpenSSL library", cipherName);
@@ -754,8 +754,8 @@ cipher_context_init(struct cipher_env_t *env, struct cipher_ctx_t *ctx, int enc)
         EVP_CIPHER_CTX_set_padding(evp, 1);
     }
 #elif defined(USE_CRYPTO_POLARSSL)
-    ctx->evp = (cipher_evp_t *)ss_malloc(sizeof(cipher_evp_t));
-    cipher_evp_t *evp = ctx->evp;
+    ctx->evp = (cipher_core_ctx_t *)ss_malloc(sizeof(cipher_core_ctx_t));
+    cipher_core_ctx_t *evp = ctx->evp;
 
     if (cipher == NULL) {
         LOGE("Cipher %s not found in PolarSSL library", cipherName);
@@ -765,9 +765,9 @@ cipher_context_init(struct cipher_env_t *env, struct cipher_ctx_t *ctx, int enc)
         FATAL("Cannot initialize PolarSSL cipher context");
     }
 #elif defined(USE_CRYPTO_MBEDTLS)
-    ctx->evp = ss_malloc(sizeof(cipher_evp_t));
-    memset(ctx->evp, 0, sizeof(cipher_evp_t));
-    cipher_evp_t *evp = ctx->evp;
+    ctx->evp = ss_malloc(sizeof(cipher_core_ctx_t));
+    memset(ctx->evp, 0, sizeof(cipher_core_ctx_t));
+    cipher_core_ctx_t *evp = ctx->evp;
 
     if (cipher == NULL) {
         LOGE("Cipher %s not found in mbed TLS library", cipherName);
@@ -842,7 +842,7 @@ cipher_context_set_iv(struct cipher_env_t *env, struct cipher_ctx_t *ctx, uint8_
     }
 #endif
 
-    cipher_evp_t *evp = ctx->evp;
+    cipher_core_ctx_t *evp = ctx->evp;
     if (evp == NULL) {
         LOGE("cipher_context_set_iv(): Cipher context is null");
         return;
@@ -938,7 +938,7 @@ cipher_context_update(struct cipher_ctx_t *ctx, uint8_t *output, size_t *olen,
         return (ret == kCCSuccess) ? 1 : 0;
     }
 #endif
-    cipher_evp_t *evp = ctx->evp;
+    cipher_core_ctx_t *evp = ctx->evp;
 #if defined(USE_CRYPTO_OPENSSL)
     int err = 0, tlen = *olen;
     err = EVP_CipherUpdate(evp, (uint8_t *)output, &tlen,
