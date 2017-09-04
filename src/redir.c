@@ -987,7 +987,7 @@ accept_cb(EV_P_ ev_io *w, int revents)
     server_info.param = server_env->obfs_param;
     server_info.g_data = server_env->obfs_global;
     server_info.head_len = (AF_INET6 == server->destaddr.ss_family ? 19 : 7);
-    server_info.iv = server->e_ctx->evp.iv;
+    server_info.iv = server->e_ctx->cipher_ctx.iv;
     server_info.iv_len = enc_get_iv_len(&server_env->cipher);
     server_info.key = enc_get_key(&server_env->cipher);
     server_info.key_len = enc_get_key_len(&server_env->cipher);

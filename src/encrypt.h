@@ -192,7 +192,7 @@ struct chunk_t {
 struct enc_ctx {
     uint8_t init;
     uint64_t counter;
-    struct cipher_ctx_t evp;
+    struct cipher_ctx_t cipher_ctx;
 };
 
 void bytes_to_key_with_size(const char *pass, size_t len, uint8_t *md, size_t md_size);

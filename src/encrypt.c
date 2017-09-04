@@ -1141,8 +1141,8 @@ ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx
         cipher->len = plain->len;
 
         if (!ctx->init) {
-            cipher_context_set_iv(env, &ctx->evp, ctx->evp.iv, iv_len, 1);
-            memcpy(cipher->buffer, ctx->evp.iv, iv_len);
+            cipher_context_set_iv(env, &ctx->cipher_ctx, ctx->cipher_ctx.iv, iv_len, 1);
+            memcpy(cipher->buffer, ctx->cipher_ctx.iv, iv_len);
             ctx->counter = 0;
             ctx->init    = 1;
         }
@@ -1158,7 +1158,7 @@ ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx
             crypto_stream_xor_ic((uint8_t *)(cipher->buffer + iv_len),
                                  (const uint8_t *)plain->buffer,
                                  (uint64_t)(plain->len + padding),
-                                 (const uint8_t *)ctx->evp.iv,
+                                 (const uint8_t *)ctx->cipher_ctx.iv,
                                  ctx->counter / SODIUM_BLOCK_SIZE, env->enc_key,
                                  env->enc_method);
             ctx->counter += plain->len;
@@ -1168,7 +1168,7 @@ ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx
             }
         } else {
             err =
-                cipher_context_update(&ctx->evp,
+                cipher_context_update(&ctx->cipher_ctx,
                                       (uint8_t *)(cipher->buffer + iv_len),
                                       &cipher->len, (const uint8_t *)plain->buffer,
                                       plain->len);
@@ -1286,7 +1286,7 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
             plain->len -= iv_len;
 
             memcpy(iv, cipher->buffer, iv_len);
-            cipher_context_set_iv(env, &ctx->evp, iv, iv_len, 0);
+            cipher_context_set_iv(env, &ctx->cipher_ctx, iv, iv_len, 0);
             ctx->counter = 0;
             ctx->init    = 1;
 
@@ -1313,7 +1313,7 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
             crypto_stream_xor_ic((uint8_t *)plain->buffer,
                                  (const uint8_t *)(cipher->buffer + iv_len),
                                  (uint64_t)(cipher->len - iv_len + padding),
-                                 (const uint8_t *)ctx->evp.iv,
+                                 (const uint8_t *)ctx->cipher_ctx.iv,
                                  ctx->counter / SODIUM_BLOCK_SIZE, env->enc_key,
                                  env->enc_method);
             ctx->counter += cipher->len - iv_len;
@@ -1321,7 +1321,7 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
                 memmove(plain->buffer, plain->buffer + padding, plain->len);
             }
         } else {
-            err = cipher_context_update(&ctx->evp, (uint8_t *)plain->buffer, &plain->len,
+            err = cipher_context_update(&ctx->cipher_ctx, (uint8_t *)plain->buffer, &plain->len,
                                         (const uint8_t *)(cipher->buffer + iv_len),
                                         cipher->len - iv_len);
         }
@@ -1392,17 +1392,17 @@ void
 enc_ctx_init(struct cipher_env_t *env, struct enc_ctx *ctx, int enc)
 {
     sodium_memzero(ctx, sizeof(struct enc_ctx));
-    cipher_context_init(env, &ctx->evp, enc);
+    cipher_context_init(env, &ctx->cipher_ctx, enc);
 
     if (enc) {
-        rand_bytes(ctx->evp.iv, env->enc_iv_len);
+        rand_bytes(ctx->cipher_ctx.iv, env->enc_iv_len);
     }
 }
 
 void
 enc_ctx_release(struct cipher_env_t *env, struct enc_ctx *ctx)
 {
-    cipher_context_release(env, &ctx->evp);
+    cipher_context_release(env, &ctx->cipher_ctx);
 }
 
 void

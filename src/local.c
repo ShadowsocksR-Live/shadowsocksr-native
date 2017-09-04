@@ -863,7 +863,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 server_info.param = server_env->obfs_param;
                 server_info.g_data = server_env->obfs_global;
                 server_info.head_len = get_head_size(ss_addr_to_send.buffer, 320, 30);
-                server_info.iv = server->e_ctx->evp.iv;
+                server_info.iv = server->e_ctx->cipher_ctx.iv;
                 server_info.iv_len = enc_get_iv_len(&server_env->cipher);
                 server_info.key = enc_get_key(&server_env->cipher);
                 server_info.key_len = enc_get_key_len(&server_env->cipher);
