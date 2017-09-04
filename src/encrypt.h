@@ -146,7 +146,7 @@ struct cipher_env_t {
 };
 
 struct cipher_ctx_t {
-    cipher_core_ctx_t *evp;
+    cipher_core_ctx_t *core_ctx;
 #ifdef USE_CRYPTO_APPLECC
     cipher_cc_t cc;
 #endif

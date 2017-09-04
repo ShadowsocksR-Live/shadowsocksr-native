@@ -734,47 +734,47 @@ cipher_context_init(struct cipher_env_t *env, struct cipher_ctx_t *ctx, int enc)
     const cipher_core_t *cipher = get_cipher_of_type(method);
 
 #if defined(USE_CRYPTO_OPENSSL)
-    ctx->evp = EVP_CIPHER_CTX_new();
-    cipher_core_ctx_t *evp = ctx->evp;
+    ctx->core_ctx = EVP_CIPHER_CTX_new();
+    cipher_core_ctx_t *core_ctx = ctx->core_ctx;
 
     if (cipher == NULL) {
         LOGE("Cipher %s not found in OpenSSL library", cipherName);
         FATAL("Cannot initialize cipher");
     }
-    if (!EVP_CipherInit_ex(evp, cipher, NULL, NULL, NULL, enc)) {
+    if (!EVP_CipherInit_ex(core_ctx, cipher, NULL, NULL, NULL, enc)) {
         LOGE("Cannot initialize cipher %s", cipherName);
         exit(EXIT_FAILURE);
     }
-    if (!EVP_CIPHER_CTX_set_key_length(evp, env->enc_key_len)) {
-        EVP_CIPHER_CTX_cleanup(evp);
+    if (!EVP_CIPHER_CTX_set_key_length(core_ctx, env->enc_key_len)) {
+        EVP_CIPHER_CTX_cleanup(core_ctx);
         LOGE("Invalid key length: %d", env->enc_key_len);
         exit(EXIT_FAILURE);
     }
     if (method > RC4_MD5) {
-        EVP_CIPHER_CTX_set_padding(evp, 1);
+        EVP_CIPHER_CTX_set_padding(core_ctx, 1);
     }
 #elif defined(USE_CRYPTO_POLARSSL)
-    ctx->evp = (cipher_core_ctx_t *)ss_malloc(sizeof(cipher_core_ctx_t));
-    cipher_core_ctx_t *evp = ctx->evp;
+    ctx->core_ctx = (cipher_core_ctx_t *)ss_malloc(sizeof(cipher_core_ctx_t));
+    cipher_core_ctx_t *core_ctx = ctx->core_ctx;
 
     if (cipher == NULL) {
         LOGE("Cipher %s not found in PolarSSL library", cipherName);
         FATAL("Cannot initialize PolarSSL cipher");
     }
-    if (cipher_init_ctx(evp, cipher) != 0) {
+    if (cipher_init_ctx(core_ctx, cipher) != 0) {
         FATAL("Cannot initialize PolarSSL cipher context");
     }
 #elif defined(USE_CRYPTO_MBEDTLS)
-    ctx->evp = ss_malloc(sizeof(cipher_core_ctx_t));
-    memset(ctx->evp, 0, sizeof(cipher_core_ctx_t));
-    cipher_core_ctx_t *evp = ctx->evp;
+    ctx->core_ctx = ss_malloc(sizeof(cipher_core_ctx_t));
+    memset(ctx->core_ctx, 0, sizeof(cipher_core_ctx_t));
+    cipher_core_ctx_t *core_ctx = ctx->core_ctx;
 
     if (cipher == NULL) {
         LOGE("Cipher %s not found in mbed TLS library", cipherName);
         FATAL("Cannot initialize mbed TLS cipher");
     }
-    mbedtls_cipher_init(evp);
-    if (mbedtls_cipher_setup(evp, cipher) != 0) {
+    mbedtls_cipher_init(core_ctx);
+    if (mbedtls_cipher_setup(core_ctx, cipher) != 0) {
         FATAL("Cannot initialize mbed TLS cipher context");
     }
 #endif
@@ -842,49 +842,49 @@ cipher_context_set_iv(struct cipher_env_t *env, struct cipher_ctx_t *ctx, uint8_
     }
 #endif
 
-    cipher_core_ctx_t *evp = ctx->evp;
-    if (evp == NULL) {
+    cipher_core_ctx_t *core_ctx = ctx->core_ctx;
+    if (core_ctx == NULL) {
         LOGE("cipher_context_set_iv(): Cipher context is null");
         return;
     }
 #if defined(USE_CRYPTO_OPENSSL)
-    if (!EVP_CipherInit_ex(evp, NULL, NULL, true_key, iv, enc)) {
-        EVP_CIPHER_CTX_cleanup(evp);
+    if (!EVP_CipherInit_ex(core_ctx, NULL, NULL, true_key, iv, enc)) {
+        EVP_CIPHER_CTX_cleanup(core_ctx);
         FATAL("Cannot set key and IV");
     }
 #elif defined(USE_CRYPTO_POLARSSL)
     // XXX: PolarSSL 1.3.11: cipher_free_ctx deprecated, Use cipher_free() instead.
-    if (cipher_setkey(evp, true_key, env->enc_key_len * 8, enc) != 0) {
-        cipher_free_ctx(evp);
+    if (cipher_setkey(core_ctx, true_key, env->enc_key_len * 8, enc) != 0) {
+        cipher_free_ctx(core_ctx);
         FATAL("Cannot set PolarSSL cipher key");
     }
 #if POLARSSL_VERSION_NUMBER >= 0x01030000
-    if (cipher_set_iv(evp, iv, iv_len) != 0) {
-        cipher_free_ctx(evp);
+    if (cipher_set_iv(core_ctx, iv, iv_len) != 0) {
+        cipher_free_ctx(core_ctx);
         FATAL("Cannot set PolarSSL cipher IV");
     }
-    if (cipher_reset(evp) != 0) {
-        cipher_free_ctx(evp);
+    if (cipher_reset(core_ctx) != 0) {
+        cipher_free_ctx(core_ctx);
         FATAL("Cannot finalize PolarSSL cipher context");
     }
 #else
-    if (cipher_reset(evp, iv) != 0) {
-        cipher_free_ctx(evp);
+    if (cipher_reset(core_ctx, iv) != 0) {
+        cipher_free_ctx(core_ctx);
         FATAL("Cannot set PolarSSL cipher IV");
     }
 #endif
 #elif defined(USE_CRYPTO_MBEDTLS)
-    if (mbedtls_cipher_setkey(evp, true_key, env->enc_key_len * 8, enc) != 0) {
-        mbedtls_cipher_free(evp);
+    if (mbedtls_cipher_setkey(core_ctx, true_key, env->enc_key_len * 8, enc) != 0) {
+        mbedtls_cipher_free(core_ctx);
         FATAL("Cannot set mbed TLS cipher key");
     }
 
-    if (mbedtls_cipher_set_iv(evp, iv, iv_len) != 0) {
-        mbedtls_cipher_free(evp);
+    if (mbedtls_cipher_set_iv(core_ctx, iv, iv_len) != 0) {
+        mbedtls_cipher_free(core_ctx);
         FATAL("Cannot set mbed TLS cipher IV");
     }
-    if (mbedtls_cipher_reset(evp) != 0) {
-        mbedtls_cipher_free(evp);
+    if (mbedtls_cipher_reset(core_ctx) != 0) {
+        mbedtls_cipher_free(core_ctx);
         FATAL("Cannot finalize mbed TLS cipher context");
     }
 #endif
@@ -913,15 +913,15 @@ cipher_context_release(struct cipher_env_t *env, struct cipher_ctx_t *ctx)
 #endif
 
 #if defined(USE_CRYPTO_OPENSSL)
-    EVP_CIPHER_CTX_free(ctx->evp);
+    EVP_CIPHER_CTX_free(ctx->core_ctx);
 #elif defined(USE_CRYPTO_POLARSSL)
 // NOTE: cipher_free_ctx deprecated in PolarSSL 1.3.11
-    cipher_free_ctx(ctx->evp);
-    ss_free(ctx->evp);
+    cipher_free_ctx(ctx->core_ctx);
+    ss_free(ctx->core_ctx);
 #elif defined(USE_CRYPTO_MBEDTLS)
 // NOTE: cipher_free_ctx deprecated
-    mbedtls_cipher_free(ctx->evp);
-    ss_free(ctx->evp);
+    mbedtls_cipher_free(ctx->core_ctx);
+    ss_free(ctx->core_ctx);
 #endif
 }
 
@@ -938,18 +938,18 @@ cipher_context_update(struct cipher_ctx_t *ctx, uint8_t *output, size_t *olen,
         return (ret == kCCSuccess) ? 1 : 0;
     }
 #endif
-    cipher_core_ctx_t *evp = ctx->evp;
+    cipher_core_ctx_t *core_ctx = ctx->core_ctx;
 #if defined(USE_CRYPTO_OPENSSL)
     int err = 0, tlen = *olen;
-    err = EVP_CipherUpdate(evp, (uint8_t *)output, &tlen,
+    err = EVP_CipherUpdate(core_ctx, (uint8_t *)output, &tlen,
                            (const uint8_t *)input, ilen);
     *olen = tlen;
     return err;
 #elif defined(USE_CRYPTO_POLARSSL)
-    return !cipher_update(evp, (const uint8_t *)input, ilen,
+    return !cipher_update(core_ctx, (const uint8_t *)input, ilen,
                           (uint8_t *)output, olen);
 #elif defined(USE_CRYPTO_MBEDTLS)
-    return !mbedtls_cipher_update(evp, (const uint8_t *)input, ilen,
+    return !mbedtls_cipher_update(core_ctx, (const uint8_t *)input, ilen,
                                   (uint8_t *)output, olen);
 #endif
 }
@@ -1064,8 +1064,8 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
 {
     enum cipher_index method = env->enc_method;
     if (method > TABLE) {
-        struct cipher_ctx_t evp;
-        cipher_context_init(env, &evp, 1);
+        struct cipher_ctx_t cipher_ctx;
+        cipher_context_init(env, &cipher_ctx, 1);
 
         size_t iv_len = env->enc_iv_len;
         int err       = 1;
@@ -1078,7 +1078,7 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
         uint8_t iv[MAX_IV_LENGTH];
 
         rand_bytes(iv, iv_len);
-        cipher_context_set_iv(env, &evp, iv, iv_len, 1);
+        cipher_context_set_iv(env, &cipher_ctx, iv, iv_len, 1);
         memcpy(cipher->buffer, iv, iv_len);
 
         if (method >= SALSA20) {
@@ -1087,14 +1087,14 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
                                  (const uint8_t *)iv,
                                  0, env->enc_key, method);
         } else {
-            err = cipher_context_update(&evp, (uint8_t *)(cipher->buffer + iv_len),
+            err = cipher_context_update(&cipher_ctx, (uint8_t *)(cipher->buffer + iv_len),
                                         &cipher->len, (const uint8_t *)plain->buffer,
                                         plain->len);
         }
 
         if (!err) {
             buffer_free(plain);
-            cipher_context_release(env, &evp);
+            cipher_context_release(env, &cipher_ctx);
             return -1;
         }
 
@@ -1103,7 +1103,7 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
         dump("CIPHER", cipher->buffer + iv_len, cipher->len);
 #endif
 
-        cipher_context_release(env, &evp);
+        cipher_context_release(env, &cipher_ctx);
 
         buffer_realloc(plain, iv_len + cipher->len, capacity);
         memcpy(plain->buffer, cipher->buffer, iv_len + cipher->len);
@@ -1212,8 +1212,8 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
             return -1;
         }
 
-        struct cipher_ctx_t evp;
-        cipher_context_init(env, &evp, 0);
+        struct cipher_ctx_t cipher_ctx;
+        cipher_context_init(env, &cipher_ctx, 0);
 
         static struct buffer_t tmp = { 0, 0, 0, NULL };
         buffer_realloc(&tmp, cipher->len, capacity);
@@ -1222,7 +1222,7 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
 
         uint8_t iv[MAX_IV_LENGTH];
         memcpy(iv, cipher->buffer, iv_len);
-        cipher_context_set_iv(env, &evp, iv, iv_len, 0);
+        cipher_context_set_iv(env, &cipher_ctx, iv, iv_len, 0);
 
         if (method >= SALSA20) {
             crypto_stream_xor_ic((uint8_t *)plain->buffer,
@@ -1230,14 +1230,14 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
                                  (uint64_t)(cipher->len - iv_len),
                                  (const uint8_t *)iv, 0, env->enc_key, method);
         } else {
-            ret = cipher_context_update(&evp, (uint8_t *)plain->buffer, &plain->len,
+            ret = cipher_context_update(&cipher_ctx, (uint8_t *)plain->buffer, &plain->len,
                                         (const uint8_t *)(cipher->buffer + iv_len),
                                         cipher->len - iv_len);
         }
 
         if (!ret) {
             buffer_free(cipher);
-            cipher_context_release(env, &evp);
+            cipher_context_release(env, &cipher_ctx);
             return -1;
         }
 
@@ -1246,7 +1246,7 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
         dump("CIPHER", cipher->buffer + iv_len, cipher->len - iv_len);
 #endif
 
-        cipher_context_release(env, &evp);
+        cipher_context_release(env, &cipher_ctx);
 
         buffer_realloc(cipher, plain->len, capacity);
         memcpy(cipher->buffer, plain->buffer, plain->len);
