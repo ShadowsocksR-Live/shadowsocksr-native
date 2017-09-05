@@ -62,11 +62,11 @@ static int parse_tls_header(const char *, size_t, char **);
 static int parse_extensions(const char *, size_t, char **);
 static int parse_server_name_extension(const char *, size_t, char **);
 
-static const protocol_t tls_protocol_st = {
+static const struct protocol_t tls_protocol_st = {
     .default_port =               443,
     .parse_packet = &parse_tls_header,
 };
-const protocol_t *const tls_protocol = &tls_protocol_st;
+const struct protocol_t *const tls_protocol = &tls_protocol_st;
 
 /* Parse a TLS packet for the Server Name Indication extension in the client
  * hello handshake, returning the first servername found (pointer to static

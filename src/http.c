@@ -43,11 +43,11 @@ static int parse_http_header(const char *, size_t, char **);
 static int get_header(const char *, const char *, int, char **);
 static int next_header(const char **, int *);
 
-static const protocol_t http_protocol_st = {
+static const struct protocol_t http_protocol_st = {
     .default_port =                 80,
     .parse_packet = &parse_http_header,
 };
-const protocol_t *const http_protocol = &http_protocol_st;
+const struct protocol_t *const http_protocol = &http_protocol_st;
 
 /*
  * Parses a HTTP request for the Host: header

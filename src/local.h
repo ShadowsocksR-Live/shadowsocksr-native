@@ -59,7 +59,7 @@ struct remote_ctx_t {
     ev_io io;
     ev_timer watcher;
     int connected;
-    struct remote_t *remote;
+    __weak_ptr struct remote_t *remote;
 };
 
 struct remote_t {
@@ -68,7 +68,7 @@ struct remote_t {
     struct remote_ctx_t *recv_ctx;
     struct remote_ctx_t *send_ctx;
     uint32_t counter;
-    struct server_t *server;
+    __weak_ptr struct server_t *server;
 
     int direct;
     struct { // direct = 1
