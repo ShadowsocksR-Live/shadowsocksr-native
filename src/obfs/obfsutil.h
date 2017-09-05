@@ -1,6 +1,8 @@
 #ifndef _OBFS_OBFSUTIL_H
 #define _OBFS_OBFSUTIL_H
 
+#include <stdint.h>
+
 int get_head_size(char *plaindata, int size, int def_size);
 
 void init_shift128plus(void);

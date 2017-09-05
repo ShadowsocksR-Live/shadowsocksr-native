@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <time.h>
 
+#include "obfs.h"
 #include "tls1.2_ticket.h"
 #include "obfsutil.h"
 #include "encrypt.h"

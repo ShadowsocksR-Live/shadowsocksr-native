@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "obfs.h"
 
 int rand_bytes(uint8_t *output, int len);
@@ -209,7 +210,7 @@ new_obfs_manager(const char *plugin_name)
 
         return plugin;
     }
-    LOGE("Load obfs '%s' failed", plugin_name);
+    assert(0); // LOGE("Load obfs '%s' failed", plugin_name);
     return NULL;
 }
 

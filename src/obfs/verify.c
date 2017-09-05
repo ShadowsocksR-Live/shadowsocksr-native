@@ -3,6 +3,7 @@
 #include "verify.h"
 #include "obfsutil.h"
 #include "crc32.h"
+#include "obfs.h"
 
 static int verify_simple_pack_unit_size = 2000;
 

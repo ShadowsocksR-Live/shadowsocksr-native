@@ -7,8 +7,6 @@
 #ifndef _OBFS_VERIFY_H
 #define _OBFS_VERIFY_H
 
-#include "obfs.h"
-
 struct obfs_t * verify_simple_new_obfs();
 void verify_simple_dispose(struct obfs_t *obfs);
 

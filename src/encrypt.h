@@ -23,6 +23,10 @@
 #ifndef _ENCRYPT_H
 #define _ENCRYPT_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #ifndef __MINGW32__
 #include <sys/socket.h>
 #else

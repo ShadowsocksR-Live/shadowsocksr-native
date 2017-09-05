@@ -3,6 +3,17 @@ set(SOURCE_FILES_SNI
         tls.c
         rule.c)
 
+set(SOURCE_FILES_OBFS
+        obfs/auth.c
+        obfs/auth_chain.c
+        obfs/base64.c
+        obfs/crc32.c
+        obfs/http_simple.c
+        obfs/obfs.c
+        obfs/obfsutil.c
+        obfs/tls1.2_ticket.c
+        obfs/verify.c)
+
 set(SOURCE_FILES_LOCAL
         utils.c
         jconf.c
@@ -13,6 +24,8 @@ set(SOURCE_FILES_LOCAL
         acl.c
         netutils.c
         local.c
+        includeobfs.h
+        ${SOURCE_FILES_OBFS}
         ${SOURCE_FILES_SNI})
 
 set(SOURCE_FILES_TUNNEL
@@ -55,6 +68,8 @@ set(SOURCE_FILES_REDIR
         redir.c
         ${SOURCE_FILES_SNI})
 
+include_directories(obfs)
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${libev_include_dirs})
@@ -77,9 +92,7 @@ add_executable(ss_local ${SOURCE_FILES_LOCAL})
 add_executable(ss_redir ${SOURCE_FILES_REDIR})
 add_library(libshadowsocks-libev ${SOURCE_FILES_LOCAL})
 
-set_target_properties(ss_local PROPERTIES
-        COMPILE_DEFINITIONS MODULE_LOCAL
-        )
+set_target_properties(ss_local PROPERTIES COMPILE_DEFINITIONS MODULE_LOCAL)
 #set_target_properties(ss_tunnel PROPERTIES
 #        COMPILE_DEFINITIONS MODULE_TUNNEL
 #        )

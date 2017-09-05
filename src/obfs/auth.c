@@ -5,6 +5,7 @@
 #include "crc32.h"
 #include "base64.h"
 #include "encrypt.h"
+#include "obfs.h"
 
 static int auth_simple_pack_unit_size = 2000;
 typedef int (*hmac_with_key_func)(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len);

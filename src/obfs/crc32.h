@@ -1,6 +1,8 @@
 #ifndef _OBFS_CRC32_H
 #define _OBFS_CRC32_H
 
+#include <stdint.h>
+
 void init_crc32_table(void);
 
 uint32_t crc32(unsigned char *buffer, unsigned int size);

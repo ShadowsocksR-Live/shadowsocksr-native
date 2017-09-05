@@ -7,8 +7,6 @@
 #ifndef _OBFS_AUTH_CHAIN_H
 #define _OBFS_AUTH_CHAIN_H
 
-#include "obfs.h"
-
 void * auth_chain_a_init_data();
 struct obfs_t * auth_chain_a_new_obfs();
 void auth_chain_a_dispose(struct obfs_t *obfs);
@@ -21,4 +19,5 @@ int auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplaindata, 
 int auth_chain_a_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity);
 
 int auth_chain_a_get_overhead(struct obfs_t *obfs);
+
 #endif // _OBFS_AUTH_CHAIN_H

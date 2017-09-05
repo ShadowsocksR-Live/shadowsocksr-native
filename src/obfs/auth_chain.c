@@ -5,6 +5,7 @@
 #include "crc32.h"
 #include "base64.h"
 #include "encrypt.h"
+#include "obfs.h"
 
 uint32_t g_endian_test = 1;
 
