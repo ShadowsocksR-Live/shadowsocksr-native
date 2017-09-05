@@ -117,8 +117,6 @@ static int nofile = 0;
 #endif
 #endif
 
-static void remote_recv_cb(EV_P_ ev_io *w, int revents);
-static void remote_send_cb(EV_P_ ev_io *w, int revents);
 static void accept_cb(EV_P_ ev_io *w, int revents);
 static void signal_cb(EV_P_ ev_signal *w, int revents);
 
@@ -278,8 +276,8 @@ free_connections(struct ev_loop *loop)
 static void
 server_recv_cb(EV_P_ ev_io *w, int revents)
 {
-    struct server_ctx_t *server_ctx = cork_container_of(w, struct server_ctx_t, io);
-    struct server_t *server = server_ctx->server;
+    struct server_ctx_t *server_recv_ctx = cork_container_of(w, struct server_ctx_t, io);
+    struct server_t *server = server_recv_ctx->server;
     struct remote_t *remote = server->remote;
     struct buffer_t *buf;
     ssize_t r;
@@ -416,6 +414,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     // wait on remote connected event
                     ev_io_server_recv(EV_A_ server, remote);
                     ev_timer_start(EV_A_ & remote->send_ctx->watcher);
+                    return;
                 } else {
 #ifdef TCP_FASTOPEN
 #ifdef __APPLE__
@@ -483,7 +482,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             } else {
                 if (r > 0 && remote->buf->len == 0) {
                     remote->buf->idx = 0;
-                    ev_io_stop(EV_A_ & server_ctx->io);
+                    ev_io_stop(EV_A_ & server_recv_ctx->io);
                     return;
                 }
                 int s = send(remote->fd, remote->buf->buffer, remote->buf->len, 0);
@@ -912,8 +911,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 static void
 server_send_cb(EV_P_ ev_io *w, int revents)
 {
-    struct server_ctx_t *server_ctx = cork_container_of(w, struct server_ctx_t, io);
-    struct server_t *server = server_ctx->server;
+    struct server_ctx_t *server_send_ctx = cork_container_of(w, struct server_ctx_t, io);
+    struct server_t *server = server_send_ctx->server;
     struct remote_t *remote = server->remote;
     struct buffer_t *buf = server->buf;
     if (buf->len == 0) {

@@ -148,15 +148,19 @@ void auth_chain_set_server_info(struct obfs_t *obfs, struct server_info_t *serve
 }
 
 unsigned int auth_chain_a_get_rand_len(int datalength, shift128plus_ctx* random, uint8_t* last_hash) {
-    if (datalength > 1440)
+    if (datalength > 1440) {
         return 0;
+    }
     shift128plus_init_from_bin_datalen(random, last_hash, 16, datalength);
-    if (datalength > 1300)
+    if (datalength > 1300) {
         return shift128plus_next(random) % 31;
-    if (datalength > 900)
+    }
+    if (datalength > 900) {
         return shift128plus_next(random) % 127;
-    if (datalength > 400)
+    }
+    if (datalength > 400) {
         return shift128plus_next(random) % 521;
+    }
     return shift128plus_next(random) % 1021;
 }
 
@@ -166,8 +170,9 @@ unsigned int udp_get_rand_len(shift128plus_ctx* random, uint8_t* last_hash) {
 }
 
 unsigned int get_rand_start_pos(int rand_len, shift128plus_ctx* random) {
-    if (rand_len > 0)
+    if (rand_len > 0) {
         return shift128plus_next(random) % 8589934609 % rand_len;
+    }
     return 0;
 }
 
@@ -274,8 +279,7 @@ int auth_chain_a_pack_auth_data(auth_chain_global_data *global, struct server_in
                 memcpy(local->user_key, server->key, local->user_key_len);
             }
         }
-        for (int i = 0; i < 4; ++i)
-        {
+        for (int i = 0; i < 4; ++i) {
             uid[i] = local->uid[i] ^ local->last_client_hash[8 + i];
         }
 
@@ -329,8 +333,9 @@ int auth_chain_a_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int 
     int pack_len;
     if (len > 0 && local->has_sent_header == 0) {
         int head_size = 1200;
-        if (head_size > datalength)
+        if (head_size > datalength) {
             head_size = datalength;
+        }
         pack_len = auth_chain_a_pack_auth_data((auth_chain_global_data *)obfs->server.g_data, &obfs->server, local, data, head_size, buffer);
         buffer += pack_len;
         data += head_size;
@@ -364,8 +369,9 @@ int auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int
     auth_chain_local_data *local = (auth_chain_local_data*)obfs->l_data;
     struct server_info_t *server = (struct server_info_t*)&obfs->server;
     uint8_t * recv_buffer = (uint8_t *)local->recv_buffer;
-    if (local->recv_buffer_size + datalength > 16384)
+    if (local->recv_buffer_size + datalength > 16384) {
         return -1;
+    }
     memmove(recv_buffer + local->recv_buffer_size, plaindata, datalength);
     local->recv_buffer_size += datalength;
 
@@ -387,9 +393,9 @@ int auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int
             error = 1;
             break;
         }
-        if ((len += 4) > local->recv_buffer_size)
+        if ((len += 4) > local->recv_buffer_size) {
             break;
-
+        }
         char hash[16];
         ss_md5_hmac_with_key(hash, (char*)recv_buffer, len - 2, key, key_len);
         if (memcmp(hash, recv_buffer + len - 2, 2)) {
@@ -399,12 +405,9 @@ int auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int
         }
 
         int pos;
-        if (data_len > 0 && rand_len > 0)
-        {
+        if (data_len > 0 && rand_len > 0) {
             pos = 2 + get_rand_start_pos(rand_len, &local->random_server);
-        }
-        else
-        {
+        } else {
             pos = 2;
         }
         size_t out_len;
@@ -510,9 +513,9 @@ int auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplaindata, 
 }
 
 int auth_chain_a_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity) {
-    if (datalength <= 8)
+    if (datalength <= 8) {
         return 0;
-
+    }
     char *plaindata = *pplaindata;
     struct server_info_t *server = (struct server_info_t *)&obfs->server;
     auth_chain_local_data *local = (auth_chain_local_data*)obfs->l_data;
@@ -520,9 +523,9 @@ int auth_chain_a_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaindata,
     uint8_t hash[16];
     ss_md5_hmac_with_key((char*)hash, plaindata, datalength - 1, local->user_key, local->user_key_len);
 
-    if (*hash != ((uint8_t*)plaindata)[datalength - 1])
+    if (*hash != ((uint8_t*)plaindata)[datalength - 1]) {
         return 0;
-
+    }
     ss_md5_hmac_with_key((char*)hash, plaindata + datalength - 8, 7, server->key, server->key_len);
 
     int rand_len = udp_get_rand_len(&local->random_server, hash);
