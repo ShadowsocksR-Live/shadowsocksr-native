@@ -25,6 +25,7 @@ set(SOURCE_FILES_LOCAL
         netutils.c
         local.c
         includeobfs.h
+        socks5.h
         ${SOURCE_FILES_OBFS}
         ${SOURCE_FILES_SNI})
 

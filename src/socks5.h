@@ -21,12 +21,14 @@
  *
  * https://fossies.org/dox/socat-2.0.0-b9/xio-socks5_8h_source.html
  *
+ * https://www.ietf.org/rfc/rfc1928.txt
+ *
  */
 
 #ifndef _SOCKS5_H
 #define _SOCKS5_H
 
-#define SOCKS5_VERSION 0x05
+#define SOCKS5_VERSION          0x05
 
 #define SOCKS5_METHOD_NOAUTH    0x00
 #define SOCKS5_METHOD_GSSAPI    0x01

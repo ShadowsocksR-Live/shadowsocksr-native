@@ -105,7 +105,6 @@ char *prefix;
 
 #include "includeobfs.h" // I don't want to modify makefile
 #include "jconf.h"
-#include "obfs/obfs.h"
 
 static int acl       = 0;
 static int mode = TCP_ONLY;
