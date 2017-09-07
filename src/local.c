@@ -117,13 +117,6 @@ static int nofile = 0;
 #endif
 #endif
 
-static void accept_cb(EV_P_ ev_io *w, int revents);
-static void signal_cb(EV_P_ ev_signal *w, int revents);
-
-static int create_and_bind(const char *addr, const char *port);
-#ifdef HAVE_LAUNCHD
-static int launch_or_create(const char *addr, const char *port);
-#endif
 static struct remote_t *create_remote(struct listen_ctx_t *profile, struct sockaddr *addr);
 static void free_remote(struct remote_t *remote);
 static void close_and_free_remote(EV_P_ struct remote_t *remote);
@@ -348,11 +341,10 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             if (!remote->direct) {
                 struct server_env_t *server_env = server->server_env;
                 // SSR beg
-                if (server_env->protocol_plugin) {
-                    struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
-                    if (protocol_plugin->client_pre_encrypt) {
-                        remote->buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->buffer, remote->buf->len, &remote->buf->capacity);
-                    }
+                struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
+                if (protocol_plugin && protocol_plugin->client_pre_encrypt) {
+                    struct buffer_t *buf = remote->buf;
+                    buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &buf->buffer, buf->len, &buf->capacity);
                 }
                 int err = ss_encrypt(&server_env->cipher, remote->buf, server->e_ctx, BUF_SIZE);
 
@@ -980,10 +972,10 @@ remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 static void
 remote_recv_cb(EV_P_ ev_io *w, int revents)
 {
-    struct remote_ctx_t *remote_recv_ctx = (struct remote_ctx_t *)w;
-    struct remote_t *remote              = remote_recv_ctx->remote;
-    struct server_t *server       = remote->server;
-    struct server_env_t *server_env      = server->server_env;
+    struct remote_ctx_t *remote_recv_ctx = cork_container_of(w, struct remote_ctx_t, io);
+    struct remote_t *remote = remote_recv_ctx->remote;
+    struct server_t *server = remote->server;
+    struct server_env_t *server_env = server->server_env;
 
     ev_timer_again(EV_A_ & remote->recv_ctx->watcher);
 
