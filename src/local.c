@@ -355,11 +355,10 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     return;
                 }
 
-                if (server_env->obfs_plugin) {
-                    struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
-                    if (obfs_plugin->client_encode) {
-                        remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->buffer, remote->buf->len, &remote->buf->capacity);
-                    }
+                struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
+                if (obfs_plugin && obfs_plugin->client_encode) {
+                    struct buffer_t *buf = remote->buf;
+                    buf->len = obfs_plugin->client_encode(server->obfs, &buf->buffer, buf->len, &buf->capacity);
                 }
                 // SSR end
 #ifdef ANDROID
