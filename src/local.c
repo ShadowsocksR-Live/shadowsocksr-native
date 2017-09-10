@@ -647,13 +647,13 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 uint16_t p = ntohs(*(uint16_t *)(abuf->buffer + abuf->len - 2));
                 int ret    = 0;
                 if (p == http_protocol->default_port) {
-                    ret = http_protocol->parse_packet(
-                            buf->buffer + 3 + abuf->len,
-                            buf->len - 3 - abuf->len, &hostname);
+                    const char *data = buf->buffer + 3 + abuf->len;
+                    size_t data_len  = buf->len    - 3 - abuf->len;
+                    ret = http_protocol->parse_packet(data, data_len, &hostname);
                 } else if (p == tls_protocol->default_port) {
-                    ret = tls_protocol->parse_packet(buf->buffer + 3 + abuf->len,
-                                                     buf->len - 3 - abuf->len,
-                                                     &hostname);
+                    const char *data = buf->buffer + 3 + abuf->len;
+                    size_t data_len  = buf->len    - 3 - abuf->len;
+                    ret = tls_protocol->parse_packet(data, data_len, &hostname);
                 }
                 if (ret == -1 && buf->len < BUF_SIZE) {
                     server->stage = STAGE_PARSE;
@@ -851,7 +851,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 server_info.port = server_env->port;
                 server_info.param = server_env->obfs_param;
                 server_info.g_data = server_env->obfs_global;
-                server_info.head_len = get_head_size(ss_addr_to_send.buffer, 320, 30);
+                server_info.head_len = get_head_size(abuf->buffer, 320, 30);
                 server_info.iv = server->e_ctx->cipher_ctx.iv;
                 server_info.iv_len = enc_get_iv_len(&server_env->cipher);
                 server_info.key = enc_get_key(&server_env->cipher);
