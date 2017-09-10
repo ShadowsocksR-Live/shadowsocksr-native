@@ -21,7 +21,13 @@
  *
  * https://fossies.org/dox/socat-2.0.0-b9/xio-socks5_8h_source.html
  *
- * https://www.ietf.org/rfc/rfc1928.txt
+ * https://en.wikipedia.org/wiki/SOCKS
+ * https://www.ietf.org/rfc/rfc1928.txt - NO_AUTH SOCKS5
+ * https://www.ietf.org/rfc/rfc1929.txt - USERNAME/PASSWORD SOCKS5
+ *
+ * https://github.com/brozeph/simple-socks/blob/master/lib/socks5.js
+ * https://github.com/mfontanini/Programs-Scripts/blob/master/socks5/socks5.cpp
+ * https://github.com/isayme/socks5
  *
  */
 
