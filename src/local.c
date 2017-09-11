@@ -309,7 +309,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         char *host = server->listener->tunnel_addr.host;
         char *port = server->listener->tunnel_addr.port;
         if (host && port) {
-            server->stage = STAGE_PARSE;
             int addr_len = (int) strlen(host);
             int header_len = addr_len + 3 + 4;
             int port_num = atoi(port);
@@ -326,6 +325,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             memcpy(buf->buffer + 5, host, (size_t) addr_len);
             buf->buffer[addr_len + 5] = (char) (port_num >> 8);
             buf->buffer[addr_len + 6] = (char) port_num;
+
+            server->stage = STAGE_PARSE;
         }
     }
     while (1) {
@@ -503,13 +504,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             // all processed
             return;
         } else if (server->stage == STAGE_INIT) {
-            /**
-             * +----+----------+----------+
-             * |VER | NMETHODS | METHODS  |
-             * +----+----------+----------+
-             * | 1  |    1     | 1 to 255 |
-             * +----+----------+----------+
-             **/
             struct method_select_request *request = (struct method_select_request *)buf->buffer;
 
             struct method_select_response response = { 0 };
@@ -532,6 +526,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             return;
         } else if (server->stage == STAGE_HANDSHAKE || server->stage == STAGE_PARSE) {
             struct socks5_request *request = (struct socks5_request *)buf->buffer;
+
             struct sockaddr_in sock_addr = { 0 };
 
             int udp_assc = 0;
@@ -559,24 +554,23 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             // Fake reply
             if (server->stage == STAGE_HANDSHAKE) {
-                struct socks5_response response = { 0 };
-                response.ver  = SOCKS5_VERSION;
-                response.rep  = SOCKS5_REPLY_SUCCESS;
-                response.addr_type = SOCKS5_ADDRTYPE_IPV4;
-
                 struct buffer_t resp_to_send;
                 struct buffer_t *resp_buf = &resp_to_send;
                 buffer_alloc(resp_buf, BUF_SIZE);
 
-                char *iter = (char *) resp_buf->buffer;
-                memcpy(iter, &response, sizeof(struct socks5_response));
-                iter += sizeof(struct socks5_response);
+                struct socks5_response *response = (struct socks5_response *)resp_buf->buffer;
+                response->ver = SOCKS5_VERSION;
+                response->rep = SOCKS5_REPLY_SUCCESS;
+                response->rsv = 0;
+                response->addr_type = SOCKS5_ADDRTYPE_IPV4;
+
+                char *iter = response->addr_n_port;
                 memcpy(iter, &sock_addr.sin_addr, sizeof(sock_addr.sin_addr));
                 iter += sizeof(sock_addr.sin_addr);
                 memcpy(iter, &sock_addr.sin_port, sizeof(sock_addr.sin_port));
                 iter += sizeof(sock_addr.sin_port);
 
-                int reply_size = (int)(iter - resp_buf->buffer);
+                int reply_size = (int)(iter - (char *)response);
 
                 int s = send(server->fd, resp_buf->buffer, reply_size, 0);
 
@@ -604,40 +598,42 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             abuf->buffer[abuf->len++] = addr_type;
 
+            char *addr_n_port = request->addr_n_port;
+
             // get remote addr and port
             if (addr_type == SOCKS5_ADDRTYPE_IPV4) {
                 // IP V4
                 size_t in_addr_len = sizeof(struct in_addr);
-                memcpy(abuf->buffer + abuf->len, buf->buffer + 4, in_addr_len + 2);
+                memcpy(abuf->buffer + abuf->len, addr_n_port, in_addr_len + 2);
                 abuf->len += in_addr_len + 2;
 
                 if (acl || verbose) {
-                    uint16_t p = ntohs(*(uint16_t *)(buf->buffer + 4 + in_addr_len));
-                    dns_ntop(AF_INET, (const void *)(buf->buffer + 4), ip, INET_ADDRSTRLEN);
+                    uint16_t p = ntohs(*(uint16_t *)(addr_n_port + in_addr_len));
+                    dns_ntop(AF_INET, (const void *)(addr_n_port), ip, INET_ADDRSTRLEN);
                     sprintf(port, "%d", p);
                 }
             } else if (addr_type == SOCKS5_ADDRTYPE_NAME) {
                 // Domain name
-                uint8_t name_len = *(uint8_t *)(buf->buffer + 4);
+                uint8_t name_len = *(uint8_t *)addr_n_port;
                 abuf->buffer[abuf->len++] = name_len;
-                memcpy(abuf->buffer + abuf->len, buf->buffer + 4 + 1, name_len + 2);
+                memcpy(abuf->buffer + abuf->len, addr_n_port + 1, name_len + 2);
                 abuf->len += name_len + 2;
 
                 if (acl || verbose) {
-                    uint16_t p = ntohs(*(uint16_t *)(buf->buffer + 4 + 1 + name_len));
-                    memcpy(host, buf->buffer + 4 + 1, name_len);
+                    uint16_t p = ntohs(*(uint16_t *)(addr_n_port + 1 + name_len));
+                    memcpy(host, addr_n_port + 1, name_len);
                     host[name_len] = '\0';
                     sprintf(port, "%d", p);
                 }
             } else if (addr_type == SOCKS5_ADDRTYPE_IPV6) {
                 // IP V6
                 size_t in6_addr_len = sizeof(struct in6_addr);
-                memcpy(abuf->buffer + abuf->len, buf->buffer + 4, in6_addr_len + 2);
+                memcpy(abuf->buffer + abuf->len, addr_n_port, in6_addr_len + 2);
                 abuf->len += in6_addr_len + 2;
 
                 if (acl || verbose) {
-                    uint16_t p = ntohs(*(uint16_t *)(buf->buffer + 4 + in6_addr_len));
-                    dns_ntop(AF_INET6, (const void *)(buf->buffer + 4), ip, INET6_ADDRSTRLEN);
+                    uint16_t p = ntohs(*(uint16_t *)(addr_n_port + in6_addr_len));
+                    dns_ntop(AF_INET6, (const void *)addr_n_port, ip, INET6_ADDRSTRLEN);
                     sprintf(port, "%d", p);
                 }
             } else {
@@ -885,10 +881,11 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 }
                 // SSR end
 
-                buffer_realloc(remote->buf, buf->len + abuf->len, BUF_SIZE);
-                memcpy(remote->buf->buffer, abuf->buffer, abuf->len);
-                remote->buf->len = buf->len + abuf->len;
+                size_t total_len = abuf->len + buf->len;
+                buffer_realloc(remote->buf, total_len, BUF_SIZE);
+                remote->buf->len = total_len;
 
+                memcpy(remote->buf->buffer, abuf->buffer, abuf->len);
                 if (buf->len > 0) {
                     memcpy(remote->buf->buffer + abuf->len, buf->buffer, buf->len);
                 }

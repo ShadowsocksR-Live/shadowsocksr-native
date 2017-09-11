@@ -65,29 +65,70 @@
 #pragma pack(push)
 #pragma pack(1)
 
+
+/**
+ * +----+----------+----------+
+ * |VER | NMETHODS | METHODS  |
+ * +----+----------+----------+
+ * | 1  |    1     | 1 to 255 |
+ * +----+----------+----------+
+ **/
 struct method_select_request {
     char ver;
     char nmethods;
     char methods[0];
 };
 
+
 struct method_select_response {
     char ver;
     char method;
 };
 
+
+/**
+ * +----+------+----------+------+----------+
+ * |VER | ULEN |  UNAME   | PLEN |  PASSWD  |
+ * +----+------+----------+------+----------+
+ * | 1  |  1   | 1 to 255 |  1   | 1 to 255 |
+ * +----+------+----------+------+----------+
+ **/
+struct socks5_authenticate {
+    char ver;
+    char ulen;
+    char uname_n_others[0];
+};
+
+
+/**
+ * +----+-----+-------+------+----------+----------+
+ * |VER | CMD |  RSV  | ATYP | DST.ADDR | DST.PORT |
+ * +----+-----+-------+------+----------+----------+
+ * | 1  |  1  | X'00' |  1   | Variable |    2     |
+ * +----+-----+-------+------+----------+----------+
+ **/
 struct socks5_request {
     char ver;
     char cmd;
     char rsv;
     char addr_type;
+    char addr_n_port[0];
 };
 
+
+/**
+ * +----+-----+-------+------+----------+----------+
+ * |VER | REP |  RSV  | ATYP | BND.ADDR | BND.PORT |
+ * +----+-----+-------+------+----------+----------+
+ * | 1  |  1  | X'00' |  1   | Variable |    2     |
+ * +----+-----+-------+------+----------+----------+
+ **/
 struct socks5_response {
     char ver;
     char rep;
     char rsv;
     char addr_type;
+    char addr_n_port[0];
 };
 
 #pragma pack(pop)
