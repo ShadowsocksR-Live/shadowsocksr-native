@@ -343,11 +343,12 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 struct server_env_t *server_env = server->server_env;
                 // SSR beg
                 struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
+                struct buffer_t *buf = remote->buf;
+
                 if (protocol_plugin && protocol_plugin->client_pre_encrypt) {
-                    struct buffer_t *buf = remote->buf;
                     buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &buf->buffer, buf->len, &buf->capacity);
                 }
-                int err = ss_encrypt(&server_env->cipher, remote->buf, server->e_ctx, BUF_SIZE);
+                int err = ss_encrypt(&server_env->cipher, buf, server->e_ctx, BUF_SIZE);
 
                 if (err) {
                     LOGE("server invalid password or cipher");
@@ -358,7 +359,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
                 if (obfs_plugin && obfs_plugin->client_encode) {
-                    struct buffer_t *buf = remote->buf;
                     buf->len = obfs_plugin->client_encode(server->obfs, &buf->buffer, buf->len, &buf->capacity);
                 }
                 // SSR end
@@ -594,7 +594,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             struct buffer_t *abuf = &ss_addr_to_send;
             buffer_alloc(abuf, BUF_SIZE);
 
-            int addr_type = request->addr_type;
+            char addr_type = request->addr_type;
 
             abuf->buffer[abuf->len++] = addr_type;
 
@@ -1108,17 +1108,14 @@ static void
 remote_send_cb(EV_P_ ev_io *w, int revents)
 {
     struct remote_ctx_t *remote_send_ctx = (struct remote_ctx_t *)w;
-    struct remote_t *remote              = remote_send_ctx->remote;
-    struct server_t *server       = remote->server;
+    struct remote_t *remote = remote_send_ctx->remote;
+    struct server_t *server = remote->server;
+    struct buffer_t *buf = remote->buf;
 
     if (!remote_send_ctx->connected) {
         int err_no = 0;
-        socklen_t len = sizeof err_no;
-#ifdef __MINGW32__
+        socklen_t len = sizeof(err_no);
         int r = getsockopt(remote->fd, SOL_SOCKET, SO_ERROR, (char *)&err_no, &len);
-#else
-        int r = getsockopt(remote->fd, SOL_SOCKET, SO_ERROR, &err_no, &len);
-#endif
         if (r == 0 && err_no == 0) {
             remote_send_ctx->connected = 1;
             ev_timer_stop(EV_A_ & remote_send_ctx->watcher);
@@ -1126,7 +1123,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
             ev_io_start(EV_A_ & remote->recv_ctx->io);
 
             // no need to send any data
-            if (remote->buf->len == 0) {
+            if (buf->len == 0) {
                 ev_io_remote_send(EV_A_ server, remote);
                 return;
             }
@@ -1140,15 +1137,14 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
         }
     }
 
-    if (remote->buf->len == 0) {
+    if (buf->len == 0) {
         // close and free
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
         return;
     } else {
         // has data to send
-        ssize_t s = send(remote->fd, remote->buf->buffer + remote->buf->idx,
-                         remote->buf->len, 0);
+        ssize_t s = send(remote->fd, buf->buffer + buf->idx, buf->len, 0);
         if (s == -1) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
                 ERROR("remote_send_cb_send");
@@ -1157,15 +1153,15 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
                 close_and_free_server(EV_A_ server);
             }
             return;
-        } else if (s < (ssize_t)(remote->buf->len)) {
+        } else if (s < (ssize_t)(buf->len)) {
             // partly sent, move memory, wait for the next time to send
-            remote->buf->len -= s;
-            remote->buf->idx += s;
+            buf->len -= s;
+            buf->idx += s;
             return;
         } else {
             // all sent out, wait for reading
-            remote->buf->len = 0;
-            remote->buf->idx = 0;
+            buf->len = 0;
+            buf->idx = 0;
             ev_io_remote_send(EV_A_ server, remote);
         }
     }
