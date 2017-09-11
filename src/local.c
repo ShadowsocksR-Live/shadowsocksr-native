@@ -503,6 +503,15 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             // all processed
             return;
         } else if (server->stage == STAGE_INIT) {
+            /**
+             * +----+----------+----------+
+             * |VER | NMETHODS | METHODS  |
+             * +----+----------+----------+
+             * | 1  |    1     | 1 to 255 |
+             * +----+----------+----------+
+             **/
+            struct method_select_request *request = (struct method_select_request *)buf->buffer;
+
             struct method_select_response response = { 0 };
             response.ver    = SOCKS5_VERSION;
             response.method = SOCKS5_METHOD_NOAUTH;
@@ -511,8 +520,8 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             server->stage = STAGE_HANDSHAKE;
 
-            int off = (buf->buffer[1] & 0xff) + 2;
-            if (buf->buffer[0] == 0x05 && off < (int)(buf->len)) {
+            int off = (request->nmethods & 0xff) + sizeof(*request);
+            if ((request->ver == SOCKS5_VERSION) && (off < (int)(buf->len))) {
                 memmove(buf->buffer, buf->buffer + off, buf->len - off);
                 buf->len -= off;
                 continue;

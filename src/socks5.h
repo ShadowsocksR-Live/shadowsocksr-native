@@ -68,7 +68,7 @@
 struct method_select_request {
     char ver;
     char nmethods;
-    char methods[255];
+    char methods[0];
 };
 
 struct method_select_response {
