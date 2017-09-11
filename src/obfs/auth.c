@@ -62,48 +62,48 @@ auth_simple_init_data()
 struct obfs_t *
 auth_simple_new_obfs()
 {
-    struct obfs_t * self = new_obfs();
-    self->l_data = malloc(sizeof(auth_simple_local_data));
-    auth_simple_local_data_init((auth_simple_local_data*)self->l_data);
-    return self;
+    struct obfs_t * obfs = new_obfs();
+    obfs->l_data = malloc(sizeof(auth_simple_local_data));
+    auth_simple_local_data_init((auth_simple_local_data*)obfs->l_data);
+    return obfs;
 }
 
 struct obfs_t *
 auth_aes128_md5_new_obfs()
 {
-    struct obfs_t * self = new_obfs();
-    self->l_data = malloc(sizeof(auth_simple_local_data));
-    auth_simple_local_data_init((auth_simple_local_data*)self->l_data);
-    ((auth_simple_local_data*)self->l_data)->hmac = ss_md5_hmac_with_key;
-    ((auth_simple_local_data*)self->l_data)->hash = ss_md5_hash_func;
-    ((auth_simple_local_data*)self->l_data)->hash_len = 16;
-    ((auth_simple_local_data*)self->l_data)->salt = "auth_aes128_md5";
-    return self;
+    struct obfs_t * obfs = new_obfs();
+    obfs->l_data = malloc(sizeof(auth_simple_local_data));
+    auth_simple_local_data_init((auth_simple_local_data*)obfs->l_data);
+    ((auth_simple_local_data*)obfs->l_data)->hmac = ss_md5_hmac_with_key;
+    ((auth_simple_local_data*)obfs->l_data)->hash = ss_md5_hash_func;
+    ((auth_simple_local_data*)obfs->l_data)->hash_len = 16;
+    ((auth_simple_local_data*)obfs->l_data)->salt = "auth_aes128_md5";
+    return obfs;
 }
 
 struct obfs_t *
 auth_aes128_sha1_new_obfs()
 {
-    struct obfs_t * self = new_obfs();
-    self->l_data = malloc(sizeof(auth_simple_local_data));
-    auth_simple_local_data_init((auth_simple_local_data*)self->l_data);
-    ((auth_simple_local_data*)self->l_data)->hmac = ss_sha1_hmac_with_key;
-    ((auth_simple_local_data*)self->l_data)->hash = ss_sha1_hash_func;
-    ((auth_simple_local_data*)self->l_data)->hash_len = 20;
-    ((auth_simple_local_data*)self->l_data)->salt = "auth_aes128_sha1";
-    return self;
+    struct obfs_t * obfs = new_obfs();
+    obfs->l_data = malloc(sizeof(auth_simple_local_data));
+    auth_simple_local_data_init((auth_simple_local_data*)obfs->l_data);
+    ((auth_simple_local_data*)obfs->l_data)->hmac = ss_sha1_hmac_with_key;
+    ((auth_simple_local_data*)obfs->l_data)->hash = ss_sha1_hash_func;
+    ((auth_simple_local_data*)obfs->l_data)->hash_len = 20;
+    ((auth_simple_local_data*)obfs->l_data)->salt = "auth_aes128_sha1";
+    return obfs;
 }
 
 int
-auth_aes128_sha1_get_overhead(struct obfs_t *self)
+auth_aes128_sha1_get_overhead(struct obfs_t *obfs)
 {
     return 9;
 }
 
 void
-auth_simple_dispose(struct obfs_t *self)
+auth_simple_dispose(struct obfs_t *obfs)
 {
-    auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
+    auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
     if (local->recv_buffer != NULL) {
         free(local->recv_buffer);
         local->recv_buffer = NULL;
@@ -113,8 +113,8 @@ auth_simple_dispose(struct obfs_t *self)
         local->user_key = NULL;
     }
     free(local);
-    self->l_data = NULL;
-    dispose_obfs(self);
+    obfs->l_data = NULL;
+    dispose_obfs(obfs);
 }
 
 int
@@ -154,10 +154,10 @@ auth_simple_pack_auth_data(auth_simple_global_data *global, char *data, int data
 }
 
 int
-auth_simple_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int datalength, size_t* capacity)
+auth_simple_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity)
 {
     char *plaindata = *pplaindata;
-    auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
+    auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
     char * out_buffer = (char*)malloc((size_t)(datalength * 2 + 64));
     char * buffer = out_buffer;
     char * data = plaindata;
@@ -168,7 +168,7 @@ auth_simple_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int datal
         if (head_size > datalength) {
             head_size = datalength;
         }
-        pack_len = auth_simple_pack_auth_data((auth_simple_global_data *)self->server.g_data, data, head_size, buffer);
+        pack_len = auth_simple_pack_auth_data((auth_simple_global_data *)obfs->server.g_data, data, head_size, buffer);
         buffer += pack_len;
         data += head_size;
         len -= head_size;
@@ -195,10 +195,10 @@ auth_simple_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int datal
 }
 
 int
-auth_simple_client_post_decrypt(struct obfs_t *self, char **pplaindata, int datalength, size_t* capacity)
+auth_simple_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity)
 {
     char *plaindata = *pplaindata;
-    auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
+    auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
     uint8_t * recv_buffer = (uint8_t *)local->recv_buffer;
     if (local->recv_buffer_size + datalength > 16384) {
         return -1;
@@ -281,10 +281,10 @@ auth_sha1_pack_auth_data(auth_simple_global_data *global, struct server_info_t *
 }
 
 int
-auth_sha1_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int datalength, size_t* capacity)
+auth_sha1_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity)
 {
     char *plaindata = *pplaindata;
-    auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
+    auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
     char * out_buffer = (char*)malloc((size_t)(datalength * 2 + 256));
     char * buffer = out_buffer;
     char * data = plaindata;
@@ -295,7 +295,7 @@ auth_sha1_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int datalen
         if (head_size > datalength) {
             head_size = datalength;
         }
-        pack_len = auth_sha1_pack_auth_data((auth_simple_global_data *)self->server.g_data, &self->server, data, head_size, buffer);
+        pack_len = auth_sha1_pack_auth_data((auth_simple_global_data *)obfs->server.g_data, &obfs->server, data, head_size, buffer);
         buffer += pack_len;
         data += head_size;
         len -= head_size;
@@ -322,10 +322,10 @@ auth_sha1_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int datalen
 }
 
 int
-auth_sha1_client_post_decrypt(struct obfs_t *self, char **pplaindata, int datalength, size_t* capacity)
+auth_sha1_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity)
 {
     char *plaindata = *pplaindata;
-    auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
+    auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
     uint8_t * recv_buffer = (uint8_t *)local->recv_buffer;
     if (local->recv_buffer_size + datalength > 16384) {
         return -1;
@@ -423,10 +423,10 @@ auth_sha1_v2_pack_auth_data(auth_simple_global_data *global, struct server_info_
 }
 
 int
-auth_sha1_v2_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int datalength, size_t* capacity)
+auth_sha1_v2_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity)
 {
     char *plaindata = *pplaindata;
-    auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
+    auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
     char * out_buffer = (char*)malloc((size_t)(datalength * 2 + 4096));
     char * buffer = out_buffer;
     char * data = plaindata;
@@ -437,7 +437,7 @@ auth_sha1_v2_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int data
         if (head_size > datalength) {
             head_size = datalength;
         }
-        pack_len = auth_sha1_v2_pack_auth_data((auth_simple_global_data *)self->server.g_data, &self->server, data, head_size, buffer);
+        pack_len = auth_sha1_v2_pack_auth_data((auth_simple_global_data *)obfs->server.g_data, &obfs->server, data, head_size, buffer);
         buffer += pack_len;
         data += head_size;
         len -= head_size;
@@ -464,10 +464,10 @@ auth_sha1_v2_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int data
 }
 
 int
-auth_sha1_v2_client_post_decrypt(struct obfs_t *self, char **pplaindata, int datalength, size_t* capacity)
+auth_sha1_v2_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity)
 {
     char *plaindata = *pplaindata;
-    auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
+    auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
     uint8_t * recv_buffer = (uint8_t *)local->recv_buffer;
     if (local->recv_buffer_size + datalength > 16384) {
         return -1;
@@ -582,10 +582,10 @@ auth_sha1_v4_pack_auth_data(auth_simple_global_data *global, struct server_info_
 }
 
 int
-auth_sha1_v4_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int datalength, size_t* capacity)
+auth_sha1_v4_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity)
 {
     char *plaindata = *pplaindata;
-    auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
+    auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
     char * out_buffer = (char*)malloc((size_t)(datalength * 2 + 4096));
     char * buffer = out_buffer;
     char * data = plaindata;
@@ -596,7 +596,7 @@ auth_sha1_v4_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int data
         if (head_size > datalength) {
             head_size = datalength;
         }
-        pack_len = auth_sha1_v4_pack_auth_data((auth_simple_global_data *)self->server.g_data, &self->server, data, head_size, buffer);
+        pack_len = auth_sha1_v4_pack_auth_data((auth_simple_global_data *)obfs->server.g_data, &obfs->server, data, head_size, buffer);
         buffer += pack_len;
         data += head_size;
         len -= head_size;
@@ -623,10 +623,10 @@ auth_sha1_v4_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int data
 }
 
 int
-auth_sha1_v4_client_post_decrypt(struct obfs_t *self, char **pplaindata, int datalength, size_t* capacity)
+auth_sha1_v4_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity)
 {
     char *plaindata = *pplaindata;
-    auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
+    auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
     uint8_t * recv_buffer = (uint8_t *)local->recv_buffer;
     if (local->recv_buffer_size + datalength > 16384) {
         return -1;
@@ -857,10 +857,10 @@ auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_i
 }
 
 int
-auth_aes128_sha1_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int datalength, size_t* capacity)
+auth_aes128_sha1_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity)
 {
     char *plaindata = *pplaindata;
-    auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
+    auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
     char * out_buffer = (char*)malloc((size_t)(datalength * 2 + 4096));
     char * buffer = out_buffer;
     char * data = plaindata;
@@ -871,20 +871,20 @@ auth_aes128_sha1_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int 
         if (head_size > datalength) {
             head_size = datalength;
         }
-        pack_len = auth_aes128_sha1_pack_auth_data((auth_simple_global_data *)self->server.g_data, &self->server, local, data, head_size, buffer);
+        pack_len = auth_aes128_sha1_pack_auth_data((auth_simple_global_data *)obfs->server.g_data, &obfs->server, local, data, head_size, buffer);
         buffer += pack_len;
         data += head_size;
         len -= head_size;
         local->has_sent_header = 1;
     }
     while ( len > auth_simple_pack_unit_size ) {
-        pack_len = auth_aes128_sha1_pack_data(data, auth_simple_pack_unit_size, datalength, buffer, local, &self->server);
+        pack_len = auth_aes128_sha1_pack_data(data, auth_simple_pack_unit_size, datalength, buffer, local, &obfs->server);
         buffer += pack_len;
         data += auth_simple_pack_unit_size;
         len -= auth_simple_pack_unit_size;
     }
     if (len > 0) {
-        pack_len = auth_aes128_sha1_pack_data(data, len, datalength, buffer, local, &self->server);
+        pack_len = auth_aes128_sha1_pack_data(data, len, datalength, buffer, local, &obfs->server);
         buffer += pack_len;
     }
     len = (int)(buffer - out_buffer);
@@ -899,11 +899,11 @@ auth_aes128_sha1_client_pre_encrypt(struct obfs_t *self, char **pplaindata, int 
 }
 
 int
-auth_aes128_sha1_client_post_decrypt(struct obfs_t *self, char **pplaindata, int datalength, size_t* capacity)
+auth_aes128_sha1_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity)
 {
     char *plaindata = *pplaindata;
-    auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
-    //struct server_info_t *server = (struct server_info_t *)&self->server;
+    auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
+    //struct server_info_t *server = (struct server_info_t *)&obfs->server;
     uint8_t * recv_buffer = (uint8_t *)local->recv_buffer;
     if (local->recv_buffer_size + datalength > 16384) {
         return -1;
@@ -981,15 +981,15 @@ auth_aes128_sha1_client_post_decrypt(struct obfs_t *self, char **pplaindata, int
 }
 
 int
-auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *self, char **pplaindata, int datalength, size_t* capacity)
+auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity)
 {
     char *plaindata = *pplaindata;
-    auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
+    auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
     char * out_buffer = (char*)malloc((size_t)(datalength + 8));
 
     if (local->user_key == NULL) {
-        if(self->server.param != NULL && self->server.param[0] != 0) {
-            char *param = self->server.param;
+        if(obfs->server.param != NULL && obfs->server.param[0] != 0) {
+            char *param = obfs->server.param;
             char *delim = strchr(param, ':');
             if(delim != NULL) {
                 char uid_str[16] = { 0 };
@@ -1010,9 +1010,9 @@ auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *self, char **pplaindata, 
         if (local->user_key == NULL) {
             rand_bytes((uint8_t *)local->uid, 4);
 
-            local->user_key_len = (int)self->server.key_len;
+            local->user_key_len = (int)obfs->server.key_len;
             local->user_key = (uint8_t*)malloc((size_t)local->user_key_len);
-            memcpy(local->user_key, self->server.key, local->user_key_len);
+            memcpy(local->user_key, obfs->server.key, local->user_key_len);
         }
     }
 
@@ -1036,16 +1036,16 @@ auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *self, char **pplaindata, 
 }
 
 int
-auth_aes128_sha1_client_udp_post_decrypt(struct obfs_t *self, char **pplaindata, int datalength, size_t* capacity)
+auth_aes128_sha1_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity)
 {
     if (datalength <= 4) {
         return 0;
     }
     char *plaindata = *pplaindata;
-    auth_simple_local_data *local = (auth_simple_local_data*)self->l_data;
+    auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
 
     char hash[20];
-    local->hmac(hash, plaindata, datalength - 4, self->server.key, (int)self->server.key_len);
+    local->hmac(hash, plaindata, datalength - 4, obfs->server.key, (int)obfs->server.key_len);
 
     if (memcmp(hash, plaindata + datalength - 4, 4)) {
         return 0;
