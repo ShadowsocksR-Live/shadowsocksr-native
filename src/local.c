@@ -309,22 +309,14 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         char *host = server->listener->tunnel_addr.host;
         char *port = server->listener->tunnel_addr.port;
         if (host && port) {
-            int addr_len = (int) strlen(host);
-            int header_len = addr_len + 3 + 4;
-            int port_num = atoi(port);
+            char buffer[BUF_SIZE] = { 0 };
+            int header_len = 0;
+            struct socks5_request *hdr =
+                    build_socks5_request(host, (uint16_t)atoi(port), buffer, sizeof(buffer), &header_len);
+
             memmove(buf->buffer + header_len, buf->buffer, buf->len);
+            memmove(buf->buffer, hdr, (size_t)header_len);
             buf->len += header_len;
-
-            struct socks5_request *request = (struct socks5_request *)buf->buffer;
-            request->ver = SOCKS5_VERSION;
-            request->cmd = SOCKS5_COMMAND_CONNECT;
-            request->rsv = 0;
-            request->addr_type = SOCKS5_ADDRTYPE_NAME;
-
-            buf->buffer[4] = (char) addr_len;
-            memcpy(buf->buffer + 5, host, (size_t) addr_len);
-            buf->buffer[addr_len + 5] = (char) (port_num >> 8);
-            buf->buffer[addr_len + 6] = (char) port_num;
 
             server->stage = STAGE_PARSE;
         }
@@ -474,7 +466,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             } else {
                 if (r > 0 && remote->buf->len == 0) {
                     remote->buf->idx = 0;
-                    ev_io_stop(EV_A_ & server_recv_ctx->io);
+                    ev_io_stop(EV_A_ & server->recv_ctx->io);
                     return;
                 }
                 int s = send(remote->fd, remote->buf->buffer, remote->buf->len, 0);
@@ -506,11 +498,11 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         } else if (server->stage == STAGE_INIT) {
             struct method_select_request *request = (struct method_select_request *)buf->buffer;
 
-            struct method_select_response response = { 0 };
-            response.ver    = SOCKS5_VERSION;
-            response.method = SOCKS5_METHOD_NOAUTH;
+            char buffer[BUF_SIZE] = { 0 };
+            struct method_select_response *response =
+                    build_socks5_method_select_response(SOCKS5_METHOD_NOAUTH, buffer, sizeof(buffer));
 
-            send(server->fd, &response, sizeof(response), 0);
+            send(server->fd, response, sizeof(*response), 0);
 
             server->stage = STAGE_HANDSHAKE;
 
@@ -540,12 +532,13 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 }
             } else if (request->cmd != SOCKS5_COMMAND_CONNECT) {
                 LOGE("unsupported cmd: %d", request->cmd);
-                struct socks5_response response = { 0 };
-                response.ver  = SOCKS5_VERSION;
-                response.rep  = SOCKS5_REPLY_CMDUNSUPP;
-                response.addr_type = SOCKS5_ADDRTYPE_IPV4;
+                char buffer[BUF_SIZE] = { 0 };
+                int size = 0;
+                struct socks5_response *response =
+                        build_socks5_response(SOCKS5_REPLY_CMDUNSUPP, SOCKS5_ADDRTYPE_IPV4,
+                                              &sock_addr, buffer, sizeof(buffer), &size);
 
-                send(server->fd, &response, sizeof(response), 0);
+                send(server->fd, response, (size_t)size, 0);
 
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
@@ -554,29 +547,15 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             // Fake reply
             if (server->stage == STAGE_HANDSHAKE) {
-                struct buffer_t resp_to_send;
-                struct buffer_t *resp_buf = &resp_to_send;
-                buffer_alloc(resp_buf, BUF_SIZE);
+                char buffer[BUF_SIZE] = { 0 };
+                int size = 0;
+                struct socks5_response *response =
+                        build_socks5_response(SOCKS5_REPLY_SUCCESS, SOCKS5_ADDRTYPE_IPV4,
+                                              &sock_addr, buffer, sizeof(buffer), &size);
 
-                struct socks5_response *response = (struct socks5_response *)resp_buf->buffer;
-                response->ver = SOCKS5_VERSION;
-                response->rep = SOCKS5_REPLY_SUCCESS;
-                response->rsv = 0;
-                response->addr_type = SOCKS5_ADDRTYPE_IPV4;
+                int s = (int) send(server->fd, response, (size_t)size, 0);
 
-                char *iter = response->addr_n_port;
-                memcpy(iter, &sock_addr.sin_addr, sizeof(sock_addr.sin_addr));
-                iter += sizeof(sock_addr.sin_addr);
-                memcpy(iter, &sock_addr.sin_port, sizeof(sock_addr.sin_port));
-                iter += sizeof(sock_addr.sin_port);
-
-                int reply_size = (int)(iter - (char *)response);
-
-                int s = send(server->fd, resp_buf->buffer, reply_size, 0);
-
-                buffer_free(resp_buf);
-
-                if (s < reply_size) {
+                if (s < size) {
                     LOGE("failed to send fake reply");
                     close_and_free_remote(EV_A_ remote);
                     close_and_free_server(EV_A_ server);
@@ -1112,13 +1091,13 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
     struct server_t *server = remote->server;
     struct buffer_t *buf = remote->buf;
 
-    if (!remote_send_ctx->connected) {
+    if (!remote->send_ctx->connected) {
         int err_no = 0;
         socklen_t len = sizeof(err_no);
         int r = getsockopt(remote->fd, SOL_SOCKET, SO_ERROR, (char *)&err_no, &len);
         if (r == 0 && err_no == 0) {
-            remote_send_ctx->connected = 1;
-            ev_timer_stop(EV_A_ & remote_send_ctx->watcher);
+            remote->send_ctx->connected = 1;
+            ev_timer_stop(EV_A_ & remote->send_ctx->watcher);
             ev_timer_start(EV_A_ & remote->recv_ctx->watcher);
             ev_io_start(EV_A_ & remote->recv_ctx->io);
 

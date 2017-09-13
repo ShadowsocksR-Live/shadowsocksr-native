@@ -1,4 +1,6 @@
 set(SOURCE_FILES_SNI
+        socks5.h
+        socks5.c
         http.c
         tls.c
         rule.c)
@@ -26,7 +28,6 @@ set(SOURCE_FILES_LOCAL
         local.c
         common.h
         includeobfs.h
-        socks5.h
         ${SOURCE_FILES_OBFS}
         ${SOURCE_FILES_SNI})
 
