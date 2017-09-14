@@ -45,7 +45,7 @@ build_socks5_method_select_response(int method, char *buffer, int buffer_size)
 
     struct method_select_response *ptr = (struct method_select_response *)buffer;
     ptr->ver = SOCKS5_VERSION;
-    ptr->method = method;
+    ptr->method = (char) method;
 
     return ptr;
 }
@@ -53,19 +53,19 @@ build_socks5_method_select_response(int method, char *buffer, int buffer_size)
 struct socks5_response *
 build_socks5_response(int rep, int addr_type, struct sockaddr_in *addr, char *buffer, int buffer_size, int *data_size)
 {
+    assert(addr_type == SOCKS5_ADDRTYPE_IPV4); // TODO: other types.
+
     int min_size = sizeof(struct socks5_response) + sizeof(addr->sin_addr) + sizeof(addr->sin_port);
     if (buffer==NULL || buffer_size<min_size) {
         return NULL;
     }
 
-    assert(addr_type == SOCKS5_ADDRTYPE_IPV4);
-
     struct socks5_response *response = (struct socks5_response *)buffer;
 
     response->ver = SOCKS5_VERSION;
-    response->rep = rep;
+    response->rep = (char) rep;
     response->rsv = 0;
-    response->addr_type = addr_type;
+    response->addr_type = (char) addr_type;
 
     char *iter = response->addr_n_port;
     memcpy(iter, &addr->sin_addr, sizeof(addr->sin_addr));
