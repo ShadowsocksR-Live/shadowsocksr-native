@@ -255,14 +255,14 @@ launch_or_create(const char *addr, const char *port)
 #endif
 
 static void
-free_connections(struct ev_loop *loop)
+free_connections(EV_P)
 {
     struct cork_dllist_item *curr, *next;
     cork_dllist_foreach_void(&all_connections, curr, next) {
         struct server_t *server = cork_container_of(curr, struct server_t, entries_all);
         struct remote_t *remote = server->remote;
-        close_and_free_remote(loop, remote);
-        close_and_free_server(loop, server);
+        close_and_free_remote(EV_A_ remote);
+        close_and_free_server(EV_A_ server);
     }
 }
 
