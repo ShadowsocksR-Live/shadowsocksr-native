@@ -144,28 +144,28 @@ setnonblocking(int fd)
 #endif
 
 void
-ev_io_remote_send(EV_P_ struct server_t* server, struct remote_t* remote)
+remote_send_stop_n_server_recv_start(EV_P_ struct server_t* server, struct remote_t* remote)
 {
     ev_io_stop(EV_A_ & remote->send_ctx->io);
     ev_io_start(EV_A_ & server->recv_ctx->io);
 }
 
 void
-ev_io_remote_recv(EV_P_ struct server_t* server, struct remote_t* remote)
+remote_recv_stop_n_server_send_start(EV_P_ struct server_t* server, struct remote_t* remote)
 {
     ev_io_stop(EV_A_ & remote->recv_ctx->io);
     ev_io_start(EV_A_ & server->send_ctx->io);
 }
 
 void
-ev_io_server_send(EV_P_ struct server_t* server, struct remote_t* remote)
+server_send_stop_n_remote_recv_start(EV_P_ struct server_t* server, struct remote_t* remote)
 {
     ev_io_stop(EV_A_ & server->send_ctx->io);
     ev_io_start(EV_A_ & remote->recv_ctx->io);
 }
 
 void
-ev_io_server_recv(EV_P_ struct server_t* server, struct remote_t* remote)
+server_recv_stop_n_remote_send_start(EV_P_ struct server_t* server, struct remote_t* remote)
 {
     ev_io_stop(EV_A_ & server->recv_ctx->io);
     ev_io_start(EV_A_ & remote->send_ctx->io);
@@ -396,7 +396,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     }
 
                     // wait on remote connected event
-                    ev_io_server_recv(EV_A_ server, remote);
+                    server_recv_stop_n_remote_send_start(EV_A_ server, remote);
                     ev_timer_start(EV_A_ & remote->send_ctx->watcher);
                     return;
                 } else {
@@ -422,7 +422,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                         if (errno == CONNECT_IN_PROGRESS) {
                             // in progress, wait until connected
                             remote->buf->idx = 0;
-                            ev_io_server_recv(EV_A_ server, remote);
+                            server_recv_stop_n_remote_send_start(EV_A_ server, remote);
                             return;
                         } else {
                             ERROR("sendto");
@@ -439,7 +439,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                         remote->buf->len -= s;
                         remote->buf->idx  = s;
 
-                        ev_io_server_recv(EV_A_ server, remote);
+                        server_recv_stop_n_remote_send_start(EV_A_ server, remote);
                         ev_timer_start(EV_A_ & remote->send_ctx->watcher);
                         return;
                     } else {
@@ -447,7 +447,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                         remote->buf->idx = 0;
                         remote->buf->len = 0;
 #ifdef __APPLE__
-                        ev_io_server_recv(EV_A_ server, remote);
+                        server_recv_stop_n_remote_send_start(EV_A_ server, remote);
                         ev_timer_start(EV_A_ & remote->send_ctx->watcher);
 #else
                         remote->send_ctx->connected = 1;
@@ -474,7 +474,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     if (errno == EAGAIN || errno == EWOULDBLOCK) {
                         // no data, wait for send
                         remote->buf->idx = 0;
-                        ev_io_server_recv(EV_A_ server, remote);
+                        server_recv_stop_n_remote_send_start(EV_A_ server, remote);
                         return;
                     } else {
                         ERROR("server recieve callback for send");
@@ -485,7 +485,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 } else if (s < (int)(remote->buf->len)) {
                     remote->buf->len -= s;
                     remote->buf->idx  = s;
-                    ev_io_server_recv(EV_A_ server, remote);
+                    server_recv_stop_n_remote_send_start(EV_A_ server, remote);
                     return;
                 } else {
                     remote->buf->idx = 0;
@@ -915,7 +915,7 @@ server_send_cb(EV_P_ ev_io *w, int revents)
             // all sent out, wait for reading
             buf->len = 0;
             buf->idx = 0;
-            ev_io_server_send(EV_A_ server, remote);
+            server_send_stop_n_remote_recv_start(EV_A_ server, remote);
             return;
         }
     }
@@ -1031,7 +1031,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
                             // all sent out, wait for reading
                             remote->buf->len = 0;
                             remote->buf->idx = 0;
-                            ev_io_remote_send(EV_A_ server, remote);
+                            remote_send_stop_n_server_recv_start(EV_A_ server, remote);
                         }
                     }
                 }
@@ -1070,7 +1070,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             // no data, wait for send
             server->buf->idx = 0;
-            ev_io_remote_recv(EV_A_ server, remote);
+            remote_recv_stop_n_server_send_start(EV_A_ server, remote);
         } else {
             ERROR("remote_recv_cb_send");
             close_and_free_remote(EV_A_ remote);
@@ -1079,7 +1079,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     } else if (s < (int)(server->buf->len)) {
         server->buf->len -= s;
         server->buf->idx  = (size_t)s;
-        ev_io_remote_recv(EV_A_ server, remote);
+        remote_recv_stop_n_server_send_start(EV_A_ server, remote);
     }
 }
 
@@ -1103,7 +1103,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
 
             // no need to send any data
             if (buf->len == 0) {
-                ev_io_remote_send(EV_A_ server, remote);
+                remote_send_stop_n_server_recv_start(EV_A_ server, remote);
                 return;
             }
         } else {
@@ -1141,7 +1141,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
             // all sent out, wait for reading
             buf->len = 0;
             buf->idx = 0;
-            ev_io_remote_send(EV_A_ server, remote);
+            remote_send_stop_n_server_recv_start(EV_A_ server, remote);
         }
     }
 }
