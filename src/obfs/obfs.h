@@ -47,13 +47,13 @@ struct obfs_manager {
             char **pplaindata,
             int datalength,
             size_t* capacity);
-    int (*client_encode)(struct obfs_t *obfs,
+    size_t (*client_encode)(struct obfs_t *obfs,
             char **pencryptdata,
-            int datalength,
+            size_t datalength,
             size_t* capacity);
-    int (*client_decode)(struct obfs_t *obfs,
+    size_t (*client_decode)(struct obfs_t *obfs,
             char **pencryptdata,
-            int datalength,
+            size_t datalength,
             size_t* capacity,
             int *needsendback);
     int (*client_post_decrypt)(struct obfs_t *obfs,

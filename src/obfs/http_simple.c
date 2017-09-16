@@ -75,7 +75,7 @@ void http_simple_encode_head(http_simple_local_data *local, char *data, int data
     local->encode_buffer[pos * 3] = 0;
 }
 
-int http_simple_client_encode(struct obfs_t *obfs, char **pencryptdata, int datalength, size_t* capacity) {
+size_t http_simple_client_encode(struct obfs_t *obfs, char **pencryptdata, size_t datalength, size_t* capacity) {
     char *encryptdata = *pencryptdata;
     http_simple_local_data *local = (http_simple_local_data*)obfs->l_data;
     if (local->has_sent_header) {
@@ -183,7 +183,7 @@ int http_simple_client_encode(struct obfs_t *obfs, char **pencryptdata, int data
     return outlength;
 }
 
-int http_simple_client_decode(struct obfs_t *obfs, char **pencryptdata, int datalength, size_t* capacity, int *needsendback) {
+size_t http_simple_client_decode(struct obfs_t *obfs, char **pencryptdata, size_t datalength, size_t* capacity, int *needsendback) {
     char *encryptdata = *pencryptdata;
     http_simple_local_data *local = (http_simple_local_data*)obfs->l_data;
     *needsendback = 0;
@@ -217,7 +217,7 @@ void boundary(char result[])
     }
 }
 
-int http_post_client_encode(struct obfs_t *obfs, char **pencryptdata, int datalength, size_t* capacity) {
+size_t http_post_client_encode(struct obfs_t *obfs, char **pencryptdata, size_t datalength, size_t* capacity) {
     char *encryptdata = *pencryptdata;
     http_simple_local_data *local = (http_simple_local_data*)obfs->l_data;
     if (local->has_sent_header) {

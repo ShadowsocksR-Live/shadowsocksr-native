@@ -987,7 +987,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
         }
     }
 
-    server->buf->len = r;
+    server->buf->len = (size_t) r;
 
     if (!remote->direct) {
 #ifdef ANDROID

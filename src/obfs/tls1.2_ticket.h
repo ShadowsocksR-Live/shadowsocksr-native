@@ -11,8 +11,8 @@ void * tls12_ticket_auth_init_data();
 struct obfs_t * tls12_ticket_auth_new_obfs();
 void tls12_ticket_auth_dispose(struct obfs_t *obfs);
 
-int tls12_ticket_auth_client_encode(struct obfs_t *obfs, char **pencryptdata, int datalength, size_t* capacity);
-int tls12_ticket_auth_client_decode(struct obfs_t *obfs, char **pencryptdata, int datalength, size_t* capacity, int *needsendback);
+size_t tls12_ticket_auth_client_encode(struct obfs_t *obfs, char **pencryptdata, size_t datalength, size_t* capacity);
+size_t tls12_ticket_auth_client_decode(struct obfs_t *obfs, char **pencryptdata, size_t datalength, size_t* capacity, int *needsendback);
 
 int tls12_ticket_auth_get_overhead(struct obfs_t *obfs);
 
