@@ -22,7 +22,7 @@
 #ifndef _SHADOWSOCKS_H
 #define _SHADOWSOCKS_H
 
-typedef struct {
+struct config_t {
     /*  Required  */
     char *remote_host;    // hostname or ip of remote server
     char *local_addr;     // local ip to bind
@@ -40,11 +40,11 @@ typedef struct {
     int mtu;              // MTU of interface
     int mptcp;            // enable multipath TCP
     int verbose;          // verbose mode
-} profile_t;
+};
 
 /* An example profile
  *
- * const profile_t EXAMPLE_PROFILE = {
+ * const struct config_t EXAMPLE_PROFILE = {
  *  .remote_host = "example.com",
  *  .local_addr = "127.0.0.1",
  *  .method = "bf-cfb",
@@ -75,7 +75,7 @@ extern "C" {
  *
  * If failed, -1 is returned. Errors will output to the log file.
  */
-int start_ss_local_server(profile_t profile);
+int start_ss_local_server(struct config_t profile);
 
 #ifdef __cplusplus
 }

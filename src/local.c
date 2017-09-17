@@ -1982,7 +1982,7 @@ main(int argc, char **argv)
 #else
 
 int
-start_ss_local_server(profile_t profile)
+start_ss_local_server(struct config_t profile)
 {
     srand(time(NULL));
 

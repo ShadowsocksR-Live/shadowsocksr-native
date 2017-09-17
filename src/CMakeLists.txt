@@ -1,4 +1,5 @@
 set(SOURCE_FILES_SNI
+        shadowsocks.h
         socks5.h
         socks5.c
         http.c
