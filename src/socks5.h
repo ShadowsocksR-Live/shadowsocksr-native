@@ -34,7 +34,8 @@
 #ifndef _SOCKS5_H
 #define _SOCKS5_H
 
-#include <stdint.h>
+#include <stdint.h> // for uint16_t
+#include <stddef.h> // for size_t
 
 #define SOCKS5_VERSION          0x05
 
@@ -136,12 +137,12 @@ struct socks5_response {
 #pragma pack(pop)
 
 struct socks5_request *
-build_socks5_request(const char *host, uint16_t port, char *buffer, int buffer_size, int *data_size);
+build_socks5_request(const char *host, uint16_t port, char *buffer, size_t buffer_size, size_t *data_size);
 
 struct method_select_response *
-build_socks5_method_select_response(int method, char *buffer, int buffer_size);
+build_socks5_method_select_response(int method, char *buffer, size_t buffer_size);
 
 struct socks5_response *
-build_socks5_response(int rep, int addr_type, struct sockaddr_in *addr, char *buffer, int buffer_size, int *data_size);
+build_socks5_response(int rep, int addr_type, struct sockaddr_in *addr, char *buffer, size_t buffer_size, size_t *data_size);
 
 #endif // _SOCKS5_H

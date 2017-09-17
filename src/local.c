@@ -310,12 +310,12 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         char *port = server->listener->tunnel_addr.port;
         if (host && port) {
             char buffer[BUF_SIZE] = { 0 };
-            int header_len = 0;
+            size_t header_len = 0;
             struct socks5_request *hdr =
                     build_socks5_request(host, (uint16_t)atoi(port), buffer, sizeof(buffer), &header_len);
 
             memmove(buf->buffer + header_len, buf->buffer, buf->len);
-            memmove(buf->buffer, hdr, (size_t)header_len);
+            memmove(buf->buffer, hdr, header_len);
             buf->len += header_len;
 
             server->stage = STAGE_PARSE;
@@ -533,12 +533,12 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             } else if (request->cmd != SOCKS5_COMMAND_CONNECT) {
                 LOGE("unsupported cmd: %d", request->cmd);
                 char buffer[BUF_SIZE] = { 0 };
-                int size = 0;
+                size_t size = 0;
                 struct socks5_response *response =
                         build_socks5_response(SOCKS5_REPLY_CMDUNSUPP, SOCKS5_ADDRTYPE_IPV4,
                                               &sock_addr, buffer, sizeof(buffer), &size);
 
-                send(server->fd, response, (size_t)size, 0);
+                send(server->fd, response, size, 0);
 
                 close_and_free_remote(EV_A_ remote);
                 close_and_free_server(EV_A_ server);
@@ -548,14 +548,14 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             // Fake reply
             if (server->stage == STAGE_HANDSHAKE) {
                 char buffer[BUF_SIZE] = { 0 };
-                int size = 0;
+                size_t size = 0;
                 struct socks5_response *response =
                         build_socks5_response(SOCKS5_REPLY_SUCCESS, SOCKS5_ADDRTYPE_IPV4,
                                               &sock_addr, buffer, sizeof(buffer), &size);
 
-                int s = (int) send(server->fd, response, (size_t)size, 0);
+                ssize_t s = send(server->fd, response, size, 0);
 
-                if (s < size) {
+                if (s < (ssize_t) size) {
                     LOGE("failed to send fake reply");
                     close_and_free_remote(EV_A_ remote);
                     close_and_free_server(EV_A_ server);

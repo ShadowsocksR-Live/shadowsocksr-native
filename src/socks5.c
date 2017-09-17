@@ -9,10 +9,10 @@
 #include "socks5.h"
 
 struct socks5_request *
-build_socks5_request(const char *host, uint16_t port, char *buffer, int buffer_size, int *data_size)
+build_socks5_request(const char *host, uint16_t port, char *buffer, size_t buffer_size, size_t *data_size)
 {
-    int addr_len = (int) strlen(host);
-    int header_len = addr_len + 3 + sizeof(struct socks5_request);
+    size_t addr_len = strlen(host);
+    size_t header_len = addr_len + 3 + sizeof(struct socks5_request);
 
     if(buffer==NULL || buffer_size<header_len) {
         return NULL;
@@ -37,7 +37,7 @@ build_socks5_request(const char *host, uint16_t port, char *buffer, int buffer_s
 }
 
 struct method_select_response *
-build_socks5_method_select_response(int method, char *buffer, int buffer_size)
+build_socks5_method_select_response(int method, char *buffer, size_t buffer_size)
 {
     if (buffer == NULL || buffer_size < sizeof(struct method_select_response)) {
         return NULL;
@@ -51,11 +51,11 @@ build_socks5_method_select_response(int method, char *buffer, int buffer_size)
 }
 
 struct socks5_response *
-build_socks5_response(int rep, int addr_type, struct sockaddr_in *addr, char *buffer, int buffer_size, int *data_size)
+build_socks5_response(int rep, int addr_type, struct sockaddr_in *addr, char *buffer, size_t buffer_size, size_t *data_size)
 {
     assert(addr_type == SOCKS5_ADDRTYPE_IPV4); // TODO: other types.
 
-    int min_size = sizeof(struct socks5_response) + sizeof(addr->sin_addr) + sizeof(addr->sin_port);
+    size_t min_size = sizeof(struct socks5_response) + sizeof(addr->sin_addr) + sizeof(addr->sin_port);
     if (buffer==NULL || buffer_size<min_size) {
         return NULL;
     }
