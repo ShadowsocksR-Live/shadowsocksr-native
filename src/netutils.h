@@ -31,7 +31,7 @@
 
 // only enable TCP_FASTOPEN on linux
 #if defined(__linux__)
-#include <linux/tcp.h>
+#include <netinet/tcp.h>
 /*  conditional define for TCP_FASTOPEN */
 #ifndef TCP_FASTOPEN
 #define TCP_FASTOPEN   23
