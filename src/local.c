@@ -117,8 +117,8 @@ static int nofile = 0;
 #endif
 #endif
 
-static void
-server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf);
+static void server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf);
+void server_send_cb(uv_write_t* req, int status);
 
 static struct remote_t *create_remote(struct listen_ctx_t *profile, struct sockaddr *addr);
 static void free_remote(struct remote_t *remote);
@@ -375,7 +375,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 struct buffer_t *buf = remote->buf;
 
                 if (protocol_plugin && protocol_plugin->client_pre_encrypt) {
-                    buf->len = protocol_plugin->client_pre_encrypt(server->protocol, &buf->buffer, buf->len, &buf->capacity);
+                    buf->len = (size_t) protocol_plugin->client_pre_encrypt(server->protocol, &buf->buffer, (int)buf->len, &buf->capacity);
                 }
                 int err = ss_encrypt(&server_env->cipher, buf, server->e_ctx, BUF_SIZE);
 
@@ -434,7 +434,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                     // wait on remote connected event
                     server_recv_stop_n_remote_send_start(NULL, server, remote);
-                    ev_timer_start(EV_A_ & remote->send_ctx->watcher);
+                    ev_timer_start(NULL, & remote->send_ctx->watcher);
                     return;
                 } else {
 #ifdef TCP_FASTOPEN
@@ -459,7 +459,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         if (errno == CONNECT_IN_PROGRESS) {
                             // in progress, wait until connected
                             remote->buf->idx = 0;
-                            server_recv_stop_n_remote_send_start(EV_A_ server, remote);
+                            server_recv_stop_n_remote_send_start(NULL, server, remote);
                             return;
                         } else {
                             ERROR("sendto");
@@ -476,8 +476,8 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         remote->buf->len -= s;
                         remote->buf->idx  = s;
 
-                        server_recv_stop_n_remote_send_start(EV_A_ server, remote);
-                        ev_timer_start(EV_A_ & remote->send_ctx->watcher);
+                        server_recv_stop_n_remote_send_start(NULL, server, remote);
+                        ev_timer_start(NULL, & remote->send_ctx->watcher);
                         return;
                     } else {
                         // Just connected
@@ -488,9 +488,9 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         ev_timer_start(EV_A_ & remote->send_ctx->watcher);
 #else
                         remote->send_ctx->connected = 1;
-                        ev_timer_stop(EV_A_ & remote->send_ctx->watcher);
-                        ev_timer_start(EV_A_ & remote->recv_ctx->watcher);
-                        ev_io_start(EV_A_ & remote->recv_ctx->io);
+                        ev_timer_stop(NULL, & remote->send_ctx->watcher);
+                        ev_timer_start(NULL, & remote->recv_ctx->watcher);
+                        ev_io_start(NULL, & remote->recv_ctx->io);
                         return;
 #endif
                     }
@@ -501,9 +501,9 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 #endif
                 }
             } else {
-                if (r > 0 && remote->buf->len == 0) {
+                if (nread > 0 && remote->buf->len == 0) {
                     remote->buf->idx = 0;
-                    ev_io_stop(EV_A_ & server->recv_ctx->io);
+                    uv_read_stop((uv_stream_t *)&server->client_connect); //ev_io_stop(EV_A_ & server->recv_ctx->io);
                     return;
                 }
                 int s = send(remote->fd, remote->buf->buffer, remote->buf->len, 0);
@@ -511,7 +511,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                     if (errno == EAGAIN || errno == EWOULDBLOCK) {
                         // no data, wait for send
                         remote->buf->idx = 0;
-                        server_recv_stop_n_remote_send_start(EV_A_ server, remote);
+                        server_recv_stop_n_remote_send_start(NULL, server, remote);
                         return;
                     } else {
                         ERROR("server recieve callback for send");
@@ -522,7 +522,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 } else if (s < (int)(remote->buf->len)) {
                     remote->buf->len -= s;
                     remote->buf->idx  = s;
-                    server_recv_stop_n_remote_send_start(EV_A_ server, remote);
+                    server_recv_stop_n_remote_send_start(NULL, server, remote);
                     return;
                 } else {
                     remote->buf->idx = 0;
@@ -539,7 +539,9 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             struct method_select_response *response =
                     build_socks5_method_select_response(SOCKS5_METHOD_NOAUTH, buffer, sizeof(buffer));
 
-            send(server->fd, response, sizeof(*response), 0);
+            //send(server->fd, response, sizeof(*response), 0);
+            uv_buf_t tmp = uv_buf_init((char *)response, sizeof(*response));
+            uv_write(&server->write_req, (uv_stream_t*)&server->client_connect, &tmp, 1, server_send_cb);
 
             server->stage = STAGE_HANDSHAKE;
 
@@ -563,7 +565,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             if (request->cmd == SOCKS5_COMMAND_UDPASSOC) {
                 udp_assc = 1;
                 socklen_t addr_len = sizeof(sock_addr);
-                getsockname(server->fd, (struct sockaddr *)&sock_addr, &addr_len);
+                getsockname(server->client_connect.u.fd, (struct sockaddr *)&sock_addr, &addr_len);
                 if (verbose) {
                     LOGI("udp assc request accepted");
                 }
@@ -575,7 +577,9 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         build_socks5_response(SOCKS5_REPLY_CMDUNSUPP, SOCKS5_ADDRTYPE_IPV4,
                                               &sock_addr, buffer, sizeof(buffer), &size);
 
-                send(server->fd, response, size, 0);
+                //send(server->fd, response, size, 0);
+                uv_buf_t tmp = uv_buf_init((char *)response, (unsigned int)size);
+                uv_write(&server->write_req, (uv_stream_t*)&server->client_connect, &tmp, 1, server_send_cb);
 
                 close_and_free_remote(NULL, remote);
                 close_and_free_server(server);
@@ -590,7 +594,9 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         build_socks5_response(SOCKS5_REPLY_SUCCESS, SOCKS5_ADDRTYPE_IPV4,
                                               &sock_addr, buffer, sizeof(buffer), &size);
 
-                ssize_t s = send(server->fd, response, size, 0);
+                //ssize_t s = send(server->fd, response, size, 0);
+                uv_buf_t tmp = uv_buf_init((char *)response, (unsigned int)size);
+                int s = uv_try_write((uv_stream_t*)&server->client_connect, &tmp, 1);
 
                 if (s < (ssize_t) size) {
                     LOGE("failed to send fake reply");
