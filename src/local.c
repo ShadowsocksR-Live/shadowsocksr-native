@@ -299,10 +299,9 @@ free_connections(EV_P)
 }
 
 static void
-server_recv_cb(EV_P_ ev_io *w, int revents)
+server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 {
-    struct server_ctx_t *server_recv_ctx = cork_container_of(w, struct server_ctx_t, io);
-    struct server_t *server = server_recv_ctx->server;
+    struct server_t *server = cork_container_of(stream, struct server_t, client_connect);
     struct remote_t *remote = server->remote;
     struct buffer_t *buf;
     ssize_t r;
@@ -915,6 +914,13 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 }
 
+void
+server_send_cb(uv_write_t* req, int status)
+{
+    struct server_t *server = cork_container_of(req, struct server_t, write_req);
+    // close_and_free_server(NULL, server);
+}
+
 /*
 static void
 server_send_cb(EV_P_ ev_io *w, int revents)
@@ -984,10 +990,6 @@ remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 
     close_and_free_remote(EV_A_ remote);
     close_and_free_server(EV_A_ server);
-}
-
-void write_local_cb(uv_write_t* req, int status) {
-
 }
 
 static void
@@ -1102,7 +1104,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     uv_buf_t buf = uv_buf_init(server->buf->buffer, (unsigned int)server->buf->len);
-    int s = uv_write(&server->write_req, (uv_stream_t*)&server->client_connect, &buf, 1, write_local_cb);
+    int s = uv_write(&server->write_req, (uv_stream_t*)&server->client_connect, &buf, 1, server_send_cb);
     if (s!=0) {
         close_and_free_remote(EV_A_ remote);
         close_and_free_server(EV_A_ server);
