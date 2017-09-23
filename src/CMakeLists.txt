@@ -89,6 +89,9 @@ if (WIN32)
     list ( APPEND SOURCE_FILES_SERVER win32.c )
 endif ()
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
+
+
 add_executable(ss_local ${SOURCE_FILES_LOCAL})
 #add_executable(ss_tunnel ${SOURCE_FILES_TUNNEL})
 #add_executable(ss_server ${SOURCE_FILES_SERVER})
@@ -115,6 +118,7 @@ target_compile_definitions(libshadowsocks-libev
 set_target_properties(libshadowsocks-libev PROPERTIES SUFFIX ".la")
 
 set (ss_lib_common
+        libuv.a
         ev
         m
         libcork)

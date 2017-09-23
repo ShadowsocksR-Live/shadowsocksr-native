@@ -23,6 +23,7 @@
 #ifndef _LOCAL_H
 #define _LOCAL_H
 
+#include <uv.h>
 #include <ev.h>
 #include <libcork/ds.h>
 
@@ -34,7 +35,7 @@
 
 // use this as a profile or environment
 struct listen_ctx_t {
-    ev_io io;
+    uv_tcp_t listen_socket; // ev_io io;
     ss_host_port tunnel_addr;
 
     struct cork_dllist_item entries; // for inactive profile list
@@ -42,7 +43,7 @@ struct listen_ctx_t {
 
     char *iface;
     int timeout;
-    int fd;
+    //int fd;
     int mptcp;
 
     int server_num;
@@ -78,7 +79,8 @@ struct remote_t {
 };
 
 struct server_t {
-    int fd;
+    uv_tcp_t client_connect; // int fd;
+    uv_write_t write_req;
     enum net_stage stage;
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;

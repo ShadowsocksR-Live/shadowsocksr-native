@@ -124,11 +124,33 @@ static void free_server(struct server_t *server);
 static void close_and_free_server(EV_P_ struct server_t *server);
 
 static struct remote_t *new_remote(int fd, int timeout);
-static struct server_t *new_server(int fd, struct listen_ctx_t *profile);
+static struct server_t *new_server(struct listen_ctx_t *profile);
 
 static struct cork_dllist inactive_profiles;
 static struct listen_ctx_t *current_profile;
 static struct cork_dllist all_connections;
+
+
+void doAllocBuffer(size_t suggested_size, uv_buf_t *buf) {
+    buf->base = calloc(suggested_size, sizeof(char));
+    buf->len = suggested_size;
+}
+
+void doDeallocBuffer(uv_buf_t *buf) {
+    free(buf->base);
+    buf->base = NULL;
+    buf->len = 0;
+}
+
+static void on_alloc(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf) {
+    doAllocBuffer(suggested_size, buf);
+}
+
+//void on_close(uv_handle_t* handle) {
+//    client_t* client = CONTAINING_RECORD((uv_tcp_t *)handle, client_t, tcp);
+//    free(client);
+//}
+
 
 #ifndef __MINGW32__
 int
@@ -172,10 +194,10 @@ server_recv_stop_n_remote_send_start(EV_P_ struct server_t* server, struct remot
 }
 
 int
-create_and_bind(const char *addr, const char *port)
+create_and_bind(const char *addr, const char *port, uv_tcp_t *tcp)
 {
     struct addrinfo hints = { 0 };
-    struct addrinfo *result, *rp;
+    struct addrinfo *result = NULL, *rp;
     int s, listen_sock = 0;
 
     hints.ai_family   = AF_UNSPEC;   /* Return IPv4 and IPv6 choices */
@@ -187,7 +209,16 @@ create_and_bind(const char *addr, const char *port)
         return -1;
     }
 
+    uv_tcp_init(uv_default_loop(), tcp);
+
     for (rp = result; rp != NULL; rp = rp->ai_next) {
+        int r = uv_tcp_bind(tcp, rp->ai_addr, 0);
+        if (r == 0) {
+            break;
+        }
+        LOGE("uv_tcp_bind: %s\n", uv_strerror(r));
+
+        /*
         listen_sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
         if (listen_sock == -1) {
             continue;
@@ -205,13 +236,14 @@ create_and_bind(const char *addr, const char *port)
 
         s = bind(listen_sock, rp->ai_addr, rp->ai_addrlen);
         if (s == 0) {
-            /* We managed to bind successfully! */
+            // We managed to bind successfully!
             break;
         } else {
             ERROR("bind");
         }
 
         close(listen_sock);
+         */
     }
 
     if (rp == NULL) {
@@ -226,7 +258,7 @@ create_and_bind(const char *addr, const char *port)
 
 #ifdef HAVE_LAUNCHD
 int
-launch_or_create(const char *addr, const char *port)
+launch_or_create(const char *addr, const char *port, uv_tcp_t *tcp)
 {
     int *fds;
     size_t cnt;
@@ -246,7 +278,7 @@ launch_or_create(const char *addr, const char *port)
             usage();
             exit(EXIT_FAILURE);
         }
-        return create_and_bind(addr, port);
+        return create_and_bind(addr, port, tcp);
     } else {
         FATAL("launch_activate_socket() error");
     }
@@ -883,7 +915,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     }
 }
 
-
+/*
 static void
 server_send_cb(EV_P_ ev_io *w, int revents)
 {
@@ -920,6 +952,7 @@ server_send_cb(EV_P_ ev_io *w, int revents)
         }
     }
 }
+ */
 
 #ifdef ANDROID
 static void
@@ -951,6 +984,10 @@ remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 
     close_and_free_remote(EV_A_ remote);
     close_and_free_server(EV_A_ server);
+}
+
+void write_local_cb(uv_write_t* req, int status) {
+
 }
 
 static void
@@ -1064,8 +1101,15 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
         // SSR end
     }
 
-    int s = send(server->fd, server->buf->buffer, server->buf->len, 0);
+    uv_buf_t buf = uv_buf_init(server->buf->buffer, (unsigned int)server->buf->len);
+    int s = uv_write(&server->write_req, (uv_stream_t*)&server->client_connect, &buf, 1, write_local_cb);
+    if (s!=0) {
+        close_and_free_remote(EV_A_ remote);
+        close_and_free_server(EV_A_ server);
+    }
 
+    /*
+    int s = send(server->fd, server->buf->buffer, server->buf->len, 0);
     if (s == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             // no data, wait for send
@@ -1081,6 +1125,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
         server->buf->idx  = (size_t)s;
         remote_recv_stop_n_server_send_start(EV_A_ server, remote);
     }
+     */
 }
 
 static void
@@ -1200,8 +1245,10 @@ close_and_free_remote(EV_P_ struct remote_t *remote)
 }
 
 static struct server_t *
-new_server(int fd, struct listen_ctx_t *profile)
+new_server(struct listen_ctx_t *profile)
 {
+    assert(profile);
+
     struct server_t *server = ss_malloc(sizeof(struct server_t));
 
     server->listener = profile;
@@ -1212,12 +1259,12 @@ new_server(int fd, struct listen_ctx_t *profile)
     server->stage               = STAGE_INIT;
     server->recv_ctx->connected = 0;
     server->send_ctx->connected = 0;
-    server->fd                  = fd;
+    //server->fd                  = fd;
     server->recv_ctx->server    = server;
     server->send_ctx->server    = server;
 
-    ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
-    ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
+    //ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
+    //ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
 
     cork_dllist_add(&profile->connections_eden, &server->entries);
     cork_dllist_add(&all_connections, &server->entries_all);
@@ -1336,13 +1383,20 @@ free_server(struct server_t *server)
 }
 
 static void
+server_after_close_cb(uv_handle_t* handle)
+{
+    struct server_t *server = cork_container_of(handle, struct server_t, client_connect);
+    free_server(server);
+}
+
+static void
 close_and_free_server(EV_P_ struct server_t *server)
 {
     if (server != NULL) {
-        ev_io_stop(EV_A_ & server->send_ctx->io);
-        ev_io_stop(EV_A_ & server->recv_ctx->io);
-        close(server->fd);
-        free_server(server);
+        //ev_io_stop(EV_A_ & server->send_ctx->io);
+        uv_read_stop((uv_stream_t *)&server->client_connect); //ev_io_stop(EV_A_ & server->recv_ctx->io);
+        uv_close((uv_handle_t *)&server->client_connect, server_after_close_cb); //close(server->fd);
+        //free_server(server);
     }
 }
 
@@ -1404,10 +1458,29 @@ signal_cb(EV_P_ ev_signal *w, int revents)
 }
 
 void
-accept_cb(EV_P_ ev_io *w, int revents)
+accept_cb(uv_stream_t* server, int status)
 {
-    struct listen_ctx_t *listener = cork_container_of(w, struct listen_ctx_t, io);
+    struct listen_ctx_t *listener = cork_container_of(server, struct listen_ctx_t, listen_socket);
 
+    assert(status == 0);
+
+    struct server_t *local_server = new_server(listener);
+
+    int r = uv_tcp_init(server->loop, &local_server->client_connect);
+    if (r != 0) {
+        LOGE("uv_tcp_init error: %s\n", uv_strerror(r));
+        return;
+    }
+
+    r = uv_accept(server, (uv_stream_t*)&local_server->client_connect);
+    if (r) {
+        LOGE("uv_accept: %s\n", uv_strerror(r));
+        return;
+    }
+
+    uv_read_start((uv_stream_t*)&local_server->client_connect, on_alloc, server_recv_cb);
+
+    /*
     int serverfd = accept(listener->fd, NULL, NULL);
     if (serverfd == -1) {
         ERROR("accept");
@@ -1423,6 +1496,7 @@ accept_cb(EV_P_ ev_io *w, int revents)
     struct server_t *server = new_server(serverfd, listener);
 
     ev_io_start(EV_A_ & server->recv_ctx->io);
+     */
 }
 
 void
@@ -1895,17 +1969,25 @@ main(int argc, char **argv)
 
     struct listen_ctx_t *listen_ctx = current_profile;
 
+    uv_tcp_t *server = &listen_ctx->listen_socket;
+
     if (mode != UDP_ONLY) {
         // Setup socket
         int listenfd;
 #ifdef HAVE_LAUNCHD
-        listenfd = launch_or_create(local_addr, local_port);
+        listenfd = launch_or_create(local_addr, local_port, server);
 #else
-        listenfd = create_and_bind(local_addr, local_port);
+        listenfd = create_and_bind(local_addr, local_port, server);
 #endif
-        if (listenfd == -1) {
+        if (listenfd != 0) {
             FATAL("bind() error");
         }
+
+        if (uv_listen((uv_stream_t*)server, 128, accept_cb) != 0) {
+            FATAL("listen() error");
+        }
+
+        /*
         if (listen(listenfd, SOMAXCONN) == -1) {
             FATAL("listen() error");
         }
@@ -1915,6 +1997,7 @@ main(int argc, char **argv)
 
         ev_io_init(&listen_ctx->io, accept_cb, listenfd, EV_READ);
         ev_io_start(loop, &listen_ctx->io);
+         */
     }
 
     // Setup UDP
@@ -1952,7 +2035,7 @@ main(int argc, char **argv)
     free_jconf(conf);
 
     // Enter the loop
-    ev_run(loop, 0);
+    uv_run(server->loop, UV_RUN_DEFAULT); // ev_run(loop, 0);
 
     if (verbose) {
         LOGI("closed gracefully");
@@ -1964,7 +2047,7 @@ main(int argc, char **argv)
     }
 
     if (mode != UDP_ONLY) {
-        ev_io_stop(loop, &listen_ctx->io);
+        uv_stop(server->loop); // ev_io_stop(loop, &listen_ctx->io);
         free_connections(loop); // after this, all inactive profile should be released already, so we only need to release the current_profile
         release_profile(current_profile);
     }
