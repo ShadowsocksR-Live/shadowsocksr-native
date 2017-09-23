@@ -142,19 +142,20 @@ get_sockaddr(char *host, char *port,
         return 0;
     } else {
         struct addrinfo hints;
-        struct addrinfo *result, *rp;
+        struct addrinfo *result = NULL, *rp;
 
         memset(&hints, 0, sizeof(struct addrinfo));
         hints.ai_family   = AF_UNSPEC;   /* Return IPv4 and IPv6 choices */
         hints.ai_socktype = SOCK_STREAM; /* We want a TCP socket */
 
-        int err, i;
+        int err = 0, i;
 
         for (i = 1; i < 8; i++) {
             err = getaddrinfo(host, port, &hints, &result);
 #if defined(MODULE_LOCAL)
-            if (!keep_resolving)
+            if (!keep_resolving) {
                 break;
+            }
 #endif
             if ((!block || !err)) {
                 break;
