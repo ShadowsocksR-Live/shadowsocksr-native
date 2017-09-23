@@ -118,7 +118,7 @@ static int nofile = 0;
 #endif
 
 static void server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf);
-void server_send_cb(uv_write_t* req, int status);
+static void server_send_cb(uv_write_t* req, int status);
 
 static struct remote_t *create_remote(struct listen_ctx_t *profile, struct sockaddr *addr);
 static void free_remote(struct remote_t *remote);
@@ -926,7 +926,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
     }
 }
 
-void
+static void
 server_send_cb(uv_write_t* req, int status)
 {
     struct server_t *server = cork_container_of(req, struct server_t, write_req);
