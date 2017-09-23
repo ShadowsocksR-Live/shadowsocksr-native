@@ -51,7 +51,7 @@ struct listen_ctx_t {
 };
 
 struct server_ctx_t {
-    ev_io io;
+    //ev_io io;
     int connected;
     __weak_ptr struct server_t *server;
 };
