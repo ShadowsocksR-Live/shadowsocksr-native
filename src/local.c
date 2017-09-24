@@ -314,12 +314,6 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         buf = remote->buf;
     }
 
-    assert(nread <= (ssize_t)(BUF_SIZE - buf->len));
-
-    memcpy(buf->buffer + buf->len, buf0->base, (size_t)nread);
-
-    doDeallocBuffer((uv_buf_t *)buf0);
-
     if (nread == UV_EOF) {
         // connection closed
         close_and_free_remote(NULL, remote);
@@ -340,7 +334,12 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             return;
     }
 
+    assert(nread <= (ssize_t)(BUF_SIZE - buf->len));
+
+    memcpy(buf->buffer + buf->len, buf0->base, (size_t)nread);
     buf->len += nread;
+
+    doDeallocBuffer((uv_buf_t *)buf0);
 
     if (server->stage == STAGE_INIT) {
         char *host = server->listener->tunnel_addr.host;
