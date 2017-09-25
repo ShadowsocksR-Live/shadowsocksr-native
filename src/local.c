@@ -1542,18 +1542,18 @@ create_remote(struct listen_ctx_t *profile, struct sockaddr *addr)
 }
 
 static void
-signal_cb(EV_P_ ev_signal *w, int revents)
+signal_cb(uv_signal_t* handle, int signum)
 {
-    if (revents & EV_SIGNAL) {
-        switch (w->signum) {
+    //if (revents & EV_SIGNAL) {
+        switch (signum) {
         case SIGINT:
         case SIGTERM:
 #ifndef __MINGW32__
         case SIGUSR1:
 #endif
-            ev_unloop(EV_A_ EVUNLOOP_ALL);
+            uv_stop(handle->loop); // ev_unloop(EV_A_ EVUNLOOP_ALL);
         }
-    }
+    //}
 }
 
 void
@@ -2056,13 +2056,15 @@ main(int argc, char **argv)
     cork_dllist_init(&inactive_profiles);
     current_profile = profile;
 
+    uv_loop_t *loop = uv_default_loop();
+
     // Setup signal handler
-    struct ev_signal sigint_watcher;
-    struct ev_signal sigterm_watcher;
-    ev_signal_init(&sigint_watcher, signal_cb, SIGINT);
-    ev_signal_init(&sigterm_watcher, signal_cb, SIGTERM);
-    ev_signal_start(EV_DEFAULT, &sigint_watcher);
-    ev_signal_start(EV_DEFAULT, &sigterm_watcher);
+    uv_signal_t sigint_watcher; // struct ev_signal sigint_watcher;
+    uv_signal_t sigterm_watcher; // struct ev_signal sigterm_watcher;
+    uv_signal_init(loop, &sigint_watcher); // ev_signal_init(&sigint_watcher, signal_cb, SIGINT);
+    uv_signal_init(loop, &sigterm_watcher); // ev_signal_init(&sigterm_watcher, signal_cb, SIGTERM);
+    uv_signal_start(&sigint_watcher, signal_cb, SIGINT); // ev_signal_start(EV_DEFAULT, &sigint_watcher);
+    uv_signal_start(&sigterm_watcher, signal_cb, SIGTERM); // ev_signal_start(EV_DEFAULT, &sigterm_watcher);
 
     //struct ev_loop *loop = EV_DEFAULT;
 
@@ -2155,8 +2157,8 @@ main(int argc, char **argv)
     winsock_cleanup();
 #endif
 
-    ev_signal_stop(EV_DEFAULT, &sigint_watcher);
-    ev_signal_stop(EV_DEFAULT, &sigterm_watcher);
+    //ev_signal_stop(EV_DEFAULT, &sigint_watcher);
+    //ev_signal_stop(EV_DEFAULT, &sigterm_watcher);
 
     return 0;
 }
