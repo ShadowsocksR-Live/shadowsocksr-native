@@ -57,14 +57,16 @@ struct server_ctx_t {
 };
 
 struct remote_ctx_t {
-    ev_io io;
+    //ev_io io;
     ev_timer watcher;
     int connected;
     __weak_ptr struct remote_t *remote;
 };
 
 struct remote_t {
-    int fd;
+    uv_tcp_t socket; // int fd;
+    uv_connect_t connect;
+    uv_write_t write_req;
     struct buffer_t *buf;
     struct remote_ctx_t *recv_ctx;
     struct remote_ctx_t *send_ctx;
@@ -74,7 +76,7 @@ struct remote_t {
     int direct;
     struct { // direct = 1
         struct sockaddr_storage addr;
-        int addr_len;
+        size_t addr_len;
     } direct_addr;
 };
 
