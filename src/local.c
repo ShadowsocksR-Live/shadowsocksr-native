@@ -446,12 +446,14 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                     // connecting, wait until connected
                     //int r = connect(remote->fd, (struct sockaddr *)&(remote->direct_addr.addr), remote->direct_addr.addr_len);
 
+                    /*
                     if (r < 0) { // (r == -1 && errno != CONNECT_IN_PROGRESS) {
                         ERROR("connect");
                         close_and_free_remote(remote);
                         close_and_free_server(server);
                         //return;
                     }
+                     */
 
                     // wait on remote connected event
                     //server_recv_stop_n_remote_send_start(server, remote);
