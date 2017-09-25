@@ -58,7 +58,9 @@ struct server_ctx_t {
 
 struct remote_ctx_t {
     //ev_io io;
-    ev_timer watcher;
+    uv_timer_t watcher; // ev_timer watcher;
+    uint64_t watcher_interval;
+
     int connected;
     __weak_ptr struct remote_t *remote;
 };

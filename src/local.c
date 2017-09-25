@@ -123,13 +123,15 @@ static void server_send_cb(uv_write_t* req, int status);
 static void remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0);
 static void remote_send_cb(uv_write_t* req, int status);
 
+static void remote_timeout_cb(uv_timer_t *handle);
+
 static struct remote_t *create_remote(struct listen_ctx_t *profile, struct sockaddr *addr);
 static void free_remote(struct remote_t *remote);
-static void close_and_free_remote(EV_P_ struct remote_t *remote);
+static void close_and_free_remote(struct remote_t *remote);
 static void free_server(struct server_t *server);
 static void close_and_free_server(struct server_t *server);
 
-static struct remote_t *new_remote(int timeout);
+static struct remote_t *new_remote(uv_loop_t *loop, int timeout);
 static struct server_t *new_server(struct listen_ctx_t *profile);
 
 static struct cork_dllist inactive_profiles;
@@ -179,14 +181,14 @@ remote_send_stop_n_server_recv_start(struct server_t* server, struct remote_t* r
 }
 
 void
-remote_recv_stop_n_server_send_start(EV_P_ struct server_t* server, struct remote_t* remote)
+remote_recv_stop_n_server_send_start(struct server_t* server, struct remote_t* remote)
 {
     uv_read_stop((uv_stream_t *)&remote->socket); //ev_io_stop(EV_A_ & remote->recv_ctx->io);
     //ev_io_start(EV_A_ & server->send_ctx->io);
 }
 
 void
-server_send_stop_n_remote_recv_start(EV_P_ struct server_t* server, struct remote_t* remote)
+server_send_stop_n_remote_recv_start(struct server_t* server, struct remote_t* remote)
 {
     //ev_io_stop(EV_A_ & server->send_ctx->io);
     uv_read_start((uv_stream_t *)&remote->socket, on_alloc, remote_recv_cb); //ev_io_start(EV_A_ & remote->recv_ctx->io);
@@ -293,13 +295,13 @@ launch_or_create(const char *addr, const char *port, uv_tcp_t *tcp)
 #endif
 
 static void
-free_connections(EV_P)
+free_connections(void)
 {
     struct cork_dllist_item *curr, *next;
     cork_dllist_foreach_void(&all_connections, curr, next) {
         struct server_t *server = cork_container_of(curr, struct server_t, entries_all);
         struct remote_t *remote = server->remote;
-        close_and_free_remote(EV_A_ remote);
+        close_and_free_remote(remote);
         close_and_free_server(server);
     }
 }
@@ -311,9 +313,9 @@ remote_connected_cb(uv_connect_t* req, int status)
     if (status == 0) {
         // wait on remote connected event
         server_recv_stop_n_remote_send_start(remote->server, remote);
-        ev_timer_start(NULL, &remote->send_ctx->watcher);
+        uv_timer_start(&remote->send_ctx->watcher, remote_timeout_cb, remote->send_ctx->watcher_interval * 1000, 0); // ev_timer_start(NULL, &remote->send_ctx->watcher);
     } else {
-        close_and_free_remote(NULL, remote);
+        close_and_free_remote(remote);
         close_and_free_server(remote->server);
     }
 }
@@ -333,7 +335,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
     if (nread == UV_EOF) {
         // connection closed
-        close_and_free_remote(NULL, remote);
+        close_and_free_remote(remote);
         close_and_free_server(server);
         return;
     } else if (nread == 0) {
@@ -346,7 +348,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             if (verbose) {
                 ERROR("server recieve callback for recv");
             }
-            close_and_free_remote(NULL, remote);
+            close_and_free_remote(remote);
             close_and_free_server(server);
             return;
     }
@@ -397,7 +399,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                 if (err) {
                     LOGE("server invalid password or cipher");
-                    close_and_free_remote(NULL, remote);
+                    close_and_free_remote(remote);
                     close_and_free_server(server);
                     return;
                 }
@@ -446,7 +448,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                     if (r < 0) { // (r == -1 && errno != CONNECT_IN_PROGRESS) {
                         ERROR("connect");
-                        close_and_free_remote(NULL, remote);
+                        close_and_free_remote(remote);
                         close_and_free_server(server);
                         //return;
                     }
@@ -609,7 +611,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 uv_buf_t tmp = uv_buf_init((char *)response, (unsigned int)size);
                 uv_write(&server->write_req, (uv_stream_t*)&server->client_connect, &tmp, 1, server_send_cb);
 
-                close_and_free_remote(NULL, remote);
+                close_and_free_remote(remote);
                 close_and_free_server(server);
                 return;
             }
@@ -628,7 +630,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                 if (s < (ssize_t) size) {
                     LOGE("failed to send fake reply");
-                    close_and_free_remote(NULL, remote);
+                    close_and_free_remote(remote);
                     close_and_free_server(server);
                     return;
                 }
@@ -689,7 +691,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             } else {
                 buffer_free(abuf);
                 LOGE("unsupported addrtype: %d", addr_type);
-                close_and_free_remote(NULL, remote);
+                close_and_free_remote(remote);
                 close_and_free_server(server);
                 return;
             }
@@ -750,7 +752,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                     if (verbose) {
                         LOGI("outbound blocked %s", host);
                     }
-                    close_and_free_remote(NULL, remote);
+                    close_and_free_remote(remote);
                     close_and_free_server(server);
                     return;
                 }
@@ -796,7 +798,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         if (verbose) {
                             LOGI("outbound blocked %s", ip);
                         }
-                        close_and_free_remote(NULL, remote);
+                        close_and_free_remote(remote);
                         close_and_free_server(server);
                         return;
                     }
@@ -964,10 +966,10 @@ server_send_cb(uv_write_t* req, int status)
     if (status == UV_EAGAIN) {
         // no data, wait for send
         server->buf->idx = 0;
-        remote_recv_stop_n_server_send_start(NULL, server, remote);
+        remote_recv_stop_n_server_send_start(server, remote);
     } else if (status < 0) {
         LOGE("server_send_cb: %s", uv_strerror(status));
-        close_and_free_remote(NULL, remote);
+        close_and_free_remote(remote);
         close_and_free_server(server);
     }
 }
@@ -1027,10 +1029,10 @@ stat_update_cb()
 #endif
 
 static void
-remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
+remote_timeout_cb(uv_timer_t *handle)
 {
     struct remote_ctx_t *remote_ctx
-        = cork_container_of(watcher, struct remote_ctx_t, watcher);
+        = cork_container_of(handle, struct remote_ctx_t, watcher);
 
     struct remote_t *remote = remote_ctx->remote;
     struct server_t *server = remote->server;
@@ -1039,7 +1041,7 @@ remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
         LOGI("TCP connection timeout");
     }
 
-    close_and_free_remote(NULL, remote);
+    close_and_free_remote(remote);
     close_and_free_server(server);
 }
 
@@ -1052,7 +1054,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
     struct server_t *server = remote->server;
     struct server_env_t *server_env = server->server_env;
 
-    ev_timer_again(NULL, & remote->recv_ctx->watcher);
+    uv_timer_again(&remote->recv_ctx->watcher); // ev_timer_again(NULL, & remote->recv_ctx->watcher);
 
 #ifdef ANDROID
     stat_update_cb();
@@ -1062,7 +1064,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
     if (nread == UV_EOF) {
         // connection closed
-        close_and_free_remote(NULL, remote);
+        close_and_free_remote(remote);
         close_and_free_server(server);
         return;
     } else if (nread == 0) {
@@ -1074,7 +1076,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         if (verbose) {
             ERROR("remote_recv_cb_recv");
         }
-            close_and_free_remote(NULL, remote);
+            close_and_free_remote(remote);
             close_and_free_server(server);
             return;
     }
@@ -1103,7 +1105,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 server->buf->len = obfs_plugin->client_decode(server->obfs, &server->buf->buffer, server->buf->len, &server->buf->capacity, &needsendback);
                 if ((int)server->buf->len < 0) {
                     LOGE("client_decode");
-                    close_and_free_remote(NULL, remote);
+                    close_and_free_remote(remote);
                     close_and_free_server(server);
                     return;
                 }
@@ -1142,7 +1144,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             int err = ss_decrypt(&server_env->cipher, server->buf, server->d_ctx, BUF_SIZE);
             if (err) {
                 LOGE("remote invalid password or cipher");
-                close_and_free_remote(NULL, remote);
+                close_and_free_remote(remote);
                 close_and_free_server(server);
                 return;
             }
@@ -1153,7 +1155,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 server->buf->len = (size_t) protocol_plugin->client_post_decrypt(server->protocol, &server->buf->buffer, (int)server->buf->len, &server->buf->capacity);
                 if ((int)server->buf->len < 0) {
                     LOGE("client_post_decrypt");
-                    close_and_free_remote(NULL, remote);
+                    close_and_free_remote(remote);
                     close_and_free_server(server);
                     return;
                 }
@@ -1170,7 +1172,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
     uv_buf_t buf = uv_buf_init(server->buf->buffer, (unsigned int)server->buf->len);
     int s = uv_write(&server->write_req, (uv_stream_t*)&server->client_connect, &buf, 1, server_send_cb);
     if (s != 0) {
-        close_and_free_remote(NULL, remote);
+        close_and_free_remote(remote);
         close_and_free_server(server);
     }
 
@@ -1202,7 +1204,7 @@ remote_send_cb(uv_write_t* req, int status)
     struct buffer_t *buf = remote->buf;
 
     if (status != 0) {
-        close_and_free_remote(NULL, remote);
+        close_and_free_remote(remote);
         close_and_free_server(server);
         return;
     }
@@ -1215,8 +1217,8 @@ remote_send_cb(uv_write_t* req, int status)
         int r = getsockopt(remote->socket.u.fd, SOL_SOCKET, SO_ERROR, (char *)&err_no, &len);
         if (r == 0 && err_no == 0) {
             remote->send_ctx->connected = 1;
-            ev_timer_stop(NULL, & remote->send_ctx->watcher);
-            ev_timer_start(NULL, & remote->recv_ctx->watcher);
+            uv_timer_stop(&remote->send_ctx->watcher); // ev_timer_stop(NULL, & remote->send_ctx->watcher);
+            uv_timer_start(&remote->recv_ctx->watcher, remote_timeout_cb, remote->recv_ctx->watcher_interval * 1000, 0); // ev_timer_start(NULL, & remote->recv_ctx->watcher);
             uv_read_start((uv_stream_t *)&remote->socket, on_alloc, remote_recv_cb); // ev_io_start(EV_A_ & remote->recv_ctx->io);
 
             // no need to send any data
@@ -1228,7 +1230,7 @@ remote_send_cb(uv_write_t* req, int status)
             // not connected
             LOGE("getsockopt error code %d %d", r, err_no);
             ERROR("getsockopt");
-            close_and_free_remote(NULL, remote);
+            close_and_free_remote(remote);
             close_and_free_server(server);
             return;
         }
@@ -1271,7 +1273,7 @@ remote_send_cb(uv_write_t* req, int status)
 }
 
 static struct remote_t *
-new_remote(int timeout)
+new_remote(uv_loop_t *loop, int timeout)
 {
     struct remote_t *remote = ss_malloc(sizeof(struct remote_t));
 
@@ -1289,8 +1291,13 @@ new_remote(int timeout)
     //ev_io_init(&remote->send_ctx->io, remote_send_cb, fd, EV_WRITE);
 
     int timeMax = min(MAX_CONNECT_TIMEOUT, timeout);
-    ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb, timeMax, 0);
-    ev_timer_init(&remote->recv_ctx->watcher, remote_timeout_cb, timeout, timeout);
+    //ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb, timeMax, 0);
+    //ev_timer_init(&remote->recv_ctx->watcher, remote_timeout_cb, timeout, timeout);
+    uv_timer_init(loop, &remote->send_ctx->watcher);
+    remote->send_ctx->watcher_interval = (uint64_t) timeMax;
+
+    uv_timer_init(loop, &remote->recv_ctx->watcher);
+    remote->recv_ctx->watcher_interval = (uint64_t) timeout;
 
     return remote;
 }
@@ -1318,11 +1325,11 @@ remote_after_close_cb(uv_handle_t* handle)
 }
 
 static void
-close_and_free_remote(EV_P_ struct remote_t *remote)
+close_and_free_remote(struct remote_t *remote)
 {
     if (remote != NULL) {
-        ev_timer_stop(EV_A_ & remote->send_ctx->watcher);
-        ev_timer_stop(EV_A_ & remote->recv_ctx->watcher);
+        uv_timer_stop(&remote->send_ctx->watcher); //ev_timer_stop(EV_A_ & remote->send_ctx->watcher);
+        uv_timer_stop(&remote->recv_ctx->watcher); //ev_timer_stop(EV_A_ & remote->recv_ctx->watcher);
         //ev_io_stop(EV_A_ & remote->send_ctx->io);
         uv_read_stop((uv_stream_t *)&remote->socket); //ev_io_stop(EV_A_ & remote->recv_ctx->io);
         uv_close((uv_handle_t *)&remote->socket, remote_after_close_cb); // close(remote->fd);
@@ -1489,9 +1496,10 @@ close_and_free_server(struct server_t *server)
 static struct remote_t *
 create_remote(struct listen_ctx_t *profile, struct sockaddr *addr)
 {
-    struct remote_t *remote = new_remote(profile->timeout);
+    uv_loop_t *loop = uv_default_loop();
+    struct remote_t *remote = new_remote(loop, profile->timeout);
 
-    uv_tcp_init(uv_default_loop(), &remote->socket);
+    uv_tcp_init(loop, &remote->socket);
 
     /*
     int remotefd = socket(addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
@@ -2056,7 +2064,7 @@ main(int argc, char **argv)
     ev_signal_start(EV_DEFAULT, &sigint_watcher);
     ev_signal_start(EV_DEFAULT, &sigterm_watcher);
 
-    struct ev_loop *loop = EV_DEFAULT;
+    //struct ev_loop *loop = EV_DEFAULT;
 
     struct listen_ctx_t *listen_ctx = current_profile;
 
@@ -2139,7 +2147,7 @@ main(int argc, char **argv)
 
     if (mode != UDP_ONLY) {
         uv_stop(server->loop); // ev_io_stop(loop, &listen_ctx->io);
-        free_connections(loop); // after this, all inactive profile should be released already, so we only need to release the current_profile
+        free_connections(); // after this, all inactive profile should be released already, so we only need to release the current_profile
         release_profile(current_profile);
     }
 
