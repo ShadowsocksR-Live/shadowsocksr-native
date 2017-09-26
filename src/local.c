@@ -177,7 +177,7 @@ void
 remote_send_stop_n_server_recv_start(struct server_t* server, struct remote_t* remote)
 {
     //ev_io_stop(EV_A_ & remote->send_ctx->io);
-    uv_read_start((uv_stream_t *)&server->client_connect, on_alloc, server_recv_cb); //ev_io_start(EV_A_ & server->recv_ctx->io);
+    uv_read_start((uv_stream_t *)&server->socket, on_alloc, server_recv_cb); //ev_io_start(EV_A_ & server->recv_ctx->io);
 }
 
 void
@@ -197,7 +197,7 @@ server_send_stop_n_remote_recv_start(struct server_t* server, struct remote_t* r
 void
 server_recv_stop_n_remote_send_start(struct server_t* server, struct remote_t* remote)
 {
-    uv_read_stop((uv_stream_t *)&server->client_connect); //ev_io_stop(EV_A_ & server->recv_ctx->io);
+    uv_read_stop((uv_stream_t *)&server->socket); //ev_io_stop(EV_A_ & server->recv_ctx->io);
     //ev_io_start(EV_A_ & remote->send_ctx->io);
 }
 
@@ -323,7 +323,7 @@ remote_connected_cb(uv_connect_t* req, int status)
 static void
 server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 {
-    struct server_t *server = cork_container_of(stream, struct server_t, client_connect);
+    struct server_t *server = cork_container_of(stream, struct server_t, socket);
     struct remote_t *remote = server->remote;
     struct buffer_t *buf;
 
@@ -531,7 +531,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             } else {
                 if (nread > 0 && remote->buf->len == 0) {
                     remote->buf->idx = 0;
-                    uv_read_stop((uv_stream_t *)&server->client_connect); //ev_io_stop(EV_A_ & server->recv_ctx->io);
+                    uv_read_stop((uv_stream_t *)&server->socket); //ev_io_stop(EV_A_ & server->recv_ctx->io);
                     return;
                 }
                 uv_buf_t tmp = uv_buf_init((char *)remote->buf->buffer, (unsigned int)remote->buf->len);
@@ -573,7 +573,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
             //send(server->fd, response, sizeof(*response), 0);
             uv_buf_t tmp = uv_buf_init((char *)response, sizeof(*response));
-            uv_write(&server->write_req, (uv_stream_t*)&server->client_connect, &tmp, 1, server_send_cb);
+            uv_write(&server->write_req, (uv_stream_t*)&server->socket, &tmp, 1, server_send_cb);
 
             server->stage = STAGE_HANDSHAKE;
 
@@ -597,7 +597,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             if (request->cmd == SOCKS5_COMMAND_UDPASSOC) {
                 udp_assc = 1;
                 socklen_t addr_len = sizeof(sock_addr);
-                getsockname(server->client_connect.u.fd, (struct sockaddr *)&sock_addr, &addr_len);
+                getsockname(server->socket.u.fd, (struct sockaddr *)&sock_addr, &addr_len);
                 if (verbose) {
                     LOGI("udp assc request accepted");
                 }
@@ -611,7 +611,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                 //send(server->fd, response, size, 0);
                 uv_buf_t tmp = uv_buf_init((char *)response, (unsigned int)size);
-                uv_write(&server->write_req, (uv_stream_t*)&server->client_connect, &tmp, 1, server_send_cb);
+                uv_write(&server->write_req, (uv_stream_t*)&server->socket, &tmp, 1, server_send_cb);
 
                 close_and_free_remote(remote);
                 close_and_free_server(server);
@@ -628,7 +628,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                 //ssize_t s = send(server->fd, response, size, 0);
                 uv_buf_t tmp = uv_buf_init((char *)response, (unsigned int)size);
-                int s = uv_try_write((uv_stream_t*)&server->client_connect, &tmp, 1);
+                int s = uv_try_write((uv_stream_t*)&server->socket, &tmp, 1);
 
                 if (s < (ssize_t) size) {
                     LOGE("failed to send fake reply");
@@ -1172,7 +1172,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
     // TODO: uv_try_write instead of uv_write
 
     uv_buf_t buf = uv_buf_init(server->buf->buffer, (unsigned int)server->buf->len);
-    int s = uv_write(&server->write_req, (uv_stream_t*)&server->client_connect, &buf, 1, server_send_cb);
+    int s = uv_write(&server->write_req, (uv_stream_t*)&server->socket, &buf, 1, server_send_cb);
     if (s != 0) {
         close_and_free_remote(remote);
         close_and_free_server(server);
@@ -1480,7 +1480,7 @@ free_server(struct server_t *server)
 static void
 server_after_close_cb(uv_handle_t* handle)
 {
-    struct server_t *server = cork_container_of(handle, struct server_t, client_connect);
+    struct server_t *server = cork_container_of(handle, struct server_t, socket);
     free_server(server);
 }
 
@@ -1489,8 +1489,8 @@ close_and_free_server(struct server_t *server)
 {
     if (server != NULL) {
         //ev_io_stop(EV_A_ & server->send_ctx->io);
-        uv_read_stop((uv_stream_t *)&server->client_connect); //ev_io_stop(EV_A_ & server->recv_ctx->io);
-        uv_close((uv_handle_t *)&server->client_connect, server_after_close_cb); //close(server->fd);
+        uv_read_stop((uv_stream_t *)&server->socket); //ev_io_stop(EV_A_ & server->recv_ctx->io);
+        uv_close((uv_handle_t *)&server->socket, server_after_close_cb); //close(server->fd);
         //free_server(server);
     }
 }
@@ -1567,19 +1567,19 @@ accept_cb(uv_stream_t* server, int status)
 
     struct server_t *local_server = new_server(listener);
 
-    int r = uv_tcp_init(server->loop, &local_server->client_connect);
+    int r = uv_tcp_init(server->loop, &local_server->socket);
     if (r != 0) {
         LOGE("uv_tcp_init error: %s\n", uv_strerror(r));
         return;
     }
 
-    r = uv_accept(server, (uv_stream_t*)&local_server->client_connect);
+    r = uv_accept(server, (uv_stream_t*)&local_server->socket);
     if (r) {
         LOGE("uv_accept: %s\n", uv_strerror(r));
         return;
     }
 
-    uv_read_start((uv_stream_t*)&local_server->client_connect, on_alloc, server_recv_cb);
+    uv_read_start((uv_stream_t*)&local_server->socket, on_alloc, server_recv_cb);
 
     /*
     int serverfd = accept(listener->fd, NULL, NULL);

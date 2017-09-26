@@ -23,8 +23,7 @@
 #ifndef _LOCAL_H
 #define _LOCAL_H
 
-#include <uv.h>
-//#include <ev.h>
+#include <uv.h> //#include <ev.h>
 #include <libcork/ds.h>
 
 #include "encrypt.h"
@@ -83,7 +82,7 @@ struct remote_t {
 };
 
 struct server_t {
-    uv_tcp_t client_connect; // int fd;
+    uv_tcp_t socket; // int fd;
     uv_write_t write_req;
     enum net_stage stage;
     struct enc_ctx *e_ctx;
