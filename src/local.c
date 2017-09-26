@@ -202,7 +202,7 @@ server_recv_stop_n_remote_send_start(struct server_t* server, struct remote_t* r
 }
 
 int
-create_and_bind(const char *addr, const char *port, uv_tcp_t *tcp)
+create_and_bind(const char *addr, const char *port, uv_loop_t *loop, uv_tcp_t *tcp)
 {
     struct addrinfo hints = { 0 };
     struct addrinfo *result = NULL, *rp;
@@ -217,7 +217,7 @@ create_and_bind(const char *addr, const char *port, uv_tcp_t *tcp)
         return -1;
     }
 
-    uv_tcp_init(uv_default_loop(), tcp);
+    uv_tcp_init(loop, tcp);
 
     for (rp = result; rp != NULL; rp = rp->ai_next) {
         int r = uv_tcp_bind(tcp, rp->ai_addr, 0);
@@ -266,7 +266,7 @@ create_and_bind(const char *addr, const char *port, uv_tcp_t *tcp)
 
 #ifdef HAVE_LAUNCHD
 int
-launch_or_create(const char *addr, const char *port, uv_tcp_t *tcp)
+launch_or_create(const char *addr, const char *port, uv_loop_t *loop, uv_tcp_t *tcp)
 {
     int *fds;
     size_t cnt;
@@ -286,7 +286,7 @@ launch_or_create(const char *addr, const char *port, uv_tcp_t *tcp)
             usage();
             exit(EXIT_FAILURE);
         }
-        return create_and_bind(addr, port, tcp);
+        return create_and_bind(addr, port, loop, tcp);
     } else {
         FATAL("launch_activate_socket() error");
     }
@@ -441,23 +441,23 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                 if (!fast_open || remote->direct) {
                     struct sockaddr *addr = (struct sockaddr*)&(remote->direct_addr.addr);
-                    int r = uv_tcp_connect(&remote->connect, &remote->socket, addr, remote_connected_cb);
-
-                    // connecting, wait until connected
-                    //int r = connect(remote->fd, (struct sockaddr *)&(remote->direct_addr.addr), remote->direct_addr.addr_len);
+                    uv_tcp_connect(&remote->connect, &remote->socket, addr, remote_connected_cb);
 
                     /*
-                    if (r < 0) { // (r == -1 && errno != CONNECT_IN_PROGRESS) {
+                    // connecting, wait until connected
+                    int r = connect(remote->fd, (struct sockaddr *)&(remote->direct_addr.addr), remote->direct_addr.addr_len);
+
+                    if (r == -1 && errno != CONNECT_IN_PROGRESS) {
                         ERROR("connect");
                         close_and_free_remote(remote);
                         close_and_free_server(server);
-                        //return;
+                        return;
                     }
-                     */
 
                     // wait on remote connected event
-                    //server_recv_stop_n_remote_send_start(server, remote);
-                    //ev_timer_start(NULL, &remote->send_ctx->watcher);
+                    server_recv_stop_n_remote_send_start(server, remote);
+                    ev_timer_start(NULL, &remote->send_ctx->watcher);
+                     */
                     return;
                 } else {
                     uv_buf_t tmp = uv_buf_init((char *)remote->buf->buffer, (unsigned int)remote->buf->len);
@@ -1498,7 +1498,7 @@ close_and_free_server(struct server_t *server)
 static struct remote_t *
 create_remote(struct listen_ctx_t *profile, struct sockaddr *addr)
 {
-    uv_loop_t *loop = uv_default_loop();
+    uv_loop_t *loop = profile->listen_socket.loop;
     struct remote_t *remote = new_remote(loop, profile->timeout);
 
     uv_tcp_init(loop, &remote->socket);
@@ -2078,9 +2078,9 @@ main(int argc, char **argv)
         // Setup socket
         int listenfd;
 #ifdef HAVE_LAUNCHD
-        listenfd = launch_or_create(local_addr, local_port, server);
+        listenfd = launch_or_create(local_addr, local_port, loop, server);
 #else
-        listenfd = create_and_bind(local_addr, local_port, server);
+        listenfd = create_and_bind(local_addr, local_port, loop, server);
 #endif
         if (listenfd != 0) {
             FATAL("bind() error");
