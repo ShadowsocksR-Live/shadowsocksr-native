@@ -976,45 +976,6 @@ server_send_cb(uv_write_t* req, int status)
     }
 }
 
-/*
-static void
-server_send_cb(EV_P_ ev_io *w, int revents)
-{
-    struct server_ctx_t *server_send_ctx = cork_container_of(w, struct server_ctx_t, io);
-    struct server_t *server = server_send_ctx->server;
-    struct remote_t *remote = server->remote;
-    struct buffer_t *buf = server->buf;
-    if (buf->len == 0) {
-        // close and free
-        close_and_free_remote(EV_A_ remote);
-        close_and_free_server(EV_A_ server);
-        return;
-    } else {
-        // has data to send
-        ssize_t s = send(server->fd, buf->buffer + buf->idx, buf->len, 0);
-        if (s == -1) {
-            if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                ERROR("server send callback for send");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-            }
-            return;
-        } else if (s < (ssize_t)(buf->len)) {
-            // partly sent, move memory, wait for the next time to send
-            buf->len -= s;
-            buf->idx += s;
-            return;
-        } else {
-            // all sent out, wait for reading
-            buf->len = 0;
-            buf->idx = 0;
-            server_send_stop_n_remote_recv_start(EV_A_ server, remote);
-            return;
-        }
-    }
-}
- */
-
 #ifdef ANDROID
 static void
 stat_update_cb()
@@ -1347,16 +1308,9 @@ new_server(struct listen_ctx_t *profile)
     struct server_t *server = ss_malloc(sizeof(struct server_t));
 
     server->listener = profile;
-    server->recv_ctx            = ss_malloc(sizeof(struct server_ctx_t));
-    server->send_ctx            = ss_malloc(sizeof(struct server_ctx_t));
     server->buf                 = ss_malloc(sizeof(struct buffer_t));
     buffer_alloc(server->buf, BUF_SIZE);
     server->stage               = STAGE_INIT;
-    server->recv_ctx->connected = 0;
-    server->send_ctx->connected = 0;
-    //server->fd                  = fd;
-    server->recv_ctx->server    = server;
-    server->send_ctx->server    = server;
 
     //ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
     //ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
@@ -1469,8 +1423,6 @@ free_server(struct server_t *server)
         // SSR end
     }
 
-    ss_free(server->recv_ctx);
-    ss_free(server->send_ctx);
     ss_free(server);
 
     // after free server, we need to check the profile

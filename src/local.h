@@ -49,12 +49,6 @@ struct listen_ctx_t {
     struct server_env_t servers[MAX_SERVER_NUM];
 };
 
-struct server_ctx_t {
-    //ev_io io;
-    int connected;
-    __weak_ptr struct server_t *server;
-};
-
 struct remote_ctx_t {
     //ev_io io;
     uv_timer_t watcher; // ev_timer watcher;
@@ -87,8 +81,6 @@ struct server_t {
     enum net_stage stage;
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;
-    struct server_ctx_t *recv_ctx;
-    struct server_ctx_t *send_ctx;
     __weak_ptr struct listen_ctx_t *listener;
     struct remote_t *remote;
 
