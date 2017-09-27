@@ -1413,11 +1413,13 @@ signal_cb(uv_signal_t* handle, int signum)
 #ifndef __MINGW32__
         case SIGUSR1:
 #endif
+            keep_resolving = 0;
             uv_stop(handle->loop); // ev_unloop(EV_A_ EVUNLOOP_ALL);
         default:
             assert(0);
         }
     //}
+    exit(EXIT_SUCCESS);
 }
 
 void
@@ -1460,15 +1462,6 @@ accept_cb(uv_stream_t* server, int status)
 
     ev_io_start(EV_A_ & server->recv_ctx->io);
      */
-}
-
-void
-resolve_int_cb(int dummy)
-{
-    keep_resolving = 0;
-
-    LOGI("Terminated by user.");
-    exit(EXIT_SUCCESS);
 }
 
 static void
@@ -1811,12 +1804,6 @@ main(int argc, char **argv)
 
 #ifdef __MINGW32__
     winsock_init();
-#else
-    // ignore SIGPIPE
-    signal(SIGPIPE, SIG_IGN);
-    signal(SIGABRT, SIG_IGN);
-    signal(SIGINT,  resolve_int_cb);
-    signal(SIGTERM, resolve_int_cb);
 #endif
 
     // Setup profiles
