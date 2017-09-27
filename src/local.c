@@ -1153,6 +1153,8 @@ new_remote(uv_loop_t *loop, int timeout)
 {
     struct remote_t *remote = ss_malloc(sizeof(struct remote_t));
 
+    uv_tcp_init(loop, &remote->socket);
+
     remote->buf                 = ss_malloc(sizeof(struct buffer_t));
     remote->recv_ctx            = ss_malloc(sizeof(struct remote_ctx_t));
     remote->send_ctx            = ss_malloc(sizeof(struct remote_ctx_t));
@@ -1361,8 +1363,6 @@ create_remote(struct listen_ctx_t *profile, struct sockaddr *addr)
 {
     uv_loop_t *loop = profile->listen_socket.loop;
     struct remote_t *remote = new_remote(loop, profile->timeout);
-
-    uv_tcp_init(loop, &remote->socket);
 
     /*
     int remotefd = socket(addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
