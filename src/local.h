@@ -54,7 +54,6 @@ struct remote_ctx_t {
     uv_timer_t watcher; // ev_timer watcher;
     uint64_t watcher_interval;
 
-    int connected;
     __weak_ptr struct remote_t *remote;
 };
 
@@ -65,14 +64,11 @@ struct remote_t {
     struct buffer_t *buf;
     struct remote_ctx_t *recv_ctx;
     struct remote_ctx_t *send_ctx;
-    uint32_t counter;
+    int send_ctx_connected;
     __weak_ptr struct server_t *server;
 
-    int direct;
-    struct { // direct = 1
         struct sockaddr_storage addr;
         size_t addr_len;
-    } direct_addr;
 };
 
 struct server_t {
