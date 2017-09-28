@@ -901,6 +901,9 @@ server_send_cb(uv_write_t* req, int status)
         LOGE("server_send_cb: %s", uv_strerror(status));
         close_and_free_remote(remote);
         close_and_free_server(server);
+    } else if (status == 0) {
+        server->buf->len = 0;
+        server->buf->idx = 0;
     }
 }
 
@@ -1058,14 +1061,8 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         // SSR end
     }
 
-    // TODO: uv_try_write instead of uv_write
-
     uv_buf_t buf = uv_buf_init(server->buf->buffer, (unsigned int)server->buf->len);
-    int s = uv_write(&server->write_req, (uv_stream_t*)&server->socket, &buf, 1, server_send_cb);
-    if (s != 0) {
-        close_and_free_remote(remote);
-        close_and_free_server(server);
-    }
+    uv_write(&server->write_req, (uv_stream_t*)&server->socket, &buf, 1, server_send_cb);
 
     /*
     int s = send(server->fd, server->buf->buffer, server->buf->len, 0);
