@@ -881,8 +881,9 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             remote->server = server;
 
             buffer_free(abuf);
+            continue; // return;
         }
-    }
+    } // while (1)
 }
 
 static void
