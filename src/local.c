@@ -164,8 +164,22 @@ setnonblocking(int fd)
     }
     return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
-
 #endif
+
+int uv_stream_fd(const uv_tcp_t *handle) {
+#if defined(_WIN32)
+    return handle->socket;
+#else
+#if defined(__APPLE__)
+    int uv___stream_fd(const uv_stream_t* handle);
+#define uv__stream_fd(handle) (uv___stream_fd((const uv_stream_t*) (handle)))
+    return uv__stream_fd(handle);
+#else
+//#define uv__stream_fd(handle) ((handle)->io_watcher.fd)
+    return (handle)->io_watcher.fd;
+#endif // defined(__APPLE__)
+#endif  // _WIN32
+}
 
 void
 remote_send_stop_n_server_recv_start(struct server_t* server, struct remote_t* remote)
@@ -516,7 +530,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             if (request->cmd == SOCKS5_COMMAND_UDPASSOC) {
                 udp_assc = 1;
                 socklen_t addr_len = sizeof(sock_addr);
-                getsockname(server->socket.u.fd, (struct sockaddr *)&sock_addr, &addr_len);
+                getsockname(uv_stream_fd(&server->socket), (struct sockaddr *)&sock_addr, &addr_len);
                 if (verbose) {
                     LOGI("udp assc request accepted");
                 }
@@ -1090,7 +1104,7 @@ remote_send_cb(uv_write_t* req, int status)
     if (!remote->send_ctx_connected) {
         int err_no = 0;
         socklen_t len = sizeof(err_no);
-        int r = getsockopt(remote->socket.u.fd, SOL_SOCKET, SO_ERROR, (char *)&err_no, &len);
+        int r = getsockopt(uv_stream_fd(&remote->socket), SOL_SOCKET, SO_ERROR, (char *)&err_no, &len);
         if (r == 0 && err_no == 0) {
             remote->send_ctx_connected = 1;
             uv_timer_stop(&remote->send_ctx->watcher); // ev_timer_stop(NULL, & remote->send_ctx->watcher);
@@ -1390,7 +1404,7 @@ create_remote(struct listen_ctx_t *profile, struct sockaddr *addr)
     */
 #ifdef SET_INTERFACE
     if (profile->iface) {
-        if (setinterface(remote->socket.u.fd, profile->iface) == -1) {
+        if (setinterface(uv_stream_fd(&remote->socket), profile->iface) == -1) {
             ERROR("setinterface");
         }
     }
