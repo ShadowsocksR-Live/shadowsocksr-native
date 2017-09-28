@@ -312,9 +312,10 @@ remote_connected_cb(uv_connect_t* req, int status)
 {
     struct remote_t *remote = cork_container_of(req, struct remote_t, connect);
     if (status == 0) {
-        // wait on remote connected event
-        server_recv_stop_n_remote_send_start(remote->server, remote);
-        uv_timer_start(&remote->send_ctx->watcher, remote_timeout_cb, remote->send_ctx->watcher_interval * 1000, 0); // ev_timer_start(NULL, &remote->send_ctx->watcher);
+        uv_timer_start(&remote->send_ctx->watcher, remote_timeout_cb, remote->send_ctx->watcher_interval * 1000, 0);
+
+        uv_buf_t tmp = uv_buf_init((char *)remote->buf->buffer, (unsigned int)remote->buf->len);
+        uv_write(&remote->write_req, (uv_stream_t *)&remote->socket, &tmp, 1, remote_send_cb);
     } else {
         close_and_free_remote(remote);
         close_and_free_server(remote->server);
@@ -443,6 +444,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 {
                     struct sockaddr *addr = (struct sockaddr*)&(remote->addr);
                     uv_tcp_connect(&remote->connect, &remote->socket, addr, remote_connected_cb);
+                    server_recv_stop_n_remote_send_start(server, remote);
 
                     /*
                     // connecting, wait until connected
@@ -1091,6 +1093,8 @@ remote_send_cb(uv_write_t* req, int status)
     struct server_t *server = remote->server;
     struct buffer_t *buf = remote->buf;
 
+    uv_timer_stop(&remote->send_ctx->watcher);
+
     if (status != 0) {
         close_and_free_remote(remote);
         close_and_free_server(server);
@@ -1100,15 +1104,18 @@ remote_send_cb(uv_write_t* req, int status)
     buf->len = 0;
 
     if (!remote->send_ctx_connected) {
+
+        /*
         int err_no = 0;
         socklen_t len = sizeof(err_no);
         int r = getsockopt(uv_stream_fd(&remote->socket), SOL_SOCKET, SO_ERROR, (char *)&err_no, &len);
         if (r == 0 && err_no == 0) {
+         */
             remote->send_ctx_connected = 1;
-            uv_timer_stop(&remote->send_ctx->watcher); // ev_timer_stop(NULL, & remote->send_ctx->watcher);
+             // ev_timer_stop(NULL, & remote->send_ctx->watcher);
             uv_timer_start(&remote->recv_ctx->watcher, remote_timeout_cb, remote->recv_ctx->watcher_interval * 1000, 0); // ev_timer_start(NULL, & remote->recv_ctx->watcher);
             uv_read_start((uv_stream_t *)&remote->socket, on_alloc, remote_recv_cb); // ev_io_start(EV_A_ & remote->recv_ctx->io);
-
+        /*
             // no need to send any data
             if (buf->len == 0) {
                 remote_send_stop_n_server_recv_start(server, remote);
@@ -1122,6 +1129,7 @@ remote_send_cb(uv_write_t* req, int status)
             close_and_free_server(server);
             return;
         }
+         */
     } else {
         buf->len = 0;
         buf->idx = 0;
