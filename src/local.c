@@ -184,9 +184,8 @@ int uv_stream_fd(const uv_tcp_t *handle) {
 void
 remote_send_stop_n_server_recv_start(struct server_t* server, struct remote_t* remote)
 {
-    //ev_io_stop(EV_A_ & remote->send_ctx->io);
     if (server) {
-        uv_read_start((uv_stream_t *) &server->socket, on_alloc, server_recv_cb); //ev_io_start(EV_A_ & server->recv_ctx->io);
+        uv_read_start((uv_stream_t *) &server->socket, on_alloc, server_recv_cb);
     }
 }
 
@@ -194,18 +193,16 @@ void
 remote_recv_stop_n_server_send_start(struct server_t* server, struct remote_t* remote)
 {
     if (remote) {
-        uv_read_stop((uv_stream_t *) &remote->socket); //ev_io_stop(EV_A_ & remote->recv_ctx->io);
+        uv_read_stop((uv_stream_t *) &remote->socket);
     }
-    //ev_io_start(EV_A_ & server->send_ctx->io);
 }
 
 void
 server_recv_stop_n_remote_send_start(struct server_t* server, struct remote_t* remote)
 {
     if (server) {
-        uv_read_stop((uv_stream_t *) &server->socket); //ev_io_stop(EV_A_ & server->recv_ctx->io);
+        uv_read_stop((uv_stream_t *) &server->socket);
     }
-    //ev_io_start(EV_A_ & remote->send_ctx->io);
 }
 
 int
@@ -232,33 +229,6 @@ create_and_bind(const char *addr, const char *port, uv_loop_t *loop, uv_tcp_t *t
             break;
         }
         LOGE("uv_tcp_bind: %s\n", uv_strerror(r));
-
-        /*
-        listen_sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-        if (listen_sock == -1) {
-            continue;
-        }
-
-        int opt = 1;
-        setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-#ifdef SO_NOSIGPIPE
-        setsockopt(listen_sock, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
-#endif
-        int err = set_reuseport(listen_sock);
-        if (err == 0) {
-            LOGI("tcp port reuse enabled");
-        }
-
-        s = bind(listen_sock, rp->ai_addr, rp->ai_addrlen);
-        if (s == 0) {
-            // We managed to bind successfully!
-            break;
-        } else {
-            ERROR("bind");
-        }
-
-        close(listen_sock);
-         */
     }
 
     if (rp == NULL) {
@@ -347,17 +317,15 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         return;
     } else if (nread == 0) {
         // http://docs.libuv.org/en/v1.x/stream.html
-        //if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            // no data
-            // continue to wait for recv
-            return;
+        // (errno == EAGAIN || errno == EWOULDBLOCK): no data, continue to wait for recv
+        return;
     } else if (nread < 0) {
-            if (verbose) {
-                ERROR("server recieve callback for recv");
-            }
-            close_and_free_remote(remote);
-            close_and_free_server(server);
-            return;
+        if (verbose) {
+            ERROR("server recieve callback for recv");
+        }
+        close_and_free_remote(remote);
+        close_and_free_server(server);
+        return;
     }
 
     buffer_realloc(buf, buf->len + nread, buf->capacity);
@@ -446,28 +414,10 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                 remote->buf->idx = 0;
 
-                {
-                    struct sockaddr *addr = (struct sockaddr*)&(remote->addr);
-                    uv_tcp_connect(&remote->connect, &remote->socket, addr, remote_connected_cb);
-                    server_recv_stop_n_remote_send_start(server, remote);
-
-                    /*
-                    // connecting, wait until connected
-                    int r = connect(remote->fd, (struct sockaddr *)&(remote->direct_addr.addr), remote->direct_addr.addr_len);
-
-                    if (r == -1 && errno != CONNECT_IN_PROGRESS) {
-                        ERROR("connect");
-                        close_and_free_remote(remote);
-                        close_and_free_server(server);
-                        return;
-                    }
-
-                    // wait on remote connected event
-                    server_recv_stop_n_remote_send_start(server, remote);
-                    ev_timer_start(NULL, &remote->send_ctx->watcher);
-                     */
-                    return;
-                }
+                struct sockaddr *addr = (struct sockaddr*)&(remote->addr);
+                uv_tcp_connect(&remote->connect, &remote->socket, addr, remote_connected_cb);
+                server_recv_stop_n_remote_send_start(server, remote);
+                return;
             } else {
                 if (nread > 0 && remote->buf->len == 0) {
                     remote->buf->idx = 0;
@@ -478,30 +428,6 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 uv_buf_t tmp = uv_buf_init((char *)remote->buf->buffer, (unsigned int)remote->buf->len);
                 uv_write(&remote->write_req, (uv_stream_t *)&remote->socket, &tmp, 1, remote_send_cb);
                 uv_timer_start(&remote->send_ctx->watcher, remote_timeout_cb, remote->send_ctx->watcher_interval * 1000, 0);
-                /*
-                int s = send(remote->fd, remote->buf->buffer, remote->buf->len, 0);
-                if (s == -1) {
-                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                        // no data, wait for send
-                        remote->buf->idx = 0;
-                        server_recv_stop_n_remote_send_start(NULL, server, remote);
-                        return;
-                    } else {
-                        ERROR("server recieve callback for send");
-                        close_and_free_remote(NULL, remote);
-                        close_and_free_server(server);
-                        return;
-                    }
-                } else if (s < (int)(remote->buf->len)) {
-                    remote->buf->len -= s;
-                    remote->buf->idx  = s;
-                    server_recv_stop_n_remote_send_start(NULL, server, remote);
-                    return;
-                } else {
-                    remote->buf->idx = 0;
-                    remote->buf->len = 0;
-                }
-                 */
             }
 
             // all processed
@@ -513,7 +439,6 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             struct method_select_response *response =
                     build_socks5_method_select_response(SOCKS5_METHOD_NOAUTH, buffer, sizeof(buffer));
 
-            //send(server->fd, response, sizeof(*response), 0);
             uv_buf_t tmp = uv_buf_init((char *)response, sizeof(*response));
             uv_write(&server->write_req, (uv_stream_t*)&server->socket, &tmp, 1, server_send_cb);
 
@@ -551,7 +476,6 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         build_socks5_response(SOCKS5_REPLY_CMDUNSUPP, SOCKS5_ADDRTYPE_IPV4,
                                               &sock_addr, buffer, sizeof(buffer), &size);
 
-                //send(server->fd, response, size, 0);
                 uv_buf_t tmp = uv_buf_init((char *)response, (unsigned int)size);
                 uv_write(&server->write_req, (uv_stream_t*)&server->socket, &tmp, 1, server_send_cb);
 
@@ -568,7 +492,6 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         build_socks5_response(SOCKS5_REPLY_SUCCESS, SOCKS5_ADDRTYPE_IPV4,
                                               &sock_addr, buffer, sizeof(buffer), &size);
 
-                //ssize_t s = send(server->fd, response, size, 0);
                 uv_buf_t tmp = uv_buf_init((char *)response, (unsigned int)size);
                 int s = uv_try_write((uv_stream_t*)&server->socket, &tmp, 1);
 
@@ -901,7 +824,6 @@ server_send_cb(uv_write_t* req, int status)
     struct server_t *server = cork_container_of(req, struct server_t, write_req);
     struct remote_t *remote = server->remote;
 
-    //assert(status == 0);
     if (status == UV_EAGAIN) {
         // no data, wait for send
         server->buf->idx = 0;
@@ -951,19 +873,15 @@ remote_timeout_cb(uv_timer_t *handle)
 static void
 remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 {
-    //struct remote_ctx_t *remote_recv_ctx = cork_container_of(w, struct remote_ctx_t, io);
-    //struct remote_t *remote = remote_recv_ctx->remote;
     struct remote_t *remote = cork_container_of(stream, struct remote_t, socket);
     struct server_t *server = remote->server;
     struct server_env_t *server_env = server->server_env;
 
-    uv_timer_again(&remote->recv_ctx->watcher); // ev_timer_again(NULL, & remote->recv_ctx->watcher);
+    uv_timer_again(&remote->recv_ctx->watcher);
 
 #ifdef ANDROID
     stat_update_cb();
 #endif
-
-    //ssize_t r = recv(remote->fd, server->buf->buffer, BUF_SIZE, 0);
 
     if (nread == UV_EOF) {
         // connection closed
@@ -971,17 +889,15 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         close_and_free_server(server);
         return;
     } else if (nread == 0) {
-        //if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            // no data
-            // continue to wait for recv
-            return;
+        // (errno == EAGAIN || errno == EWOULDBLOCK): no data. continue to wait for recv
+        return;
     } else if (nread < 0) {
         if (verbose) {
             ERROR("remote_recv_cb_recv");
         }
-            close_and_free_remote(remote);
-            close_and_free_server(server);
-            return;
+        close_and_free_remote(remote);
+        close_and_free_server(server);
+        return;
     }
 
     buffer_realloc(server->buf, server->buf->len + nread, server->buf->capacity);
@@ -1018,28 +934,6 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         uv_buf_t tmp = uv_buf_init(remote->buf->buffer, (unsigned int)remote->buf->len);
                         uv_write(&remote->write_req, (uv_stream_t *)&remote->socket, &tmp, 1, remote_send_cb);
                         uv_timer_start(&remote->send_ctx->watcher, remote_timeout_cb, remote->send_ctx->watcher_interval * 1000, 0);
-                        /*
-                        ssize_t s = send(remote->fd, remote->buf->buffer, remote->buf->len, 0);
-                        if (s == -1) {
-                            if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                                ERROR("remote_recv_cb_send");
-                                // close and free
-                                close_and_free_remote(NULL, remote);
-                                close_and_free_server(server);
-                            }
-                            return;
-                        } else if (s < (ssize_t)(remote->buf->len)) {
-                            // partly sent, move memory, wait for the next time to send
-                            remote->buf->len -= s;
-                            remote->buf->idx += s;
-                            return;
-                        } else {
-                            // all sent out, wait for reading
-                            remote->buf->len = 0;
-                            remote->buf->idx = 0;
-                            remote_send_stop_n_server_recv_start(EV_A_ server, remote);
-                        }
-                         */
                     }
                 }
             }
@@ -1073,25 +967,6 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
     uv_buf_t buf = uv_buf_init(server->buf->buffer, (unsigned int)server->buf->len);
     uv_write(&server->write_req, (uv_stream_t*)&server->socket, &buf, 1, server_send_cb);
-
-    /*
-    int s = send(server->fd, server->buf->buffer, server->buf->len, 0);
-    if (s == -1) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            // no data, wait for send
-            server->buf->idx = 0;
-            remote_recv_stop_n_server_send_start(EV_A_ server, remote);
-        } else {
-            ERROR("remote_recv_cb_send");
-            close_and_free_remote(EV_A_ remote);
-            close_and_free_server(EV_A_ server);
-        }
-    } else if (s < (int)(server->buf->len)) {
-        server->buf->len -= s;
-        server->buf->idx  = (size_t)s;
-        remote_recv_stop_n_server_send_start(EV_A_ server, remote);
-    }
-     */
 }
 
 static void
@@ -1112,68 +987,14 @@ remote_send_cb(uv_write_t* req, int status)
     buf->len = 0;
 
     if (!remote->send_ctx_connected) {
-
-        /*
-        int err_no = 0;
-        socklen_t len = sizeof(err_no);
-        int r = getsockopt(uv_stream_fd(&remote->socket), SOL_SOCKET, SO_ERROR, (char *)&err_no, &len);
-        if (r == 0 && err_no == 0) {
-         */
-            remote->send_ctx_connected = 1;
-             // ev_timer_stop(NULL, & remote->send_ctx->watcher);
-            uv_timer_start(&remote->recv_ctx->watcher, remote_timeout_cb, remote->recv_ctx->watcher_interval * 1000, 0); // ev_timer_start(NULL, & remote->recv_ctx->watcher);
-            uv_read_start((uv_stream_t *)&remote->socket, on_alloc, remote_recv_cb); // ev_io_start(EV_A_ & remote->recv_ctx->io);
-        /*
-            // no need to send any data
-            if (buf->len == 0) {
-                remote_send_stop_n_server_recv_start(server, remote);
-                return;
-            }
-        } else {
-            // not connected
-            LOGE("getsockopt error code %d %d", r, err_no);
-            ERROR("getsockopt");
-            close_and_free_remote(remote);
-            close_and_free_server(server);
-            return;
-        }
-         */
+        remote->send_ctx_connected = 1;
+        uv_timer_start(&remote->recv_ctx->watcher, remote_timeout_cb, remote->recv_ctx->watcher_interval * 1000, 0);
+        uv_read_start((uv_stream_t *)&remote->socket, on_alloc, remote_recv_cb);
     } else {
         buf->len = 0;
         buf->idx = 0;
         remote_send_stop_n_server_recv_start(server, remote);
     }
-
-    /*
-    if (buf->len == 0) {
-        // close and free
-        close_and_free_remote(NULL, remote);
-        close_and_free_server(server);
-        return;
-    } else {
-        // has data to send
-        ssize_t s = send(remote->fd, buf->buffer + buf->idx, buf->len, 0);
-        if (s == -1) {
-            if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                ERROR("remote_send_cb_send");
-                // close and free
-                close_and_free_remote(NULL, remote);
-                close_and_free_server(server);
-            }
-            return;
-        } else if (s < (ssize_t)(buf->len)) {
-            // partly sent, move memory, wait for the next time to send
-            buf->len -= s;
-            buf->idx += s;
-            return;
-        } else {
-            // all sent out, wait for reading
-            buf->len = 0;
-            buf->idx = 0;
-            remote_send_stop_n_server_recv_start(EV_A_ server, remote);
-        }
-    }
-     */
 }
 
 static struct remote_t *
@@ -1187,16 +1008,10 @@ new_remote(uv_loop_t *loop, int timeout)
     remote->recv_ctx            = ss_malloc(sizeof(struct remote_ctx_t));
     remote->send_ctx            = ss_malloc(sizeof(struct remote_ctx_t));
     buffer_alloc(remote->buf, BUF_SIZE);
-    //remote->fd                  = fd;
     remote->recv_ctx->remote    = remote;
     remote->send_ctx->remote    = remote;
 
-    //ev_io_init(&remote->recv_ctx->io, remote_recv_cb, fd, EV_READ);
-    //ev_io_init(&remote->send_ctx->io, remote_send_cb, fd, EV_WRITE);
-
     int timeMax = min(MAX_CONNECT_TIMEOUT, timeout);
-    //ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb, timeMax, 0);
-    //ev_timer_init(&remote->recv_ctx->watcher, remote_timeout_cb, timeout, timeout);
     uv_timer_init(loop, &remote->send_ctx->watcher);
     remote->send_ctx->watcher_interval = (uint64_t) timeMax;
 
@@ -1232,12 +1047,10 @@ static void
 close_and_free_remote(struct remote_t *remote)
 {
     if (remote != NULL) {
-        uv_timer_stop(&remote->send_ctx->watcher); //ev_timer_stop(EV_A_ & remote->send_ctx->watcher);
-        uv_timer_stop(&remote->recv_ctx->watcher); //ev_timer_stop(EV_A_ & remote->recv_ctx->watcher);
-        //ev_io_stop(EV_A_ & remote->send_ctx->io);
-        uv_read_stop((uv_stream_t *)&remote->socket); //ev_io_stop(EV_A_ & remote->recv_ctx->io);
-        uv_close((uv_handle_t *)&remote->socket, remote_after_close_cb); // close(remote->fd);
-        //free_remote(remote);
+        uv_timer_stop(&remote->send_ctx->watcher);
+        uv_timer_stop(&remote->recv_ctx->watcher);
+        uv_read_stop((uv_stream_t *)&remote->socket);
+        uv_close((uv_handle_t *)&remote->socket, remote_after_close_cb);
     }
 }
 
@@ -1252,8 +1065,6 @@ new_server(struct listen_ctx_t *profile)
     server->buf                 = ss_malloc(sizeof(struct buffer_t));
     buffer_alloc(server->buf, BUF_SIZE);
     server->stage               = STAGE_INIT;
-
-    //ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
 
     cork_dllist_add(&profile->connections_eden, &server->entries);
     cork_dllist_add(&all_connections, &server->entries_all);
@@ -1380,9 +1191,8 @@ static void
 close_and_free_server(struct server_t *server)
 {
     if (server != NULL) {
-        uv_read_stop((uv_stream_t *)&server->socket); //ev_io_stop(EV_A_ & server->recv_ctx->io);
-        uv_close((uv_handle_t *)&server->socket, server_after_close_cb); //close(server->fd);
-        //free_server(server);
+        uv_read_stop((uv_stream_t *)&server->socket);
+        uv_close((uv_handle_t *)&server->socket, server_after_close_cb);
     }
 }
 
@@ -1392,30 +1202,6 @@ create_remote(struct listen_ctx_t *profile, struct sockaddr *addr)
     uv_loop_t *loop = profile->listen_socket.loop;
     struct remote_t *remote = new_remote(loop, profile->timeout);
 
-    /*
-    int remotefd = socket(addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
-
-    if (remotefd == -1) {
-        ERROR("socket");
-        return NULL;
-    }
-
-    int opt = 1;
-    setsockopt(remotefd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
-#ifdef SO_NOSIGPIPE
-    setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
-#endif
-
-    if (profile->mptcp == 1) {
-        int err = setsockopt(remotefd, SOL_TCP, MPTCP_ENABLED, &opt, sizeof(opt));
-        if (err == -1) {
-            ERROR("failed to enable multipath TCP");
-        }
-    }
-
-    // Setup
-    setnonblocking(remotefd);
-    */
 #ifdef SET_INTERFACE
     if (profile->iface) {
         if (setinterface(uv_stream_fd(&remote->socket), profile->iface) == -1) {
@@ -1434,19 +1220,17 @@ create_remote(struct listen_ctx_t *profile, struct sockaddr *addr)
 static void
 signal_cb(uv_signal_t* handle, int signum)
 {
-    //if (revents & EV_SIGNAL) {
-        switch (signum) {
+    switch (signum) {
         case SIGINT:
         case SIGTERM:
 #ifndef __MINGW32__
         case SIGUSR1:
 #endif
             keep_resolving = 0;
-            uv_stop(handle->loop); // ev_unloop(EV_A_ EVUNLOOP_ALL);
+            uv_stop(handle->loop);
         default:
             assert(0);
-        }
-    //}
+    }
     exit(EXIT_SUCCESS);
 }
 
@@ -1472,24 +1256,6 @@ accept_cb(uv_stream_t* server, int status)
     }
 
     uv_read_start((uv_stream_t*)&local_server->socket, on_alloc, server_recv_cb);
-
-    /*
-    int serverfd = accept(listener->fd, NULL, NULL);
-    if (serverfd == -1) {
-        ERROR("accept");
-        return;
-    }
-    setnonblocking(serverfd);
-    int opt = 1;
-    setsockopt(serverfd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
-#ifdef SO_NOSIGPIPE
-    setsockopt(serverfd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
-#endif
-
-    struct server_t *server = new_server(serverfd, listener);
-
-    ev_io_start(EV_A_ & server->recv_ctx->io);
-     */
 }
 
 static void
@@ -1938,14 +1704,12 @@ main(int argc, char **argv)
     uv_loop_t *loop = uv_default_loop();
 
     // Setup signal handler
-    uv_signal_t sigint_watcher; // struct ev_signal sigint_watcher;
-    uv_signal_t sigterm_watcher; // struct ev_signal sigterm_watcher;
-    uv_signal_init(loop, &sigint_watcher); // ev_signal_init(&sigint_watcher, signal_cb, SIGINT);
-    uv_signal_init(loop, &sigterm_watcher); // ev_signal_init(&sigterm_watcher, signal_cb, SIGTERM);
-    uv_signal_start(&sigint_watcher, signal_cb, SIGINT); // ev_signal_start(EV_DEFAULT, &sigint_watcher);
-    uv_signal_start(&sigterm_watcher, signal_cb, SIGTERM); // ev_signal_start(EV_DEFAULT, &sigterm_watcher);
-
-    //struct ev_loop *loop = EV_DEFAULT;
+    uv_signal_t sigint_watcher;
+    uv_signal_t sigterm_watcher;
+    uv_signal_init(loop, &sigint_watcher);
+    uv_signal_init(loop, &sigterm_watcher);
+    uv_signal_start(&sigint_watcher, signal_cb, SIGINT);
+    uv_signal_start(&sigterm_watcher, signal_cb, SIGTERM);
 
     struct listen_ctx_t *listen_ctx = current_profile;
 
@@ -1966,18 +1730,6 @@ main(int argc, char **argv)
         if (uv_listen((uv_stream_t*)server, 128, accept_cb) != 0) {
             FATAL("listen() error");
         }
-
-        /*
-        if (listen(listenfd, SOMAXCONN) == -1) {
-            FATAL("listen() error");
-        }
-        setnonblocking(listenfd);
-
-        listen_ctx->fd = listenfd;
-
-        ev_io_init(&listen_ctx->io, accept_cb, listenfd, EV_READ);
-        ev_io_start(loop, &listen_ctx->io);
-         */
     }
 
     // Setup UDP
@@ -2015,7 +1767,7 @@ main(int argc, char **argv)
     free_jconf(conf);
 
     // Enter the loop
-    uv_run(server->loop, UV_RUN_DEFAULT); // ev_run(loop, 0);
+    uv_run(server->loop, UV_RUN_DEFAULT);
 
     if (verbose) {
         LOGI("closed gracefully");
@@ -2027,7 +1779,7 @@ main(int argc, char **argv)
     }
 
     if (mode != UDP_ONLY) {
-        uv_stop(server->loop); // ev_io_stop(loop, &listen_ctx->io);
+        uv_stop(server->loop);
         free_connections(); // after this, all inactive profile should be released already, so we only need to release the current_profile
         release_profile(current_profile);
     }
@@ -2035,9 +1787,6 @@ main(int argc, char **argv)
 #ifdef __MINGW32__
     winsock_cleanup();
 #endif
-
-    //ev_signal_stop(EV_DEFAULT, &sigint_watcher);
-    //ev_signal_stop(EV_DEFAULT, &sigterm_watcher);
 
     return 0;
 }
