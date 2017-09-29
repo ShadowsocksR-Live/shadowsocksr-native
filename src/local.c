@@ -783,7 +783,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 // SSR end
 
                 size_t total_len = abuf->len + buf->len;
-                buffer_realloc(remote->buf, total_len, BUF_SIZE);
+                buffer_realloc(remote->buf, max(total_len, BUF_SIZE));
                 remote->buf->len = total_len;
 
                 memcpy(remote->buf->buffer, abuf->buffer, abuf->len);
