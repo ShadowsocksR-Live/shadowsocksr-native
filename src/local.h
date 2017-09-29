@@ -51,14 +51,12 @@ struct listen_ctx_t {
 
 struct server_ctx_t {
     ev_io io;
-    int connected;
     __weak_ptr struct server_t *server;
 };
 
 struct remote_ctx_t {
     ev_io io;
     ev_timer watcher;
-    int connected;
     __weak_ptr struct remote_t *remote;
 };
 
@@ -67,14 +65,11 @@ struct remote_t {
     struct buffer_t *buf;
     struct remote_ctx_t *recv_ctx;
     struct remote_ctx_t *send_ctx;
-    uint32_t counter;
+    int send_ctx_connected;
     __weak_ptr struct server_t *server;
 
-    int direct;
-    struct { // direct = 1
-        struct sockaddr_storage addr;
-        int addr_len;
-    } direct_addr;
+    struct sockaddr_storage addr;
+    int addr_len;
 };
 
 struct server_t {
@@ -83,7 +78,6 @@ struct server_t {
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;
     struct server_ctx_t *recv_ctx;
-    struct server_ctx_t *send_ctx;
     __weak_ptr struct listen_ctx_t *listener;
     struct remote_t *remote;
 

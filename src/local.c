@@ -151,20 +151,6 @@ remote_send_stop_n_server_recv_start(EV_P_ struct server_t* server, struct remot
 }
 
 void
-remote_recv_stop_n_server_send_start(EV_P_ struct server_t* server, struct remote_t* remote)
-{
-    ev_io_stop(EV_A_ & remote->recv_ctx->io);
-    ev_io_start(EV_A_ & server->send_ctx->io);
-}
-
-void
-server_send_stop_n_remote_recv_start(EV_P_ struct server_t* server, struct remote_t* remote)
-{
-    ev_io_stop(EV_A_ & server->send_ctx->io);
-    ev_io_start(EV_A_ & remote->recv_ctx->io);
-}
-
-void
 server_recv_stop_n_remote_send_start(EV_P_ struct server_t* server, struct remote_t* remote)
 {
     ev_io_stop(EV_A_ & server->recv_ctx->io);
@@ -331,7 +317,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             }
 
             // insert shadowsocks header
-            if (!remote->direct) {
+            {
                 struct server_env_t *server_env = server->server_env;
                 // SSR beg
                 struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
@@ -361,12 +347,12 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 #endif
             }
 
-            if (!remote->send_ctx->connected) {
+            if (!remote->send_ctx_connected) {
 #ifdef ANDROID
                 if (vpn) {
                     int not_protect = 0;
-                    if (remote->direct_addr.addr.ss_family == AF_INET) {
-                        struct sockaddr_in *s = (struct sockaddr_in *)&remote->direct_addr.addr;
+                    if (remote->addr.ss_family == AF_INET) {
+                        struct sockaddr_in *s = (struct sockaddr_in *)&remote->addr;
                         if (s->sin_addr.s_addr == inet_addr("127.0.0.1")) {
                             not_protect = 1;
                         }
@@ -384,9 +370,9 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 remote->buf->idx = 0;
 
-                if (!fast_open || remote->direct) {
+                {
                     // connecting, wait until connected
-                    int r = connect(remote->fd, (struct sockaddr *)&(remote->direct_addr.addr), remote->direct_addr.addr_len);
+                    int r = connect(remote->fd, (struct sockaddr *)&(remote->addr), (socklen_t)remote->addr_len);
 
                     if (r == -1 && errno != CONNECT_IN_PROGRESS) {
                         ERROR("connect");
@@ -399,69 +385,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     server_recv_stop_n_remote_send_start(EV_A_ server, remote);
                     ev_timer_start(EV_A_ & remote->send_ctx->watcher);
                     return;
-                } else {
-#ifdef TCP_FASTOPEN
-#ifdef __APPLE__
-                    ((struct sockaddr_in *)&(remote->direct_addr.addr))->sin_len = sizeof(struct sockaddr_in);
-                    sa_endpoints_t endpoints;
-                    memset((char *)&endpoints, 0, sizeof(endpoints));
-                    endpoints.sae_dstaddr    = (struct sockaddr *)&(remote->direct_addr.addr);
-                    endpoints.sae_dstaddrlen = remote->direct_addr.addr_len;
-
-                    int s = connectx(remote->fd, &endpoints, SAE_ASSOCID_ANY,
-                                     CONNECT_RESUME_ON_READ_WRITE | CONNECT_DATA_IDEMPOTENT,
-                                     NULL, 0, NULL, NULL);
-                    if (s == 0) {
-                        s = send(remote->fd, remote->buf->buffer, remote->buf->len, 0);
-                    }
-#else
-                    int s = sendto(remote->fd, remote->buf->buffer, remote->buf->len, MSG_FASTOPEN,
-                                   (struct sockaddr *)&(remote->direct_addr.addr), remote->direct_addr.addr_len);
-#endif
-                    if (s == -1) {
-                        if (errno == CONNECT_IN_PROGRESS) {
-                            // in progress, wait until connected
-                            remote->buf->idx = 0;
-                            server_recv_stop_n_remote_send_start(EV_A_ server, remote);
-                            return;
-                        } else {
-                            ERROR("sendto");
-                            if (errno == ENOTCONN) {
-                                LOGE("fast open is not supported on this platform");
-                                // just turn it off
-                                fast_open = 0;
-                            }
-                            close_and_free_remote(EV_A_ remote);
-                            close_and_free_server(EV_A_ server);
-                            return;
-                        }
-                    } else if (s < (int)(remote->buf->len)) {
-                        remote->buf->len -= s;
-                        remote->buf->idx  = s;
-
-                        server_recv_stop_n_remote_send_start(EV_A_ server, remote);
-                        ev_timer_start(EV_A_ & remote->send_ctx->watcher);
-                        return;
-                    } else {
-                        // Just connected
-                        remote->buf->idx = 0;
-                        remote->buf->len = 0;
-#ifdef __APPLE__
-                        server_recv_stop_n_remote_send_start(EV_A_ server, remote);
-                        ev_timer_start(EV_A_ & remote->send_ctx->watcher);
-#else
-                        remote->send_ctx->connected = 1;
-                        ev_timer_stop(EV_A_ & remote->send_ctx->watcher);
-                        ev_timer_start(EV_A_ & remote->recv_ctx->watcher);
-                        ev_io_start(EV_A_ & remote->recv_ctx->io);
-                        return;
-#endif
-                    }
-#else
-                    // if TCP_FASTOPEN is not defined, fast_open will always be 0
-                    LOGE("can't come here");
-                    exit(1);
-#endif
                 }
             } else {
                 if (r > 0 && remote->buf->len == 0) {
@@ -767,7 +690,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     }
                     if (err != -1) {
                         remote = create_remote(server->listener, (struct sockaddr *)&storage);
-                        if (remote != NULL) remote->direct = 1;
                     }
                 }
             }
@@ -804,7 +726,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 return;
             }
 
-            if (!remote->direct) {
+            {
                 struct server_env_t *server_env = server->server_env;
 
                 // expelled from eden
@@ -868,57 +790,15 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 if (buf->len > 0) {
                     memcpy(remote->buf->buffer + abuf->len, buf->buffer, buf->len);
                 }
-            } else {
-                if (buf->len > 0) {
-                    memcpy(remote->buf->buffer, buf->buffer, buf->len);
-                    remote->buf->len = buf->len;
-                }
             }
 
             server->remote = remote;
             remote->server = server;
 
             buffer_free(abuf);
+            continue; // return;
         }
-    }
-}
-
-
-static void
-server_send_cb(EV_P_ ev_io *w, int revents)
-{
-    struct server_ctx_t *server_send_ctx = cork_container_of(w, struct server_ctx_t, io);
-    struct server_t *server = server_send_ctx->server;
-    struct remote_t *remote = server->remote;
-    struct buffer_t *buf = server->buf;
-    if (buf->len == 0) {
-        // close and free
-        close_and_free_remote(EV_A_ remote);
-        close_and_free_server(EV_A_ server);
-        return;
-    } else {
-        // has data to send
-        ssize_t s = send(server->fd, buf->buffer + buf->idx, buf->len, 0);
-        if (s == -1) {
-            if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                ERROR("server send callback for send");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
-            }
-            return;
-        } else if (s < (ssize_t)(buf->len)) {
-            // partly sent, move memory, wait for the next time to send
-            buf->len -= s;
-            buf->idx += s;
-            return;
-        } else {
-            // all sent out, wait for reading
-            buf->len = 0;
-            buf->idx = 0;
-            server_send_stop_n_remote_recv_start(EV_A_ server, remote);
-            return;
-        }
-    }
+    } // while (1)
 }
 
 #ifdef ANDROID
@@ -989,7 +869,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 
     server->buf->len = (size_t) r;
 
-    if (!remote->direct) {
+    {
 #ifdef ANDROID
         if (log_tx_rx) {
             rx += server->buf->len;
@@ -1070,7 +950,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             // no data, wait for send
             server->buf->idx = 0;
-            remote_recv_stop_n_server_send_start(EV_A_ server, remote);
+            ev_io_stop(EV_A_ & remote->recv_ctx->io);
         } else {
             ERROR("remote_recv_cb_send");
             close_and_free_remote(EV_A_ remote);
@@ -1079,7 +959,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     } else if (s < (int)(server->buf->len)) {
         server->buf->len -= s;
         server->buf->idx  = (size_t)s;
-        remote_recv_stop_n_server_send_start(EV_A_ server, remote);
+        ev_io_stop(EV_A_ & remote->recv_ctx->io);
     }
 }
 
@@ -1091,12 +971,12 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
     struct server_t *server = remote->server;
     struct buffer_t *buf = remote->buf;
 
-    if (!remote->send_ctx->connected) {
+    if (!remote->send_ctx_connected) {
         int err_no = 0;
         socklen_t len = sizeof(err_no);
         int r = getsockopt(remote->fd, SOL_SOCKET, SO_ERROR, (char *)&err_no, &len);
         if (r == 0 && err_no == 0) {
-            remote->send_ctx->connected = 1;
+            remote->send_ctx_connected = 1;
             ev_timer_stop(EV_A_ & remote->send_ctx->watcher);
             ev_timer_start(EV_A_ & remote->recv_ctx->watcher);
             ev_io_start(EV_A_ & remote->recv_ctx->io);
@@ -1155,8 +1035,6 @@ new_remote(int fd, int timeout)
     remote->recv_ctx            = ss_malloc(sizeof(struct remote_ctx_t));
     remote->send_ctx            = ss_malloc(sizeof(struct remote_ctx_t));
     buffer_alloc(remote->buf, BUF_SIZE);
-    remote->recv_ctx->connected = 0;
-    remote->send_ctx->connected = 0;
     remote->fd                  = fd;
     remote->recv_ctx->remote    = remote;
     remote->send_ctx->remote    = remote;
@@ -1206,18 +1084,13 @@ new_server(int fd, struct listen_ctx_t *profile)
 
     server->listener = profile;
     server->recv_ctx            = ss_malloc(sizeof(struct server_ctx_t));
-    server->send_ctx            = ss_malloc(sizeof(struct server_ctx_t));
     server->buf                 = ss_malloc(sizeof(struct buffer_t));
     buffer_alloc(server->buf, BUF_SIZE);
     server->stage               = STAGE_INIT;
-    server->recv_ctx->connected = 0;
-    server->send_ctx->connected = 0;
     server->fd                  = fd;
     server->recv_ctx->server    = server;
-    server->send_ctx->server    = server;
 
     ev_io_init(&server->recv_ctx->io, server_recv_cb, fd, EV_READ);
-    ev_io_init(&server->send_ctx->io, server_send_cb, fd, EV_WRITE);
 
     cork_dllist_add(&profile->connections_eden, &server->entries);
     cork_dllist_add(&all_connections, &server->entries_all);
@@ -1328,7 +1201,6 @@ free_server(struct server_t *server)
     }
 
     ss_free(server->recv_ctx);
-    ss_free(server->send_ctx);
     ss_free(server);
 
     // after free server, we need to check the profile
@@ -1339,7 +1211,6 @@ static void
 close_and_free_server(EV_P_ struct server_t *server)
 {
     if (server != NULL) {
-        ev_io_stop(EV_A_ & server->send_ctx->io);
         ev_io_stop(EV_A_ & server->recv_ctx->io);
         close(server->fd);
         free_server(server);
@@ -1381,9 +1252,8 @@ create_remote(struct listen_ctx_t *profile, struct sockaddr *addr)
 
     struct remote_t *remote = new_remote(remotefd, profile->timeout);
     int addr_len = get_sockaddr_len(addr);
-    remote->direct_addr.addr_len = addr_len;
-    memcpy(&(remote->direct_addr.addr), addr, addr_len);
-//    remote->direct_addr.remote_index = index;
+    remote->addr_len = addr_len;
+    memcpy(&(remote->addr), addr, addr_len);
 
     return remote;
 }
