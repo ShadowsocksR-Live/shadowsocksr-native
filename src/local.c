@@ -122,7 +122,7 @@ static void server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* b
 static void server_send_cb(uv_write_t* req, int status);
 static void remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0);
 static void remote_send_cb(uv_write_t* req, int status);
-
+static void remote_write_data(struct remote_t *remote);
 static void remote_timeout_cb(uv_timer_t *handle);
 
 static struct remote_t *create_remote(struct listen_ctx_t *profile, struct sockaddr *addr);
@@ -288,9 +288,7 @@ remote_connected_cb(uv_connect_t* req, int status)
 {
     struct remote_t *remote = cork_container_of(req, struct remote_t, connect);
     if (status == 0) {
-        uv_buf_t tmp = uv_buf_init((char *)remote->buf->buffer, (unsigned int)remote->buf->len);
-        uv_write(&remote->write_req, (uv_stream_t *)&remote->socket, &tmp, 1, remote_send_cb);
-        uv_timer_start(&remote->send_ctx->watcher, remote_timeout_cb, remote->send_ctx->watcher_interval * 1000, 0);
+        remote_write_data(remote);
     } else {
         close_and_free_remote(remote);
         close_and_free_server(remote->server);
@@ -425,9 +423,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                     return;
                 }
 
-                uv_buf_t tmp = uv_buf_init((char *)remote->buf->buffer, (unsigned int)remote->buf->len);
-                uv_write(&remote->write_req, (uv_stream_t *)&remote->socket, &tmp, 1, remote_send_cb);
-                uv_timer_start(&remote->send_ctx->watcher, remote_timeout_cb, remote->send_ctx->watcher_interval * 1000, 0);
+                remote_write_data(remote);
             }
 
             // all processed
@@ -900,7 +896,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         return;
     }
 
-    buffer_realloc(server->buf, server->buf->len + nread, server->buf->capacity);
+    buffer_realloc(server->buf, nread * 2, server->buf->capacity);
 
     memcpy(server->buf->buffer, buf0->base, (size_t)nread);
     server->buf->len = (size_t) nread;
@@ -931,9 +927,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 if (needsendback) {
                     if (obfs_plugin->client_encode) {
                         remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->buffer, 0, &remote->buf->capacity);
-                        uv_buf_t tmp = uv_buf_init(remote->buf->buffer, (unsigned int)remote->buf->len);
-                        uv_write(&remote->write_req, (uv_stream_t *)&remote->socket, &tmp, 1, remote_send_cb);
-                        uv_timer_start(&remote->send_ctx->watcher, remote_timeout_cb, remote->send_ctx->watcher_interval * 1000, 0);
+                        remote_write_data(remote);
                     }
                 }
             }
@@ -995,6 +989,14 @@ remote_send_cb(uv_write_t* req, int status)
         buf->idx = 0;
         remote_send_stop_n_server_recv_start(server, remote);
     }
+}
+
+static void
+remote_write_data(struct remote_t *remote)
+{
+    uv_buf_t tmp = uv_buf_init(remote->buf->buffer, (unsigned int)remote->buf->len);
+    uv_write(&remote->write_req, (uv_stream_t *)&remote->socket, &tmp, 1, remote_send_cb);
+    uv_timer_start(&remote->send_ctx->watcher, remote_timeout_cb, remote->send_ctx->watcher_interval * 1000, 0);
 }
 
 static struct remote_t *
