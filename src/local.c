@@ -492,9 +492,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
             char host[257], ip[INET6_ADDRSTRLEN], port[16];
 
-            struct buffer_t ss_addr_to_send;
-            struct buffer_t *abuf = &ss_addr_to_send;
-            buffer_alloc(abuf, BUF_SIZE);
+            struct buffer_t *abuf = buffer_alloc(BUF_SIZE);
 
             char addr_type = request->addr_type;
 
@@ -1031,10 +1029,9 @@ new_remote(int fd, int timeout)
 {
     struct remote_t *remote = ss_malloc(sizeof(struct remote_t));
 
-    remote->buf                 = ss_malloc(sizeof(struct buffer_t));
+    remote->buf                 = buffer_alloc(BUF_SIZE);
     remote->recv_ctx            = ss_malloc(sizeof(struct remote_ctx_t));
     remote->send_ctx            = ss_malloc(sizeof(struct remote_ctx_t));
-    buffer_alloc(remote->buf, BUF_SIZE);
     remote->fd                  = fd;
     remote->recv_ctx->remote    = remote;
     remote->send_ctx->remote    = remote;
@@ -1057,7 +1054,6 @@ free_remote(struct remote_t *remote)
     }
     if (remote->buf != NULL) {
         buffer_free(remote->buf);
-        ss_free(remote->buf);
     }
     ss_free(remote->recv_ctx);
     ss_free(remote->send_ctx);
@@ -1084,8 +1080,7 @@ new_server(int fd, struct listen_ctx_t *profile)
 
     server->listener = profile;
     server->recv_ctx            = ss_malloc(sizeof(struct server_ctx_t));
-    server->buf                 = ss_malloc(sizeof(struct buffer_t));
-    buffer_alloc(server->buf, BUF_SIZE);
+    server->buf                 = buffer_alloc(BUF_SIZE);
     server->stage               = STAGE_INIT;
     server->fd                  = fd;
     server->recv_ctx->server    = server;
@@ -1176,7 +1171,6 @@ free_server(struct server_t *server)
     }
     if (server->buf != NULL) {
         buffer_free(server->buf);
-        ss_free(server->buf);
     }
 
     if(server_env) {
