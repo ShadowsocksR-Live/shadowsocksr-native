@@ -548,7 +548,6 @@ close_and_free_query(EV_P_ struct query_ctx *ctx)
         }
         if (ctx->buf != NULL) {
             buffer_free(ctx->buf);
-            ss_free(ctx->buf);
         }
         ss_free(ctx);
     }
@@ -688,8 +687,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     socklen_t src_addr_len = sizeof(struct sockaddr_storage);
     memset(&src_addr, 0, src_addr_len);
 
-    struct buffer_t *buf = ss_malloc(sizeof(struct buffer_t));
-    buffer_alloc(buf, buf_size);
+    struct buffer_t *buf = buffer_alloc(buf_size);
 
     // recv
     r = recvfrom(remote_ctx->fd, buf->buffer, buf_size, 0, (struct sockaddr *)&src_addr, &src_addr_len);
@@ -873,7 +871,6 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 CLEAN_UP:
 
     buffer_free(buf);
-    ss_free(buf);
 }
 
 static void
@@ -883,8 +880,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
     struct sockaddr_storage src_addr;
     memset(&src_addr, 0, sizeof(struct sockaddr_storage));
 
-    struct buffer_t *buf = ss_malloc(sizeof(struct buffer_t));
-    buffer_alloc(buf, buf_size);
+    struct buffer_t *buf = buffer_alloc(buf_size);
 
     socklen_t src_addr_len = sizeof(struct sockaddr_storage);
     unsigned int offset    = 0;
@@ -1349,7 +1345,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
 CLEAN_UP:
     buffer_free(buf);
-    ss_free(buf);
 }
 
 void

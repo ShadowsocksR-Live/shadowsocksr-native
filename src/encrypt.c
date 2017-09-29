@@ -273,13 +273,14 @@ cipher_index_from_name(const char *name)
     return m;
 }
 
-int
-buffer_alloc(struct buffer_t *ptr, size_t capacity)
+struct buffer_t *
+buffer_alloc(size_t capacity)
 {
+    struct buffer_t *ptr = ss_malloc(sizeof(struct buffer_t));
     sodium_memzero(ptr, sizeof(struct buffer_t));
     ptr->buffer    = ss_malloc(capacity);
     ptr->capacity = capacity;
-    return (int) capacity;
+    return ptr;
 }
 
 int
@@ -308,6 +309,7 @@ buffer_free(struct buffer_t *ptr)
     if (ptr->buffer != NULL) {
         ss_free(ptr->buffer);
     }
+    ss_free(ptr);
 }
 
 static int
@@ -1093,7 +1095,6 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
         }
 
         if (!err) {
-            buffer_free(plain);
             cipher_context_release(env, &cipher_ctx);
             return -1;
         }
@@ -1236,7 +1237,6 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
         }
 
         if (!ret) {
-            buffer_free(cipher);
             cipher_context_release(env, &cipher_ctx);
             return -1;
         }
@@ -1292,7 +1292,6 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
 
             if (env->enc_method > RC4) {
                 if (cache_key_exist(env->iv_cache, (char *)iv, iv_len)) {
-                    buffer_free(cipher);
                     return -1;
                 } else {
                     cache_insert(env->iv_cache, (char *)iv, iv_len, NULL);
@@ -1327,7 +1326,6 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
         }
 
         if (!err) {
-            buffer_free(cipher);
             return -1;
         }
 
@@ -1357,34 +1355,30 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
 int
 ss_encrypt_buffer(struct cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t in_size, char *out, size_t *out_size)
 {
-    struct buffer_t cipher;
-    memset(&cipher, 0, sizeof(struct buffer_t));
-    buffer_alloc(&cipher, in_size + 32);
-    cipher.len = in_size;
-    memcpy(cipher.buffer, in, in_size);
-    int s = ss_encrypt(env, &cipher, ctx, in_size + 32);
+    struct buffer_t *cipher = buffer_alloc(in_size + 32);
+    cipher->len = in_size;
+    memcpy(cipher->buffer, in, in_size);
+    int s = ss_encrypt(env, cipher, ctx, in_size + 32);
     if (s == 0) {
-        *out_size = cipher.len;
-        memcpy(out, cipher.buffer, cipher.len);
+        *out_size = cipher->len;
+        memcpy(out, cipher->buffer, cipher->len);
     }
-    buffer_free(&cipher);
+    buffer_free(cipher);
     return s;
 }
 
 int
 ss_decrypt_buffer(struct cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t in_size, char *out, size_t *out_size)
 {
-    struct buffer_t cipher;
-    memset(&cipher, 0, sizeof(struct buffer_t));
-    buffer_alloc(&cipher, in_size + 32);
-    cipher.len = in_size;
-    memcpy(cipher.buffer, in, in_size);
-    int s = ss_decrypt(env, &cipher, ctx, in_size + 32);
+    struct buffer_t *cipher = buffer_alloc(in_size + 32);
+    cipher->len = in_size;
+    memcpy(cipher->buffer, in, in_size);
+    int s = ss_decrypt(env, cipher, ctx, in_size + 32);
     if (s == 0) {
-        *out_size = cipher.len;
-        memcpy(out, cipher.buffer, cipher.len);
+        *out_size = cipher->len;
+        memcpy(out, cipher->buffer, cipher->len);
     }
-    buffer_free(&cipher);
+    buffer_free(cipher);
     return s;
 }
 

@@ -505,9 +505,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
             char host[257], ip[INET6_ADDRSTRLEN], port[16];
 
-            struct buffer_t ss_addr_to_send;
-            struct buffer_t *abuf = &ss_addr_to_send;
-            buffer_alloc(abuf, BUF_SIZE);
+            struct buffer_t *abuf = buffer_alloc(BUF_SIZE);
 
             char addr_type = request->addr_type;
 
@@ -1006,10 +1004,9 @@ new_remote(uv_loop_t *loop, int timeout)
 
     uv_tcp_init(loop, &remote->socket);
 
-    remote->buf                 = ss_malloc(sizeof(struct buffer_t));
+    remote->buf                 = buffer_alloc(BUF_SIZE);
     remote->recv_ctx            = ss_malloc(sizeof(struct remote_ctx_t));
     remote->send_ctx            = ss_malloc(sizeof(struct remote_ctx_t));
-    buffer_alloc(remote->buf, BUF_SIZE);
     remote->recv_ctx->remote    = remote;
     remote->send_ctx->remote    = remote;
 
@@ -1036,7 +1033,6 @@ free_remote(struct remote_t *remote)
     }
     if (remote->buf != NULL) {
         buffer_free(remote->buf);
-        ss_free(remote->buf);
     }
     ss_free(remote->recv_ctx);
     ss_free(remote->send_ctx);
@@ -1069,9 +1065,8 @@ new_server(struct listen_ctx_t *profile)
     struct server_t *server = ss_malloc(sizeof(struct server_t));
 
     server->listener = profile;
-    server->buf                 = ss_malloc(sizeof(struct buffer_t));
-    buffer_alloc(server->buf, BUF_SIZE);
-    server->stage               = STAGE_INIT;
+    server->buf = buffer_alloc(BUF_SIZE);
+    server->stage = STAGE_INIT;
 
     cork_dllist_add(&profile->connections_eden, &server->entries);
     cork_dllist_add(&all_connections, &server->entries_all);
@@ -1162,7 +1157,6 @@ free_server(struct server_t *server)
     }
     if (server->buf != NULL) {
         buffer_free(server->buf);
-        ss_free(server->buf);
     }
 
     if(server_env) {
