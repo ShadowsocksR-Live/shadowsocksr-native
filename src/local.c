@@ -326,7 +326,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         return;
     }
 
-    buffer_realloc(buf, buf->len + nread, buf->capacity);
+    buffer_realloc(buf, (buf->len + nread) * 2);
 
     memcpy(buf->buffer + buf->len, buf0->base, (size_t)nread);
     buf->len += nread;
@@ -796,7 +796,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 // SSR end
 
                 size_t total_len = abuf->len + buf->len;
-                buffer_realloc(remote->buf, total_len, BUF_SIZE);
+                buffer_realloc(remote->buf, total_len * 2);
                 remote->buf->len = total_len;
 
                 memcpy(remote->buf->buffer, abuf->buffer, abuf->len);
@@ -896,7 +896,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         return;
     }
 
-    buffer_realloc(server->buf, nread * 2, server->buf->capacity);
+    buffer_realloc(server->buf, nread * 2);
 
     memcpy(server->buf->buffer, buf0->base, (size_t)nread);
     server->buf->len = (size_t) nread;

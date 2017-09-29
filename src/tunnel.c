@@ -503,12 +503,12 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
             abuf->len += 2;
 
             if (remote->buf->len > 0) {
-                buffer_realloc(remote->buf, remote->buf->len + abuf->len, BUF_SIZE);
+                buffer_realloc(remote->buf, max(remote->buf->len + abuf->len, BUF_SIZE));
                 memmove(remote->buf->buffer + abuf->len, remote->buf->buffer, remote->buf->len);
                 memcpy(remote->buf->buffer, abuf->buffer, abuf->len);
                 remote->buf->len += abuf->len;
             } else {
-                buffer_realloc(remote->buf, abuf->len, BUF_SIZE);
+                buffer_realloc(remote->buf, max(abuf->len, BUF_SIZE));
                 memcpy(remote->buf->buffer, abuf->buffer, abuf->len);
                 remote->buf->len = abuf->len;
             }
