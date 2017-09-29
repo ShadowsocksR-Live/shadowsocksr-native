@@ -1026,6 +1026,11 @@ new_remote(uv_loop_t *loop, int timeout)
 static void
 free_remote(struct remote_t *remote)
 {
+    if (remote->dying != 0) {
+        return;
+    }
+    remote->dying = -1;
+
     if (remote->server != NULL) {
         remote->server->remote = NULL;
     }
@@ -1141,6 +1146,11 @@ check_and_free_profile(struct listen_ctx_t *profile)
 static void
 free_server(struct server_t *server)
 {
+    if (server->dying != 0) {
+        return;
+    }
+    server->dying = -1;
+
     struct listen_ctx_t *profile = server->listener;
     struct server_env_t *server_env = server->server_env;
 

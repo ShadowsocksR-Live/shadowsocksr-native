@@ -67,8 +67,10 @@ struct remote_t {
     int send_ctx_connected;
     __weak_ptr struct server_t *server;
 
-        struct sockaddr_storage addr;
-        size_t addr_len;
+    struct sockaddr_storage addr;
+    size_t addr_len;
+
+    int dying;
 };
 
 struct server_t {
@@ -90,6 +92,8 @@ struct server_t {
     // SSR
     struct obfs_t *protocol;
     struct obfs_t *obfs;
+
+    int dying;
 };
 
 #endif // _LOCAL_H
