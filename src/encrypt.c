@@ -1358,7 +1358,7 @@ ss_encrypt_buffer(struct cipher_env_t *env, struct enc_ctx *ctx, char *in, size_
     struct buffer_t *cipher = buffer_alloc(in_size + 32);
     cipher->len = in_size;
     memcpy(cipher->buffer, in, in_size);
-    int s = ss_encrypt(env, &cipher, ctx, in_size + 32);
+    int s = ss_encrypt(env, cipher, ctx, in_size + 32);
     if (s == 0) {
         *out_size = cipher->len;
         memcpy(out, cipher->buffer, cipher->len);
