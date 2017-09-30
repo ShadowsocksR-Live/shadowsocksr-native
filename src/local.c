@@ -131,6 +131,8 @@ static void close_and_free_remote(struct remote_t *remote);
 static void free_server(struct server_t *server);
 static void close_and_free_server(struct server_t *server);
 
+static void close_and_free_tunnel(struct remote_t *remote, struct server_t *server);
+
 static struct remote_t *new_remote(uv_loop_t *loop, int timeout);
 static struct server_t *new_server(struct listen_ctx_t *profile);
 
@@ -274,8 +276,7 @@ free_connections(void)
     cork_dllist_foreach_void(&all_connections, curr, next) {
         struct server_t *server = cork_container_of(curr, struct server_t, entries_all);
         struct remote_t *remote = server->remote;
-        close_and_free_remote(remote);
-        close_and_free_server(server);
+        close_and_free_tunnel(remote, server);
     }
 }
 
@@ -286,8 +287,7 @@ remote_connected_cb(uv_connect_t* req, int status)
     if (status == 0) {
         remote_write_data(remote);
     } else {
-        close_and_free_remote(remote);
-        close_and_free_server(remote->server);
+        close_and_free_tunnel(remote, remote->server);
     }
 }
 
@@ -306,8 +306,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
     if (nread == UV_EOF) {
         // connection closed
-        close_and_free_remote(remote);
-        close_and_free_server(server);
+        close_and_free_tunnel(remote, server);
         return;
     } else if (nread == 0) {
         // http://docs.libuv.org/en/v1.x/stream.html
@@ -317,8 +316,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         if (verbose) {
             ERROR("server recieve callback for recv");
         }
-        close_and_free_remote(remote);
-        close_and_free_server(server);
+        close_and_free_tunnel(remote, server);
         return;
     }
 
@@ -350,7 +348,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         if (server->stage == STAGE_STREAM) {
             if (remote == NULL) {
                 LOGE("invalid remote");
-                close_and_free_server(server);
+                close_and_free_tunnel(remote, server);
                 return;
             }
 
@@ -368,8 +366,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                 if (err) {
                     LOGE("server invalid password or cipher");
-                    close_and_free_remote(remote);
-                    close_and_free_server(server);
+                    close_and_free_tunnel(remote, server);
                     return;
                 }
 
@@ -398,8 +395,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                     if (!not_protect) {
                         if (protect_socket(remote->fd) == -1) {
                             ERROR("protect_socket");
-                            close_and_free_remote(NULL, remote);
-                            close_and_free_server(server);
+                            close_and_free_tunnel(remote, server);
                             return;
                         }
                     }
@@ -471,8 +467,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 uv_buf_t tmp = uv_buf_init((char *)response, (unsigned int)size);
                 uv_write(&server->write_req, (uv_stream_t*)&server->socket, &tmp, 1, server_send_cb);
 
-                close_and_free_remote(remote);
-                close_and_free_server(server);
+                close_and_free_tunnel(remote, server);
                 return;
             }
 
@@ -489,8 +484,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                 if (s < (ssize_t) size) {
                     LOGE("failed to send fake reply");
-                    close_and_free_remote(remote);
-                    close_and_free_server(server);
+                    close_and_free_tunnel(remote, server);
                     return;
                 }
                 if (udp_assc) {
@@ -548,8 +542,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             } else {
                 buffer_free(abuf);
                 LOGE("unsupported addrtype: %d", addr_type);
-                close_and_free_remote(remote);
-                close_and_free_server(server);
+                close_and_free_tunnel(remote, server);
                 return;
             }
 
@@ -609,8 +602,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                     if (verbose) {
                         LOGI("outbound blocked %s", host);
                     }
-                    close_and_free_remote(remote);
-                    close_and_free_server(server);
+                    close_and_free_tunnel(remote, server);
                     return;
                 }
 
@@ -655,8 +647,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         if (verbose) {
                             LOGI("outbound blocked %s", ip);
                         }
-                        close_and_free_remote(remote);
-                        close_and_free_server(server);
+                        close_and_free_tunnel(remote, server);
                         return;
                     }
 
@@ -729,7 +720,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             if (remote == NULL) {
                 buffer_free(abuf);
                 LOGE("invalid remote addr");
-                close_and_free_server(server);
+                close_and_free_tunnel(remote, server);
                 return;
             }
 
@@ -820,8 +811,7 @@ server_send_cb(uv_write_t* req, int status)
         remote_recv_stop_n_server_send_start(server, remote);
     } else if (status < 0) {
         LOGE("server_send_cb: %s", uv_strerror(status));
-        close_and_free_remote(remote);
-        close_and_free_server(server);
+        close_and_free_tunnel(remote, server);
     } else if (status == 0) {
         server->buf->len = 0;
         server->buf->idx = 0;
@@ -856,8 +846,7 @@ remote_timeout_cb(uv_timer_t *handle)
         LOGI("TCP connection timeout");
     }
 
-    close_and_free_remote(remote);
-    close_and_free_server(server);
+    close_and_free_tunnel(remote, server);
 }
 
 static void
@@ -875,8 +864,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
     if (nread == UV_EOF) {
         // connection closed
-        close_and_free_remote(remote);
-        close_and_free_server(server);
+        close_and_free_tunnel(remote, server);
         return;
     } else if (nread == 0) {
         // (errno == EAGAIN || errno == EWOULDBLOCK): no data. continue to wait for recv
@@ -885,8 +873,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         if (verbose) {
             ERROR("remote_recv_cb_recv");
         }
-        close_and_free_remote(remote);
-        close_and_free_server(server);
+        close_and_free_tunnel(remote, server);
         return;
     }
 
@@ -914,8 +901,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 server->buf->len = obfs_plugin->client_decode(server->obfs, &server->buf->buffer, server->buf->len, &server->buf->capacity, &needsendback);
                 if ((int)server->buf->len < 0) {
                     LOGE("client_decode");
-                    close_and_free_remote(remote);
-                    close_and_free_server(server);
+                    close_and_free_tunnel(remote, server);
                     return;
                 }
                 if (needsendback) {
@@ -930,8 +916,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             int err = ss_decrypt(&server_env->cipher, server->buf, server->d_ctx, BUF_SIZE);
             if (err) {
                 LOGE("remote invalid password or cipher");
-                close_and_free_remote(remote);
-                close_and_free_server(server);
+                close_and_free_tunnel(remote, server);
                 return;
             }
         }
@@ -941,8 +926,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 server->buf->len = (size_t) protocol_plugin->client_post_decrypt(server->protocol, &server->buf->buffer, (int)server->buf->len, &server->buf->capacity);
                 if ((int)server->buf->len < 0) {
                     LOGE("client_post_decrypt");
-                    close_and_free_remote(remote);
-                    close_and_free_server(server);
+                    close_and_free_tunnel(remote, server);
                     return;
                 }
                 if ( server->buf->len == 0 ) {
@@ -967,8 +951,7 @@ remote_send_cb(uv_write_t* req, int status)
     uv_timer_stop(&remote->send_ctx->watcher);
 
     if (status != 0) {
-        close_and_free_remote(remote);
-        close_and_free_server(server);
+        close_and_free_tunnel(remote, server);
         return;
     }
 
@@ -1196,6 +1179,13 @@ close_and_free_server(struct server_t *server)
         uv_read_stop((uv_stream_t *)&server->socket);
         uv_close((uv_handle_t *)&server->socket, server_after_close_cb);
     }
+}
+
+static void
+close_and_free_tunnel(struct remote_t *remote, struct server_t *server)
+{
+    close_and_free_remote(remote);
+    close_and_free_server(server);
 }
 
 static struct remote_t *

@@ -89,8 +89,9 @@ if (WIN32)
     list ( APPEND SOURCE_FILES_SERVER win32.c )
 endif ()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
-
+if (!APPLE)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
+endif()
 
 add_executable(ss_local ${SOURCE_FILES_LOCAL})
 #add_executable(ss_tunnel ${SOURCE_FILES_TUNNEL})
