@@ -25,7 +25,11 @@
 #endif
 
 #include <stdlib.h>
+#if defined(__APPLE__)
+#include <malloc/malloc.h>
+#else
 #include <malloc.h>
+#endif
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
@@ -272,7 +276,7 @@ ss_memory_size(void *ptr)
     }
 #if defined(_WIN32) && defined(_MSC_VER)
     return _msize(ptr);
-#elif defined(_APPLE_)
+#elif defined(__APPLE__)
     return malloc_size(ptr);
 #else
     return malloc_usable_size(ptr); // Linux and __MINGW32__
