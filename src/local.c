@@ -169,16 +169,12 @@ setnonblocking(int fd)
 int uv_stream_fd(const uv_tcp_t *handle) {
 #if defined(_WIN32)
     return handle->socket;
-#else
-#if defined(__APPLE__)
+#elif defined(__APPLE__)
     int uv___stream_fd(const uv_stream_t* handle);
-#define uv__stream_fd(handle) (uv___stream_fd((const uv_stream_t*) (handle)))
-    return uv__stream_fd(handle);
+    return uv___stream_fd((const uv_stream_t *)handle);
 #else
-//#define uv__stream_fd(handle) ((handle)->io_watcher.fd)
     return (handle)->io_watcher.fd;
-#endif // defined(__APPLE__)
-#endif  // _WIN32
+#endif
 }
 
 void
