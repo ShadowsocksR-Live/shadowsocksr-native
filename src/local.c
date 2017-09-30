@@ -419,7 +419,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             } else {
                 if (nread > 0 && remote->buf->len == 0) {
                     remote->buf->idx = 0;
-                    uv_read_stop((uv_stream_t *)&server->socket); //ev_io_stop(EV_A_ & server->recv_ctx->io);
+                    uv_read_stop((uv_stream_t *)&server->socket);
                     return;
                 }
 
