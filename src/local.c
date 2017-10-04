@@ -121,8 +121,8 @@ static int nofile = 0;
 static void server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0);
 static void server_send_cb(uv_write_t* req, int status);
 static void remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0);
-static void remote_send_cb(uv_write_t* req, int status);
 static void remote_send_data(struct remote_t *remote);
+static void remote_connected_cb(uv_connect_t* req, int status);
 static void remote_timeout_cb(uv_timer_t *handle);
 
 static struct remote_t *create_remote(struct listen_ctx_t *profile, struct sockaddr *addr);
@@ -277,23 +277,6 @@ free_connections(void)
         struct server_t *server = cork_container_of(curr, struct server_t, entries_all);
         struct remote_t *remote = server->remote;
         close_and_free_tunnel(remote, server);
-    }
-}
-
-static void
-remote_connected_cb(uv_connect_t* req, int status)
-{
-    struct remote_t *remote = cork_container_of(req, struct remote_t, connect);
-    if (status == 0) {
-        remote->send_ctx_connected = 1;
-
-        uv_timer_start(&remote->recv_ctx->watcher, remote_timeout_cb, remote->recv_ctx->watcher_interval * 1000, 0);
-        uv_read_start((uv_stream_t *)&remote->socket, on_alloc, remote_recv_cb);
-
-        remote_send_data(remote);
-        remote_send_stop_n_server_recv_start(remote->server, remote);
-    } else {
-        close_and_free_tunnel(remote, remote->server);
     }
 }
 
@@ -836,8 +819,24 @@ stat_update_cb()
         }
     }
 }
-
 #endif
+
+static void
+remote_connected_cb(uv_connect_t* req, int status)
+{
+    struct remote_t *remote = cork_container_of(req, struct remote_t, connect);
+    if (status == 0) {
+        remote->send_ctx_connected = 1;
+
+        uv_timer_start(&remote->recv_ctx->watcher, remote_timeout_cb, remote->recv_ctx->watcher_interval * 1000, 0);
+        uv_read_start((uv_stream_t *)&remote->socket, on_alloc, remote_recv_cb);
+
+        remote_send_data(remote);
+        remote_send_stop_n_server_recv_start(remote->server, remote);
+    } else {
+        close_and_free_tunnel(remote, remote->server);
+    }
+}
 
 static void
 remote_timeout_cb(uv_timer_t *handle)
@@ -964,18 +963,6 @@ remote_send_cb(uv_write_t* req, int status)
 
     buf->idx = 0;
     buf->len = 0;
-
-    /*
-    if (!remote->send_ctx_connected) {
-        remote->send_ctx_connected = 1;
-        uv_timer_start(&remote->recv_ctx->watcher, remote_timeout_cb, remote->recv_ctx->watcher_interval * 1000, 0);
-        uv_read_start((uv_stream_t *)&remote->socket, on_alloc, remote_recv_cb);
-    } else {
-        buf->len = 0;
-        buf->idx = 0;
-        remote_send_stop_n_server_recv_start(server, remote);
-    }
-     */
 }
 
 static void
