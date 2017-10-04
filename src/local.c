@@ -286,6 +286,7 @@ remote_connected_cb(uv_connect_t* req, int status)
     struct remote_t *remote = cork_container_of(req, struct remote_t, connect);
     if (status == 0) {
         remote_write_data(remote);
+        remote_send_stop_n_server_recv_start(remote->server, remote);
     } else {
         close_and_free_tunnel(remote, remote->server);
     }
@@ -908,6 +909,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                     if (obfs_plugin->client_encode) {
                         remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->buffer, 0, &remote->buf->capacity);
                         remote_write_data(remote);
+                        remote_send_stop_n_server_recv_start(server, remote);
                     }
                 }
             }
