@@ -188,14 +188,6 @@ remote_send_stop_n_server_recv_start(struct server_t* server, struct remote_t* r
 }
 
 void
-remote_recv_stop_n_server_send_start(struct server_t* server, struct remote_t* remote)
-{
-    if (remote) {
-        uv_read_stop((uv_stream_t *) &remote->socket);
-    }
-}
-
-void
 server_recv_stop_n_remote_send_start(struct server_t* server, struct remote_t* remote)
 {
     if (server) {
@@ -794,11 +786,7 @@ server_send_cb(uv_write_t* req, int status)
     struct server_t *server = cork_container_of(req, struct server_t, write_req);
     struct remote_t *remote = server->remote;
 
-    if (status == UV_EAGAIN) {
-        // no data, wait for send
-        server->buf->idx = 0;
-        remote_recv_stop_n_server_send_start(server, remote);
-    } else if (status < 0) {
+    if (status < 0) {
         LOGE("server_send_cb: %s", uv_strerror(status));
         close_and_free_tunnel(remote, server);
     } else if (status == 0) {
