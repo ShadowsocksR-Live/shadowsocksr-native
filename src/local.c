@@ -268,7 +268,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         buf = remote->buf;
     }
 
-    rc = recv(server->fd, buf->buffer + buf->len, BUF_SIZE - buf->len, 0);
+    rc = recv(server->fd, buf->buffer, buf->capacity, 0);
 
     if (rc == 0) {
         // connection closed
@@ -288,7 +288,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         }
     }
 
-    buf->len += rc;
+    buf->len = rc;
 
     if (server->stage == STAGE_INIT) {
         char *host = server->listener->tunnel_addr.host;
