@@ -180,7 +180,7 @@ int uv_stream_fd(const uv_tcp_t *handle) {
 }
 
 void
-remote_send_stop_n_server_recv_start(struct server_t* server, struct remote_t* remote)
+server_read_start(struct server_t* server)
 {
     if (server) {
         uv_read_start((uv_stream_t *) &server->socket, on_alloc, server_recv_cb);
@@ -188,7 +188,7 @@ remote_send_stop_n_server_recv_start(struct server_t* server, struct remote_t* r
 }
 
 void
-server_recv_stop_n_remote_send_start(struct server_t* server, struct remote_t* remote)
+server_read_stop(struct server_t* server)
 {
     if (server) {
         uv_read_stop((uv_stream_t *) &server->socket);
@@ -338,12 +338,12 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 struct server_env_t *server_env = server->server_env;
                 // SSR beg
                 struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
-                struct buffer_t *buf = remote->buf;
+                struct buffer_t *r_buf = remote->buf;
 
                 if (protocol_plugin && protocol_plugin->client_pre_encrypt) {
-                    buf->len = (size_t) protocol_plugin->client_pre_encrypt(server->protocol, &buf->buffer, (int)buf->len, &buf->capacity);
+                    r_buf->len = (size_t) protocol_plugin->client_pre_encrypt(server->protocol, &r_buf->buffer, (int)r_buf->len, &r_buf->capacity);
                 }
-                int err = ss_encrypt(&server_env->cipher, buf, server->e_ctx, BUF_SIZE);
+                int err = ss_encrypt(&server_env->cipher, r_buf, server->e_ctx, BUF_SIZE);
 
                 if (err) {
                     LOGE("server invalid password or cipher");
@@ -353,7 +353,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                 struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
                 if (obfs_plugin && obfs_plugin->client_encode) {
-                    buf->len = obfs_plugin->client_encode(server->obfs, &buf->buffer, buf->len, &buf->capacity);
+                    r_buf->len = obfs_plugin->client_encode(server->obfs, &r_buf->buffer, r_buf->len, &r_buf->capacity);
                 }
                 // SSR end
 #ifdef ANDROID
@@ -387,12 +387,12 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                 struct sockaddr *addr = (struct sockaddr*)&(remote->addr);
                 uv_tcp_connect(&remote->connect, &remote->socket, addr, remote_connected_cb);
-                server_recv_stop_n_remote_send_start(server, remote);
+                server_read_stop(server);
                 return;
             } else {
                 if (nread > 0 && remote->buf->len == 0) {
                     remote->buf->idx = 0;
-                    uv_read_stop((uv_stream_t *)&server->socket);
+                    server_read_stop(server);
                     return;
                 }
 
@@ -820,7 +820,7 @@ remote_connected_cb(uv_connect_t* req, int status)
         uv_read_start((uv_stream_t *)&remote->socket, on_alloc, remote_recv_cb);
 
         remote_send_data(remote);
-        remote_send_stop_n_server_recv_start(remote->server, remote);
+        server_read_start(remote->server);
     } else {
         close_and_free_tunnel(remote, remote->server);
     }
@@ -901,7 +901,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                     if (obfs_plugin->client_encode) {
                         remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->buffer, 0, &remote->buf->capacity);
                         remote_send_data(remote);
-                        remote_send_stop_n_server_recv_start(server, remote);
+                        server_read_start(server);
                     }
                 }
             }
