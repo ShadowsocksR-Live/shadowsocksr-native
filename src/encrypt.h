@@ -180,7 +180,6 @@ struct cipher_wrapper {
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 
 struct buffer_t {
-    size_t idx;
     size_t len;
     size_t capacity;
     char   *buffer;

@@ -303,7 +303,6 @@ buffer_free(struct buffer_t *ptr)
     if (ptr == NULL) {
         return;
     }
-    ptr->idx      = 0;
     ptr->len      = 0;
     ptr->capacity = 0;
     if (ptr->buffer != NULL) {

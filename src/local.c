@@ -368,8 +368,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 }
 #endif
 
-                remote->buf->idx = 0;
-
                 {
                     // connecting, wait until connected
                     int r0 = connect(remote->fd, (struct sockaddr *)&(remote->addr), (socklen_t)remote->addr_len);
@@ -388,7 +386,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 }
             } else {
                 if (rc > 0 && remote->buf->len == 0) {
-                    remote->buf->idx = 0;
                     ev_io_stop(EV_A_ & server->recv_ctx->io);
                     return;
                 }
@@ -396,7 +393,6 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 assert(s == (ssize_t)(remote->buf->len));
 
                 {
-                    remote->buf->idx = 0;
                     remote->buf->len = 0;
                 }
             }
@@ -879,7 +875,6 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
                         assert(s == (ssize_t)(remote->buf->len));
 
                         remote->buf->len = 0;
-                        remote->buf->idx = 0;
                         remote_send_stop_n_server_recv_start(EV_A_ server, remote);
                     }
                 }
@@ -941,11 +936,10 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
 
     assert(buf->len != 0);
 
-    ssize_t s = send(remote->fd, buf->buffer + buf->idx, buf->len, 0);
+    ssize_t s = send(remote->fd, buf->buffer, buf->len, 0);
     assert(s == (ssize_t)buf->len);
 
     buf->len = 0;
-    buf->idx = 0;
     remote_send_stop_n_server_recv_start(EV_A_ server, remote);
 }
 
