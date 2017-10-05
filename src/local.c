@@ -927,7 +927,7 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
 
     assert(remote->send_ctx_connected == 0);
 
-    if (!remote->send_ctx_connected) {
+    {
         int err_no = 0;
         socklen_t len = sizeof(err_no);
         int r = getsockopt(remote->fd, SOL_SOCKET, SO_ERROR, (char *)&err_no, &len);
@@ -966,7 +966,7 @@ new_remote(int fd, int timeout)
 
     int timeMax = min(MAX_CONNECT_TIMEOUT, timeout);
     ev_timer_init(&remote->send_ctx->watcher, remote_timeout_cb, timeMax, 0);
-    ev_timer_init(&remote->recv_ctx->watcher, remote_timeout_cb, timeout, timeout);
+    ev_timer_init(&remote->recv_ctx->watcher, remote_timeout_cb, timeout, 0);
 
     return remote;
 }
