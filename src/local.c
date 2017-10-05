@@ -301,10 +301,10 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         return;
     }
 
-    buffer_realloc(buf, (buf->len + nread) * 2);
+    buffer_realloc(buf, (size_t)nread * 2);
 
-    memcpy(buf->buffer + buf->len, buf0->base, (size_t)nread);
-    buf->len += nread;
+    memcpy(buf->buffer, buf0->base, (size_t)nread);
+    buf->len = (size_t)nread;
 
     doDeallocBuffer((uv_buf_t *)buf0);
 
@@ -870,7 +870,9 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         return;
     }
 
-    buffer_realloc(server->buf, nread * 2);
+    size_t buff_size = nread * 2;
+
+    buffer_realloc(server->buf, buff_size);
 
     memcpy(server->buf->buffer, buf0->base, (size_t)nread);
     server->buf->len = (size_t) nread;
@@ -907,7 +909,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             }
         }
         if (server->buf->len > 0) {
-            int err = ss_decrypt(&server_env->cipher, server->buf, server->d_ctx, BUF_SIZE);
+            int err = ss_decrypt(&server_env->cipher, server->buf, server->d_ctx, buff_size);
             if (err) {
                 LOGE("remote invalid password or cipher");
                 close_and_free_tunnel(remote, server);
@@ -919,7 +921,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             if (protocol_plugin->client_post_decrypt) {
                 server->buf->len = (size_t) protocol_plugin->client_post_decrypt(server->protocol, &server->buf->buffer, (int)server->buf->len, &server->buf->capacity);
                 if ((int)server->buf->len < 0) {
-                    LOGE("client_post_decrypt");
+                    LOGE("client_post_decrypt and nread=%d", (int)nread);
                     close_and_free_tunnel(remote, server);
                     return;
                 }
