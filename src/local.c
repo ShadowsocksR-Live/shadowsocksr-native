@@ -802,8 +802,7 @@ stat_update_cb()
 static void
 remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
 {
-    struct remote_ctx_t *remote_ctx
-        = cork_container_of(watcher, struct remote_ctx_t, watcher);
+    struct remote_ctx_t *remote_ctx = cork_container_of(watcher, struct remote_ctx_t, watcher);
 
     struct remote_t *remote = remote_ctx->remote;
     struct server_t *server = remote->server;
@@ -879,9 +878,9 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
                         ssize_t s = send(remote->fd, remote->buf->buffer, remote->buf->len, 0);
                         assert(s == (ssize_t)(remote->buf->len));
 
-                            remote->buf->len = 0;
-                            remote->buf->idx = 0;
-                            remote_send_stop_n_server_recv_start(EV_A_ server, remote);
+                        remote->buf->len = 0;
+                        remote->buf->idx = 0;
+                        remote_send_stop_n_server_recv_start(EV_A_ server, remote);
                     }
                 }
             }
@@ -927,27 +926,27 @@ remote_send_cb(EV_P_ ev_io *w, int revents)
     struct buffer_t *buf = remote->buf;
 
     assert(remote->send_ctx_connected == 0);
-    
+
     if (!remote->send_ctx_connected) {
         int err_no = 0;
         socklen_t len = sizeof(err_no);
         int r = getsockopt(remote->fd, SOL_SOCKET, SO_ERROR, (char *)&err_no, &len);
         assert(r == 0 && err_no == 0);
 
-            remote->send_ctx_connected = 1;
-            ev_timer_stop(EV_A_ & remote->send_ctx->watcher);
-            ev_timer_start(EV_A_ & remote->recv_ctx->watcher);
-            ev_io_start(EV_A_ & remote->recv_ctx->io);
+        remote->send_ctx_connected = 1;
+        ev_timer_stop(EV_A_ & remote->send_ctx->watcher);
+        ev_timer_start(EV_A_ & remote->recv_ctx->watcher);
+        ev_io_start(EV_A_ & remote->recv_ctx->io);
     }
 
     assert(buf->len != 0);
 
-        ssize_t s = send(remote->fd, buf->buffer + buf->idx, buf->len, 0);
-        assert(s == (ssize_t)buf->len);
+    ssize_t s = send(remote->fd, buf->buffer + buf->idx, buf->len, 0);
+    assert(s == (ssize_t)buf->len);
 
-            buf->len = 0;
-            buf->idx = 0;
-            remote_send_stop_n_server_recv_start(EV_A_ server, remote);
+    buf->len = 0;
+    buf->idx = 0;
+    remote_send_stop_n_server_recv_start(EV_A_ server, remote);
 }
 
 static struct remote_t *
@@ -1183,12 +1182,12 @@ signal_cb(EV_P_ ev_signal *w, int revents)
 {
     if (revents & EV_SIGNAL) {
         switch (w->signum) {
-        case SIGINT:
-        case SIGTERM:
+            case SIGINT:
+            case SIGTERM:
 #ifndef __MINGW32__
-        case SIGUSR1:
+            case SIGUSR1:
 #endif
-            ev_unloop(EV_A_ EVUNLOOP_ALL);
+                ev_unloop(EV_A_ EVUNLOOP_ALL);
         }
     }
 }
@@ -1374,8 +1373,8 @@ main(int argc, char **argv)
                 break;
 #ifdef HAVE_SETRLIMIT
             case 'n':
-            nofile = atoi(optarg);
-            break;
+                nofile = atoi(optarg);
+                break;
 #endif
             case 'u':
                 mode = TCP_AND_UDP;
