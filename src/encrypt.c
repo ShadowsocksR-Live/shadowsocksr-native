@@ -1072,9 +1072,7 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
         size_t iv_len = env->enc_iv_len;
         int err       = 1;
 
-        static struct buffer_t tmp = { 0, 0, 0, NULL };
-        buffer_realloc(&tmp, max(iv_len + plain->len, capacity));
-        struct buffer_t *cipher = &tmp;
+        struct buffer_t *cipher = buffer_alloc(max(iv_len + plain->len, capacity));
         cipher->len = plain->len;
 
         uint8_t iv[MAX_IV_LENGTH];
@@ -1096,6 +1094,7 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
 
         if (!err) {
             cipher_context_release(env, &cipher_ctx);
+            buffer_free(cipher);
             return -1;
         }
 
@@ -1110,6 +1109,7 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
         memcpy(plain->buffer, cipher->buffer, iv_len + cipher->len);
         plain->len = iv_len + cipher->len;
 
+        buffer_free(cipher);
         return 0;
     } else {
         if (env->enc_method == TABLE) {
@@ -1129,16 +1129,13 @@ int
 ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx, size_t capacity)
 {
     if (ctx != NULL) {
-        static struct buffer_t tmp = { 0, 0, 0, NULL };
-
         int err       = 1;
         size_t iv_len = 0;
         if (!ctx->init) {
             iv_len = env->enc_iv_len;
         }
 
-        buffer_realloc(&tmp, max(iv_len + plain->len, capacity));
-        struct buffer_t *cipher = &tmp;
+        struct buffer_t *cipher = buffer_alloc(max(iv_len + plain->len, capacity));
         cipher->len = plain->len;
 
         if (!ctx->init) {
@@ -1174,6 +1171,7 @@ ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx
                                       &cipher->len, (const uint8_t *)plain->buffer,
                                       plain->len);
             if (!err) {
+                buffer_free(cipher);
                 return -1;
             }
         }
@@ -1187,6 +1185,7 @@ ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx
         memcpy(plain->buffer, cipher->buffer, iv_len + cipher->len);
         plain->len = iv_len + cipher->len;
 
+        buffer_free(cipher);
         return 0;
     } else {
         if (env->enc_method == TABLE) {
@@ -1216,9 +1215,7 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
         struct cipher_ctx_t cipher_ctx;
         cipher_context_init(env, &cipher_ctx, 0);
 
-        static struct buffer_t tmp = { 0, 0, 0, NULL };
-        buffer_realloc(&tmp, max(cipher->len, capacity));
-        struct buffer_t *plain = &tmp;
+        struct buffer_t *plain = buffer_alloc(max(cipher->len, capacity));
         plain->len = cipher->len - iv_len;
 
         uint8_t iv[MAX_IV_LENGTH];
@@ -1238,6 +1235,7 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
 
         if (!ret) {
             cipher_context_release(env, &cipher_ctx);
+            buffer_free(plain);
             return -1;
         }
 
@@ -1252,6 +1250,7 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
         memcpy(cipher->buffer, plain->buffer, plain->len);
         cipher->len = plain->len;
 
+        buffer_free(plain);
         return 0;
     } else {
         if (method == TABLE) {
@@ -1271,13 +1270,10 @@ int
 ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ctx, size_t capacity)
 {
     if (ctx != NULL) {
-        static struct buffer_t tmp = { 0, 0, 0, NULL };
-
         size_t iv_len = 0;
         int err       = 1;
 
-        buffer_realloc(&tmp, max(cipher->len, capacity));
-        struct buffer_t *plain = &tmp;
+        struct buffer_t *plain = buffer_alloc(max(cipher->len, capacity));
         plain->len = cipher->len;
 
         if (!ctx->init) {
@@ -1326,6 +1322,7 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
         }
 
         if (!err) {
+            buffer_free(plain);
             return -1;
         }
 
@@ -1338,6 +1335,7 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
         memcpy(cipher->buffer, plain->buffer, plain->len);
         cipher->len = plain->len;
 
+        buffer_free(plain);
         return 0;
     } else {
         if(env->enc_method == TABLE) {
