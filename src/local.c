@@ -123,6 +123,8 @@ static void close_and_free_remote(EV_P_ struct remote_t *remote);
 static void free_server(struct server_t *server);
 static void close_and_free_server(EV_P_ struct server_t *server);
 
+static void close_and_free_tunnel(EV_P_ struct remote_t *remote, struct server_t *server);
+
 static struct remote_t *new_remote(int fd, int timeout);
 static struct server_t *new_server(int fd, struct listen_ctx_t *profile);
 
@@ -247,8 +249,7 @@ free_connections(EV_P)
     cork_dllist_foreach_void(&all_connections, curr, next) {
         struct server_t *server = cork_container_of(curr, struct server_t, entries_all);
         struct remote_t *remote = server->remote;
-        close_and_free_remote(EV_A_ remote);
-        close_and_free_server(EV_A_ server);
+        close_and_free_tunnel(EV_A_ remote, server);
     }
 }
 
@@ -271,8 +272,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
     if (rc == 0) {
         // connection closed
-        close_and_free_remote(EV_A_ remote);
-        close_and_free_server(EV_A_ server);
+        close_and_free_tunnel(EV_A_ remote, server);
         return;
     } else if (rc == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -283,8 +283,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             if (verbose) {
                 ERROR("server recieve callback for recv");
             }
-            close_and_free_remote(EV_A_ remote);
-            close_and_free_server(EV_A_ server);
+            close_and_free_tunnel(EV_A_ remote, server);
             return;
         }
     }
@@ -312,7 +311,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
         if (server->stage == STAGE_STREAM) {
             if (remote == NULL) {
                 LOGE("invalid remote");
-                close_and_free_server(EV_A_ server);
+                close_and_free_tunnel(EV_A_ remote, server);
                 return;
             }
 
@@ -330,8 +329,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 if (err) {
                     LOGE("server invalid password or cipher");
-                    close_and_free_remote(EV_A_ remote);
-                    close_and_free_server(EV_A_ server);
+                    close_and_free_tunnel(EV_A_ remote, server);
                     return;
                 }
 
@@ -360,8 +358,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     if (!not_protect) {
                         if (protect_socket(remote->fd) == -1) {
                             ERROR("protect_socket");
-                            close_and_free_remote(EV_A_ remote);
-                            close_and_free_server(EV_A_ server);
+                            close_and_free_tunnel(EV_A_ remote, server);
                             return;
                         }
                     }
@@ -374,8 +371,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
                     if (r0 == -1 && errno != CONNECT_IN_PROGRESS) {
                         ERROR("connect");
-                        close_and_free_remote(EV_A_ remote);
-                        close_and_free_server(EV_A_ server);
+                        close_and_free_tunnel(EV_A_ remote, server);
                         return;
                     }
 
@@ -444,8 +440,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 send(server->fd, response, size, 0);
 
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
+                close_and_free_tunnel(EV_A_ remote, server);
                 return;
             }
 
@@ -461,8 +456,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
 
                 if (s < (ssize_t) size) {
                     LOGE("failed to send fake reply");
-                    close_and_free_remote(EV_A_ remote);
-                    close_and_free_server(EV_A_ server);
+                    close_and_free_tunnel(EV_A_ remote, server);
                     return;
                 }
                 if (udp_assc) {
@@ -520,8 +514,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             } else {
                 buffer_free(abuf);
                 LOGE("unsupported addrtype: %d", addr_type);
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
+                close_and_free_tunnel(EV_A_ remote, server);
                 return;
             }
 
@@ -581,8 +574,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     if (verbose) {
                         LOGI("outbound blocked %s", host);
                     }
-                    close_and_free_remote(EV_A_ remote);
-                    close_and_free_server(EV_A_ server);
+                    close_and_free_tunnel(EV_A_ remote, server);
                     return;
                 }
 
@@ -627,8 +619,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                         if (verbose) {
                             LOGI("outbound blocked %s", ip);
                         }
-                        close_and_free_remote(EV_A_ remote);
-                        close_and_free_server(EV_A_ server);
+                        close_and_free_tunnel(EV_A_ remote, server);
                         return;
                     }
 
@@ -701,7 +692,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             if (remote == NULL) {
                 buffer_free(abuf);
                 LOGE("invalid remote addr");
-                close_and_free_server(EV_A_ server);
+                close_and_free_tunnel(EV_A_ remote, server);
                 return;
             }
 
@@ -807,8 +798,7 @@ remote_timeout_cb(EV_P_ ev_timer *watcher, int revents)
         LOGI("TCP connection timeout");
     }
 
-    close_and_free_remote(EV_A_ remote);
-    close_and_free_server(EV_A_ server);
+    close_and_free_tunnel(EV_A_ remote, server);
 }
 
 static void
@@ -829,8 +819,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
 
     if (r == 0) {
         // connection closed
-        close_and_free_remote(EV_A_ remote);
-        close_and_free_server(EV_A_ server);
+        close_and_free_tunnel(EV_A_ remote, server);
         return;
     } else if (r == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -839,8 +828,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
             return;
         } else {
             ERROR("remote_recv_cb_recv");
-            close_and_free_remote(EV_A_ remote);
-            close_and_free_server(EV_A_ server);
+            close_and_free_tunnel(EV_A_ remote, server);
             return;
         }
     }
@@ -864,8 +852,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
                 server->buf->len = obfs_plugin->client_decode(server->obfs, &server->buf->buffer, server->buf->len, &server->buf->capacity, &needsendback);
                 if ((int)server->buf->len < 0) {
                     LOGE("client_decode");
-                    close_and_free_remote(EV_A_ remote);
-                    close_and_free_server(EV_A_ server);
+                    close_and_free_tunnel(EV_A_ remote, server);
                     return;
                 }
                 if (needsendback) {
@@ -884,8 +871,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
             int err = ss_decrypt(&server_env->cipher, server->buf, server->d_ctx, BUF_SIZE);
             if (err) {
                 LOGE("remote invalid password or cipher");
-                close_and_free_remote(EV_A_ remote);
-                close_and_free_server(EV_A_ server);
+                close_and_free_tunnel(EV_A_ remote, server);
                 return;
             }
         }
@@ -895,8 +881,7 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
                 server->buf->len = protocol_plugin->client_post_decrypt(server->protocol, &server->buf->buffer, server->buf->len, &server->buf->capacity);
                 if ((int)server->buf->len < 0) {
                     LOGE("client_post_decrypt");
-                    close_and_free_remote(EV_A_ remote);
-                    close_and_free_server(EV_A_ server);
+                    close_and_free_tunnel(EV_A_ remote, server);
                     return;
                 }
                 if ( server->buf->len == 0 ) {
@@ -1128,6 +1113,13 @@ close_and_free_server(EV_P_ struct server_t *server)
         close(server->fd);
         free_server(server);
     }
+}
+
+static void
+close_and_free_tunnel(EV_P_ struct remote_t *remote, struct server_t *server)
+{
+    close_and_free_remote(EV_A_ remote);
+    close_and_free_server(EV_A_ server);
 }
 
 static struct remote_t *
