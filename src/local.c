@@ -870,16 +870,19 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         return;
     }
 
-    size_t buff_size = nread * 2;
+    static const size_t FIXED_BUFF_SIZE = BUF_SIZE*8;
 
-    buffer_realloc(server->buf, buff_size);
+    buffer_realloc(server->buf, FIXED_BUFF_SIZE);
 
-    memcpy(server->buf->buffer, buf0->base, (size_t)nread);
-    server->buf->len = (size_t) nread;
+    char *guard = buf0->base + nread;
 
-    doDeallocBuffer((uv_buf_t *)buf0);
+    for (char *iter = buf0->base; iter < guard; iter += FIXED_BUFF_SIZE) {
+        size_t remain = guard - iter;
+        size_t len = remain > FIXED_BUFF_SIZE ? FIXED_BUFF_SIZE : remain;
 
-    {
+        memcpy(server->buf->buffer, iter, (size_t)len);
+        server->buf->len = len;
+
 #ifdef ANDROID
         if (log_tx_rx) {
             rx += server->buf->len;
@@ -891,10 +894,10 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             if (obfs_plugin->client_decode) {
                 int needsendback;
                 server->buf->len = obfs_plugin->client_decode(server->obfs, &server->buf->buffer, server->buf->len, &server->buf->capacity, &needsendback);
-                if ((int)server->buf->len < 0) {
-                    LOGE("client_decode");
+                if ((ssize_t)server->buf->len < 0) {
+                    LOGE("client_decode nread = %d", (int)nread);
                     close_and_free_tunnel(remote, server);
-                    return;
+                    break; // return;
                 }
                 if (needsendback) {
                     if (obfs_plugin->client_encode) {
@@ -906,11 +909,11 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             }
         }
         if (server->buf->len > 0) {
-            int err = ss_decrypt(&server_env->cipher, server->buf, server->d_ctx, buff_size);
+            int err = ss_decrypt(&server_env->cipher, server->buf, server->d_ctx, FIXED_BUFF_SIZE);
             if (err) {
                 LOGE("remote invalid password or cipher");
                 close_and_free_tunnel(remote, server);
-                return;
+                break; // return;
             }
         }
         if (server_env->protocol_plugin) {
@@ -920,10 +923,10 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 if ((int)server->buf->len < 0) {
                     LOGE("client_post_decrypt and nread=%d", (int)nread);
                     close_and_free_tunnel(remote, server);
-                    return;
+                    break; // return;
                 }
                 if ( server->buf->len == 0 ) {
-                    return;
+                    break; // return;
                 }
             }
         }
@@ -931,7 +934,9 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
         uv_buf_t buf = uv_buf_init(server->buf->buffer, (unsigned int)server->buf->len);
         uv_write(&server->write_req, (uv_stream_t*)&server->socket, &buf, 1, server_send_cb);
-    }
+    } // for loop
+
+    doDeallocBuffer((uv_buf_t *)buf0);
 }
 
 static void
