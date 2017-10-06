@@ -885,9 +885,6 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             rx += server->buf->len;
         }
 #endif
-        if ( nread == 0 ) {
-            return;
-        }
         // SSR beg
         if (server_env->obfs_plugin) {
             struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
@@ -931,10 +928,10 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             }
         }
         // SSR end
-    }
 
-    uv_buf_t buf = uv_buf_init(server->buf->buffer, (unsigned int)server->buf->len);
-    uv_write(&server->write_req, (uv_stream_t*)&server->socket, &buf, 1, server_send_cb);
+        uv_buf_t buf = uv_buf_init(server->buf->buffer, (unsigned int)server->buf->len);
+        uv_write(&server->write_req, (uv_stream_t*)&server->socket, &buf, 1, server_send_cb);
+    }
 }
 
 static void
