@@ -383,15 +383,12 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 }
 #endif
 
-                remote->buf->idx = 0;
-
                 struct sockaddr *addr = (struct sockaddr*)&(remote->addr);
                 uv_tcp_connect(&remote->connect, &remote->socket, addr, remote_connected_cb);
                 server_read_stop(server);
                 return;
             } else {
                 if (nread > 0 && remote->buf->len == 0) {
-                    remote->buf->idx = 0;
                     server_read_stop(server);
                     return;
                 }
@@ -791,7 +788,6 @@ server_send_cb(uv_write_t* req, int status)
         close_and_free_tunnel(remote, server);
     } else if (status == 0) {
         server->buf->len = 0;
-        server->buf->idx = 0;
     }
 }
 
@@ -953,7 +949,6 @@ remote_send_cb(uv_write_t* req, int status)
         return;
     }
 
-    buf->idx = 0;
     buf->len = 0;
 }
 
