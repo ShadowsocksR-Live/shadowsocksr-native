@@ -6,7 +6,7 @@
 #include "obfs.h"
 #include "tls1.2_ticket.h"
 #include "obfsutil.h"
-#include "encrypt.h"
+#include "../encrypt.h"
 
 typedef struct tls12_ticket_auth_global_data {
     uint8_t local_client_id[32];
@@ -28,13 +28,13 @@ void tls12_ticket_auth_local_data_init(tls12_ticket_auth_local_data* local) {
     local->recv_buffer_size = 0;
 }
 
-void * tls12_ticket_auth_init_data() {
+void * tls12_ticket_auth_init_data(void) {
     tls12_ticket_auth_global_data *global = (tls12_ticket_auth_global_data*)malloc(sizeof(tls12_ticket_auth_global_data));
     rand_bytes(global->local_client_id, 32);
     return global;
 }
 
-struct obfs_t * tls12_ticket_auth_new_obfs() {
+struct obfs_t * tls12_ticket_auth_new_obfs(void) {
     struct obfs_t * obfs = new_obfs();
     obfs->l_data = malloc(sizeof(tls12_ticket_auth_local_data));
     tls12_ticket_auth_local_data_init((tls12_ticket_auth_local_data*)obfs->l_data);

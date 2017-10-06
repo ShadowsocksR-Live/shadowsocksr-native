@@ -7,10 +7,10 @@
 #ifndef _OBFS_AUTH_H
 #define _OBFS_AUTH_H
 
-void * auth_simple_init_data();
-struct obfs_t * auth_simple_new_obfs();
-struct obfs_t * auth_aes128_md5_new_obfs();
-struct obfs_t * auth_aes128_sha1_new_obfs();
+void * auth_simple_init_data(void);
+struct obfs_t * auth_simple_new_obfs(void);
+struct obfs_t * auth_aes128_md5_new_obfs(void);
+struct obfs_t * auth_aes128_sha1_new_obfs(void);
 void auth_simple_dispose(struct obfs_t *obfs);
 
 //int auth_simple_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity);

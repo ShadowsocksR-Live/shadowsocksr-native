@@ -4,7 +4,7 @@
 #include "obfsutil.h"
 #include "crc32.h"
 #include "base64.h"
-#include "encrypt.h"
+#include "../encrypt.h"
 #include "obfs.h"
 
 static int auth_simple_pack_unit_size = 2000;
@@ -50,7 +50,7 @@ auth_simple_local_data_init(auth_simple_local_data* local)
 }
 
 void *
-auth_simple_init_data()
+auth_simple_init_data(void)
 {
     auth_simple_global_data *global = (auth_simple_global_data*)malloc(sizeof(auth_simple_global_data));
     rand_bytes(global->local_client_id, 8);
@@ -60,7 +60,7 @@ auth_simple_init_data()
 }
 
 struct obfs_t *
-auth_simple_new_obfs()
+auth_simple_new_obfs(void)
 {
     struct obfs_t * obfs = new_obfs();
     obfs->l_data = malloc(sizeof(auth_simple_local_data));
@@ -69,7 +69,7 @@ auth_simple_new_obfs()
 }
 
 struct obfs_t *
-auth_aes128_md5_new_obfs()
+auth_aes128_md5_new_obfs(void)
 {
     struct obfs_t * obfs = new_obfs();
     obfs->l_data = malloc(sizeof(auth_simple_local_data));
@@ -82,7 +82,7 @@ auth_aes128_md5_new_obfs()
 }
 
 struct obfs_t *
-auth_aes128_sha1_new_obfs()
+auth_aes128_sha1_new_obfs(void)
 {
     struct obfs_t * obfs = new_obfs();
     obfs->l_data = malloc(sizeof(auth_simple_local_data));
@@ -716,9 +716,10 @@ auth_aes128_sha1_pack_data(char *data, int datalength, int fulldatalength, char 
     memintcopy_lt(key + key_len - 4, local->pack_id);
 
     {
-        uint8_t rnd_data[rand_len];
+        uint8_t * rnd_data = (uint8_t *) calloc(rand_len, sizeof(uint8_t));
         rand_bytes(rnd_data, (int)rand_len);
         memcpy(outdata + 4, rnd_data, rand_len);
+        free(rnd_data);
     }
 
     {
@@ -763,9 +764,10 @@ auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_i
     memcpy(key + server->iv_len, server->key, server->key_len);
 
     {
-        uint8_t rnd_data[rand_len];
+        uint8_t *rnd_data = (uint8_t *) calloc(rand_len, sizeof(uint8_t));
         rand_bytes(rnd_data, (int)rand_len);
         memcpy(outdata + data_offset - rand_len, rnd_data, rand_len);
+        free(rnd_data);
     }
 
     ++global->connection_id;
@@ -789,7 +791,7 @@ auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_i
                 char *param = server->param;
                 char *delim = strchr(param, ':');
                 if(delim != NULL) {
-                    char uid_str[16] = {};
+                    char uid_str[16] = { 0 };
                     strncpy(uid_str, param, delim - param);
                     char key_str[128];
                     strcpy(key_str, delim + 1);
@@ -814,9 +816,10 @@ auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_i
         }
 
         char encrypt_key_base64[256] = {0};
-        unsigned char encrypt_key[local->user_key_len];
+        unsigned char *encrypt_key = (unsigned char *) calloc(local->user_key_len, sizeof(unsigned char));
         memcpy(encrypt_key, local->user_key, local->user_key_len);
         base64_encode(encrypt_key, (unsigned int)local->user_key_len, encrypt_key_base64);
+        free(encrypt_key);
 
         int base64_len;
         base64_len = (local->user_key_len + 2) / 3 * 4;

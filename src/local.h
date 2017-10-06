@@ -52,18 +52,16 @@ struct remote_ctx_t {
     uv_timer_t watcher;
     uint64_t watcher_interval;
 
-    __weak_ptr struct remote_t *remote;
+    struct remote_t *remote; // __weak_ptr
 };
 
 struct remote_t {
     uv_tcp_t socket;
-    uv_connect_t connect;
-    uv_write_t write_req;
     struct buffer_t *buf;
     struct remote_ctx_t *recv_ctx;
     struct remote_ctx_t *send_ctx;
     int send_ctx_connected;
-    __weak_ptr struct server_t *server;
+    struct server_t *server;  // __weak_ptr
 
     struct sockaddr_storage addr;
     size_t addr_len;
@@ -73,11 +71,10 @@ struct remote_t {
 
 struct server_t {
     uv_tcp_t socket;
-    uv_write_t write_req;
     enum net_stage stage;
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;
-    __weak_ptr struct listen_ctx_t *listener;
+    struct listen_ctx_t *listener;  // __weak_ptr
     struct remote_t *remote;
 
     struct buffer_t *buf;
@@ -85,7 +82,7 @@ struct server_t {
     struct cork_dllist_item entries;
     struct cork_dllist_item entries_all; // for all_connections
 
-    __weak_ptr struct server_env_t *server_env;
+    struct server_env_t *server_env;  // __weak_ptr
 
     // SSR
     struct obfs_t *protocol;

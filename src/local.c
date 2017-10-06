@@ -120,6 +120,7 @@ static int nofile = 0;
 
 static void server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0);
 static void server_send_cb(uv_write_t* req, int status);
+static void server_send_data(struct server_t *server, char *data, unsigned int size);
 static void remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0);
 static void remote_send_data(struct remote_t *remote);
 static void remote_connected_cb(uv_connect_t* req, int status);
@@ -338,12 +339,11 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 struct server_env_t *server_env = server->server_env;
                 // SSR beg
                 struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
-                struct buffer_t *r_buf = remote->buf;
 
                 if (protocol_plugin && protocol_plugin->client_pre_encrypt) {
-                    r_buf->len = (size_t) protocol_plugin->client_pre_encrypt(server->protocol, &r_buf->buffer, (int)r_buf->len, &r_buf->capacity);
+                    remote->buf->len = (size_t) protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->buffer, (int)remote->buf->len, &remote->buf->capacity);
                 }
-                int err = ss_encrypt(&server_env->cipher, r_buf, server->e_ctx, BUF_SIZE);
+                int err = ss_encrypt(&server_env->cipher, remote->buf, server->e_ctx, BUF_SIZE);
 
                 if (err) {
                     LOGE("server invalid password or cipher");
@@ -353,7 +353,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                 struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
                 if (obfs_plugin && obfs_plugin->client_encode) {
-                    r_buf->len = obfs_plugin->client_encode(server->obfs, &r_buf->buffer, r_buf->len, &r_buf->capacity);
+                    remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->buffer, remote->buf->len, &remote->buf->capacity);
                 }
                 // SSR end
 #ifdef ANDROID
@@ -383,8 +383,11 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 }
 #endif
 
+                uv_connect_t *connect = (uv_connect_t *)calloc(1, sizeof(uv_connect_t));
+                connect->data = remote;
+
                 struct sockaddr *addr = (struct sockaddr*)&(remote->addr);
-                uv_tcp_connect(&remote->connect, &remote->socket, addr, remote_connected_cb);
+                uv_tcp_connect(connect, &remote->socket, addr, remote_connected_cb);
                 server_read_stop(server);
                 return;
             } else {
@@ -405,8 +408,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             struct method_select_response *response =
                     build_socks5_method_select_response(SOCKS5_METHOD_NOAUTH, buffer, sizeof(buffer));
 
-            uv_buf_t tmp = uv_buf_init((char *)response, sizeof(*response));
-            uv_write(&server->write_req, (uv_stream_t*)&server->socket, &tmp, 1, server_send_cb);
+            server_send_data(server, (char *)response, sizeof(*response));
 
             server->stage = STAGE_HANDSHAKE;
 
@@ -442,8 +444,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         build_socks5_response(SOCKS5_REPLY_CMDUNSUPP, SOCKS5_ADDRTYPE_IPV4,
                                               &sock_addr, buffer, sizeof(buffer), &size);
 
-                uv_buf_t tmp = uv_buf_init((char *)response, (unsigned int)size);
-                uv_write(&server->write_req, (uv_stream_t*)&server->socket, &tmp, 1, server_send_cb);
+                server_send_data(server, (char *)response, (unsigned int)size);
 
                 close_and_free_tunnel(remote, server);
                 return;
@@ -780,8 +781,11 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 static void
 server_send_cb(uv_write_t* req, int status)
 {
-    struct server_t *server = cork_container_of(req, struct server_t, write_req);
+    struct server_t *server = (struct server_t *) req->data;
+    assert(server);
     struct remote_t *remote = server->remote;
+
+    free(req);
 
     if (status < 0) {
         LOGE("server_send_cb: %s", uv_strerror(status));
@@ -808,7 +812,9 @@ stat_update_cb()
 static void
 remote_connected_cb(uv_connect_t* req, int status)
 {
-    struct remote_t *remote = cork_container_of(req, struct remote_t, connect);
+    struct remote_t *remote = (struct remote_t *)req->data;
+    assert(remote);
+    free(req);
     if (status == 0) {
         remote->send_ctx_connected = 1;
 
@@ -928,8 +934,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         }
         // SSR end
 
-        uv_buf_t buf = uv_buf_init(server->buf->buffer, (unsigned int)server->buf->len);
-        uv_write(&server->write_req, (uv_stream_t*)&server->socket, &buf, 1, server_send_cb);
+        server_send_data(server, server->buf->buffer, (unsigned int)server->buf->len);
     } // for loop
 
     doDeallocBuffer((uv_buf_t *)buf0);
@@ -938,9 +943,12 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 static void
 remote_send_cb(uv_write_t* req, int status)
 {
-    struct remote_t *remote = cork_container_of(req, struct remote_t, write_req);
+    struct remote_t *remote = (struct remote_t *)req->data;
+    assert(remote);
     struct server_t *server = remote->server;
     struct buffer_t *buf = remote->buf;
+
+    free(req);
 
     uv_timer_stop(&remote->send_ctx->watcher);
 
@@ -956,9 +964,25 @@ static void
 remote_send_data(struct remote_t *remote)
 {
     uv_buf_t tmp = uv_buf_init(remote->buf->buffer, (unsigned int)remote->buf->len);
-    uv_write(&remote->write_req, (uv_stream_t *)&remote->socket, &tmp, 1, remote_send_cb);
+
+    uv_write_t *write_req = (uv_write_t *)calloc(1, sizeof(uv_write_t));
+    write_req->data = remote;
+
+    uv_write(write_req, (uv_stream_t *)&remote->socket, &tmp, 1, remote_send_cb);
     uv_timer_start(&remote->send_ctx->watcher, remote_timeout_cb, remote->send_ctx->watcher_interval * 1000, 0);
 }
+
+static void 
+server_send_data(struct server_t *server, char *data, unsigned int size)
+{
+    uv_buf_t buf = uv_buf_init(data, size);
+
+    uv_write_t *write_req = (uv_write_t *)calloc(1, sizeof(uv_write_t));
+    write_req->data = server;
+
+    uv_write(write_req, (uv_stream_t*)&server->socket, &buf, 1, server_send_cb);
+}
+
 
 static struct remote_t *
 new_remote(uv_loop_t *loop, int timeout)
@@ -986,11 +1010,6 @@ new_remote(uv_loop_t *loop, int timeout)
 static void
 free_remote(struct remote_t *remote)
 {
-    if (remote->dying != 0) {
-        return;
-    }
-    remote->dying = -1;
-
     if (remote->server != NULL) {
         remote->server->remote = NULL;
     }
@@ -1013,6 +1032,11 @@ static void
 close_and_free_remote(struct remote_t *remote)
 {
     if (remote != NULL) {
+        if (remote->dying != 0) {
+            return;
+        }
+        remote->dying = -1;
+
         uv_timer_stop(&remote->send_ctx->watcher);
         uv_timer_stop(&remote->recv_ctx->watcher);
         uv_read_stop((uv_stream_t *)&remote->socket);
@@ -1104,11 +1128,6 @@ check_and_free_profile(struct listen_ctx_t *profile)
 static void
 free_server(struct server_t *server)
 {
-    if (server->dying != 0) {
-        return;
-    }
-    server->dying = -1;
-
     struct listen_ctx_t *profile = server->listener;
     struct server_env_t *server_env = server->server_env;
 
@@ -1160,6 +1179,11 @@ static void
 close_and_free_server(struct server_t *server)
 {
     if (server != NULL) {
+        if (server->dying != 0) {
+            return;
+        }
+        server->dying = -1;
+
         uv_read_stop((uv_stream_t *)&server->socket);
         uv_close((uv_handle_t *)&server->socket, server_after_close_cb);
     }
@@ -1645,7 +1669,7 @@ main(int argc, char **argv)
         for(i = 0; i < remote_num; i++) {
             struct server_env_t *serv = &profile->servers[i];
             char *host = remote_addr[i].host;
-            char *port = remote_addr[i].port ? : remote_port;
+            char *port = remote_addr[i].port ? remote_addr[i].port : remote_port;
 
             struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
             if (get_sockaddr(host, port, storage, 1, ipv6first) == -1) {

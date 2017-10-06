@@ -40,7 +40,7 @@ void http_simple_local_data_init(http_simple_local_data* local) {
     }
 }
 
-struct obfs_t * http_simple_new_obfs() {
+struct obfs_t * http_simple_new_obfs(void) {
     struct obfs_t * obfs = new_obfs();
     obfs->l_data = malloc(sizeof(http_simple_local_data));
     http_simple_local_data_init((http_simple_local_data*)obfs->l_data);
@@ -90,7 +90,7 @@ size_t http_simple_client_encode(struct obfs_t *obfs, char **pencryptdata, size_
     int outlength;
     char * out_buffer = (char*)malloc((size_t)(datalength + 2048));
     char * body_buffer = NULL;
-    if (head_size > datalength)
+    if ((size_t)head_size > datalength)
         head_size = datalength;
     http_simple_encode_head(local, encryptdata, head_size);
     if (obfs->server.param && strlen(obfs->server.param) == 0)
@@ -232,7 +232,7 @@ size_t http_post_client_encode(struct obfs_t *obfs, char **pencryptdata, size_t 
     int outlength;
     char * out_buffer = (char*)malloc((size_t)(datalength + 4096));
     char * body_buffer = NULL;
-    if (head_size > datalength)
+    if ((size_t)head_size > datalength)
         head_size = datalength;
     http_simple_encode_head(local, encryptdata, head_size);
     if (obfs->server.param && strlen(obfs->server.param) == 0)

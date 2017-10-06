@@ -7,8 +7,8 @@
 #ifndef _OBFS_TLS1_2_TICKET_H
 #define _OBFS_TLS1_2_TICKET_H
 
-void * tls12_ticket_auth_init_data();
-struct obfs_t * tls12_ticket_auth_new_obfs();
+void * tls12_ticket_auth_init_data(void);
+struct obfs_t * tls12_ticket_auth_new_obfs(void);
 void tls12_ticket_auth_dispose(struct obfs_t *obfs);
 
 size_t tls12_ticket_auth_client_encode(struct obfs_t *obfs, char **pencryptdata, size_t datalength, size_t* capacity);

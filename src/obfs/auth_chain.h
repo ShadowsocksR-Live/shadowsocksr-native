@@ -7,8 +7,8 @@
 #ifndef _OBFS_AUTH_CHAIN_H
 #define _OBFS_AUTH_CHAIN_H
 
-void * auth_chain_a_init_data();
-struct obfs_t * auth_chain_a_new_obfs();
+void * auth_chain_a_init_data(void);
+struct obfs_t * auth_chain_a_new_obfs(void);
 void auth_chain_a_dispose(struct obfs_t *obfs);
 
 

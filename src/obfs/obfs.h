@@ -75,7 +75,7 @@ void free_obfs_manager(struct obfs_manager *plugin);
 
 void set_server_info(struct obfs_t *obfs, struct server_info_t *server);
 void get_server_info(struct obfs_t *obfs, struct server_info_t *server);
-struct obfs_t * new_obfs();
+struct obfs_t * new_obfs(void);
 void dispose_obfs(struct obfs_t *obfs);
 
 #endif // _OBFS_OBFS_H

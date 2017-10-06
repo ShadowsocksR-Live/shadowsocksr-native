@@ -13,16 +13,16 @@ int rand_bytes(uint8_t *output, int len);
 #include "auth.h"
 #include "auth_chain.h"
 
-#include "encrypt.h"
+#include "../encrypt.h"
 
 void *
-init_data()
+init_data(void)
 {
     return malloc(1);
 }
 
 struct obfs_t *
-new_obfs()
+new_obfs(void)
 {
     struct obfs_t * obfs = (struct obfs_t*)malloc(sizeof(struct obfs_t));
     obfs->l_data = NULL;
