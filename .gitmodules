@@ -1,0 +1,12 @@
+[submodule "depends/libuv"]
+	path = depends/libuv
+	url = https://github.com/libuv/libuv.git
+[submodule "depends/openssl4w"]
+	path = depends/openssl4w
+	url = https://github.com/ShadowsocksR-Live/openssl4w.git
+[submodule "depends/pthreads4w"]
+	path = depends/pthreads4w
+	url = https://github.com/ShadowsocksR-Live/pthreads4w.git
+[submodule "depends/pcre4w"]
+	path = depends/pcre4w
+	url = https://github.com/ShadowsocksR-Live/pcre4w.git
