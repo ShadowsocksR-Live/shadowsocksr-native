@@ -457,14 +457,8 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         build_socks5_response(SOCKS5_REPLY_SUCCESS, SOCKS5_ADDRTYPE_IPV4,
                                               &sock_addr, buffer, sizeof(buffer), &size);
 
-                uv_buf_t tmp = uv_buf_init((char *)response, (unsigned int)size);
-                int s = uv_try_write((uv_stream_t*)&server->socket, &tmp, 1);
+                server_send_data(server, (char *)response, (unsigned int)size);
 
-                if (s < (ssize_t) size) {
-                    LOGE("failed to send fake reply");
-                    close_and_free_tunnel(remote, server);
-                    return;
-                }
                 if (udp_assc) {
                     // Wait until client closes the connection
                     return;
