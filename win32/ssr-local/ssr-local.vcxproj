@@ -143,7 +143,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;__MINGW32__;__MINGW64_VERSION_MAJOR;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;USE_CRYPTO_OPENSSL;_WINSOCK_DEPRECATED_NO_WARNINGS;VERSION="3.0.1";HAVE_PCRE_H;MODULE_LOCAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)../openssl4w/openssl/include;$(ProjectDir)../openssl4w/win32/include;$(ProjectDir)../../libsodium;$(ProjectDir)../../libsodium/src\libsodium\include\sodium;$(ProjectDir)../../libsodium/src\libsodium\include;$(ProjectDir)../libsodium/include;$(ProjectDir)../../libuv/include;$(ProjectDir)../../libcork/include;$(ProjectDir)../../libipset/include;$(ProjectDir)../../libudns;$(ProjectDir)../pcre4w/pcre;$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../depends/openssl4w/openssl/include;$(ProjectDir)../../depends/openssl4w/win32/include;$(ProjectDir)../../libsodium;$(ProjectDir)../../libsodium/src\libsodium\include\sodium;$(ProjectDir)../../libsodium/src\libsodium\include;$(ProjectDir)../libsodium/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../../libcork/include;$(ProjectDir)../../libipset/include;$(ProjectDir)../../libudns;$(ProjectDir)../../depends/pcre4w/pcre;$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -160,7 +160,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;DEBUG;_CONSOLE;__MINGW32__;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;USE_CRYPTO_OPENSSL;_WINSOCK_DEPRECATED_NO_WARNINGS;VERSION="3.0.1";HAVE_PCRE_H;MODULE_LOCAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)../openssl4w/openssl/include;$(ProjectDir)../openssl4w/win32/include;$(ProjectDir)../../libsodium;$(ProjectDir)../../libsodium/src\libsodium\include\sodium;$(ProjectDir)../../libsodium/src\libsodium\include;$(ProjectDir)../libsodium/include;$(ProjectDir)../../libuv/include;$(ProjectDir)../../libcork/include;$(ProjectDir)../../libipset/include;$(ProjectDir)../../libudns;$(ProjectDir)../pcre4w/pcre;$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../depends/openssl4w/openssl/include;$(ProjectDir)../../depends/openssl4w/win32/include;$(ProjectDir)../../libsodium;$(ProjectDir)../../libsodium/src\libsodium\include\sodium;$(ProjectDir)../../libsodium/src\libsodium\include;$(ProjectDir)../libsodium/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../../libcork/include;$(ProjectDir)../../libipset/include;$(ProjectDir)../../libudns;$(ProjectDir)../../depends/pcre4w/pcre;$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -179,7 +179,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;__MINGW32__;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;USE_CRYPTO_OPENSSL;_WINSOCK_DEPRECATED_NO_WARNINGS;VERSION="3.0.1";HAVE_PCRE_H;MODULE_LOCAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)../openssl4w/openssl/include;$(ProjectDir)../openssl4w/win32/include;$(ProjectDir)../../libsodium;$(ProjectDir)../../libsodium/src\libsodium\include\sodium;$(ProjectDir)../../libsodium/src\libsodium\include;$(ProjectDir)../libsodium/include;$(ProjectDir)../../libuv/include;$(ProjectDir)../../libcork/include;$(ProjectDir)../../libipset/include;$(ProjectDir)../../libudns;$(ProjectDir)../pcre4w/pcre;$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../depends/openssl4w/openssl/include;$(ProjectDir)../../depends/openssl4w/win32/include;$(ProjectDir)../../libsodium;$(ProjectDir)../../libsodium/src\libsodium\include\sodium;$(ProjectDir)../../libsodium/src\libsodium\include;$(ProjectDir)../libsodium/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../../libcork/include;$(ProjectDir)../../libipset/include;$(ProjectDir)../../libudns;$(ProjectDir)../../depends/pcre4w/pcre;$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -200,7 +200,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;__MINGW32__;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;USE_CRYPTO_OPENSSL;_WINSOCK_DEPRECATED_NO_WARNINGS;VERSION="3.0.1";HAVE_PCRE_H;MODULE_LOCAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)../openssl4w/openssl/include;$(ProjectDir)../openssl4w/win32/include;$(ProjectDir)../../libsodium;$(ProjectDir)../../libsodium/src\libsodium\include\sodium;$(ProjectDir)../../libsodium/src\libsodium\include;$(ProjectDir)../libsodium/include;$(ProjectDir)../../libuv/include;$(ProjectDir)../../libcork/include;$(ProjectDir)../../libipset/include;$(ProjectDir)../../libudns;$(ProjectDir)../pcre4w/pcre;$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../depends/openssl4w/openssl/include;$(ProjectDir)../../depends/openssl4w/win32/include;$(ProjectDir)../../libsodium;$(ProjectDir)../../libsodium/src\libsodium\include\sodium;$(ProjectDir)../../libsodium/src\libsodium\include;$(ProjectDir)../libsodium/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../../libcork/include;$(ProjectDir)../../libipset/include;$(ProjectDir)../../libudns;$(ProjectDir)../../depends/pcre4w/pcre;$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
