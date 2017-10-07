@@ -60,7 +60,7 @@ struct remote_t {
     struct buffer_t *buf;
     struct remote_ctx_t *recv_ctx;
     struct remote_ctx_t *send_ctx;
-    int send_ctx_connected;
+    bool connected;
     struct server_t *server;  // __weak_ptr
 
     struct sockaddr_storage addr;

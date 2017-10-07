@@ -363,7 +363,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 #endif
             }
 
-            if (!remote->send_ctx_connected) {
+            if (!remote->connected) {
 #ifdef ANDROID
                 if (vpn) {
                     int not_protect = 0;
@@ -382,20 +382,19 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                     }
                 }
 #endif
+                server_read_stop(server);
 
                 uv_connect_t *connect = (uv_connect_t *)calloc(1, sizeof(uv_connect_t));
                 connect->data = remote;
 
                 struct sockaddr *addr = (struct sockaddr*)&(remote->addr);
                 uv_tcp_connect(connect, &remote->socket, addr, remote_connected_cb);
-                server_read_stop(server);
                 return;
             } else {
                 if (nread > 0 && remote->buf->len == 0) {
                     server_read_stop(server);
                     return;
                 }
-
                 remote_send_data(remote);
             }
 
@@ -816,7 +815,7 @@ remote_connected_cb(uv_connect_t* req, int status)
     assert(remote);
     free(req);
     if (status == 0) {
-        remote->send_ctx_connected = 1;
+        remote->connected = true;
 
         uv_timer_start(&remote->recv_ctx->watcher, remote_timeout_cb, remote->recv_ctx->watcher_interval * 1000, 0);
         uv_read_start((uv_stream_t *)&remote->socket, on_alloc, remote_recv_cb);
