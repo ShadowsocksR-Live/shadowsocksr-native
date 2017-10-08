@@ -46,6 +46,10 @@
 
 #include <sys/types.h>		/* for time_t */
 
+#if defined(_MSC_VER)
+#include <time.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
