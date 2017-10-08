@@ -66,7 +66,7 @@ struct remote_t {
     struct sockaddr_storage addr;
     size_t addr_len;
 
-    int dying;
+    bool dying;
 };
 
 struct server_t {
@@ -88,7 +88,7 @@ struct server_t {
     struct obfs_t *protocol;
     struct obfs_t *obfs;
 
-    int dying;
+    bool dying;
 };
 
 #endif // _LOCAL_H

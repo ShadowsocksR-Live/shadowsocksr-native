@@ -1025,10 +1025,10 @@ static void
 close_and_free_remote(struct remote_t *remote)
 {
     if (remote != NULL) {
-        if (remote->dying != 0) {
+        if (remote->dying != false) {
             return;
         }
-        remote->dying = -1;
+        remote->dying = true;
 
         uv_timer_stop(&remote->send_ctx->watcher);
         uv_timer_stop(&remote->recv_ctx->watcher);
@@ -1172,10 +1172,10 @@ static void
 close_and_free_server(struct server_t *server)
 {
     if (server != NULL) {
-        if (server->dying != 0) {
+        if (server->dying != false) {
             return;
         }
-        server->dying = -1;
+        server->dying = true;
 
         uv_read_stop((uv_stream_t *)&server->socket);
         uv_close((uv_handle_t *)&server->socket, server_after_close_cb);
