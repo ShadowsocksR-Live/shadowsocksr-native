@@ -1777,7 +1777,7 @@ main(int argc, char **argv)
     }
 
     if (mode != UDP_ONLY) {
-        uv_stop(server->loop);
+        // uv_stop(server->loop);
         free_connections(); // after this, all inactive profile should be released already, so we only need to release the current_profile
         release_profile(current_profile);
     }
