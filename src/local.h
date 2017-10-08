@@ -33,8 +33,8 @@
 #include "common.h"
 
 // use this as a profile or environment
-struct listen_ctx_t {
-    uv_tcp_t listen_socket;
+struct listener_t {
+    uv_tcp_t socket;
     ss_host_port tunnel_addr;
 
     struct cork_dllist_item entries; // for inactive profile list
@@ -74,7 +74,7 @@ struct server_t {
     enum net_stage stage;
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;
-    struct listen_ctx_t *listener;  // __weak_ptr
+    struct listener_t *listener;  // __weak_ptr
     struct remote_t *remote;
 
     struct buffer_t *buf;
