@@ -1728,8 +1728,10 @@ main(int argc, char **argv)
     // Setup UDP
     if (mode != TCP_ONLY) {
         LOGI("udprelay enabled");
+#if !defined(_MSC_VER)
         init_udprelay(local_addr, local_port, (struct sockaddr*)listen_ctx->servers[0].addr_udp,
                       listen_ctx->servers[0].addr_udp_len, tunnel_addr, mtu, listen_ctx->timeout, profile->iface, &listen_ctx->servers[0].cipher, listen_ctx->servers[0].protocol_name, listen_ctx->servers[0].protocol_param);
+#endif // !defined(_MSC_VER)
     }
 
 #ifdef HAVE_LAUNCHD
@@ -1768,7 +1770,9 @@ main(int argc, char **argv)
 
     // Clean up
     if (mode != TCP_ONLY) {
+#if !defined(_MSC_VER)
         free_udprelay(); // udp relay use some data from profile, so we need to release udp first
+#endif // !defined(_MSC_VER)
     }
 
     if (mode != UDP_ONLY) {

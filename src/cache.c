@@ -35,6 +35,8 @@
 #include "win32.h"
 #endif
 
+ev_tstamp ev_time(void);
+
 /** Creates a new cache object
  *
  *  @param dst
@@ -306,3 +308,37 @@ cache_insert(struct cache *cache, char *key, size_t key_len, void *data)
 
     return 0;
 }
+
+#define EV_HAVE_EV_TIME 1 
+ev_tstamp
+ev_time(void)
+{
+   FILETIME ft;
+   ULARGE_INTEGER ui;
+
+   GetSystemTimeAsFileTime(&ft);
+   ui.u.LowPart = ft.dwLowDateTime;
+   ui.u.HighPart = ft.dwHighDateTime;
+
+   /* msvc cannot convert ulonglong to double... yes, it is that sucky */
+   return (LONGLONG)(ui.QuadPart - 116444736000000000) * 1e-7;
+}
+
+#ifndef EV_HAVE_EV_TIME 
+ev_tstamp
+ev_time(void) EV_THROW
+{
+#if EV_USE_REALTIME
+    if (expect_true(have_realtime))
+    {
+        struct timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        return ts.tv_sec + ts.tv_nsec * 1e-9;
+    }
+#endif
+
+    struct timeval tv;
+    gettimeofday(&tv, 0);
+    return tv.tv_sec + tv.tv_usec * 1e-6;
+}
+#endif

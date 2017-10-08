@@ -71,6 +71,8 @@ void winsock_cleanup(void);
 void ss_error(const char *s);
 size_t strnlen(const char *s, size_t maxlen);
 int setnonblocking(int fd);
+#if !defined(_MSC_VER)
 const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
+#endif
 
 #endif

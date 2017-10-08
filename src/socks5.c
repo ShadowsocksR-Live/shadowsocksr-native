@@ -4,7 +4,12 @@
 
 #include <string.h>
 #include <stdlib.h>
+#if defined(_WIN32)
+#include <winsock2.h> // for htons
+#else
 #include <netinet/in.h> // for htons
+#endif // defined(_WIN32)
+
 #include <assert.h>
 #include "socks5.h"
 

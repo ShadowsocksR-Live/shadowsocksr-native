@@ -84,6 +84,7 @@ strnlen(const char *s, size_t maxlen)
     return end ? (size_t)(end - s) : maxlen;
 }
 
+#if !defined(_MSC_VER)
 const char *
 inet_ntop(int af, const void *src, char *dst, socklen_t size)
 {
@@ -104,3 +105,4 @@ inet_ntop(int af, const void *src, char *dst, socklen_t size)
     return (WSAAddressToString((struct sockaddr *)&ss, sizeof(ss), NULL, dst,
                                &s) == 0) ? dst : NULL;
 }
+#endif // !defined(_MSC_VER)

@@ -46,6 +46,7 @@ const struct _json_value json_value_none = { NULL, 0, { 0 }, { NULL } };
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <stdint.h> // for uint8_t
 
 typedef unsigned short json_uchar;
 

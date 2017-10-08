@@ -29,7 +29,8 @@
 #define _CACHE_
 
 #include "uthash.h"
-#include "ev.h"
+
+typedef double ev_tstamp;
 
 /**
  * A cache entry
