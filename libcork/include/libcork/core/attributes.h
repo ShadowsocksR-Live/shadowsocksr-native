@@ -141,6 +141,10 @@
 #define CORK_EXPORT  __attribute__((visibility("default")))
 #define CORK_IMPORT  __attribute__((visibility("default")))
 #define CORK_LOCAL   __attribute__((visibility("hidden")))
+#elif defined(_WIN32) && defined(_MSC_VER)
+#define CORK_EXPORT __declspec(dllexport)
+#define CORK_IMPORT __declspec(dllimport)
+#define CORK_LOCAL
 #else
 #define CORK_EXPORT
 #define CORK_IMPORT
@@ -164,6 +168,33 @@
 __attribute__((constructor)) \
 static void \
 name(void)
+#elif defined(_WIN32) && defined(_MSC_VER)
+
+#ifdef __cplusplus
+#define INITIALIZER(f) \
+        static void f(void); \
+        struct f##_t_ { f##_t_(void) { f(); } }; static f##_t_ f##_; \
+        static void f(void)
+#elif defined(_MSC_VER)
+#pragma section(".CRT$XCU",read)
+#define INITIALIZER2_(f,p) \
+        static void f(void); \
+        __declspec(allocate(".CRT$XCU")) void (*f##_)(void) = f; \
+        __pragma(comment(linker,"/include:" p #f "_")) \
+        static void f(void)
+#ifdef _WIN64
+#define INITIALIZER(f) INITIALIZER2_(f,"")
+#else
+#define INITIALIZER(f) INITIALIZER2_(f,"_")
+#endif
+#else
+#define INITIALIZER(f) \
+        static void f(void) __attribute__((constructor)); \
+        static void f(void)
+#endif
+
+#define CORK_INITIALIZER(name) INITIALIZER(name)
+
 #else
 #error "Don't know how to implement initialization functions of this platform"
 #endif

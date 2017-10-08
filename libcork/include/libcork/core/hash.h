@@ -66,15 +66,19 @@ uint64_t cork_fmix64(uint64_t k)
     return k;
 }
 
+#if defined(_WIN32) && defined(_MSC_VER)
+typedef uint32_t  cork_aliased_uint32_t;
+#else
+typedef uint32_t __attribute__((__may_alias__))  cork_aliased_uint32_t;
+#endif // defined(_MSC_VER)
+
 CORK_HASH_ATTRIBUTES
 cork_hash
 cork_stable_hash_buffer(cork_hash seed, const void *src, size_t len)
 {
-    typedef uint32_t __attribute__((__may_alias__))  cork_aliased_uint32_t;
-
     /* This is exactly the same as cork_murmur_hash_x86_32, but with a byte swap
      * to make sure that we always process the uint32s little-endian. */
-    const unsigned int  nblocks = len / 4;
+    const unsigned int  nblocks = (unsigned int)(len / 4);
     const cork_aliased_uint32_t  *blocks = (const cork_aliased_uint32_t *) src;
     const cork_aliased_uint32_t  *end = blocks + nblocks;
     const cork_aliased_uint32_t  *curr;
@@ -114,8 +118,6 @@ cork_stable_hash_buffer(cork_hash seed, const void *src, size_t len)
 
 #define cork_murmur_hash_x86_32(seed, src, len, dest) \
 do { \
-    typedef uint32_t __attribute__((__may_alias__))  cork_aliased_uint32_t; \
-    \
     const unsigned int  nblocks = len / 4; \
     const cork_aliased_uint32_t  *blocks = (const cork_aliased_uint32_t *) src; \
     const cork_aliased_uint32_t  *end = blocks + nblocks; \
@@ -156,8 +158,6 @@ do { \
 
 #define cork_murmur_hash_x86_128(seed, src, len, dest) \
 do { \
-    typedef uint32_t __attribute__((__may_alias__))  cork_aliased_uint32_t; \
-    \
     const unsigned int  nblocks = len / 16; \
     const cork_aliased_uint32_t  *blocks = (const cork_aliased_uint32_t *) src; \
     const cork_aliased_uint32_t  *end = blocks + (nblocks * 4); \
@@ -243,11 +243,15 @@ do { \
     (dest)->u128 = cork_u128_from_32(h1, h2, h3, h4); \
 } while (0)
 
+#if defined(_WIN32) && defined(_MSC_VER)
+typedef uint64_t  cork_aliased_uint64_t;
+#else
+typedef uint64_t __attribute__((__may_alias__))  cork_aliased_uint64_t; 
+#endif
+
 #define cork_murmur_hash_x64_128(seed, src, len, dest) \
 do { \
-    typedef uint64_t __attribute__((__may_alias__))  cork_aliased_uint64_t; \
-    \
-    const unsigned int  nblocks = len / 16; \
+    const unsigned int  nblocks = (unsigned int)(len / 16); \
     const cork_aliased_uint64_t  *blocks = (const cork_aliased_uint64_t *) src; \
     const cork_aliased_uint64_t  *end = blocks + (nblocks * 2); \
     const cork_aliased_uint64_t  *curr; \

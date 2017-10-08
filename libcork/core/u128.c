@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "libcork/core/api.h"
 #include "libcork/core/types.h"
 #include "libcork/core/u128.h"
 

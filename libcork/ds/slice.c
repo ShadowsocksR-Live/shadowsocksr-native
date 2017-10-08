@@ -149,7 +149,7 @@ cork_slice_slice(struct cork_slice *slice, size_t offset, size_t length)
               slice->buf + offset, length);
         */
         if (slice->iface->slice == NULL) {
-            slice->buf += offset;
+            slice->buf = (unsigned char *)(slice->buf) + offset;
             slice->size = length;
             return 0;
         } else {
@@ -224,7 +224,7 @@ static int
 cork_static_slice_copy(struct cork_slice *dest, const struct cork_slice *src,
                        size_t offset, size_t length)
 {
-    dest->buf = src->buf + offset;
+    dest->buf = (unsigned char *)src->buf + offset;
     dest->size = length;
     dest->iface = &cork_static_slice;
     dest->user_data = NULL;
@@ -273,7 +273,7 @@ cork_copy_once_slice__light_copy(struct cork_slice *dest,
                                  const struct cork_slice *src,
                                  size_t offset, size_t length)
 {
-    dest->buf = src->buf + offset;
+    dest->buf = (unsigned char *)src->buf + offset;
     dest->size = length;
     dest->iface = &cork_copy_once_slice;
     dest->user_data = NULL;

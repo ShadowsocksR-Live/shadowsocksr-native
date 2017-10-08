@@ -159,7 +159,7 @@ cork_mempool_new_block(struct cork_mempool *mp)
     for (index = sizeof(struct cork_mempool_block);
          (index + cork_mempool_object_size(mp)) <= mp->block_size;
          index += cork_mempool_object_size(mp)) {
-        struct cork_mempool_object  *obj = vblock + index;
+        struct cork_mempool_object *obj = (struct cork_mempool_object *)((unsigned char *)vblock + index);
         DEBUG("  New object at %p[%p]\n", cork_mempool_get_object(obj), obj);
         if (mp->init_object != NULL) {
             mp->init_object

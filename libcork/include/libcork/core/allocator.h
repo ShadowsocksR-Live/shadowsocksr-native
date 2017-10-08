@@ -169,7 +169,7 @@ CORK_ATTR_UNUSED
 static void
 cork_alloc_free(const struct cork_alloc *alloc, void *ptr, size_t size)
 {
-    return alloc->free(alloc, ptr, size);
+    alloc->free(alloc, ptr, size);
 }
 
 CORK_ATTR_UNUSED
@@ -178,7 +178,7 @@ cork_alloc_cfree(const struct cork_alloc *alloc, void *ptr,
                  size_t count, size_t size)
 {
     assert(count < (SIZE_MAX / size));
-    return alloc->free(alloc, ptr, count * size);
+    alloc->free(alloc, ptr, count * size);
 }
 
 #define cork_alloc_new(alloc, type) \
@@ -239,7 +239,7 @@ cork_alloc_strfree(const struct cork_alloc *alloc, const char *str);
 
 
 /* libcork's current allocator */
-
+CORK_API
 extern const struct cork_alloc  *cork_allocator;
 
 /* We take control and will free when the process exits.  This is *NOT*
@@ -386,7 +386,7 @@ static void
 cork_strfree(const char *str)
 {
     const struct cork_alloc  *alloc = cork_current_allocator();
-    return cork_alloc_strfree(alloc, str);
+    cork_alloc_strfree(alloc, str);
 }
 
 

@@ -24,7 +24,11 @@
  * library, we define this ourselves to export the symbols. */
 
 #if !defined(CORK_API)
+#if defined(CORK_LIB_BUILD)
+#define CORK_API  CORK_EXPORT
+#else
 #define CORK_API  CORK_IMPORT
+#endif
 #endif
 
 

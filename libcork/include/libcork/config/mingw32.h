@@ -38,6 +38,16 @@
 
 #define WNOHANG 1
 
+#if defined(_WIN32) && defined(_MSC_VER)
+#include <Windows.h>
+static inline int mkdir(const char *path) {
+    CreateDirectory(path, NULL);
+    return 0;
+}
+
+#endif // defined(_MSC_VER)
+
+
 /*
  * simple adaptors
  */

@@ -19,7 +19,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
+#include <unistd.h> // for ssize_t
 
 /* Define preprocessor macros that contain the size of several built-in
  * types.  Again, we assume that we have the C99 definitions available. */
@@ -76,7 +76,7 @@
 /* Return a pointer to a @c struct, given a pointer to one of its
  * fields. */
 #define cork_container_of(field, struct_type, field_name) \
-    ((struct_type *) (- offsetof(struct_type, field_name) + \
-                      (void *) (field)))
+    ((struct_type *) (- (ssize_t)offsetof(struct_type, field_name) + \
+                      ((ssize_t)(void *) (field))))
 
 #endif /* LIBCORK_CORE_TYPES_H */

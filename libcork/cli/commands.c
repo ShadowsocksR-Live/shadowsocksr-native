@@ -65,7 +65,7 @@ cork_command_set_show_help(struct cork_command *command)
            cork_command_breadcrumbs());
 
     for (curr = command->set; *curr != NULL; curr++) {
-        printf("  %*s", (int) -max_length, (*curr)->name);
+        printf("  %*s", -((int)max_length), (*curr)->name);
         if ((*curr)->short_desc != NULL) {
             printf("  %s\n", (*curr)->short_desc);
         } else {

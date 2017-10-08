@@ -89,7 +89,7 @@ cork_error_get(void)
         do {
             old_head = errors;
             error->next = old_head;
-        } while (cork_ptr_cas(&errors, old_head, error) != old_head);
+        } while ((struct cork_error *)cork_ptr_cas(&errors, old_head, error) != old_head);
         *error_ptr = error;
         return error;
     } else {

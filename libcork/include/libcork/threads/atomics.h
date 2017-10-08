@@ -42,6 +42,33 @@
 /*-----------------------------------------------------------------------
  * End of atomic implementations
  */
+#elif defined(_WIN32) && defined(_MSC_VER)
+#include <Windows.h>
+//
+// http://www.cnblogs.com/lvdongjie/p/4452256.html
+// http://blog.csdn.net/markl22222/article/details/10474175
+//
+static inline LONG __sync_val_compare_and_swap(LONG volatile * Destination, LONG Comperand, LONG ExChange) {
+    return InterlockedCompareExchange(Destination, ExChange, Comperand);
+}
+
+#define cork_int_atomic_add        InterlockedAdd
+#define cork_uint_atomic_add       InterlockedAdd
+#define cork_size_atomic_add       InterlockedAdd
+#define cork_int_atomic_pre_add    InterlockedExchangeAdd
+#define cork_uint_atomic_pre_add   InterlockedExchangeAdd
+#define cork_size_atomic_pre_add   InterlockedExchangeAdd
+#define cork_int_atomic_sub        InterlockedDecrement
+#define cork_uint_atomic_sub       InterlockedDecrement
+#define cork_size_atomic_sub       InterlockedDecrement
+#define cork_int_atomic_pre_sub    InterlockedDecrement_
+#define cork_uint_atomic_pre_sub   InterlockedDecrement_
+#define cork_size_atomic_pre_sub   InterlockedDecrement_
+#define cork_int_cas               __sync_val_compare_and_swap
+#define cork_uint_cas              __sync_val_compare_and_swap
+#define cork_size_cas              __sync_val_compare_and_swap
+#define cork_ptr_cas               __sync_val_compare_and_swap
+
 #else
 #error "No atomics implementation!"
 #endif

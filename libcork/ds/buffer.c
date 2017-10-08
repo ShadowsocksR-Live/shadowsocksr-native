@@ -138,7 +138,7 @@ void
 cork_buffer_append(struct cork_buffer *buffer, const void *src, size_t length)
 {
     cork_buffer_ensure_size_int(buffer, buffer->size + length + 1);
-    memcpy(buffer->buf + buffer->size, src, length);
+    memcpy((unsigned char *)buffer->buf + buffer->size, src, length);
     buffer->size += length;
     ((char *) buffer->buf)[buffer->size] = '\0';
 }
@@ -166,7 +166,7 @@ cork_buffer_append_vprintf(struct cork_buffer *buffer, const char *format,
     va_list  args1;
 
     va_copy(args1, args);
-    format_size = vsnprintf(buffer->buf + buffer->size,
+    format_size = vsnprintf((char *)buffer->buf + buffer->size,
                             buffer->allocated_size - buffer->size,
                             format, args1);
     va_end(args1);
@@ -180,7 +180,7 @@ cork_buffer_append_vprintf(struct cork_buffer *buffer, const char *format,
     /* If the first call fails, resize buffer and try again. */
     cork_buffer_ensure_size_int
         (buffer, buffer->allocated_size + format_size + 1);
-    format_size = vsnprintf(buffer->buf + buffer->size,
+    format_size = vsnprintf((char *)buffer->buf + buffer->size,
                             buffer->allocated_size - buffer->size,
                             format, args);
     buffer->size += format_size;
@@ -220,7 +220,7 @@ void
 cork_buffer_append_indent(struct cork_buffer *buffer, size_t indent)
 {
     cork_buffer_ensure_size_int(buffer, buffer->size + indent + 1);
-    memset(buffer->buf + buffer->size, ' ', indent);
+    memset((unsigned char *)buffer->buf + buffer->size, ' ', indent);
     buffer->size += indent;
     ((char *) buffer->buf)[buffer->size] = '\0';
 }

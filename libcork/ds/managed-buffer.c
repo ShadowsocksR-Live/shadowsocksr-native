@@ -83,7 +83,7 @@ struct cork_managed_buffer_copied {
 };
 
 #define cork_managed_buffer_copied_data(self) \
-    (((void *) (self)) + sizeof(struct cork_managed_buffer_copied))
+    (((size_t)((void *) (self))) + sizeof(struct cork_managed_buffer_copied))
 
 #define cork_managed_buffer_copied_sizeof(sz) \
     ((sz) + sizeof(struct cork_managed_buffer_copied))
@@ -111,7 +111,7 @@ cork_managed_buffer_new_copy(const void *buf, size_t size)
         return NULL;
     }
 
-    self->parent.buf = cork_managed_buffer_copied_data(self);
+    self->parent.buf = (const void *)cork_managed_buffer_copied_data(self);
     self->parent.size = size;
     self->parent.ref_count = 1;
     self->parent.iface = &CORK_MANAGED_BUFFER_COPIED;
@@ -175,7 +175,7 @@ cork_managed_buffer__slice_copy(struct cork_slice *dest,
                                 size_t offset, size_t length)
 {
     struct cork_managed_buffer  *mbuf = src->user_data;
-    dest->buf = src->buf + offset;
+    dest->buf = (unsigned char *)src->buf + offset;
     dest->size = length;
     dest->iface = &CORK_MANAGED_BUFFER__SLICE;
     dest->user_data = cork_managed_buffer_ref(mbuf);
@@ -204,7 +204,7 @@ cork_managed_buffer_slice(struct cork_slice *dest,
               offset, length,
               buffer->buf + offset, length);
         */
-        dest->buf = buffer->buf + offset;
+        dest->buf = (unsigned char *)buffer->buf + offset;
         dest->size = length;
         dest->iface = &CORK_MANAGED_BUFFER__SLICE;
         dest->user_data = cork_managed_buffer_ref(buffer);

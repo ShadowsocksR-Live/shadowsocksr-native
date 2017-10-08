@@ -154,13 +154,13 @@ cork_fd_consumer__data(struct cork_stream_consumer *vself,
     size_t  bytes_left = size;
 
     while (bytes_left > 0) {
-        ssize_t  rc = write(self->fd, buf, bytes_left);
+        ssize_t  rc = write(self->fd, buf, (unsigned int)bytes_left);
         if (rc == -1 && errno != EINTR) {
             cork_system_error_set();
             return -1;
         } else {
             bytes_left -= rc;
-            buf += rc;
+            buf = (unsigned char *)buf + rc;
         }
     }
 

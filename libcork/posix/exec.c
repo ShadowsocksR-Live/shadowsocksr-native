@@ -162,6 +162,14 @@ cork_exec_set_cwd(struct cork_exec *exec, const char *directory)
     exec->cwd = cork_strdup(directory);
 }
 
+#if defined(_WIN32) && defined(_MSC_VER)
+static int chdir(const char *path) {
+    BOOL b = SetCurrentDirectory(path);
+    return (b!=FALSE) ? 0 : -1;
+}
+#endif
+
+
 int
 cork_exec_run(struct cork_exec *exec)
 {
