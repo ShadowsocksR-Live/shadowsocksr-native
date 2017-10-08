@@ -1221,10 +1221,11 @@ signal_cb(uv_signal_t* handle, int signum)
 #endif
             keep_resolving = 0;
             uv_stop(handle->loop);
+            break;
         default:
             assert(0);
+            break;
     }
-    exit(EXIT_SUCCESS);
 }
 
 void
