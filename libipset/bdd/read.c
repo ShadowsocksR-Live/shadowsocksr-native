@@ -22,7 +22,11 @@
 
 
 static const char  MAGIC_NUMBER[] = "IP set";
+#if defined(_WIN32) && defined(_MSC_VER)
+#define MAGIC_NUMBER_LENGTH 6
+#else
 static const size_t  MAGIC_NUMBER_LENGTH = sizeof(MAGIC_NUMBER) - 1;
+#endif
 
 
 /**
@@ -204,7 +208,7 @@ load_v1(FILE *stream, struct ipset_node_cache *cache)
 
     size_t  i;
     for (i = 0; i < nonterminal_count; i++) {
-        serialized_id  serialized_id = -(i+1);
+        serialized_id  _serialized_id = -((serialized_id)(i+1));
 
         /* Each serialized node consists of a variable index, a low
          * pointer, and a high pointer. */
@@ -222,7 +226,7 @@ load_v1(FILE *stream, struct ipset_node_cache *cache)
         bytes_read += sizeof(int32_t);
 
         DEBUG("Read serialized node %d = (x%d? %" PRId32 ": %" PRId32 ")",
-              serialized_id, variable, high, low);
+              _serialized_id, variable, high, low);
 
         /* Turn the low pointer into a node ID.  If the pointer is >= 0,
          * it's a terminal value.  Otherwise, its a nonterminal ID,
@@ -275,7 +279,7 @@ load_v1(FILE *stream, struct ipset_node_cache *cache)
          * later serialized nodes point to it. */
 
         cork_hash_table_put
-            (cache_ids, (void *) (intptr_t) serialized_id,
+            (cache_ids, (void *) (intptr_t) _serialized_id,
              (void *) (uintptr_t) result, NULL, NULL, NULL);
     }
 
