@@ -22,7 +22,6 @@ set(SOURCE_FILES_LOCAL
         jconf.c
         json.c
         encrypt.c
-        udprelay.c
         cache.c
         acl.c
         netutils.c
@@ -120,7 +119,6 @@ set_target_properties(libshadowsocks-libev PROPERTIES SUFFIX ".la")
 
 set (ss_lib_common
         libuv.a
-        ev
         m
         libcork)
 
