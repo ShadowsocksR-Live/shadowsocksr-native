@@ -142,19 +142,19 @@ static struct listener_t *current_profile;
 static struct cork_dllist all_connections;
 
 
-void doAllocBuffer(size_t suggested_size, uv_buf_t *buf) {
+void do_alloc_uv_buffer(size_t suggested_size, uv_buf_t *buf) {
     buf->base = calloc(suggested_size, sizeof(char));
     buf->len = suggested_size;
 }
 
-void doDeallocBuffer(uv_buf_t *buf) {
+void do_dealloc_uv_buffer(uv_buf_t *buf) {
     free(buf->base);
     buf->base = NULL;
     buf->len = 0;
 }
 
 static void on_alloc(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf) {
-    doAllocBuffer(suggested_size, buf);
+    do_alloc_uv_buffer(suggested_size, buf);
 }
 
 #ifndef __MINGW32__
@@ -307,7 +307,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
     memcpy(buf->buffer, buf0->base, (size_t)nread);
     buf->len = (size_t)nread;
 
-    doDeallocBuffer((uv_buf_t *)buf0);
+    do_dealloc_uv_buffer((uv_buf_t *)buf0);
 
     if (server->stage == STAGE_INIT) {
         char *host = server->listener->tunnel_addr.host;
@@ -930,7 +930,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         server_send_data(server, server->buf->buffer, (unsigned int)server->buf->len);
     } // for loop
 
-    doDeallocBuffer((uv_buf_t *)buf0);
+    do_dealloc_uv_buffer((uv_buf_t *)buf0);
 }
 
 static void
