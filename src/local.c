@@ -865,7 +865,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         return;
     }
 
-    static const size_t FIXED_BUFF_SIZE = BUF_SIZE*8;
+    static const size_t FIXED_BUFF_SIZE = BUF_SIZE;
 
     buffer_realloc(server->buf, FIXED_BUFF_SIZE);
 
@@ -921,7 +921,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                     break; // return;
                 }
                 if ( server->buf->len == 0 ) {
-                    break; // return;
+                    continue;
                 }
             }
         }
