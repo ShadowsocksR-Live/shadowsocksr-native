@@ -178,7 +178,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;__MINGW32__;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;USE_CRYPTO_OPENSSL;_WINSOCK_DEPRECATED_NO_WARNINGS;VERSION="3.0.1";HAVE_PCRE_H;MODULE_LOCAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;__MINGW32__;__MINGW64_VERSION_MAJOR;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;USE_CRYPTO_OPENSSL;_WINSOCK_DEPRECATED_NO_WARNINGS;VERSION="3.0.1";HAVE_PCRE_H;MODULE_LOCAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)../../depends/openssl4w/openssl/include;$(ProjectDir)../../depends/openssl4w/win32/include;$(ProjectDir)../../libsodium;$(ProjectDir)../../libsodium/src\libsodium\include\sodium;$(ProjectDir)../../libsodium/src\libsodium\include;$(ProjectDir)../libsodium/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../../libcork/include;$(ProjectDir)../../libipset/include;$(ProjectDir)../../libudns;$(ProjectDir)../../depends/pcre4w/pcre;$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4996</DisableSpecificWarnings>
     </ClCompile>
@@ -188,7 +188,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;libcork.lib;libcrypto.lib;libev.lib;libipset.lib;libsodium.lib;libudns.lib;pcre.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;libcork.lib;libcrypto.lib;libuv.lib;libipset.lib;libsodium.lib;libudns.lib;pcre.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -209,7 +209,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;libcork.lib;libcrypto.lib;libev.lib;libipset.lib;libsodium.lib;libudns.lib;pcre.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;libcork.lib;libcrypto.lib;libuv.lib;libipset.lib;libsodium.lib;libudns.lib;pcre.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
