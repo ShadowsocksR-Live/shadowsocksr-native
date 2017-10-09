@@ -285,7 +285,21 @@ brew install shadowsocks-libev
 
 ### Windows
 
-For Windows, use either MinGW (msys) or Cygwin to build.
+For Windows, use the following commands -- don't laugh at me, I'm a chinese -- then open win32/ssr-libev.sln with Visual Studio 2015. Enjoy it!
+
+```bash
+git submodule update --init
+
+cd depends/openssl4w
+git submodule update --init
+cd ../..
+
+cd depends/pthreads4w
+git submodule update --init
+cd ../..
+```
+
+Another way, use either MinGW (msys) or Cygwin to build.
 At the moment, only `ss-local` is supported to build against MinGW (msys).
 
 If you are using MinGW (msys), please download OpenSSL or PolarSSL source tarball
