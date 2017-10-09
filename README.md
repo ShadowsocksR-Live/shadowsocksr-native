@@ -285,7 +285,7 @@ brew install shadowsocks-libev
 
 ### Windows
 
-For Windows, use the following commands -- don't laugh at me, I'm a chinese -- then open win32/ssr-libev.sln with Visual Studio 2015. Enjoy it!
+For Windows, use the following commands -- don't laugh at me, I know `--recursive`, I'm a chinese -- then open win32/ssr-libev.sln with Visual Studio 2015. Enjoy it!
 
 ```bash
 git submodule update --init
