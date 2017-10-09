@@ -35,6 +35,11 @@
 #include "win32.h"
 #endif
 
+#if !defined(_WIN32)
+#include <sys/time.h>
+#endif
+
+
 ev_tstamp ev_time(void);
 
 /** Creates a new cache object
@@ -309,7 +314,8 @@ cache_insert(struct cache *cache, char *key, size_t key_len, void *data)
     return 0;
 }
 
-#define EV_HAVE_EV_TIME 1 
+#if defined(_WIN32)
+
 ev_tstamp
 ev_time(void)
 {
@@ -324,9 +330,10 @@ ev_time(void)
    return (LONGLONG)(ui.QuadPart - 116444736000000000) * 1e-7;
 }
 
-#ifndef EV_HAVE_EV_TIME 
+#else
+
 ev_tstamp
-ev_time(void) EV_THROW
+ev_time(void)
 {
 #if EV_USE_REALTIME
     if (expect_true(have_realtime))
