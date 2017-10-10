@@ -126,7 +126,7 @@ static void remote_send_data(struct remote_t *remote);
 static void remote_connected_cb(uv_connect_t* req, int status);
 static void remote_timeout_cb(uv_timer_t *handle);
 
-static struct remote_t *create_remote(struct listener_t *profile, struct sockaddr *addr);
+static struct remote_t *create_remote(struct listener_t *listener, struct sockaddr *addr);
 static void free_remote(struct remote_t *remote);
 static void close_and_free_remote(struct remote_t *remote);
 static void free_local(struct local_t *local);
@@ -135,10 +135,10 @@ static void close_and_free_local(struct local_t *local);
 static void close_and_free_tunnel(struct remote_t *remote, struct local_t *local);
 
 static struct remote_t * new_remote(uv_loop_t *loop, int timeout);
-static struct local_t * new_local(struct listener_t *profile);
+static struct local_t * new_local(struct listener_t *listener);
 
-static struct cork_dllist inactive_profiles;
-static struct listener_t *current_profile;
+static struct cork_dllist inactive_listeners;
+static struct listener_t *current_listener;
 static struct cork_dllist all_connections;
 
 
@@ -667,9 +667,9 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             // Not match ACL
             if (remote == NULL) {
                 // pick a server
-                struct listener_t *profile = local->listener;
-                int index = rand() % profile->server_num;
-                struct server_env_t *server_env = &profile->servers[index];
+                struct listener_t *listener = local->listener;
+                int index = rand() % listener->server_num;
+                struct server_env_t *server_env = &listener->servers[index];
 
                 if (verbose) {
                     if (sni_detected || addr_type == SOCKS5_ADDRTYPE_NAME) {
@@ -686,7 +686,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                 local->server_env = server_env;
 
-                remote = create_remote(profile, (struct sockaddr *) server_env->addr);
+                remote = create_remote(listener, (struct sockaddr *) server_env->addr);
             }
 
             if (remote == NULL) {
@@ -1034,31 +1034,31 @@ close_and_free_remote(struct remote_t *remote)
 }
 
 static struct local_t *
-new_local(struct listener_t *profile)
+new_local(struct listener_t *listener)
 {
-    assert(profile);
+    assert(listener);
 
     struct local_t *local = ss_malloc(sizeof(struct local_t));
 
-    local->listener = profile;
+    local->listener = listener;
     local->buf = buffer_alloc(BUF_SIZE);
     local->stage = STAGE_INIT;
 
-    cork_dllist_add(&profile->connections_eden, &local->entries);
+    cork_dllist_add(&listener->connections_eden, &local->entries);
     cork_dllist_add(&all_connections, &local->entries_all);
 
     return local;
 }
 
 static void
-release_profile(struct listener_t *profile)
+release_listener(struct listener_t *listener)
 {
     int i;
 
-    ss_free(profile->iface);
+    ss_free(listener->iface);
 
-    for(i = 0; i < profile->server_num; i++) {
-        struct server_env_t *server_env = &profile->servers[i];
+    for(i = 0; i < listener->server_num; i++) {
+        struct server_env_t *server_env = &listener->servers[i];
 
         ss_free(server_env->host);
 
@@ -1086,38 +1086,38 @@ release_profile(struct listener_t *profile)
 
         enc_release(&server_env->cipher);
     }
-    ss_free(profile);
+    ss_free(listener);
 }
 
 static void
-check_and_free_profile(struct listener_t *profile)
+check_and_free_listener(struct listener_t *listener)
 {
     int i;
 
-    if(profile == current_profile) {
+    if(listener == current_listener) {
         return;
     }
-    // if this connection is created from an inactive profile, then we need to free the profile
-    // when the last connection of that profile is colsed
-    if(!cork_dllist_is_empty(&profile->connections_eden)) {
+    // if this connection is created from an inactive listener, then we need to free the listener
+    // when the last connection of that listener is colsed
+    if(!cork_dllist_is_empty(&listener->connections_eden)) {
         return;
     }
 
-    for(i = 0; i < profile->server_num; i++) {
-        if(!cork_dllist_is_empty(&profile->servers[i].connections)) {
+    for(i = 0; i < listener->server_num; i++) {
+        if(!cork_dllist_is_empty(&listener->servers[i].connections)) {
             return;
         }
     }
 
     // No connections anymore
-    cork_dllist_remove(&profile->entries);
-    release_profile(profile);
+    cork_dllist_remove(&listener->entries);
+    release_listener(listener);
 }
 
 static void
 free_local(struct local_t *local)
 {
-    struct listener_t *profile = local->listener;
+    struct listener_t *listener = local->listener;
     struct server_env_t *server_env = local->server_env;
 
     cork_dllist_remove(&local->entries);
@@ -1153,8 +1153,8 @@ free_local(struct local_t *local)
 
     ss_free(local);
 
-    // after free server, we need to check the profile
-    check_and_free_profile(profile);
+    // after free server, we need to check the listener
+    check_and_free_listener(listener);
 }
 
 static void
@@ -1186,14 +1186,14 @@ close_and_free_tunnel(struct remote_t *remote, struct local_t *local)
 }
 
 static struct remote_t *
-create_remote(struct listener_t *profile, struct sockaddr *addr)
+create_remote(struct listener_t *listener, struct sockaddr *addr)
 {
-    uv_loop_t *loop = profile->socket.loop;
-    struct remote_t *remote = new_remote(loop, profile->timeout);
+    uv_loop_t *loop = listener->socket.loop;
+    struct remote_t *remote = new_remote(loop, listener->timeout);
 
 #ifdef SET_INTERFACE
-    if (profile->iface) {
-        if (setinterface(uv_stream_fd(&remote->socket), profile->iface) == -1) {
+    if (listener->iface) {
+        if (setinterface(uv_stream_fd(&remote->socket), listener->iface) == -1) {
             ERROR("setinterface");
         }
     }
@@ -1291,7 +1291,7 @@ main(int argc, char **argv)
     char *hostnames[MAX_REMOTE_NUM] = {NULL};
     ss_host_port remote_addr[MAX_REMOTE_NUM];
     char *remote_port = NULL;
-    int use_new_profile = 0;
+    int use_new_listener = 0;
     jconf_t *conf = NULL;
 
     ss_host_port tunnel_addr = { .host = NULL, .port = NULL };
@@ -1452,7 +1452,7 @@ main(int argc, char **argv)
     if (conf_path != NULL) {
         conf = read_jconf(conf_path);
         if(conf->conf_ver != CONF_VER_LEGACY){
-            use_new_profile = 1;
+            use_new_listener = 1;
         } else {
             if (remote_num == 0) {
                 remote_num = conf->server_legacy.remote_num;
@@ -1590,23 +1590,23 @@ main(int argc, char **argv)
     winsock_init();
 #endif
 
-    // Setup profiles
-    struct listener_t *profile = (struct listener_t *)ss_malloc(sizeof(struct listener_t));
+    // Setup listeners
+    struct listener_t *listener = (struct listener_t *)ss_malloc(sizeof(struct listener_t));
 
-    cork_dllist_init(&profile->connections_eden);
+    cork_dllist_init(&listener->connections_eden);
 
-    profile->timeout = atoi(timeout);
-    profile->iface = ss_strdup(iface);
-    profile->mptcp = mptcp;
-    profile->tunnel_addr = tunnel_addr;
+    listener->timeout = atoi(timeout);
+    listener->iface = ss_strdup(iface);
+    listener->mptcp = mptcp;
+    listener->tunnel_addr = tunnel_addr;
 
-    if(use_new_profile) {
+    if(use_new_listener) {
         char port[6];
 
         ss_server_new_1_t *servers = &conf->server_new_1;
-        profile->server_num = servers->server_num;
+        listener->server_num = servers->server_num;
         for(i = 0; i < servers->server_num; i++) {
-            struct server_env_t *serv = &profile->servers[i];
+            struct server_env_t *serv = &listener->servers[i];
             ss_server_t *serv_cfg = &servers->servers[i];
 
             struct sockaddr_storage *storage = ss_malloc(sizeof(struct sockaddr_storage));
@@ -1655,9 +1655,9 @@ main(int argc, char **argv)
             serv->udp_over_tcp = serv_cfg->udp_over_tcp;
         }
     } else {
-        profile->server_num = remote_num;
+        listener->server_num = remote_num;
         for(i = 0; i < remote_num; i++) {
-            struct server_env_t *serv = &profile->servers[i];
+            struct server_env_t *serv = &listener->servers[i];
             char *host = remote_addr[i].host;
             char *port = remote_addr[i].port ? remote_addr[i].port : remote_port;
 
@@ -1687,9 +1687,9 @@ main(int argc, char **argv)
         }
     }
 
-    // Init profiles
-    cork_dllist_init(&inactive_profiles);
-    current_profile = profile;
+    // Init listeners
+    cork_dllist_init(&inactive_listeners);
+    current_listener = listener;
 
     uv_loop_t *loop = uv_default_loop();
 
@@ -1701,7 +1701,7 @@ main(int argc, char **argv)
     uv_signal_start(&sigint_watcher, signal_cb, SIGINT);
     uv_signal_start(&sigterm_watcher, signal_cb, SIGTERM);
 
-    struct listener_t *listen_ctx = current_profile;
+    struct listener_t *listen_ctx = current_listener;
 
     uv_tcp_t *listener_socket = &listen_ctx->socket;
 
@@ -1727,7 +1727,7 @@ main(int argc, char **argv)
         LOGI("udprelay enabled");
 //#if !defined(_MSC_VER)
 //        init_udprelay(local_addr, local_port, (struct sockaddr*)listen_ctx->servers[0].addr_udp,
-//                      listen_ctx->servers[0].addr_udp_len, tunnel_addr, mtu, listen_ctx->timeout, profile->iface, &listen_ctx->servers[0].cipher, listen_ctx->servers[0].protocol_name, listen_ctx->servers[0].protocol_param);
+//                      listen_ctx->servers[0].addr_udp_len, tunnel_addr, mtu, listen_ctx->timeout, listener->iface, &listen_ctx->servers[0].cipher, listen_ctx->servers[0].protocol_name, listen_ctx->servers[0].protocol_param);
 //#endif // !defined(_MSC_VER)
     }
 
@@ -1768,14 +1768,14 @@ main(int argc, char **argv)
     // Clean up
     if (mode != TCP_ONLY) {
 //#if !defined(_MSC_VER)
-//        free_udprelay(); // udp relay use some data from profile, so we need to release udp first
+//        free_udprelay(); // udp relay use some data from listener, so we need to release udp first
 //#endif // !defined(_MSC_VER)
     }
 
     if (mode != UDP_ONLY) {
         // uv_stop(listener_socket->loop);
-        free_connections(); // after this, all inactive profile should be released already, so we only need to release the current_profile
-        release_profile(current_profile);
+        free_connections(); // after this, all inactive listener should be released already, so we only need to release the current_listener
+        release_listener(current_listener);
     }
 
 #ifdef __MINGW32__
@@ -1788,28 +1788,28 @@ main(int argc, char **argv)
 #else
 
 int
-start_ss_local_server(struct config_t profile)
+start_ss_local_server(struct config_t listener)
 {
     srand(time(NULL));
 
-    char *remote_host = profile.remote_host;
-    char *local_addr  = profile.local_addr;
-    char *method      = profile.method;
-    char *password    = profile.password;
-    char *log         = profile.log;
-    int remote_port   = profile.remote_port;
-    int local_port    = profile.local_port;
-    int timeout       = profile.timeout;
+    char *remote_host = listener.remote_host;
+    char *local_addr  = listener.local_addr;
+    char *method      = listener.method;
+    char *password    = listener.password;
+    char *log         = listener.log;
+    int remote_port   = listener.remote_port;
+    int local_port    = listener.local_port;
+    int timeout       = listener.timeout;
     int mtu           = 0;
     int mptcp         = 0;
 
     ss_host_port tunnel_addr = { .host = NULL, .port = NULL };
 
-    mode      = profile.mode;
-    fast_open = profile.fast_open;
-    verbose   = profile.verbose;
-    mtu       = profile.mtu;
-    mptcp     = profile.mptcp;
+    mode      = listener.mode;
+    fast_open = listener.fast_open;
+    verbose   = listener.verbose;
+    mtu       = listener.mtu;
+    mptcp     = listener.mptcp;
 
     char local_port_str[16];
     char remote_port_str[16];
@@ -1818,8 +1818,8 @@ start_ss_local_server(struct config_t profile)
 
     USE_LOGFILE(log);
 
-    if (profile.acl != NULL) {
-        acl = !init_acl(profile.acl);
+    if (listener.acl != NULL) {
+        acl = !init_acl(listener.acl);
     }
 
     if (local_addr == NULL) {
@@ -1913,7 +1913,7 @@ start_ss_local_server(struct config_t profile)
     // Init connections
     cork_dllist_init(&serv->connections);
 
-    cork_dllist_init(&inactive_profiles); //
+    cork_dllist_init(&inactive_listeners); //
 
     // Enter the loop
     ev_run(loop, 0);

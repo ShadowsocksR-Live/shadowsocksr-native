@@ -32,12 +32,12 @@
 
 #include "common.h"
 
-// use this as a profile or environment
+// use this as a listener or environment
 struct listener_t {
     uv_tcp_t socket;
     ss_host_port tunnel_addr;
 
-    struct cork_dllist_item entries; // for inactive profile list
+    struct cork_dllist_item entries; // for inactive listener list
     struct cork_dllist connections_eden; // For connections just created but not attach to a server
 
     char *iface;
