@@ -61,7 +61,7 @@ struct remote_t {
     struct remote_ctx_t *recv_ctx;
     struct remote_ctx_t *send_ctx;
     bool connected;
-    struct server_t *server;  // __weak_ptr
+    struct local_t *server;  // __weak_ptr
 
     struct sockaddr_storage addr;
     size_t addr_len;
@@ -69,7 +69,7 @@ struct remote_t {
     bool dying;
 };
 
-struct server_t {
+struct local_t {
     uv_tcp_t socket;
     enum net_stage stage;
     struct enc_ctx *e_ctx;

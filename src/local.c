@@ -120,7 +120,7 @@ static int nofile = 0;
 
 static void server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0);
 static void server_send_cb(uv_write_t* req, int status);
-static void server_send_data(struct server_t *server, char *data, unsigned int size);
+static void server_send_data(struct local_t *server, char *data, unsigned int size);
 static void remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0);
 static void remote_send_data(struct remote_t *remote);
 static void remote_connected_cb(uv_connect_t* req, int status);
@@ -129,13 +129,13 @@ static void remote_timeout_cb(uv_timer_t *handle);
 static struct remote_t *create_remote(struct listener_t *profile, struct sockaddr *addr);
 static void free_remote(struct remote_t *remote);
 static void close_and_free_remote(struct remote_t *remote);
-static void free_server(struct server_t *server);
-static void close_and_free_server(struct server_t *server);
+static void free_server(struct local_t *server);
+static void close_and_free_server(struct local_t *server);
 
-static void close_and_free_tunnel(struct remote_t *remote, struct server_t *server);
+static void close_and_free_tunnel(struct remote_t *remote, struct local_t *server);
 
 static struct remote_t *new_remote(uv_loop_t *loop, int timeout);
-static struct server_t *new_server(struct listener_t *profile);
+static struct local_t *new_server(struct listener_t *profile);
 
 static struct cork_dllist inactive_profiles;
 static struct listener_t *current_profile;
@@ -181,7 +181,7 @@ int uv_stream_fd(const uv_tcp_t *handle) {
 }
 
 void
-server_read_start(struct server_t* server)
+server_read_start(struct local_t *server)
 {
     if (server) {
         uv_read_start((uv_stream_t *) &server->socket, on_alloc, server_recv_cb);
@@ -189,7 +189,7 @@ server_read_start(struct server_t* server)
 }
 
 void
-server_read_stop(struct server_t* server)
+server_read_stop(struct local_t *server)
 {
     if (server) {
         uv_read_stop((uv_stream_t *) &server->socket);
@@ -267,7 +267,7 @@ free_connections(void)
 {
     struct cork_dllist_item *curr, *next;
     cork_dllist_foreach_void(&all_connections, curr, next) {
-        struct server_t *server = cork_container_of(curr, struct server_t, entries_all);
+        struct local_t *server = cork_container_of(curr, struct local_t, entries_all);
         struct remote_t *remote = server->remote;
         close_and_free_tunnel(remote, server);
     }
@@ -276,7 +276,7 @@ free_connections(void)
 static void
 server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 {
-    struct server_t *server = cork_container_of(stream, struct server_t, socket);
+    struct local_t *server = cork_container_of(stream, struct local_t, socket);
     struct remote_t *remote = server->remote;
     struct buffer_t *buf;
 
@@ -774,7 +774,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 static void
 server_send_cb(uv_write_t* req, int status)
 {
-    struct server_t *server = (struct server_t *) req->data;
+    struct local_t *server = (struct local_t *) req->data;
     assert(server);
     struct remote_t *remote = server->remote;
 
@@ -828,7 +828,7 @@ remote_timeout_cb(uv_timer_t *handle)
         = cork_container_of(handle, struct remote_ctx_t, watcher);
 
     struct remote_t *remote = remote_ctx->remote;
-    struct server_t *server = remote->server;
+    struct local_t *server = remote->server;
 
     if (verbose) {
         LOGI("TCP connection timeout");
@@ -841,7 +841,7 @@ static void
 remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 {
     struct remote_t *remote = cork_container_of(stream, struct remote_t, socket);
-    struct server_t *server = remote->server;
+    struct local_t *server = remote->server;
     struct server_env_t *server_env = server->server_env;
 
     uv_timer_again(&remote->recv_ctx->watcher);
@@ -938,7 +938,7 @@ remote_send_cb(uv_write_t* req, int status)
 {
     struct remote_t *remote = (struct remote_t *)req->data;
     assert(remote);
-    struct server_t *server = remote->server;
+    struct local_t *server = remote->server;
     struct buffer_t *buf = remote->buf;
 
     free(req);
@@ -966,7 +966,7 @@ remote_send_data(struct remote_t *remote)
 }
 
 static void 
-server_send_data(struct server_t *server, char *data, unsigned int size)
+server_send_data(struct local_t *server, char *data, unsigned int size)
 {
     uv_buf_t buf = uv_buf_init(data, size);
 
@@ -1037,12 +1037,12 @@ close_and_free_remote(struct remote_t *remote)
     }
 }
 
-static struct server_t *
+static struct local_t *
 new_server(struct listener_t *profile)
 {
     assert(profile);
 
-    struct server_t *server = ss_malloc(sizeof(struct server_t));
+    struct local_t *server = ss_malloc(sizeof(struct local_t));
 
     server->listener = profile;
     server->buf = buffer_alloc(BUF_SIZE);
@@ -1119,7 +1119,7 @@ check_and_free_profile(struct listener_t *profile)
 }
 
 static void
-free_server(struct server_t *server)
+free_server(struct local_t *server)
 {
     struct listener_t *profile = server->listener;
     struct server_env_t *server_env = server->server_env;
@@ -1164,12 +1164,12 @@ free_server(struct server_t *server)
 static void
 server_after_close_cb(uv_handle_t* handle)
 {
-    struct server_t *server = cork_container_of(handle, struct server_t, socket);
+    struct local_t *server = cork_container_of(handle, struct local_t, socket);
     free_server(server);
 }
 
 static void
-close_and_free_server(struct server_t *server)
+close_and_free_server(struct local_t *server)
 {
     if (server != NULL) {
         if (server->dying != false) {
@@ -1183,7 +1183,7 @@ close_and_free_server(struct server_t *server)
 }
 
 static void
-close_and_free_tunnel(struct remote_t *remote, struct server_t *server)
+close_and_free_tunnel(struct remote_t *remote, struct local_t *server)
 {
     close_and_free_remote(remote);
     close_and_free_server(server);
@@ -1235,7 +1235,7 @@ accept_cb(uv_stream_t* server, int status)
 
     assert(status == 0);
 
-    struct server_t *local_server = new_server(listener);
+    struct local_t *local_server = new_server(listener);
 
     int r = uv_tcp_init(server->loop, &local_server->socket);
     if (r != 0) {
