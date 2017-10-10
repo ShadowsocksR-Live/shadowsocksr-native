@@ -61,7 +61,7 @@ struct remote_t {
     struct remote_ctx_t *recv_ctx;
     struct remote_ctx_t *send_ctx;
     bool connected;
-    struct local_t *server;  // __weak_ptr
+    struct local_t *local;  // __weak_ptr
 
     struct sockaddr_storage addr;
     size_t addr_len;

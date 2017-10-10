@@ -120,7 +120,7 @@ static int nofile = 0;
 
 static void server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0);
 static void server_send_cb(uv_write_t* req, int status);
-static void server_send_data(struct local_t *server, char *data, unsigned int size);
+static void local_send_data(struct local_t *local, char *data, unsigned int size);
 static void remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0);
 static void remote_send_data(struct remote_t *remote);
 static void remote_connected_cb(uv_connect_t* req, int status);
@@ -129,13 +129,13 @@ static void remote_timeout_cb(uv_timer_t *handle);
 static struct remote_t *create_remote(struct listener_t *profile, struct sockaddr *addr);
 static void free_remote(struct remote_t *remote);
 static void close_and_free_remote(struct remote_t *remote);
-static void free_server(struct local_t *server);
-static void close_and_free_server(struct local_t *server);
+static void free_local(struct local_t *local);
+static void close_and_free_local(struct local_t *local);
 
-static void close_and_free_tunnel(struct remote_t *remote, struct local_t *server);
+static void close_and_free_tunnel(struct remote_t *remote, struct local_t *local);
 
-static struct remote_t *new_remote(uv_loop_t *loop, int timeout);
-static struct local_t *new_server(struct listener_t *profile);
+static struct remote_t * new_remote(uv_loop_t *loop, int timeout);
+static struct local_t * new_local(struct listener_t *profile);
 
 static struct cork_dllist inactive_profiles;
 static struct listener_t *current_profile;
@@ -181,18 +181,18 @@ int uv_stream_fd(const uv_tcp_t *handle) {
 }
 
 void
-server_read_start(struct local_t *server)
+local_read_start(struct local_t *local)
 {
-    if (server) {
-        uv_read_start((uv_stream_t *) &server->socket, on_alloc, server_recv_cb);
+    if (local) {
+        uv_read_start((uv_stream_t *) &local->socket, on_alloc, server_recv_cb);
     }
 }
 
 void
-server_read_stop(struct local_t *server)
+local_read_stop(struct local_t *local)
 {
-    if (server) {
-        uv_read_stop((uv_stream_t *) &server->socket);
+    if (local) {
+        uv_read_stop((uv_stream_t *) &local->socket);
     }
 }
 
@@ -267,28 +267,28 @@ free_connections(void)
 {
     struct cork_dllist_item *curr, *next;
     cork_dllist_foreach_void(&all_connections, curr, next) {
-        struct local_t *server = cork_container_of(curr, struct local_t, entries_all);
-        struct remote_t *remote = server->remote;
-        close_and_free_tunnel(remote, server);
+        struct local_t *local = cork_container_of(curr, struct local_t, entries_all);
+        struct remote_t *remote = local->remote;
+        close_and_free_tunnel(remote, local);
     }
 }
 
 static void
 server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 {
-    struct local_t *server = cork_container_of(stream, struct local_t, socket);
-    struct remote_t *remote = server->remote;
+    struct local_t *local = cork_container_of(stream, struct local_t, socket);
+    struct remote_t *remote = local->remote;
     struct buffer_t *buf;
 
     if (remote == NULL) {
-        buf = server->buf;
+        buf = local->buf;
     } else {
         buf = remote->buf;
     }
 
     if (nread == UV_EOF) {
         // connection closed
-        close_and_free_tunnel(remote, server);
+        close_and_free_tunnel(remote, local);
         return;
     } else if (nread == 0) {
         // http://docs.libuv.org/en/v1.x/stream.html
@@ -298,7 +298,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         if (verbose) {
             ERROR("server recieve callback for recv");
         }
-        close_and_free_tunnel(remote, server);
+        close_and_free_tunnel(remote, local);
         return;
     }
 
@@ -309,9 +309,9 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
     do_dealloc_uv_buffer((uv_buf_t *)buf0);
 
-    if (server->stage == STAGE_INIT) {
-        char *host = server->listener->tunnel_addr.host;
-        char *port = server->listener->tunnel_addr.port;
+    if (local->stage == STAGE_INIT) {
+        char *host = local->listener->tunnel_addr.host;
+        char *port = local->listener->tunnel_addr.port;
         if (host && port) {
             char buffer[BUF_SIZE] = { 0 };
             size_t header_len = 0;
@@ -322,38 +322,38 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             memmove(buf->buffer, hdr, header_len);
             buf->len += header_len;
 
-            server->stage = STAGE_PARSE;
+            local->stage = STAGE_PARSE;
         }
     }
     while (1) {
         // local socks5 server
-        if (server->stage == STAGE_STREAM) {
+        if (local->stage == STAGE_STREAM) {
             if (remote == NULL) {
                 LOGE("invalid remote");
-                close_and_free_tunnel(remote, server);
+                close_and_free_tunnel(remote, local);
                 return;
             }
 
             // insert shadowsocks header
             {
-                struct server_env_t *server_env = server->server_env;
+                struct server_env_t *server_env = local->server_env;
                 // SSR beg
                 struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
 
                 if (protocol_plugin && protocol_plugin->client_pre_encrypt) {
-                    remote->buf->len = (size_t) protocol_plugin->client_pre_encrypt(server->protocol, &remote->buf->buffer, (int)remote->buf->len, &remote->buf->capacity);
+                    remote->buf->len = (size_t) protocol_plugin->client_pre_encrypt(local->protocol, &remote->buf->buffer, (int)remote->buf->len, &remote->buf->capacity);
                 }
-                int err = ss_encrypt(&server_env->cipher, remote->buf, server->e_ctx, BUF_SIZE);
+                int err = ss_encrypt(&server_env->cipher, remote->buf, local->e_ctx, BUF_SIZE);
 
                 if (err) {
                     LOGE("server invalid password or cipher");
-                    close_and_free_tunnel(remote, server);
+                    close_and_free_tunnel(remote, local);
                     return;
                 }
 
                 struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
                 if (obfs_plugin && obfs_plugin->client_encode) {
-                    remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->buffer, remote->buf->len, &remote->buf->capacity);
+                    remote->buf->len = obfs_plugin->client_encode(local->obfs, &remote->buf->buffer, remote->buf->len, &remote->buf->capacity);
                 }
                 // SSR end
 #ifdef ANDROID
@@ -382,7 +382,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                     }
                 }
 #endif
-                server_read_stop(server);
+                local_read_stop(local);
 
                 uv_connect_t *connect = (uv_connect_t *)calloc(1, sizeof(uv_connect_t));
                 connect->data = remote;
@@ -392,7 +392,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 return;
             } else {
                 if (nread > 0 && remote->buf->len == 0) {
-                    server_read_stop(server);
+                    local_read_stop(local);
                     return;
                 }
                 remote_send_data(remote);
@@ -400,16 +400,16 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
             // all processed
             return;
-        } else if (server->stage == STAGE_INIT) {
+        } else if (local->stage == STAGE_INIT) {
             struct method_select_request *request = (struct method_select_request *)buf->buffer;
 
             char buffer[BUF_SIZE] = { 0 };
             struct method_select_response *response =
                     build_socks5_method_select_response(SOCKS5_METHOD_NOAUTH, buffer, sizeof(buffer));
 
-            server_send_data(server, (char *)response, sizeof(*response));
+            local_send_data(local, (char *)response, sizeof(*response));
 
-            server->stage = STAGE_HANDSHAKE;
+            local->stage = STAGE_HANDSHAKE;
 
             int off = (request->nmethods & 0xff) + sizeof(*request);
             if ((request->ver == SOCKS5_VERSION) && (off < (int)(buf->len))) {
@@ -421,7 +421,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             buf->len = 0;
 
             return;
-        } else if (server->stage == STAGE_HANDSHAKE || server->stage == STAGE_PARSE) {
+        } else if (local->stage == STAGE_HANDSHAKE || local->stage == STAGE_PARSE) {
             struct socks5_request *request = (struct socks5_request *)buf->buffer;
 
             struct sockaddr_in sock_addr = { 0 };
@@ -431,7 +431,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             if (request->cmd == SOCKS5_COMMAND_UDPASSOC) {
                 udp_assc = 1;
                 socklen_t addr_len = sizeof(sock_addr);
-                getsockname(uv_stream_fd(&server->socket), (struct sockaddr *)&sock_addr, &addr_len);
+                getsockname(uv_stream_fd(&local->socket), (struct sockaddr *)&sock_addr, &addr_len);
                 if (verbose) {
                     LOGI("udp assc request accepted");
                 }
@@ -443,21 +443,21 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         build_socks5_response(SOCKS5_REPLY_CMDUNSUPP, SOCKS5_ADDRTYPE_IPV4,
                                               &sock_addr, buffer, sizeof(buffer), &size);
 
-                server_send_data(server, (char *)response, (unsigned int)size);
+                local_send_data(local, (char *)response, (unsigned int)size);
 
-                close_and_free_tunnel(remote, server);
+                close_and_free_tunnel(remote, local);
                 return;
             }
 
             // Fake reply
-            if (server->stage == STAGE_HANDSHAKE) {
+            if (local->stage == STAGE_HANDSHAKE) {
                 char buffer[BUF_SIZE] = { 0 };
                 size_t size = 0;
                 struct socks5_response *response =
                         build_socks5_response(SOCKS5_REPLY_SUCCESS, SOCKS5_ADDRTYPE_IPV4,
                                               &sock_addr, buffer, sizeof(buffer), &size);
 
-                server_send_data(server, (char *)response, (unsigned int)size);
+                local_send_data(local, (char *)response, (unsigned int)size);
 
                 if (udp_assc) {
                     // Wait until client closes the connection
@@ -514,7 +514,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             } else {
                 buffer_free(abuf);
                 LOGE("unsupported addrtype: %d", addr_type);
-                close_and_free_tunnel(remote, server);
+                close_and_free_tunnel(remote, local);
                 return;
             }
 
@@ -535,7 +535,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                     ret = tls_protocol->parse_packet(data, data_len, &hostname);
                 }
                 if (ret == -1 && buf->len < BUF_SIZE) {
-                    server->stage = STAGE_PARSE;
+                    local->stage = STAGE_PARSE;
                     buffer_free(abuf);
                     return;
                 } else if (ret > 0) {
@@ -562,7 +562,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 }
             }
 
-            server->stage = STAGE_STREAM;
+            local->stage = STAGE_STREAM;
 
             buf->len -= (3 + abuf_len);
             if (buf->len > 0) {
@@ -574,7 +574,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                     if (verbose) {
                         LOGI("outbound blocked %s", host);
                     }
-                    close_and_free_tunnel(remote, server);
+                    close_and_free_tunnel(remote, local);
                     return;
                 }
 
@@ -619,7 +619,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         if (verbose) {
                             LOGI("outbound blocked %s", ip);
                         }
-                        close_and_free_tunnel(remote, server);
+                        close_and_free_tunnel(remote, local);
                         return;
                     }
 
@@ -659,7 +659,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         err = get_sockaddr(ip, port, &storage, 0, ipv6first);
                     }
                     if (err != -1) {
-                        remote = create_remote(server->listener, (struct sockaddr *)&storage);
+                        remote = create_remote(local->listener, (struct sockaddr *)&storage);
                     }
                 }
             }
@@ -667,7 +667,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             // Not match ACL
             if (remote == NULL) {
                 // pick a server
-                struct listener_t *profile = server->listener;
+                struct listener_t *profile = local->listener;
                 int index = rand() % profile->server_num;
                 struct server_env_t *server_env = &profile->servers[index];
 
@@ -684,7 +684,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                     }
                 }
 
-                server->server_env = server_env;
+                local->server_env = server_env;
 
                 remote = create_remote(profile, (struct sockaddr *) server_env->addr);
             }
@@ -692,26 +692,26 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             if (remote == NULL) {
                 buffer_free(abuf);
                 LOGE("invalid remote addr");
-                close_and_free_tunnel(remote, server);
+                close_and_free_tunnel(remote, local);
                 return;
             }
 
             {
-                struct server_env_t *server_env = server->server_env;
+                struct server_env_t *server_env = local->server_env;
 
                 // expelled from eden
-                cork_dllist_remove(&server->entries);
-                cork_dllist_add(&server_env->connections, &server->entries);
+                cork_dllist_remove(&local->entries);
+                cork_dllist_add(&server_env->connections, &local->entries);
 
                 // init server cipher
                 if (server_env->cipher.enc_method > TABLE) {
-                    server->e_ctx = ss_malloc(sizeof(struct enc_ctx));
-                    server->d_ctx = ss_malloc(sizeof(struct enc_ctx));
-                    enc_ctx_init(&server_env->cipher, server->e_ctx, 1);
-                    enc_ctx_init(&server_env->cipher, server->d_ctx, 0);
+                    local->e_ctx = ss_malloc(sizeof(struct enc_ctx));
+                    local->d_ctx = ss_malloc(sizeof(struct enc_ctx));
+                    enc_ctx_init(&server_env->cipher, local->e_ctx, 1);
+                    enc_ctx_init(&server_env->cipher, local->d_ctx, 0);
                 } else {
-                    server->e_ctx = NULL;
-                    server->d_ctx = NULL;
+                    local->e_ctx = NULL;
+                    local->d_ctx = NULL;
                 }
                 // SSR beg
                 struct server_info_t server_info;
@@ -728,7 +728,7 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 server_info.param = server_env->obfs_param;
                 server_info.g_data = server_env->obfs_global;
                 server_info.head_len = get_head_size(abuf->buffer, 320, 30);
-                server_info.iv = server->e_ctx->cipher_ctx.iv;
+                server_info.iv = local->e_ctx->cipher_ctx.iv;
                 server_info.iv_len = enc_get_iv_len(&server_env->cipher);
                 server_info.key = enc_get_key(&server_env->cipher);
                 server_info.key_len = enc_get_key_len(&server_env->cipher);
@@ -737,18 +737,18 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 server_info.cipher_env = &server_env->cipher;
 
                 if (server_env->obfs_plugin) {
-                    server->obfs = server_env->obfs_plugin->new_obfs();
-                    server_env->obfs_plugin->set_server_info(server->obfs, &server_info);
+                    local->obfs = server_env->obfs_plugin->new_obfs();
+                    server_env->obfs_plugin->set_server_info(local->obfs, &server_info);
                 }
 
                 server_info.param = server_env->protocol_param;
                 server_info.g_data = server_env->protocol_global;
 
                 if (server_env->protocol_plugin) {
-                    server->protocol = server_env->protocol_plugin->new_obfs();
-                    server_info.overhead = server_env->protocol_plugin->get_overhead(server->protocol)
-                        + (server_env->obfs_plugin ? server_env->obfs_plugin->get_overhead(server->obfs) : 0);
-                    server_env->protocol_plugin->set_server_info(server->protocol, &server_info);
+                    local->protocol = server_env->protocol_plugin->new_obfs();
+                    server_info.overhead = server_env->protocol_plugin->get_overhead(local->protocol)
+                        + (server_env->obfs_plugin ? server_env->obfs_plugin->get_overhead(local->obfs) : 0);
+                    server_env->protocol_plugin->set_server_info(local->protocol, &server_info);
                 }
                 // SSR end
 
@@ -762,8 +762,8 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 }
             }
 
-            server->remote = remote;
-            remote->server = server;
+            local->remote = remote;
+            remote->local = local;
 
             buffer_free(abuf);
             continue; // return;
@@ -774,17 +774,17 @@ server_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 static void
 server_send_cb(uv_write_t* req, int status)
 {
-    struct local_t *server = (struct local_t *) req->data;
-    assert(server);
-    struct remote_t *remote = server->remote;
+    struct local_t *local = (struct local_t *) req->data;
+    assert(local);
+    struct remote_t *remote = local->remote;
 
     free(req);
 
     if (status < 0) {
         LOGE("server_send_cb: %s", uv_strerror(status));
-        close_and_free_tunnel(remote, server);
+        close_and_free_tunnel(remote, local);
     } else if (status == 0) {
-        server->buf->len = 0;
+        local->buf->len = 0;
     }
 }
 
@@ -815,9 +815,9 @@ remote_connected_cb(uv_connect_t* req, int status)
         uv_read_start((uv_stream_t *)&remote->socket, on_alloc, remote_recv_cb);
 
         remote_send_data(remote);
-        server_read_start(remote->server);
+        local_read_start(remote->local);
     } else {
-        close_and_free_tunnel(remote, remote->server);
+        close_and_free_tunnel(remote, remote->local);
     }
 }
 
@@ -828,21 +828,21 @@ remote_timeout_cb(uv_timer_t *handle)
         = cork_container_of(handle, struct remote_ctx_t, watcher);
 
     struct remote_t *remote = remote_ctx->remote;
-    struct local_t *server = remote->server;
+    struct local_t *local = remote->local;
 
     if (verbose) {
         LOGI("TCP connection timeout");
     }
 
-    close_and_free_tunnel(remote, server);
+    close_and_free_tunnel(remote, local);
 }
 
 static void
 remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 {
     struct remote_t *remote = cork_container_of(stream, struct remote_t, socket);
-    struct local_t *server = remote->server;
-    struct server_env_t *server_env = server->server_env;
+    struct local_t *local = remote->local;
+    struct server_env_t *server_env = local->server_env;
 
     uv_timer_again(&remote->recv_ctx->watcher);
 
@@ -852,7 +852,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
     if (nread == UV_EOF) {
         // connection closed
-        close_and_free_tunnel(remote, server);
+        close_and_free_tunnel(remote, local);
         return;
     } else if (nread == 0) {
         // (errno == EAGAIN || errno == EWOULDBLOCK): no data. continue to wait for recv
@@ -861,13 +861,13 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         if (verbose) {
             ERROR("remote_recv_cb_recv");
         }
-        close_and_free_tunnel(remote, server);
+        close_and_free_tunnel(remote, local);
         return;
     }
 
     static const size_t FIXED_BUFF_SIZE = BUF_SIZE;
 
-    buffer_realloc(server->buf, FIXED_BUFF_SIZE);
+    buffer_realloc(local->buf, FIXED_BUFF_SIZE);
 
     char *guard = buf0->base + nread;
 
@@ -875,8 +875,8 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         size_t remain = guard - iter;
         size_t len = remain > FIXED_BUFF_SIZE ? FIXED_BUFF_SIZE : remain;
 
-        memcpy(server->buf->buffer, iter, (size_t)len);
-        server->buf->len = len;
+        memcpy(local->buf->buffer, iter, (size_t)len);
+        local->buf->len = len;
 
 #ifdef ANDROID
         if (log_tx_rx) {
@@ -888,46 +888,46 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
             if (obfs_plugin->client_decode) {
                 int needsendback;
-                server->buf->len = obfs_plugin->client_decode(server->obfs, &server->buf->buffer, server->buf->len, &server->buf->capacity, &needsendback);
-                if ((ssize_t)server->buf->len < 0) {
+                local->buf->len = obfs_plugin->client_decode(local->obfs, &local->buf->buffer, local->buf->len, &local->buf->capacity, &needsendback);
+                if ((ssize_t)local->buf->len < 0) {
                     LOGE("client_decode nread = %d", (int)nread);
-                    close_and_free_tunnel(remote, server);
+                    close_and_free_tunnel(remote, local);
                     break; // return;
                 }
                 if (needsendback) {
                     if (obfs_plugin->client_encode) {
-                        remote->buf->len = obfs_plugin->client_encode(server->obfs, &remote->buf->buffer, 0, &remote->buf->capacity);
+                        remote->buf->len = obfs_plugin->client_encode(local->obfs, &remote->buf->buffer, 0, &remote->buf->capacity);
                         remote_send_data(remote);
-                        server_read_start(server);
+                        local_read_start(local);
                     }
                 }
             }
         }
-        if (server->buf->len > 0) {
-            int err = ss_decrypt(&server_env->cipher, server->buf, server->d_ctx, FIXED_BUFF_SIZE);
+        if (local->buf->len > 0) {
+            int err = ss_decrypt(&server_env->cipher, local->buf, local->d_ctx, FIXED_BUFF_SIZE);
             if (err) {
                 LOGE("remote invalid password or cipher");
-                close_and_free_tunnel(remote, server);
+                close_and_free_tunnel(remote, local);
                 break; // return;
             }
         }
         if (server_env->protocol_plugin) {
             struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
             if (protocol_plugin->client_post_decrypt) {
-                server->buf->len = (size_t) protocol_plugin->client_post_decrypt(server->protocol, &server->buf->buffer, (int)server->buf->len, &server->buf->capacity);
-                if ((int)server->buf->len < 0) {
+                local->buf->len = (size_t) protocol_plugin->client_post_decrypt(local->protocol, &local->buf->buffer, (int)local->buf->len, &local->buf->capacity);
+                if ((int)local->buf->len < 0) {
                     LOGE("client_post_decrypt and nread=%d", (int)nread);
-                    close_and_free_tunnel(remote, server);
+                    close_and_free_tunnel(remote, local);
                     break; // return;
                 }
-                if ( server->buf->len == 0 ) {
+                if (local->buf->len == 0) {
                     continue;
                 }
             }
         }
         // SSR end
 
-        server_send_data(server, server->buf->buffer, (unsigned int)server->buf->len);
+        local_send_data(local, local->buf->buffer, (unsigned int)local->buf->len);
     } // for loop
 
     do_dealloc_uv_buffer((uv_buf_t *)buf0);
@@ -938,7 +938,7 @@ remote_send_cb(uv_write_t* req, int status)
 {
     struct remote_t *remote = (struct remote_t *)req->data;
     assert(remote);
-    struct local_t *server = remote->server;
+    struct local_t *local = remote->local;
     struct buffer_t *buf = remote->buf;
 
     free(req);
@@ -946,7 +946,7 @@ remote_send_cb(uv_write_t* req, int status)
     uv_timer_stop(&remote->send_ctx->watcher);
 
     if (status != 0) {
-        close_and_free_tunnel(remote, server);
+        close_and_free_tunnel(remote, local);
         return;
     }
 
@@ -966,14 +966,14 @@ remote_send_data(struct remote_t *remote)
 }
 
 static void 
-server_send_data(struct local_t *server, char *data, unsigned int size)
+local_send_data(struct local_t *local, char *data, unsigned int size)
 {
     uv_buf_t buf = uv_buf_init(data, size);
 
     uv_write_t *write_req = (uv_write_t *)calloc(1, sizeof(uv_write_t));
-    write_req->data = server;
+    write_req->data = local;
 
-    uv_write(write_req, (uv_stream_t*)&server->socket, &buf, 1, server_send_cb);
+    uv_write(write_req, (uv_stream_t*)&local->socket, &buf, 1, server_send_cb);
 }
 
 
@@ -1003,8 +1003,8 @@ new_remote(uv_loop_t *loop, int timeout)
 static void
 free_remote(struct remote_t *remote)
 {
-    if (remote->server != NULL) {
-        remote->server->remote = NULL;
+    if (remote->local != NULL) {
+        remote->local->remote = NULL;
     }
     if (remote->buf != NULL) {
         buffer_free(remote->buf);
@@ -1038,20 +1038,20 @@ close_and_free_remote(struct remote_t *remote)
 }
 
 static struct local_t *
-new_server(struct listener_t *profile)
+new_local(struct listener_t *profile)
 {
     assert(profile);
 
-    struct local_t *server = ss_malloc(sizeof(struct local_t));
+    struct local_t *local = ss_malloc(sizeof(struct local_t));
 
-    server->listener = profile;
-    server->buf = buffer_alloc(BUF_SIZE);
-    server->stage = STAGE_INIT;
+    local->listener = profile;
+    local->buf = buffer_alloc(BUF_SIZE);
+    local->stage = STAGE_INIT;
 
-    cork_dllist_add(&profile->connections_eden, &server->entries);
-    cork_dllist_add(&all_connections, &server->entries_all);
+    cork_dllist_add(&profile->connections_eden, &local->entries);
+    cork_dllist_add(&all_connections, &local->entries_all);
 
-    return server;
+    return local;
 }
 
 static void
@@ -1119,43 +1119,43 @@ check_and_free_profile(struct listener_t *profile)
 }
 
 static void
-free_server(struct local_t *server)
+free_local(struct local_t *local)
 {
-    struct listener_t *profile = server->listener;
-    struct server_env_t *server_env = server->server_env;
+    struct listener_t *profile = local->listener;
+    struct server_env_t *server_env = local->server_env;
 
-    cork_dllist_remove(&server->entries);
-    cork_dllist_remove(&server->entries_all);
+    cork_dllist_remove(&local->entries);
+    cork_dllist_remove(&local->entries_all);
 
-    if (server->remote != NULL) {
-        server->remote->server = NULL;
+    if (local->remote != NULL) {
+        local->remote->local = NULL;
     }
-    if (server->buf != NULL) {
-        buffer_free(server->buf);
+    if (local->buf != NULL) {
+        buffer_free(local->buf);
     }
 
     if(server_env) {
-        if (server->e_ctx != NULL) {
-            enc_ctx_release(&server_env->cipher, server->e_ctx);
-            ss_free(server->e_ctx);
+        if (local->e_ctx != NULL) {
+            enc_ctx_release(&server_env->cipher, local->e_ctx);
+            ss_free(local->e_ctx);
         }
-        if (server->d_ctx != NULL) {
-            enc_ctx_release(&server_env->cipher, server->d_ctx);
-            ss_free(server->d_ctx);
+        if (local->d_ctx != NULL) {
+            enc_ctx_release(&server_env->cipher, local->d_ctx);
+            ss_free(local->d_ctx);
         }
         // SSR beg
         if (server_env->obfs_plugin) {
-            server_env->obfs_plugin->dispose(server->obfs);
-            server->obfs = NULL;
+            server_env->obfs_plugin->dispose(local->obfs);
+            local->obfs = NULL;
         }
         if (server_env->protocol_plugin) {
-            server_env->protocol_plugin->dispose(server->protocol);
-            server->protocol = NULL;
+            server_env->protocol_plugin->dispose(local->protocol);
+            local->protocol = NULL;
         }
         // SSR end
     }
 
-    ss_free(server);
+    ss_free(local);
 
     // after free server, we need to check the profile
     check_and_free_profile(profile);
@@ -1164,29 +1164,29 @@ free_server(struct local_t *server)
 static void
 server_after_close_cb(uv_handle_t* handle)
 {
-    struct local_t *server = cork_container_of(handle, struct local_t, socket);
-    free_server(server);
+    struct local_t *local = cork_container_of(handle, struct local_t, socket);
+    free_local(local);
 }
 
 static void
-close_and_free_server(struct local_t *server)
+close_and_free_local(struct local_t *local)
 {
-    if (server != NULL) {
-        if (server->dying != false) {
+    if (local != NULL) {
+        if (local->dying != false) {
             return;
         }
-        server->dying = true;
+        local->dying = true;
 
-        uv_read_stop((uv_stream_t *)&server->socket);
-        uv_close((uv_handle_t *)&server->socket, server_after_close_cb);
+        uv_read_stop((uv_stream_t *)&local->socket);
+        uv_close((uv_handle_t *)&local->socket, server_after_close_cb);
     }
 }
 
 static void
-close_and_free_tunnel(struct remote_t *remote, struct local_t *server)
+close_and_free_tunnel(struct remote_t *remote, struct local_t *local)
 {
     close_and_free_remote(remote);
-    close_and_free_server(server);
+    close_and_free_local(local);
 }
 
 static struct remote_t *
@@ -1235,21 +1235,21 @@ accept_cb(uv_stream_t* server, int status)
 
     assert(status == 0);
 
-    struct local_t *local_server = new_server(listener);
+    struct local_t *local = new_local(listener);
 
-    int r = uv_tcp_init(server->loop, &local_server->socket);
+    int r = uv_tcp_init(server->loop, &local->socket);
     if (r != 0) {
         LOGE("uv_tcp_init error: %s\n", uv_strerror(r));
         return;
     }
 
-    r = uv_accept(server, (uv_stream_t*)&local_server->socket);
+    r = uv_accept(server, (uv_stream_t*)&local->socket);
     if (r) {
         LOGE("uv_accept: %s\n", uv_strerror(r));
         return;
     }
 
-    uv_read_start((uv_stream_t*)&local_server->socket, on_alloc, server_recv_cb);
+    uv_read_start((uv_stream_t*)&local->socket, on_alloc, server_recv_cb);
 }
 
 static void
