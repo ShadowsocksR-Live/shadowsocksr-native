@@ -807,6 +807,8 @@ remote_connected_cb(uv_connect_t* req, int status)
 {
     struct remote_t *remote = (struct remote_t *)req->data;
     assert(remote);
+    struct local_t *local = remote->local;
+
     free(req);
     if (status == 0) {
         remote->connected = true;
@@ -815,9 +817,9 @@ remote_connected_cb(uv_connect_t* req, int status)
         uv_read_start((uv_stream_t *)&remote->socket, on_alloc, remote_recv_cb);
 
         remote_send_data(remote);
-        local_read_start(remote->local);
+        local_read_start(local);
     } else {
-        close_and_free_tunnel(remote, remote->local);
+        close_and_free_tunnel(remote, local);
     }
 }
 
@@ -884,23 +886,19 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         }
 #endif
         // SSR beg
-        if (server_env->obfs_plugin) {
-            struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
-            if (obfs_plugin->client_decode) {
-                int needsendback;
-                local->buf->len = obfs_plugin->client_decode(local->obfs, &local->buf->buffer, local->buf->len, &local->buf->capacity, &needsendback);
-                if ((ssize_t)local->buf->len < 0) {
-                    LOGE("client_decode nread = %d", (int)nread);
-                    close_and_free_tunnel(remote, local);
-                    break; // return;
-                }
-                if (needsendback) {
-                    if (obfs_plugin->client_encode) {
-                        remote->buf->len = obfs_plugin->client_encode(local->obfs, &remote->buf->buffer, 0, &remote->buf->capacity);
-                        remote_send_data(remote);
-                        local_read_start(local);
-                    }
-                }
+        struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
+        if (obfs_plugin && obfs_plugin->client_decode) {
+            int needsendback;
+            local->buf->len = obfs_plugin->client_decode(local->obfs, &local->buf->buffer, local->buf->len, &local->buf->capacity, &needsendback);
+            if ((ssize_t)local->buf->len < 0) {
+                LOGE("client_decode nread = %d", (int)nread);
+                close_and_free_tunnel(remote, local);
+                break; // return;
+            }
+            if (needsendback && obfs_plugin->client_encode) {
+                remote->buf->len = obfs_plugin->client_encode(local->obfs, &remote->buf->buffer, 0, &remote->buf->capacity);
+                remote_send_data(remote);
+                local_read_start(local);
             }
         }
         if (local->buf->len > 0) {
@@ -911,18 +909,16 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 break; // return;
             }
         }
-        if (server_env->protocol_plugin) {
-            struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
-            if (protocol_plugin->client_post_decrypt) {
-                local->buf->len = (size_t) protocol_plugin->client_post_decrypt(local->protocol, &local->buf->buffer, (int)local->buf->len, &local->buf->capacity);
-                if ((int)local->buf->len < 0) {
-                    LOGE("client_post_decrypt and nread=%d", (int)nread);
-                    close_and_free_tunnel(remote, local);
-                    break; // return;
-                }
-                if (local->buf->len == 0) {
-                    continue;
-                }
+        struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
+        if (protocol_plugin && protocol_plugin->client_post_decrypt) {
+            local->buf->len = (size_t)protocol_plugin->client_post_decrypt(local->protocol, &local->buf->buffer, (int)local->buf->len, &local->buf->capacity);
+            if ((int)local->buf->len < 0) {
+                LOGE("client_post_decrypt and nread=%d", (int)nread);
+                close_and_free_tunnel(remote, local);
+                break; // return;
+            }
+            if (local->buf->len == 0) {
+                continue;
             }
         }
         // SSR end
@@ -1244,7 +1240,7 @@ accept_cb(uv_stream_t* server, int status)
     }
 
     r = uv_accept(server, (uv_stream_t*)&local->socket);
-    if (r) {
+    if (r != 0) {
         LOGE("uv_accept: %s\n", uv_strerror(r));
         return;
     }
