@@ -96,6 +96,9 @@
     <ClCompile Include="..\..\src\socks5.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\udprelay.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\local.h">
@@ -175,6 +178,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\obfs\crc32.h">
       <Filter>obfs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\udprelay.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

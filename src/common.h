@@ -37,16 +37,6 @@
 #include "encrypt.h"
 #include "obfs/obfs.h"
 
-int init_udprelay(const char *server_host, const char *server_port,
-#ifdef MODULE_LOCAL
-                  const struct sockaddr *remote_addr, const int remote_addr_len,
-                  const ss_host_port tunnel_addr,
-#endif
-                  int mtu, int timeout, const char *iface,
-                  struct cipher_env_t *cipher_env, const char *protocol, const char *protocol_param);
-
-void free_udprelay(void);
-
 #ifndef __weak_ptr
 #define __weak_ptr
 #endif

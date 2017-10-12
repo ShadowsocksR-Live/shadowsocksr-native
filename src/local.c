@@ -69,6 +69,7 @@
 #include "http.h"
 #include "tls.h"
 #include "local.h"
+#include "udprelay.h"
 
 #ifndef LIB_ONLY
 #ifdef __APPLE__
@@ -1289,12 +1290,12 @@ main(int argc, char **argv)
     char *iface = NULL;
     int remote_num = 0;
     char *hostnames[MAX_REMOTE_NUM] = {NULL};
-    ss_host_port remote_addr[MAX_REMOTE_NUM];
+    struct ss_host_port remote_addr[MAX_REMOTE_NUM];
     char *remote_port = NULL;
     int use_new_listener = 0;
     jconf_t *conf = NULL;
 
-    ss_host_port tunnel_addr = { .host = NULL, .port = NULL };
+    struct ss_host_port tunnel_addr = { .host = NULL, .port = NULL };
     char *tunnel_addr_str = NULL;
 
     int option_index                    = 0;
@@ -1725,10 +1726,8 @@ main(int argc, char **argv)
     // Setup UDP
     if (mode != TCP_ONLY) {
         LOGI("udprelay enabled");
-//#if !defined(_MSC_VER)
-//        init_udprelay(local_addr, local_port, (struct sockaddr*)listen_ctx->servers[0].addr_udp,
-//                      listen_ctx->servers[0].addr_udp_len, tunnel_addr, mtu, listen_ctx->timeout, listener->iface, &listen_ctx->servers[0].cipher, listen_ctx->servers[0].protocol_name, listen_ctx->servers[0].protocol_param);
-//#endif // !defined(_MSC_VER)
+        init_udprelay(loop, local_addr, local_port, (struct sockaddr*)listen_ctx->servers[0].addr_udp,
+                      listen_ctx->servers[0].addr_udp_len, tunnel_addr, mtu, listen_ctx->timeout, listener->iface, &listen_ctx->servers[0].cipher, listen_ctx->servers[0].protocol_name, listen_ctx->servers[0].protocol_param);
     }
 
 #ifdef HAVE_LAUNCHD
@@ -1767,9 +1766,7 @@ main(int argc, char **argv)
 
     // Clean up
     if (mode != TCP_ONLY) {
-//#if !defined(_MSC_VER)
-//        free_udprelay(); // udp relay use some data from listener, so we need to release udp first
-//#endif // !defined(_MSC_VER)
+        free_udprelay(); // udp relay use some data from listener, so we need to release udp first
     }
 
     if (mode != UDP_ONLY) {
@@ -1803,7 +1800,7 @@ start_ss_local_server(struct config_t listener)
     int mtu           = 0;
     int mptcp         = 0;
 
-    ss_host_port tunnel_addr = { .host = NULL, .port = NULL };
+    struct ss_host_port tunnel_addr = { .host = NULL, .port = NULL };
 
     mode      = listener.mode;
     fast_open = listener.fast_open;
@@ -1893,7 +1890,7 @@ start_ss_local_server(struct config_t listener)
     // Setup UDP
     if (mode != TCP_ONLY) {
         LOGI("udprelay enabled");
-        init_udprelay(local_addr, local_port_str, (struct sockaddr*)listen_ctx.servers[0].addr_udp,
+        init_udprelay(loop, local_addr, local_port_str, (struct sockaddr*)listen_ctx.servers[0].addr_udp,
                       listen_ctx.servers[0].addr_udp_len, tunnel_addr, mtu, listen_ctx.timeout, listen_ctx.iface, &listen_ctx.servers[0].cipher, listen_ctx.servers[0].protocol_name, listen_ctx.servers[0].protocol_param);
     }
 

@@ -39,6 +39,7 @@
     <ClCompile Include="..\..\src\rule.c" />
     <ClCompile Include="..\..\src\socks5.c" />
     <ClCompile Include="..\..\src\tls.c" />
+    <ClCompile Include="..\..\src\udprelay.c" />
     <ClCompile Include="..\..\src\utils.c" />
     <ClCompile Include="..\..\src\win32.c" />
     <ClCompile Include="src\getopt.c" />
@@ -67,6 +68,7 @@
     <ClInclude Include="..\..\src\obfs\verify.h" />
     <ClInclude Include="..\..\src\socks5.h" />
     <ClInclude Include="..\..\src\tls.h" />
+    <ClInclude Include="..\..\src\udprelay.h" />
     <ClInclude Include="..\..\src\utils.h" />
     <ClInclude Include="..\..\src\win32.h" />
     <ClInclude Include="include\getopt.h" />

@@ -55,14 +55,14 @@ to_string(const json_value *value)
 }
 
 void
-free_addr(ss_host_port *addr)
+free_addr(struct ss_host_port *addr)
 {
     ss_free(addr->host);
     ss_free(addr->port);
 }
 
 void
-parse_addr(const char *str, ss_host_port *addr)
+parse_addr(const char *str, struct ss_host_port *addr)
 {
     int ipv6 = 0, ret = -1, n = 0;
     char *pch;
