@@ -23,7 +23,7 @@
 #ifndef _UDPRELAY_H
 #define _UDPRELAY_H
 
-#include <ev.h>
+#include <uv.h>
 #include <time.h>
 
 #include "encrypt.h"
@@ -35,59 +35,16 @@
 #endif
 
 #include "cache.h"
-
 #include "common.h"
 
-#define MAX_UDP_PACKET_SIZE (65507)
-
-#define DEFAULT_PACKET_SIZE MAX_UDP_PACKET_SIZE // 1492 - 1 - 28 - 2 - 64 = 1397, the default MTU for UDP relay
-
-struct server_ctx_t {
-    ev_io io;
-    int fd;
-//    int method;
-    int timeout;
-    const char *iface;
-    struct cache *conn_cache;
+int init_udprelay(uv_loop_t *loop, const char *server_host, const char *server_port,
 #ifdef MODULE_LOCAL
-    const struct sockaddr *remote_addr;
-    int remote_addr_len;
-    ss_host_port tunnel_addr;
+    const struct sockaddr *remote_addr, const int remote_addr_len,
+    const struct ss_host_port tunnel_addr,
 #endif
-#ifdef MODULE_REMOTE
-    struct ev_loop *loop;
-#endif
-    struct cipher_env_t *cipher_env;
-    // SSR
-    struct obfs_t *protocol;
-    struct obfs_manager *protocol_plugin;
-    void *protocol_global;
-};
+    int mtu, int timeout, const char *iface, struct cipher_env_t *cipher_env,
+    const char *protocol, const char *protocol_param);
 
-#ifdef MODULE_REMOTE
-typedef struct query_ctx {
-    struct ResolvQuery *query;
-    struct sockaddr_storage src_addr;
-    struct buffer_t *buf;
-    int addr_header_len;
-    char addr_header[384];
-    struct server_ctx_t *server_ctx;
-    struct remote_ctx_t *remote_ctx;
-} query_ctx_t;
-#endif
-
-struct remote_ctx_t {
-    ev_io io;
-    ev_timer watcher;
-    int af;
-    int fd;
-    int addr_header_len;
-    char addr_header[384];
-    struct sockaddr_storage src_addr;
-#ifdef MODULE_REMOTE
-    struct sockaddr_storage dst_addr;
-#endif
-    struct server_ctx_t *server_ctx;
-};
+void free_udprelay(void);
 
 #endif // _UDPRELAY_H
