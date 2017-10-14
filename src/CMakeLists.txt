@@ -25,6 +25,7 @@ set(SOURCE_FILES_LOCAL
         cache.c
         acl.c
         netutils.c
+        udprelay.c
         local.c
         common.h
         includeobfs.h

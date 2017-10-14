@@ -132,11 +132,11 @@ struct remote_ctx_t {
     struct server_ctx_t *server_ctx;
 };
 
-static void server_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, const struct sockaddr* addr, unsigned flags);
-static void remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, const struct sockaddr* addr, unsigned flags);
+static void server_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const struct sockaddr* addr, unsigned flags);
+static void remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const struct sockaddr* addr, unsigned flags);
 static void remote_timeout_cb(uv_timer_t* handle);
 
-static char *hash_key(const int af, const struct sockaddr_storage *addr);
+static char *hash_key(int af, const struct sockaddr_storage *addr);
 #ifdef MODULE_REMOTE
 static void query_resolve_cb(struct sockaddr *addr, void *data);
 #endif
@@ -156,8 +156,8 @@ extern uint64_t tx;
 extern uint64_t rx;
 #endif
 
-static int packet_size                               = DEFAULT_PACKET_SIZE;
-static int buf_size                                  = DEFAULT_PACKET_SIZE * 2;
+static size_t packet_size                            = DEFAULT_PACKET_SIZE;
+static size_t buf_size                               = DEFAULT_PACKET_SIZE * 2;
 static int server_num                                = 0;
 static struct server_ctx_t *server_ctx_list[MAX_REMOTE_NUM] = { NULL };
 
@@ -251,7 +251,7 @@ get_dstaddr(struct msghdr *msg, struct sockaddr_storage *dstaddr)
 
 #define HASH_KEY_LEN sizeof(struct sockaddr_storage) + sizeof(int)
 static char *
-hash_key(const int af, const struct sockaddr_storage *addr)
+hash_key(int af, const struct sockaddr_storage *addr)
 {
     size_t addr_len = sizeof(struct sockaddr_storage);
     static char key[HASH_KEY_LEN];
@@ -403,8 +403,8 @@ get_addr_str(const struct sockaddr *sa)
         strncpy(s, "Unknown AF", SS_ADDRSTRLEN);
     }
 
-    int addr_len = strlen(addr);
-    int port_len = strlen(port);
+    size_t addr_len = strlen(addr);
+    size_t port_len = strlen(port);
     memcpy(s, addr, addr_len);
     memcpy(s + addr_len + 1, port, port_len);
     s[addr_len] = ':';
@@ -649,7 +649,7 @@ close_and_free_remote(struct remote_ctx_t *ctx)
     if (ctx != NULL) {
         uv_timer_stop(&ctx->watcher);
         uv_udp_recv_stop(&ctx->io);
-        uv_close(&ctx->io, remote_after_close_cb); // close(ctx->fd);
+        uv_close((uv_handle_t *)&ctx->io, remote_after_close_cb); // close(ctx->fd);
         //ss_free(ctx);
     }
 }
@@ -775,10 +775,10 @@ remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
         return;
     }
 
+    /*
     struct sockaddr_storage src_addr = { 0 };
     socklen_t src_addr_len = sizeof(src_addr);
 
-    /*
     struct buffer_t *buf = buffer_alloc(buf_size);
 
     // recv
@@ -795,11 +795,11 @@ remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
         goto CLEAN_UP;
     }
 
-    struct buffer_t *buf = buffer_alloc(max(buf_size, nread));
-    memcpy(buf->buffer, buf0->base, nread);
-    buf->len = nread;
+    struct buffer_t *buf = buffer_alloc(max((size_t)buf_size, (size_t)nread));
+    memcpy(buf->buffer, buf0->base, (size_t)nread);
+    buf->len = (size_t)nread;
 
-    do_dealloc_uv_buffer(buf0);
+    do_dealloc_uv_buffer((uv_buf_t *)buf0);
 
 #ifdef MODULE_LOCAL
     int err = ss_decrypt_all(server_ctx->cipher_env, buf, buf_size);
@@ -812,7 +812,7 @@ remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
     if (server_ctx->protocol_plugin) {
         struct obfs_manager *protocol_plugin = server_ctx->protocol_plugin;
         if (protocol_plugin->client_udp_post_decrypt) {
-            buf->len = protocol_plugin->client_udp_post_decrypt(server_ctx->protocol, &buf->buffer, buf->len, &buf->capacity);
+            buf->len = (size_t) protocol_plugin->client_udp_post_decrypt(server_ctx->protocol, &buf->buffer, (int)buf->len, &buf->capacity);
             if ((int)buf->len < 0) {
                 LOGE("client_udp_post_decrypt");
                 close_and_free_remote(remote_ctx);
@@ -962,7 +962,7 @@ remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
     */
     uv_udp_send_t *req = (uv_udp_send_t *)calloc(1, sizeof(uv_udp_send_t));
     req->data = server_ctx;
-    uv_buf_t tmp = uv_buf_init(buf->buffer, buf->len);
+    uv_buf_t tmp = uv_buf_init(buf->buffer, (unsigned int) buf->len);
     uv_udp_send(req, &server_ctx->io, &tmp, 1, (const struct sockaddr *)&remote_ctx->src_addr, on_send);
 
 #endif
@@ -984,7 +984,7 @@ server_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
 
     struct sockaddr_storage src_addr = { 0 };
 
-    struct buffer_t *buf = buffer_alloc(max(buf_size, nread));
+    struct buffer_t *buf = buffer_alloc(max((size_t)buf_size, (size_t)nread));
 
     socklen_t src_addr_len = sizeof(src_addr);
     unsigned int offset    = 0;
@@ -1042,9 +1042,9 @@ server_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
     }
 
     memcpy(buf->buffer, buf0->base, nread);
-    buf->len = nread;
+    buf->len = (size_t) nread;
 
-    do_dealloc_uv_buffer(buf0);
+    do_dealloc_uv_buffer((uv_buf_t *)buf0);
 #endif
 
 #ifdef MODULE_REMOTE
@@ -1194,7 +1194,7 @@ server_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
             goto CLEAN_UP;
         }
 
-        strncpy(addr_header, buf->buffer + offset, addr_header_len);
+        strncpy(addr_header, buf->buffer + offset, (size_t) addr_header_len);
     }
 #endif
 
@@ -1304,7 +1304,7 @@ server_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
         remote_ctx->src_addr        = src_addr;
         remote_ctx->af              = remote_addr->sa_family;
         remote_ctx->addr_header_len = addr_header_len;
-        memcpy(remote_ctx->addr_header, addr_header, addr_header_len);
+        memcpy(remote_ctx->addr_header, addr_header, (size_t) addr_header_len);
 
         // Add to conn cache
         cache_insert(conn_cache, key, HASH_KEY_LEN, (void *)remote_ctx);
@@ -1315,7 +1315,7 @@ server_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
         ev_timer_start(EV_A_ & remote_ctx->watcher);
         */
         uv_udp_recv_start(&remote_ctx->io, alloc_buffer, remote_recv_cb);
-        uv_timer_start(&remote_ctx->watcher, remote_timeout_cb, server_ctx->timeout * 1000, 0);
+        uv_timer_start(&remote_ctx->watcher, remote_timeout_cb, (uint64_t)server_ctx->timeout * 1000, 0);
     }
 
     if (offset > 0) {
@@ -1327,7 +1327,7 @@ server_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
     if (server_ctx->protocol_plugin) {
         struct obfs_manager *protocol_plugin = server_ctx->protocol_plugin;
         if (protocol_plugin->client_udp_pre_encrypt) {
-            buf->len = protocol_plugin->client_udp_pre_encrypt(server_ctx->protocol, &buf->buffer, buf->len, &buf->capacity);
+            buf->len = (size_t) protocol_plugin->client_udp_pre_encrypt(server_ctx->protocol, &buf->buffer, (int)buf->len, &buf->capacity);
         }
     }
     //SSR end
@@ -1353,7 +1353,7 @@ server_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
     */
     uv_udp_send_t *req = (uv_udp_send_t *)calloc(1, sizeof(uv_udp_send_t));
     req->data = server_ctx;
-    uv_buf_t tmp = uv_buf_init(buf->buffer, buf->len);
+    uv_buf_t tmp = uv_buf_init(buf->buffer, (unsigned int) buf->len);
     uv_udp_send(req, &remote_ctx->io, &tmp, 1, (const struct sockaddr *)remote_addr, on_send);
 
 #if !defined(MODULE_TUNNEL) && !defined(MODULE_REDIR)
@@ -1537,11 +1537,11 @@ init_udprelay(uv_loop_t *loop, const char *server_host, const char *server_port,
     struct server_info_t server_info = { 0 };
 
     strcpy(server_info.host, server_host);
-    server_info.port = atoi(server_port);
+    server_info.port = (uint16_t) atoi(server_port);
     server_info.g_data = server_ctx->protocol_global;
     server_info.param = (char *)protocol_param;
     server_info.key = enc_get_key(cipher_env);
-    server_info.key_len = enc_get_key_len(cipher_env);
+    server_info.key_len = (uint16_t) enc_get_key_len(cipher_env);
 
     if (server_ctx->protocol_plugin) {
         server_ctx->protocol_plugin->set_server_info(server_ctx->protocol, &server_info);
@@ -1563,7 +1563,7 @@ static void server_close_cb(uv_handle_t* handle) {
 }
 
 void
-free_udprelay()
+free_udprelay(void)
 {
     while (server_num-- > 0) {
         struct server_ctx_t *server_ctx = server_ctx_list[server_num];
@@ -1586,6 +1586,6 @@ free_udprelay()
         uv_stop(server_ctx->io.loop);
         cache_delete(server_ctx->conn_cache, 0);
         server_ctx_list[server_num] = NULL;
-        uv_close(&server_ctx->io, server_close_cb);
+        uv_close((uv_handle_t *)&server_ctx->io, server_close_cb);
     }
 }
