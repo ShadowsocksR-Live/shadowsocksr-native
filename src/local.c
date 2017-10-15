@@ -170,7 +170,7 @@ setnonblocking(int fd)
 }
 #endif
 
-int uv_stream_fd(const uv_tcp_t *handle) {
+int uv_stream_fd(const uv_stream_t *handle) {
 #if defined(_WIN32)
     return handle->socket;
 #elif defined(__APPLE__)
@@ -274,30 +274,12 @@ free_connections(void)
     }
 }
 
-bool tunnel_is_dying(struct remote_t *remote, struct local_t *local) {
-    bool result = true;
-    do {
-        if (uv_stream_fd(&local->socket) <= 0) {
-            break;
-        }
-        if (remote && (uv_stream_fd(&remote->socket) <= 0)) {
-            break;
-        }
-        result = false;
-    } while (0);
-    return result;
-}
-
 static void
 local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 {
     struct local_t *local = cork_container_of(stream, struct local_t, socket);
     struct remote_t *remote = local->remote;
     struct buffer_t *buf;
-
-    if (tunnel_is_dying(remote, local)) {
-        return;
-    }
 
     if (remote == NULL) {
         buf = local->buf;
@@ -450,7 +432,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             if (request->cmd == SOCKS5_COMMAND_UDPASSOC) {
                 udp_assc = 1;
                 socklen_t addr_len = sizeof(sock_addr);
-                getsockname(uv_stream_fd(&local->socket), (struct sockaddr *)&sock_addr, &addr_len);
+                getsockname(uv_stream_fd((const uv_stream_t *)&local->socket), (struct sockaddr *)&sock_addr, &addr_len);
                 if (verbose) {
                     LOGI("udp assc request accepted");
                 }
@@ -865,10 +847,6 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
     struct local_t *local = remote->local;
     struct server_env_t *server_env = local->server_env;
 
-    if (tunnel_is_dying(remote, local)) {
-        return;
-    }
-
     uv_timer_again(&remote->recv_ctx->watcher);
 
 #ifdef ANDROID
@@ -1204,7 +1182,7 @@ create_remote(struct listener_t *listener, struct sockaddr *addr)
 
 #ifdef SET_INTERFACE
     if (listener->iface) {
-        if (setinterface(uv_stream_fd(&remote->socket), listener->iface) == -1) {
+        if (setinterface(uv_stream_fd((const uv_stream_t *)&remote->socket), listener->iface) == -1) {
             ERROR("setinterface");
         }
     }
