@@ -128,15 +128,15 @@ static void remote_connected_cb(uv_connect_t* req, int status);
 static void remote_timeout_cb(uv_timer_t *handle);
 
 static struct remote_t *create_remote(struct listener_t *listener, struct sockaddr *addr);
-static void free_remote(struct remote_t *remote);
+static void remote_destroy(struct remote_t *remote);
 static void close_and_free_remote(struct remote_t *remote);
-static void free_local(struct local_t *local);
+static void local_destroy(struct local_t *local);
 static void close_and_free_local(struct local_t *local);
 
 static void close_and_free_tunnel(struct remote_t *remote, struct local_t *local);
 
 static struct remote_t * new_remote(uv_loop_t *loop, int timeout);
-static struct local_t * new_local(struct listener_t *listener);
+static struct local_t * local_create(struct listener_t *listener);
 
 static struct cork_dllist inactive_listeners;
 static struct listener_t *current_listener;
@@ -998,7 +998,7 @@ new_remote(uv_loop_t *loop, int timeout)
 }
 
 static void
-free_remote(struct remote_t *remote)
+remote_destroy(struct remote_t *remote)
 {
     if (remote->local != NULL) {
         remote->local->remote = NULL;
@@ -1015,7 +1015,7 @@ static void
 remote_after_close_cb(uv_handle_t* handle)
 {
     struct remote_t *remote = cork_container_of(handle, struct remote_t, socket);
-    free_remote(remote);
+    remote_destroy(remote);
 }
 
 static void
@@ -1035,7 +1035,7 @@ close_and_free_remote(struct remote_t *remote)
 }
 
 static struct local_t *
-new_local(struct listener_t *listener)
+local_create(struct listener_t *listener)
 {
     assert(listener);
 
@@ -1054,11 +1054,9 @@ new_local(struct listener_t *listener)
 static void
 release_listener(struct listener_t *listener)
 {
-    int i;
-
     ss_free(listener->iface);
 
-    for(i = 0; i < listener->server_num; i++) {
+    for(int i = 0; i < listener->server_num; i++) {
         struct server_env_t *server_env = &listener->servers[i];
 
         ss_free(server_env->host);
@@ -1116,7 +1114,7 @@ check_and_free_listener(struct listener_t *listener)
 }
 
 static void
-free_local(struct local_t *local)
+local_destroy(struct local_t *local)
 {
     struct listener_t *listener = local->listener;
     struct server_env_t *server_env = local->server_env;
@@ -1162,18 +1160,13 @@ static void
 local_after_close_cb(uv_handle_t* handle)
 {
     struct local_t *local = cork_container_of(handle, struct local_t, socket);
-    free_local(local);
+    local_destroy(local);
 }
 
 static void
 close_and_free_local(struct local_t *local)
 {
     if (local != NULL) {
-        if (local->dying != false) {
-            return;
-        }
-        local->dying = true;
-
         uv_read_stop((uv_stream_t *)&local->socket);
         uv_close((uv_handle_t *)&local->socket, local_after_close_cb);
     }
@@ -1232,7 +1225,7 @@ accept_cb(uv_stream_t* server, int status)
 
     assert(status == 0);
 
-    struct local_t *local = new_local(listener);
+    struct local_t *local = local_create(listener);
 
     int r = uv_tcp_init(server->loop, &local->socket);
     if (r != 0) {

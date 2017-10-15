@@ -88,7 +88,7 @@ struct local_t {
     struct obfs_t *protocol;
     struct obfs_t *obfs;
 
-    bool dying;
+    bool ref_count;
 };
 
 #endif // _LOCAL_H
