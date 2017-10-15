@@ -127,16 +127,16 @@ static void remote_send_data(struct remote_t *remote);
 static void remote_connected_cb(uv_connect_t* req, int status);
 static void remote_timeout_cb(uv_timer_t *handle);
 
-static struct remote_t *create_remote(struct listener_t *listener, struct sockaddr *addr);
+static struct remote_t *remote_object_with_addr(struct listener_t *listener, struct sockaddr *addr);
 static void remote_destroy(struct remote_t *remote);
-static void close_and_free_remote(struct remote_t *remote);
+static void remote_close_and_free(struct remote_t *remote);
 static void local_destroy(struct local_t *local);
-static void close_and_free_local(struct local_t *local);
+static void local_close_and_free(struct local_t *local);
 
 static void close_and_free_tunnel(struct remote_t *remote, struct local_t *local);
 
-static struct remote_t * new_remote(uv_loop_t *loop, int timeout);
-static struct local_t * local_create(struct listener_t *listener);
+static struct remote_t * remote_new_object(uv_loop_t *loop, int timeout);
+static struct local_t * local_new_object(struct listener_t *listener);
 
 static struct cork_dllist inactive_listeners;
 static struct listener_t *current_listener;
@@ -660,7 +660,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         err = get_sockaddr(ip, port, &storage, 0, ipv6first);
                     }
                     if (err != -1) {
-                        remote = create_remote(local->listener, (struct sockaddr *)&storage);
+                        remote = remote_object_with_addr(local->listener, (struct sockaddr *)&storage);
                     }
                 }
             }
@@ -687,7 +687,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                 local->server_env = server_env;
 
-                remote = create_remote(listener, (struct sockaddr *) server_env->addr);
+                remote = remote_object_with_addr(listener, (struct sockaddr *) server_env->addr);
             }
 
             if (remote == NULL) {
@@ -975,7 +975,7 @@ local_send_data(struct local_t *local, char *data, unsigned int size)
 
 
 static struct remote_t *
-new_remote(uv_loop_t *loop, int timeout)
+remote_new_object(uv_loop_t *loop, int timeout)
 {
     struct remote_t *remote = ss_malloc(sizeof(struct remote_t));
 
@@ -1019,7 +1019,7 @@ remote_after_close_cb(uv_handle_t* handle)
 }
 
 static void
-close_and_free_remote(struct remote_t *remote)
+remote_close_and_free(struct remote_t *remote)
 {
     if (remote != NULL) {
         uv_timer_stop(&remote->send_ctx->watcher);
@@ -1030,7 +1030,7 @@ close_and_free_remote(struct remote_t *remote)
 }
 
 static struct local_t *
-local_create(struct listener_t *listener)
+local_new_object(struct listener_t *listener)
 {
     assert(listener);
 
@@ -1047,7 +1047,7 @@ local_create(struct listener_t *listener)
 }
 
 static void
-release_listener(struct listener_t *listener)
+listener_release(struct listener_t *listener)
 {
     ss_free(listener->iface);
 
@@ -1084,7 +1084,7 @@ release_listener(struct listener_t *listener)
 }
 
 static void
-check_and_free_listener(struct listener_t *listener)
+listener_check_and_free(struct listener_t *listener)
 {
     int i;
 
@@ -1105,7 +1105,7 @@ check_and_free_listener(struct listener_t *listener)
 
     // No connections anymore
     cork_dllist_remove(&listener->entries);
-    release_listener(listener);
+    listener_release(listener);
 }
 
 static void
@@ -1148,7 +1148,7 @@ local_destroy(struct local_t *local)
     ss_free(local);
 
     // after free server, we need to check the listener
-    check_and_free_listener(listener);
+    listener_check_and_free(listener);
 }
 
 static void
@@ -1159,7 +1159,7 @@ local_after_close_cb(uv_handle_t* handle)
 }
 
 static void
-close_and_free_local(struct local_t *local)
+local_close_and_free(struct local_t *local)
 {
     if (local != NULL) {
         uv_read_stop((uv_stream_t *)&local->socket);
@@ -1170,15 +1170,15 @@ close_and_free_local(struct local_t *local)
 static void
 close_and_free_tunnel(struct remote_t *remote, struct local_t *local)
 {
-    close_and_free_remote(remote);
-    close_and_free_local(local);
+    remote_close_and_free(remote);
+    local_close_and_free(local);
 }
 
 static struct remote_t *
-create_remote(struct listener_t *listener, struct sockaddr *addr)
+remote_object_with_addr(struct listener_t *listener, struct sockaddr *addr)
 {
     uv_loop_t *loop = listener->socket.loop;
-    struct remote_t *remote = new_remote(loop, listener->timeout);
+    struct remote_t *remote = remote_new_object(loop, listener->timeout);
 
 #ifdef SET_INTERFACE
     if (listener->iface) {
@@ -1220,7 +1220,7 @@ accept_cb(uv_stream_t* server, int status)
 
     assert(status == 0);
 
-    struct local_t *local = local_create(listener);
+    struct local_t *local = local_new_object(listener);
 
     int r = uv_tcp_init(server->loop, &local->socket);
     if (r != 0) {
@@ -1760,7 +1760,7 @@ main(int argc, char **argv)
     if (mode != UDP_ONLY) {
         // uv_stop(listener_socket->loop);
         free_connections(); // after this, all inactive listener should be released already, so we only need to release the current_listener
-        release_listener(current_listener);
+        listener_release(current_listener);
     }
 
 #ifdef __MINGW32__
