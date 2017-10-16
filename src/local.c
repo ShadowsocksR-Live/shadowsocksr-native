@@ -274,12 +274,61 @@ free_connections(void)
     }
 }
 
+void local_ref_count_add(struct local_t *local) {
+    if (local) {
+        ++ local->ref_count;
+    }
+}
+
+void local_ref_count_release(struct local_t *local) {
+    if (local) {
+        -- local->ref_count;
+        if (local->ref_count <= 0) {
+            local_destroy(local);
+        }
+    }
+}
+
+void remote_ref_count_add(struct remote_t *remote) {
+    if (remote) {
+        ++ remote->ref_count;
+    }
+}
+
+void remote_ref_count_release(struct remote_t *remote) {
+    if (remote) {
+        -- remote->ref_count;
+        if (remote->ref_count <= 0) {
+            remote_destroy(remote);
+        }
+    }
+}
+
+#undef REF_BEGIN_ADDREF
+#define REF_BEGIN_ADDREF(local, remote)             \
+    struct local_t *local_stock = (local);          \
+    struct remote_t *remote_stock = (remote);       \
+    do {                                            \
+        local_ref_count_add(local_stock);           \
+        remote_ref_count_add(remote_stock);         \
+    } while(0)
+
+#undef REF_RETURN_WITH_RELEASE
+#define REF_RETURN_WITH_RELEASE()                   \
+    do {                                            \
+        local_ref_count_release(local_stock);       \
+        remote_ref_count_release(remote_stock);     \
+        return;                                     \
+    } while(0)
+
 static void
 local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 {
     struct local_t *local = cork_container_of(stream, struct local_t, socket);
     struct remote_t *remote = local->remote;
     struct buffer_t *buf;
+
+    REF_BEGIN_ADDREF(local, remote);
 
     if (remote == NULL) {
         buf = local->buf;
@@ -290,17 +339,17 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
     if (nread == UV_EOF) {
         // connection closed
         close_and_free_tunnel(remote, local);
-        return;
+        REF_RETURN_WITH_RELEASE(); // return;
     } else if (nread == 0) {
         // http://docs.libuv.org/en/v1.x/stream.html
         // (errno == EAGAIN || errno == EWOULDBLOCK): no data, continue to wait for recv
-        return;
+        REF_RETURN_WITH_RELEASE(); // return;
     } else if (nread < 0) {
         if (verbose) {
             ERROR("local recieve callback for recv");
         }
         close_and_free_tunnel(remote, local);
-        return;
+        REF_RETURN_WITH_RELEASE(); // return;
     }
 
     buffer_realloc(buf, (size_t)nread * 2);
@@ -332,7 +381,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             if (remote == NULL) {
                 LOGE("invalid remote");
                 close_and_free_tunnel(remote, local);
-                return;
+                REF_RETURN_WITH_RELEASE(); // return;
             }
 
             // insert shadowsocks header
@@ -349,7 +398,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 if (err) {
                     LOGE("local invalid password or cipher");
                     close_and_free_tunnel(remote, local);
-                    return;
+                    REF_RETURN_WITH_RELEASE(); // return;
                 }
 
                 struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
@@ -378,7 +427,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         if (protect_socket(remote->fd) == -1) {
                             ERROR("protect_socket");
                             close_and_free_tunnel(remote, local);
-                            return;
+                            REF_RETURN_WITH_RELEASE(); // return;
                         }
                     }
                 }
@@ -390,17 +439,17 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                 struct sockaddr *addr = (struct sockaddr*)&(remote->addr);
                 uv_tcp_connect(connect, &remote->socket, addr, remote_connected_cb);
-                return;
+                REF_RETURN_WITH_RELEASE(); // return;
             } else {
                 if (nread > 0 && remote->buf->len == 0) {
                     local_read_stop(local);
-                    return;
+                    REF_RETURN_WITH_RELEASE(); // return;
                 }
                 remote_send_data(remote);
             }
 
             // all processed
-            return;
+            REF_RETURN_WITH_RELEASE(); // return;
         } else if (local->stage == STAGE_INIT) {
             struct method_select_request *request = (struct method_select_request *)buf->buffer;
 
@@ -421,7 +470,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
             buf->len = 0;
 
-            return;
+            REF_RETURN_WITH_RELEASE(); // return;
         } else if (local->stage == STAGE_HANDSHAKE || local->stage == STAGE_PARSE) {
             struct socks5_request *request = (struct socks5_request *)buf->buffer;
 
@@ -447,7 +496,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 local_send_data(local, (char *)response, (unsigned int)size);
 
                 close_and_free_tunnel(remote, local);
-                return;
+                REF_RETURN_WITH_RELEASE(); // return;
             }
 
             // Fake reply
@@ -462,7 +511,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                 if (udp_assc) {
                     // Wait until client closes the connection
-                    return;
+                    REF_RETURN_WITH_RELEASE(); // return;
                 }
             }
 
@@ -516,7 +565,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 buffer_free(abuf);
                 LOGE("unsupported addrtype: %d", addr_type);
                 close_and_free_tunnel(remote, local);
-                return;
+                REF_RETURN_WITH_RELEASE(); // return;
             }
 
             size_t abuf_len  = abuf->len;
@@ -538,7 +587,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 if (ret == -1 && buf->len < BUF_SIZE) {
                     local->stage = STAGE_PARSE;
                     buffer_free(abuf);
-                    return;
+                    REF_RETURN_WITH_RELEASE(); // return;
                 } else if (ret > 0) {
                     sni_detected = 1;
 
@@ -576,7 +625,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         LOGI("outbound blocked %s", host);
                     }
                     close_and_free_tunnel(remote, local);
-                    return;
+                    REF_RETURN_WITH_RELEASE(); // return;
                 }
 
                 int host_match = acl_match_host(host);
@@ -621,7 +670,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                             LOGI("outbound blocked %s", ip);
                         }
                         close_and_free_tunnel(remote, local);
-                        return;
+                        REF_RETURN_WITH_RELEASE(); // return;
                     }
 
                     int ip_match = acl_match_host(ip);// -1 if IP in white list or 1 if IP in black list
@@ -694,7 +743,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 buffer_free(abuf);
                 LOGE("invalid remote addr");
                 close_and_free_tunnel(remote, local);
-                return;
+                REF_RETURN_WITH_RELEASE(); // return;
             }
 
             {
@@ -770,6 +819,8 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             continue; // return;
         }
     } // while (1)
+
+    REF_RETURN_WITH_RELEASE();
 }
 
 static void
@@ -847,6 +898,8 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
     struct local_t *local = remote->local;
     struct server_env_t *server_env = local->server_env;
 
+    REF_BEGIN_ADDREF(local, remote);
+
     uv_timer_again(&remote->recv_ctx->watcher);
 
 #ifdef ANDROID
@@ -856,16 +909,16 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
     if (nread == UV_EOF) {
         // connection closed
         close_and_free_tunnel(remote, local);
-        return;
+        REF_RETURN_WITH_RELEASE(); // return;
     } else if (nread == 0) {
         // (errno == EAGAIN || errno == EWOULDBLOCK): no data. continue to wait for recv
-        return;
+        REF_RETURN_WITH_RELEASE(); // return;
     } else if (nread < 0) {
         if (verbose) {
             ERROR("remote_recv_cb_recv");
         }
         close_and_free_tunnel(remote, local);
-        return;
+        REF_RETURN_WITH_RELEASE(); // return;
     }
 
     static const size_t FIXED_BUFF_SIZE = BUF_SIZE;
@@ -928,6 +981,8 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
     } // for loop
 
     do_dealloc_uv_buffer((uv_buf_t *)buf0);
+
+    REF_RETURN_WITH_RELEASE();
 }
 
 static void
@@ -994,6 +1049,8 @@ remote_new_object(uv_loop_t *loop, int timeout)
     uv_timer_init(loop, &remote->recv_ctx->watcher);
     remote->recv_ctx->watcher_interval = (uint64_t) timeout;
 
+    remote_ref_count_add(remote);
+
     return remote;
 }
 
@@ -1015,7 +1072,7 @@ static void
 remote_after_close_cb(uv_handle_t* handle)
 {
     struct remote_t *remote = cork_container_of(handle, struct remote_t, socket);
-    remote_destroy(remote);
+    remote_ref_count_release(remote); // remote_destroy(remote);
 }
 
 static void
@@ -1042,6 +1099,8 @@ local_new_object(struct listener_t *listener)
 
     cork_dllist_add(&listener->connections_eden, &local->entries);
     cork_dllist_add(&all_connections, &local->entries_all);
+
+    local_ref_count_add(local);
 
     return local;
 }
@@ -1155,7 +1214,7 @@ static void
 local_after_close_cb(uv_handle_t* handle)
 {
     struct local_t *local = cork_container_of(handle, struct local_t, socket);
-    local_destroy(local);
+    local_ref_count_release(local); // local_destroy(local);
 }
 
 static void

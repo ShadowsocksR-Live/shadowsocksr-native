@@ -65,6 +65,8 @@ struct remote_t {
 
     struct sockaddr_storage addr;
     size_t addr_len;
+
+    int ref_count;
 };
 
 struct local_t {
@@ -85,6 +87,8 @@ struct local_t {
     // SSR
     struct obfs_t *protocol;
     struct obfs_t *obfs;
+
+    int ref_count;
 };
 
 #endif // _LOCAL_H
