@@ -191,7 +191,7 @@ int auth_chain_a_pack_data(char *data, int datalength, char *outdata, auth_chain
     outdata[1] = (char)((uint8_t)(datalength >> 8) ^ local->last_client_hash[15]);
 
     {
-        uint8_t * rnd_data = (uint8_t *) calloc(rand_len, sizeof(uint8_t));
+        uint8_t * rnd_data = (uint8_t *) malloc(rand_len * sizeof(uint8_t));
         rand_bytes(rnd_data, (int)rand_len);
         if (datalength > 0) {
             int start_pos = get_rand_start_pos(rand_len, &local->random_client);
@@ -207,7 +207,7 @@ int auth_chain_a_pack_data(char *data, int datalength, char *outdata, auth_chain
     }
 
     uint8_t key_len = (uint8_t)(local->user_key_len + 4);
-    uint8_t *key = (uint8_t *) calloc(key_len, sizeof(uint8_t));
+    uint8_t *key = (uint8_t *) malloc(key_len * sizeof(uint8_t));
     memcpy(key, local->user_key, local->user_key_len);
     memintcopy_lt(key + key_len - 4, local->pack_id);
     ++local->pack_id;
@@ -233,7 +233,7 @@ int auth_chain_a_pack_auth_data(auth_chain_global_data *global, struct server_in
     char encrypt[20];
 
     uint8_t key_len = (uint8_t)(server->iv_len + server->key_len);
-    uint8_t *key = (uint8_t *) calloc(key_len, sizeof(uint8_t));
+    uint8_t *key = (uint8_t *) malloc(key_len * sizeof(uint8_t));
     memcpy(key, server->iv, server->iv_len);
     memcpy(key + server->iv_len, server->key, server->key_len);
 
@@ -288,7 +288,7 @@ int auth_chain_a_pack_auth_data(auth_chain_global_data *global, struct server_in
         }
 
         char encrypt_key_base64[256] = {0};
-        unsigned char *encrypt_key = (unsigned char *) calloc(local->user_key_len, sizeof(unsigned char));
+        unsigned char *encrypt_key = (unsigned char *) malloc(local->user_key_len * sizeof(unsigned char));
         memcpy(encrypt_key, local->user_key, local->user_key_len);
         base64_encode(encrypt_key, (unsigned int)local->user_key_len, encrypt_key_base64);
         free(encrypt_key);
@@ -447,7 +447,7 @@ int auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplaindata, 
     char *plaindata = *pplaindata;
     struct server_info_t *server = (struct server_info_t *)&obfs->server;
     auth_chain_local_data *local = (auth_chain_local_data*)obfs->l_data;
-    char *out_buffer = (char *) calloc(datalength + 1024, sizeof(char));
+    char *out_buffer = (char *) malloc((datalength + 1024) * sizeof(char));
 
     if (local->user_key == NULL) {
         if(obfs->server.param != NULL && obfs->server.param[0] != 0) {
@@ -479,7 +479,7 @@ int auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplaindata, 
     uint8_t hash[16];
     ss_md5_hmac_with_key((char*)hash, auth_data, 3, server->key, server->key_len);
     int rand_len = udp_get_rand_len(&local->random_client, hash);
-    uint8_t *rnd_data = (uint8_t *) calloc(rand_len, sizeof(uint8_t));
+    uint8_t *rnd_data = (uint8_t *) malloc(rand_len * sizeof(uint8_t));
     rand_bytes(rnd_data, (int)rand_len);
     int outlength = datalength + rand_len + 8;
 

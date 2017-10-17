@@ -144,7 +144,7 @@ static struct cork_dllist all_connections;
 
 
 void do_alloc_uv_buffer(size_t suggested_size, uv_buf_t *buf) {
-    buf->base = calloc(suggested_size, sizeof(char));
+    buf->base = malloc(suggested_size * sizeof(char));
     buf->len = suggested_size;
 }
 
@@ -434,7 +434,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 #endif
                 local_read_stop(local);
 
-                uv_connect_t *connect = (uv_connect_t *)calloc(1, sizeof(uv_connect_t));
+                uv_connect_t *connect = (uv_connect_t *)ss_malloc(sizeof(uv_connect_t));
                 connect->data = remote;
 
                 struct sockaddr *addr = (struct sockaddr*)&(remote->addr);
@@ -1010,7 +1010,7 @@ remote_send_data(struct remote_t *remote)
 {
     uv_buf_t tmp = uv_buf_init(remote->buf->buffer, (unsigned int)remote->buf->len);
 
-    uv_write_t *write_req = (uv_write_t *)calloc(1, sizeof(uv_write_t));
+    uv_write_t *write_req = (uv_write_t *)ss_malloc(sizeof(uv_write_t));
     write_req->data = remote;
 
     uv_write(write_req, (uv_stream_t *)&remote->socket, &tmp, 1, remote_send_cb);
@@ -1022,7 +1022,7 @@ local_send_data(struct local_t *local, char *data, unsigned int size)
 {
     uv_buf_t buf = uv_buf_init(data, size);
 
-    uv_write_t *write_req = (uv_write_t *)calloc(1, sizeof(uv_write_t));
+    uv_write_t *write_req = (uv_write_t *)ss_malloc(sizeof(uv_write_t));
     write_req->data = local;
 
     uv_write(write_req, (uv_stream_t*)&local->socket, &buf, 1, local_send_cb);

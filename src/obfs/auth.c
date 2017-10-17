@@ -716,7 +716,7 @@ auth_aes128_sha1_pack_data(char *data, int datalength, int fulldatalength, char 
     memintcopy_lt(key + key_len - 4, local->pack_id);
 
     {
-        uint8_t * rnd_data = (uint8_t *) calloc(rand_len, sizeof(uint8_t));
+        uint8_t * rnd_data = (uint8_t *) malloc(rand_len * sizeof(uint8_t));
         rand_bytes(rnd_data, (int)rand_len);
         memcpy(outdata + 4, rnd_data, rand_len);
         free(rnd_data);
@@ -764,7 +764,7 @@ auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_i
     memcpy(key + server->iv_len, server->key, server->key_len);
 
     {
-        uint8_t *rnd_data = (uint8_t *) calloc(rand_len, sizeof(uint8_t));
+        uint8_t *rnd_data = (uint8_t *) malloc(rand_len * sizeof(uint8_t));
         rand_bytes(rnd_data, (int)rand_len);
         memcpy(outdata + data_offset - rand_len, rnd_data, rand_len);
         free(rnd_data);
@@ -816,7 +816,7 @@ auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_i
         }
 
         char encrypt_key_base64[256] = {0};
-        unsigned char *encrypt_key = (unsigned char *) calloc(local->user_key_len, sizeof(unsigned char));
+        unsigned char *encrypt_key = (unsigned char *) malloc(local->user_key_len * sizeof(unsigned char));
         memcpy(encrypt_key, local->user_key, local->user_key_len);
         base64_encode(encrypt_key, (unsigned int)local->user_key_len, encrypt_key_base64);
         free(encrypt_key);

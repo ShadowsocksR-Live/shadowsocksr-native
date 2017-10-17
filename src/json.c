@@ -94,7 +94,7 @@ typedef struct {
 static void *
 default_alloc(size_t size, int zero, void *user_data)
 {
-    return zero ? calloc(1, size) : ss_malloc(size);
+    return /* zero ? calloc(1, size) : */ ss_malloc(size);
 }
 
 static void
