@@ -287,6 +287,14 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         buf = remote->buf;
     }
 
+    if (nread > 0) {
+        buffer_realloc(buf, (size_t)nread * 2);
+        memcpy(buf->buffer, buf0->base, (size_t)nread);
+        buf->len = (size_t)nread;
+    }
+
+    do_dealloc_uv_buffer((uv_buf_t *)buf0);
+
     if (nread == UV_EOF) {
         // connection closed
         close_and_free_tunnel(remote, local);
@@ -302,13 +310,6 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         close_and_free_tunnel(remote, local);
         return;
     }
-
-    buffer_realloc(buf, (size_t)nread * 2);
-
-    memcpy(buf->buffer, buf0->base, (size_t)nread);
-    buf->len = (size_t)nread;
-
-    do_dealloc_uv_buffer((uv_buf_t *)buf0);
 
     if (local->stage == STAGE_INIT) {
         char *host = local->listener->tunnel_addr.host;
@@ -861,6 +862,8 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
     stat_update_cb();
 #endif
 
+    if (nread <= 0) {
+        do_dealloc_uv_buffer((uv_buf_t *)buf0);
     if (nread == UV_EOF) {
         // connection closed
         close_and_free_tunnel(remote, local);
@@ -874,6 +877,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         }
         close_and_free_tunnel(remote, local);
         return;
+    }
     }
 
     static const size_t FIXED_BUFF_SIZE = BUF_SIZE;
