@@ -170,7 +170,7 @@ setnonblocking(int fd)
 }
 #endif
 
-int uv_stream_fd(const uv_stream_t *handle) {
+int uv_stream_fd(const uv_tcp_t *handle) {
 #if defined(_WIN32)
     return handle->socket;
 #elif defined(__APPLE__)
@@ -485,7 +485,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             if (request->cmd == SOCKS5_COMMAND_UDPASSOC) {
                 udp_assc = 1;
                 socklen_t addr_len = sizeof(sock_addr);
-                getsockname(uv_stream_fd((const uv_stream_t *)&local->socket), (struct sockaddr *)&sock_addr, &addr_len);
+                getsockname(uv_stream_fd(&local->socket), (struct sockaddr *)&sock_addr, &addr_len);
                 if (verbose) {
                     LOGI("udp assc request accepted");
                 }
@@ -1249,7 +1249,7 @@ remote_object_with_addr(struct listener_t *listener, struct sockaddr *addr)
 
 #ifdef SET_INTERFACE
     if (listener->iface) {
-        if (setinterface(uv_stream_fd((const uv_stream_t *)&remote->socket), listener->iface) == -1) {
+        if (setinterface(uv_stream_fd(&remote->socket), listener->iface) == -1) {
             ERROR("setinterface");
         }
     }
