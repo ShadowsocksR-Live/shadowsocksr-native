@@ -363,14 +363,16 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         char *host = local->listener->tunnel_addr.host;
         char *port = local->listener->tunnel_addr.port;
         if (host && port) {
-            char buffer[BUF_SIZE] = { 0 };
+            struct buffer_t *buffer = buffer_alloc(BUF_SIZE);
             size_t header_len = 0;
             struct socks5_request *hdr =
-                    build_socks5_request(host, (uint16_t)atoi(port), buffer, sizeof(buffer), &header_len);
+                    build_socks5_request(host, (uint16_t)atoi(port), buffer->buffer, buffer->capacity, &header_len);
 
             memmove(buf->buffer + header_len, buf->buffer, buf->len);
             memmove(buf->buffer, hdr, header_len);
             buf->len += header_len;
+
+            buffer_free(buffer);
 
             local->stage = STAGE_PARSE;
         }
@@ -453,11 +455,13 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         } else if (local->stage == STAGE_INIT) {
             struct method_select_request *request = (struct method_select_request *)buf->buffer;
 
-            char buffer[BUF_SIZE] = { 0 };
+            struct buffer_t *buffer = buffer_alloc(BUF_SIZE);
             struct method_select_response *response =
-                    build_socks5_method_select_response(SOCKS5_METHOD_NOAUTH, buffer, sizeof(buffer));
+                    build_socks5_method_select_response(SOCKS5_METHOD_NOAUTH, buffer->buffer, buffer->capacity);
 
             local_send_data(local, (char *)response, sizeof(*response));
+
+            buffer_free(buffer);
 
             local->stage = STAGE_HANDSHAKE;
 
@@ -487,13 +491,15 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 }
             } else if (request->cmd != SOCKS5_COMMAND_CONNECT) {
                 LOGE("unsupported cmd: %d", request->cmd);
-                char buffer[BUF_SIZE] = { 0 };
+                struct buffer_t *buffer = buffer_alloc(BUF_SIZE);
                 size_t size = 0;
                 struct socks5_response *response =
                         build_socks5_response(SOCKS5_REPLY_CMDUNSUPP, SOCKS5_ADDRTYPE_IPV4,
-                                              &sock_addr, buffer, sizeof(buffer), &size);
+                                              &sock_addr, buffer->buffer, buffer->capacity, &size);
 
                 local_send_data(local, (char *)response, (unsigned int)size);
+
+                buffer_free(buffer);
 
                 close_and_free_tunnel(remote, local);
                 REF_RETURN_WITH_RELEASE(); // return;
@@ -501,13 +507,15 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
             // Fake reply
             if (local->stage == STAGE_HANDSHAKE) {
-                char buffer[BUF_SIZE] = { 0 };
+                struct buffer_t *buffer = buffer_alloc(BUF_SIZE);
                 size_t size = 0;
                 struct socks5_response *response =
                         build_socks5_response(SOCKS5_REPLY_SUCCESS, SOCKS5_ADDRTYPE_IPV4,
-                                              &sock_addr, buffer, sizeof(buffer), &size);
+                                              &sock_addr, buffer->buffer, buffer->capacity, &size);
 
                 local_send_data(local, (char *)response, (unsigned int)size);
+
+                buffer_free(buffer);
 
                 if (udp_assc) {
                     // Wait until client closes the connection
