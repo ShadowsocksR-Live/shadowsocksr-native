@@ -133,7 +133,7 @@ static void remote_close_and_free(struct remote_t *remote);
 static void local_destroy(struct local_t *local);
 static void local_close_and_free(struct local_t *local);
 
-static void close_and_free_tunnel(struct remote_t *remote, struct local_t *local);
+static void tunnel_close_and_free(struct remote_t *remote, struct local_t *local);
 
 static struct remote_t * remote_new_object(uv_loop_t *loop, int timeout);
 static struct local_t * local_new_object(struct listener_t *listener);
@@ -270,7 +270,7 @@ free_connections(void)
     cork_dllist_foreach_void(&all_connections, curr, next) {
         struct local_t *local = cork_container_of(curr, struct local_t, entries_all);
         struct remote_t *remote = local->remote;
-        close_and_free_tunnel(remote, local);
+        tunnel_close_and_free(remote, local);
     }
 }
 
@@ -297,7 +297,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
     if (nread == UV_EOF) {
         // connection closed
-        close_and_free_tunnel(remote, local);
+        tunnel_close_and_free(remote, local);
         return;
     } else if (nread == 0) {
         // http://docs.libuv.org/en/v1.x/stream.html
@@ -307,7 +307,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         if (verbose) {
             ERROR("local recieve callback for recv");
         }
-        close_and_free_tunnel(remote, local);
+        tunnel_close_and_free(remote, local);
         return;
     }
 
@@ -334,7 +334,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         if (local->stage == STAGE_STREAM) {
             if (remote == NULL) {
                 LOGE("invalid remote");
-                close_and_free_tunnel(remote, local);
+                tunnel_close_and_free(remote, local);
                 return;
             }
 
@@ -351,7 +351,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                 if (err) {
                     LOGE("local invalid password or cipher");
-                    close_and_free_tunnel(remote, local);
+                    tunnel_close_and_free(remote, local);
                     return;
                 }
 
@@ -380,7 +380,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                     if (!not_protect) {
                         if (protect_socket(remote->fd) == -1) {
                             ERROR("protect_socket");
-                            close_and_free_tunnel(remote, local);
+                            tunnel_close_and_free(remote, local);
                             return;
                         }
                     }
@@ -453,7 +453,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                 buffer_free(buffer);
 
-                close_and_free_tunnel(remote, local);
+                tunnel_close_and_free(remote, local);
                 return;
             }
 
@@ -524,7 +524,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             } else {
                 buffer_free(abuf);
                 LOGE("unsupported addrtype: %d", addr_type);
-                close_and_free_tunnel(remote, local);
+                tunnel_close_and_free(remote, local);
                 return;
             }
 
@@ -584,7 +584,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                     if (verbose) {
                         LOGI("outbound blocked %s", host);
                     }
-                    close_and_free_tunnel(remote, local);
+                    tunnel_close_and_free(remote, local);
                     return;
                 }
 
@@ -629,7 +629,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         if (verbose) {
                             LOGI("outbound blocked %s", ip);
                         }
-                        close_and_free_tunnel(remote, local);
+                        tunnel_close_and_free(remote, local);
                         return;
                     }
 
@@ -702,7 +702,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             if (remote == NULL) {
                 buffer_free(abuf);
                 LOGE("invalid remote addr");
-                close_and_free_tunnel(remote, local);
+                tunnel_close_and_free(remote, local);
                 return;
             }
 
@@ -792,7 +792,7 @@ local_send_cb(uv_write_t* req, int status)
 
     if (status < 0) {
         LOGE("local_send_cb: %s", uv_strerror(status));
-        close_and_free_tunnel(remote, local);
+        tunnel_close_and_free(remote, local);
     } else if (status == 0) {
         local->buf->len = 0;
     }
@@ -829,7 +829,7 @@ remote_connected_cb(uv_connect_t* req, int status)
         remote_send_data(remote);
         local_read_start(local);
     } else {
-        close_and_free_tunnel(remote, local);
+        tunnel_close_and_free(remote, local);
     }
 }
 
@@ -846,7 +846,7 @@ remote_timeout_cb(uv_timer_t *handle)
         LOGI("TCP connection timeout");
     }
 
-    close_and_free_tunnel(remote, local);
+    tunnel_close_and_free(remote, local);
 }
 
 static void
@@ -864,20 +864,19 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
     if (nread <= 0) {
         do_dealloc_uv_buffer((uv_buf_t *)buf0);
-    if (nread == UV_EOF) {
-        // connection closed
-        close_and_free_tunnel(remote, local);
-        return;
-    } else if (nread == 0) {
-        // (errno == EAGAIN || errno == EWOULDBLOCK): no data. continue to wait for recv
-        return;
-    } else if (nread < 0) {
-        if (verbose) {
-            ERROR("remote_recv_cb_recv");
+        if (nread == UV_EOF) {
+            // connection closed
+            tunnel_close_and_free(remote, local);
+        } else if (nread == 0) {
+            // (errno == EAGAIN || errno == EWOULDBLOCK):
+            LOGI("remote_recv_cb: no data. continue to wait for recv");
+        } else if (nread < 0) {
+            if (verbose) {
+                ERROR("remote_recv_cb_recv");
+            }
+            tunnel_close_and_free(remote, local);
         }
-        close_and_free_tunnel(remote, local);
         return;
-    }
     }
 
     static const size_t FIXED_BUFF_SIZE = BUF_SIZE;
@@ -905,7 +904,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             local->buf->len = obfs_plugin->client_decode(local->obfs, &local->buf->buffer, local->buf->len, &local->buf->capacity, &needsendback);
             if ((ssize_t)local->buf->len < 0) {
                 LOGE("client_decode nread = %d", (int)nread);
-                close_and_free_tunnel(remote, local);
+                tunnel_close_and_free(remote, local);
                 break; // return;
             }
             if (needsendback && obfs_plugin->client_encode) {
@@ -918,7 +917,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             int err = ss_decrypt(&server_env->cipher, local->buf, local->d_ctx, FIXED_BUFF_SIZE);
             if (err) {
                 LOGE("remote invalid password or cipher");
-                close_and_free_tunnel(remote, local);
+                tunnel_close_and_free(remote, local);
                 break; // return;
             }
         }
@@ -927,7 +926,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             local->buf->len = (size_t)protocol_plugin->client_post_decrypt(local->protocol, &local->buf->buffer, (int)local->buf->len, &local->buf->capacity);
             if ((int)local->buf->len < 0) {
                 LOGE("client_post_decrypt and nread=%d", (int)nread);
-                close_and_free_tunnel(remote, local);
+                tunnel_close_and_free(remote, local);
                 break; // return;
             }
             if (local->buf->len == 0) {
@@ -955,7 +954,7 @@ remote_send_cb(uv_write_t* req, int status)
     uv_timer_stop(&remote->send_ctx->watcher);
 
     if (status != 0) {
-        close_and_free_tunnel(remote, local);
+        tunnel_close_and_free(remote, local);
         return;
     }
 
@@ -1180,7 +1179,7 @@ local_close_and_free(struct local_t *local)
 }
 
 static void
-close_and_free_tunnel(struct remote_t *remote, struct local_t *local)
+tunnel_close_and_free(struct remote_t *remote, struct local_t *local)
 {
     remote_close_and_free(remote);
     local_close_and_free(local);
