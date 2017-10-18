@@ -411,6 +411,23 @@ notes:
     Linux platform with iptables.
 
 ```
+## Sample configure file
+config.json
+```json
+{
+    "local_address": "0.0.0.0",
+    "local_port": 1080,
+    "method": "aes-128-ctr",
+    "obfs": "tls1.2_ticket_auth",
+    "obfs_param": "",
+    "password": "password",
+    "protocol": "auth_aes128_md5",
+    "server": "123.45.67.89",
+    "server_port": 443,
+    "timeout": 300
+}
+```
+
 
 ## Advanced usage
 
