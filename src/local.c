@@ -869,7 +869,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             tunnel_close_and_free(remote, local);
         } else if (nread == 0) {
             // (errno == EAGAIN || errno == EWOULDBLOCK):
-            LOGI("remote_recv_cb: no data. continue to wait for recv");
+            ; // LOGI("remote_recv_cb: no data. continue to wait for recv");
         } else if (nread < 0) {
             if (verbose) {
                 ERROR("remote_recv_cb_recv");
