@@ -163,7 +163,7 @@ static struct server_ctx_t *server_ctx_list[MAX_REMOTE_NUM] = { NULL };
 
 static void alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
     buf->base = (char *) ss_malloc(suggested_size * sizeof(char));
-    buf->len = suggested_size;
+    buf->len = (uv_buf_len_t) suggested_size;
 }
 
 static void do_dealloc_uv_buffer(uv_buf_t *buf) {
@@ -315,7 +315,7 @@ parse_udprealy_header(const char *buf, const size_t buf_len,
                 dns_ntop(AF_INET, (const void *)(buf + offset),
                          host, INET_ADDRSTRLEN);
             }
-            offset += in_addr_len;
+            offset += (int) in_addr_len;
         }
     } else if ((addr_type & ADDRTYPE_MASK) == SOCKS5_ADDRTYPE_NAME) {
         // Domain name
@@ -358,7 +358,7 @@ parse_udprealy_header(const char *buf, const size_t buf_len,
                 dns_ntop(AF_INET6, (const void *)(buf + offset),
                          host, INET6_ADDRSTRLEN);
             }
-            offset += in6_addr_len;
+            offset += (int)in6_addr_len;
         }
     }
 
@@ -647,7 +647,7 @@ void
 close_and_free_remote(struct remote_ctx_t *ctx)
 {
     if (ctx != NULL) {
-        uv_timer_stop(&ctx->watcher);
+        uv_close((uv_handle_t *)&ctx->watcher, remote_after_close_cb);
         uv_udp_recv_stop(&ctx->io);
         uv_close((uv_handle_t *)&ctx->io, remote_after_close_cb); // close(ctx->fd);
         //ss_free(ctx);
@@ -790,7 +790,7 @@ remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
         // simply drop that packet
         ERROR("[udp] remote_recv_recvfrom");
         goto CLEAN_UP;
-    } else if (nread > packet_size) {
+    } else if (nread > (ssize_t) packet_size) {
         LOGE("[udp] remote_recv_recvfrom fragmentation");
         goto CLEAN_UP;
     }
@@ -969,7 +969,7 @@ remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
 
     // handle the UDP packet successfully,
     // triger the timer
-    uv_timer_again(&remote_ctx->watcher);
+    uv_timer_start(&remote_ctx->watcher, remote_timeout_cb, (uint64_t)server_ctx->timeout * 1000, 0);
 
 CLEAN_UP:
 
@@ -1036,7 +1036,7 @@ server_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
         // simply drop that packet
         ERROR("[udp] server_recv_recvfrom");
         goto CLEAN_UP;
-    } else if (nread > packet_size) {
+    } else if (nread > (ssize_t) packet_size) {
         ERROR("[udp] server_recv_recvfrom fragmentation");
         goto CLEAN_UP;
     }
@@ -1164,7 +1164,7 @@ server_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
             }
         } else {
             // send as domain
-            int host_len = strlen(host);
+            int host_len = (int) strlen(host);
 
             addr_header[addr_header_len++] = 3;
             addr_header[addr_header_len++] = host_len;
@@ -1217,7 +1217,7 @@ server_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
 
     // reset the timer
     if (remote_ctx != NULL) {
-        uv_timer_again(&remote_ctx->watcher);
+        uv_timer_start(&remote_ctx->watcher, remote_timeout_cb, (uint64_t)server_ctx->timeout * 1000, 0);
     }
 
     if (remote_ctx == NULL) {
@@ -1305,6 +1305,8 @@ server_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
         remote_ctx->af              = remote_addr->sa_family;
         remote_ctx->addr_header_len = addr_header_len;
         memcpy(remote_ctx->addr_header, addr_header, (size_t) addr_header_len);
+
+        uv_timer_init(server_ctx->io.loop, &remote_ctx->watcher);
 
         // Add to conn cache
         cache_insert(conn_cache, key, HASH_KEY_LEN, (void *)remote_ctx);

@@ -44,7 +44,7 @@ struct listener_t {
     int timeout;
     int mptcp;
 
-    int server_num;
+    size_t server_num;
     struct server_env_t servers[MAX_SERVER_NUM];
 };
 

@@ -247,7 +247,7 @@ parse_server_name_extension(const char *data, size_t data_len,
 
             (*hostname)[len] = '\0';
 
-            return len;
+            return (int) len;
         default:
             if (verbose)
                 LOGI("Unknown server name extension name type: %d",

@@ -145,7 +145,7 @@ static struct cork_dllist all_connections;
 
 void do_alloc_uv_buffer(size_t suggested_size, uv_buf_t *buf) {
     buf->base = malloc(suggested_size * sizeof(char));
-    buf->len = suggested_size;
+    buf->len = (uv_buf_len_t) suggested_size;
 }
 
 void do_dealloc_uv_buffer(uv_buf_t *buf) {
@@ -605,7 +605,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 } else {
 #ifndef ANDROID
                     if (addr_type == SOCKS5_ADDRTYPE_NAME) {            // resolve domain so we can bypass domain with geoip
-                        err = get_sockaddr(host, port, &storage, 0, ipv6first);
+                        err = (int) get_sockaddr(host, port, &storage, 0, ipv6first);
                         if ( err != -1) {
                             resolved = 1;
                             switch(((struct sockaddr*)&storage)->sa_family) {
@@ -856,7 +856,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
     struct local_t *local = remote->local;
     struct server_env_t *server_env = local->server_env;
 
-    uv_timer_again(&remote->recv_ctx->watcher);
+    uv_timer_start(&remote->recv_ctx->watcher, remote_timeout_cb, remote->recv_ctx->watcher_interval * 1000, 0);
 
 #ifdef ANDROID
     stat_update_cb();
@@ -1033,8 +1033,8 @@ static void
 remote_close_and_free(struct remote_t *remote)
 {
     if (remote != NULL) {
-        uv_timer_stop(&remote->send_ctx->watcher);
-        uv_timer_stop(&remote->recv_ctx->watcher);
+        uv_close((uv_handle_t *)&remote->send_ctx->watcher, remote_after_close_cb);
+        uv_close((uv_handle_t *)&remote->recv_ctx->watcher, remote_after_close_cb);
         uv_read_stop((uv_stream_t *)&remote->socket);
         uv_close((uv_handle_t *)&remote->socket, remote_after_close_cb);
     }
@@ -1618,7 +1618,7 @@ main(int argc, char **argv)
             }
 
             serv->addr = serv->addr_udp = storage;
-            serv->addr_len = serv->addr_udp_len = get_sockaddr_len((struct sockaddr *) storage);
+            serv->addr_len = serv->addr_udp_len = (int) get_sockaddr_len((struct sockaddr *) storage);
             serv->port = serv->udp_port = serv_cfg->server_port;
 
             // set udp port
@@ -1629,7 +1629,7 @@ main(int argc, char **argv)
                     FATAL("failed to resolve the provided hostname");
                 }
                 serv->addr_udp = storage;
-                serv->addr_udp_len = get_sockaddr_len((struct sockaddr *) storage);
+                serv->addr_udp_len = (int) get_sockaddr_len((struct sockaddr *) storage);
                 serv->udp_port = serv_cfg->server_udp_port;
             }
             serv->host = ss_strdup(host);

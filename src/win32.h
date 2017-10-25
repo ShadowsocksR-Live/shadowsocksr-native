@@ -61,7 +61,9 @@
 #endif
 
 #define EWOULDBLOCK WSAEWOULDBLOCK
+#if !defined(_MSC_VER)
 #define errno WSAGetLastError()
+#endif
 #define close(fd) closesocket(fd)
 #define ERROR(s) ss_error(s)
 #define setsockopt(a, b, c, d, e) setsockopt(a, b, c, (char *)(d), e)
@@ -69,9 +71,9 @@
 void winsock_init(void);
 void winsock_cleanup(void);
 void ss_error(const char *s);
-size_t strnlen(const char *s, size_t maxlen);
 int setnonblocking(int fd);
 #if !defined(_MSC_VER)
+size_t strnlen(const char *s, size_t maxlen);
 const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #endif
 

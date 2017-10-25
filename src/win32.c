@@ -77,6 +77,7 @@ setnonblocking(int fd)
     return iResult;
 }
 
+#if !defined(_MSC_VER)
 size_t
 strnlen(const char *s, size_t maxlen)
 {
@@ -84,7 +85,6 @@ strnlen(const char *s, size_t maxlen)
     return end ? (size_t)(end - s) : maxlen;
 }
 
-#if !defined(_MSC_VER)
 const char *
 inet_ntop(int af, const void *src, char *dst, socklen_t size)
 {
