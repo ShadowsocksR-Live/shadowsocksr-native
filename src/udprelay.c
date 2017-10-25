@@ -130,6 +130,7 @@ struct remote_ctx_t {
     struct sockaddr_storage dst_addr;
 #endif
     struct server_ctx_t *server_ctx;
+    int release_count;
 };
 
 static void server_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const struct sockaddr* addr, unsigned flags);
@@ -639,7 +640,11 @@ static void
 remote_after_close_cb(uv_handle_t* handle)
 {
     struct remote_ctx_t *ctx = cork_container_of(handle, struct remote_ctx_t, io);
-    ss_free(ctx);
+    --ctx->release_count;
+    LOGI("ctx->release_count %d", ctx->release_count);
+    if (ctx->release_count <= 0) {
+        //ss_free(ctx);
+    }
 }
 
 
@@ -648,8 +653,12 @@ close_and_free_remote(struct remote_ctx_t *ctx)
 {
     if (ctx != NULL) {
         uv_close((uv_handle_t *)&ctx->watcher, remote_after_close_cb);
+        ++ctx->release_count;
+
         uv_udp_recv_stop(&ctx->io);
         uv_close((uv_handle_t *)&ctx->io, remote_after_close_cb); // close(ctx->fd);
+        ++ctx->release_count;
+
         //ss_free(ctx);
     }
 }

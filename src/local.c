@@ -1026,7 +1026,11 @@ static void
 remote_after_close_cb(uv_handle_t* handle)
 {
     struct remote_t *remote = cork_container_of(handle, struct remote_t, socket);
-    remote_destroy(remote);
+    --remote->release_count;
+    LOGI("remote->release_count %d", remote->release_count);
+    if (remote->release_count <= 0) {
+        // remote_destroy(remote);
+    }
 }
 
 static void
@@ -1034,9 +1038,14 @@ remote_close_and_free(struct remote_t *remote)
 {
     if (remote != NULL) {
         uv_close((uv_handle_t *)&remote->send_ctx->watcher, remote_after_close_cb);
+        ++remote->release_count;
+
         uv_close((uv_handle_t *)&remote->recv_ctx->watcher, remote_after_close_cb);
+        ++remote->release_count;
+
         uv_read_stop((uv_stream_t *)&remote->socket);
         uv_close((uv_handle_t *)&remote->socket, remote_after_close_cb);
+        ++remote->release_count;
     }
 }
 
@@ -1166,7 +1175,12 @@ static void
 local_after_close_cb(uv_handle_t* handle)
 {
     struct local_t *local = cork_container_of(handle, struct local_t, socket);
-    local_destroy(local);
+
+    --local->release_count;
+    LOGI("local->release_count %d", local->release_count);
+    if (local->release_count <= 0) {
+        // local_destroy(local);
+    }
 }
 
 static void
@@ -1175,6 +1189,8 @@ local_close_and_free(struct local_t *local)
     if (local != NULL) {
         uv_read_stop((uv_stream_t *)&local->socket);
         uv_close((uv_handle_t *)&local->socket, local_after_close_cb);
+
+        ++local->release_count;
     }
 }
 
