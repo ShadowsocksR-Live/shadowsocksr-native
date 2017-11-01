@@ -19,30 +19,12 @@
     <Filter Include="obfs">
       <UniqueIdentifier>{a16cfa70-3b2c-4305-9deb-bbd194275b80}</UniqueIdentifier>
     </Filter>
+    <Filter Include="client">
+      <UniqueIdentifier>{2dc57378-9a2f-45a4-b750-819da8f2d2f2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\local.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\acl.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\encrypt.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\http.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\netutils.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\tls.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\utils.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\win32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\getopt.c">
@@ -50,21 +32,6 @@
     </ClCompile>
     <ClCompile Include="src\getopt_long.c">
       <Filter>getopt</Filter>
-    </ClCompile>
-    <ClCompile Include="src\strncasecmp.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\rule.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\cache.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\jconf.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\json.c">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\obfs\http_simple.c">
       <Filter>obfs</Filter>
@@ -93,45 +60,30 @@
     <ClCompile Include="..\..\src\obfs\crc32.c">
       <Filter>obfs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\socks5.c">
+    <ClCompile Include="..\..\src\cache.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\udprelay.c">
+    <ClCompile Include="..\..\src\client\listener.c">
+      <Filter>client</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\client\main.c">
+      <Filter>client</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\client\s5.c">
+      <Filter>client</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\client\tunnel.c">
+      <Filter>client</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\client\util.c">
+      <Filter>client</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\utils.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\local.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\acl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\encrypt.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\http.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\includeobfs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\netutils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\socks5.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\tls.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\utils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\win32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\getopt.h">
@@ -139,18 +91,6 @@
     </ClInclude>
     <ClInclude Include="include\getopt_long.h">
       <Filter>getopt</Filter>
-    </ClInclude>
-    <ClInclude Include="include\strings.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cache.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\jconf.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\json.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\obfs\http_simple.h">
       <Filter>obfs</Filter>
@@ -179,7 +119,16 @@
     <ClInclude Include="..\..\src\obfs\crc32.h">
       <Filter>obfs</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\udprelay.h">
+    <ClInclude Include="..\..\src\cache.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\client\s5.h">
+      <Filter>client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\client\defs.h">
+      <Filter>client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
