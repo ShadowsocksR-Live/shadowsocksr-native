@@ -1321,7 +1321,7 @@ main(int argc, char **argv)
             { "mptcp",     no_argument,       0, 0 },
             { "help",      no_argument,       0, 0 },
             { "host",      required_argument, 0, 0 },
-            {           0,                 0, 0, 0 }
+            { 0,           0,                 0, 0 },
     };
 
     opterr = 0;
@@ -1437,14 +1437,14 @@ main(int argc, char **argv)
                 break;
 #ifdef ANDROID
             case 'V':
-            vpn = 1;
-            break;
-        case 'P':
-            prefix = optarg;
-            break;
-        case 'x':
-            log_tx_rx = 1;
-            break;
+                vpn = 1;
+                break;
+            case 'P':
+                prefix = optarg;
+                break;
+            case 'x':
+                log_tx_rx = 1;
+                break;
 #endif
             case '?':
                 // The option character is not recognized.
