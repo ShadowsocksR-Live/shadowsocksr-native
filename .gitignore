@@ -23,9 +23,9 @@ win32/libuv/Debug/
 win32/libuv/Release/
 win32/libuv/x64/
 
-win32/ssr-local/Debug/
-win32/ssr-local/Release/
-win32/ssr-local/x64/
+win32/ssr-client/Debug/
+win32/ssr-client/Release/
+win32/ssr-client/x64/
 
 *.vcxproj.user
 *.VC.opendb

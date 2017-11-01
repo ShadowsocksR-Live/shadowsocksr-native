@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ssr-local", "ssr-local\ssr-local.vcxproj", "{F97AD980-48B0-4C94-9662-499EFEE4AB44}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ssr-client", "ssr-client\ssr-client.vcxproj", "{F97AD980-48B0-4C94-9662-499EFEE4AB44}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C9840117-C1B9-43F1-9D18-A91AEB56F4C9} = {C9840117-C1B9-43F1-9D18-A91AEB56F4C9}
 		{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85} = {663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}
