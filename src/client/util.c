@@ -62,7 +62,9 @@ void pr_err(const char *fmt, ...) {
 }
 
 static void pr_do(FILE *stream, const char *label, const char *fmt, va_list ap) {
-    char fmtbuf[1024];
-    vsnprintf(fmtbuf, sizeof(fmtbuf), fmt, ap);
+    static const int size = 1024;
+    char *fmtbuf = malloc(size);
+    vsnprintf(fmtbuf, size, fmt, ap);
     fprintf(stream, "%s:%s: %s\n", _getprogname(), label, fmtbuf);
+    free(fmtbuf);
 }

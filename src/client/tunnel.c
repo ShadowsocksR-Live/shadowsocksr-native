@@ -479,8 +479,18 @@ static void do_req_connect(struct tunnel_ctx *tunnel) {
         tunnel->state = session_proxy_start;
         return;
     } else {
+        s5_ctx *parser = &tunnel->parser;
+        char *addr = NULL;
+
+        if (parser->atyp == s5_atyp_host) {
+            addr = parser->daddr;
+        } else if (parser->atyp == s5_atyp_ipv4) {
+            addr = inet_ntoa(*(struct in_addr *)parser->daddr);
+        } else {
+            ASSERT(!"not support ipv6 yet."); // inet_ntop()
+        }
         const char *fmt = "upstream connection \"%s\" error: %s\n";
-        pr_err(fmt, tunnel->parser.daddr, uv_strerror((int)outgoing->result));
+        pr_err(fmt, addr, uv_strerror((int)outgoing->result));
         /* Send a 'Connection refused' reply. */
         socket_write(incoming, "\5\5\0\1\0\0\0\0\0\0", 10);
         tunnel->state = session_kill;
