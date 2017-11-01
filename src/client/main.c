@@ -35,6 +35,7 @@
 #define DEFAULT_IDLE_TIMEOUT  (60 * 1000)
 
 static struct server_config * config_create(void);
+static void config_release(struct server_config *cf);
 static void parse_opts(struct server_config *cf, int argc, char **argv);
 static bool parse_config_file(const char *file, struct server_config *cf);
 static void usage(void);
@@ -51,6 +52,8 @@ int main(int argc, char **argv) {
     parse_opts(config, argc, argv);
 
     err = listener_run(config, uv_default_loop());
+
+    config_release(config);
     if (err) {
         exit(1);
     }
@@ -75,6 +78,11 @@ static struct server_config * config_create(void) {
     config->idle_timeout = DEFAULT_IDLE_TIMEOUT;
 
     return config;
+}
+
+static void config_release(struct server_config *cf) {
+    free(cf->listen_host);
+    free(cf);
 }
 
 static void parse_opts(struct server_config *cf, int argc, char **argv) {
@@ -109,6 +117,6 @@ static void usage(void) {
         "                         Default: " DEFAULT_CONF_PATH "\n"
         "  -h                     Show this help message.\n"
         "",
-        progname);
+        _getprogname());
     exit(1);
 }

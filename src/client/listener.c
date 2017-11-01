@@ -70,8 +70,6 @@ int listener_run(struct server_config *cf, uv_loop_t *loop) {
     /* Please Valgrind. */
     uv_loop_delete(loop);
 
-    free(state->config->listen_host);
-    free(state->config);
     free(state->listeners);
     free(state);
 
