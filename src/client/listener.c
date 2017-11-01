@@ -23,6 +23,7 @@
 //#include <netinet/in.h>  /* INET6_ADDRSTRLEN */
 #include <stdlib.h>
 #include <string.h>
+#include "util.h"
 
 #ifndef INET6_ADDRSTRLEN
 # define INET6_ADDRSTRLEN 63
@@ -126,7 +127,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
         return;
     }
 
-    state->listeners = xmalloc((ipv4_naddrs + ipv6_naddrs) * sizeof(state->listeners[0]));
+    state->listeners = malloc((ipv4_naddrs + ipv6_naddrs) * sizeof(state->listeners[0]));
 
     n = 0;
     for (ai = addrs; ai != NULL; ai = ai->ai_next) {

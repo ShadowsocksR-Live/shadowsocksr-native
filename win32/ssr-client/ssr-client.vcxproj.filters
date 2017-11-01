@@ -78,7 +78,7 @@
     <ClCompile Include="..\..\src\client\util.c">
       <Filter>client</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\utils.c">
+    <ClCompile Include="..\..\src\ssrutils.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -128,7 +128,10 @@
     <ClInclude Include="..\..\src\client\defs.h">
       <Filter>client</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\utils.h">
+    <ClInclude Include="..\..\src\client\util.h">
+      <Filter>client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ssrutils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

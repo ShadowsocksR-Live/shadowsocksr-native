@@ -35,7 +35,7 @@
     <ClCompile Include="..\..\src\obfs\obfsutil.c" />
     <ClCompile Include="..\..\src\obfs\tls1.2_ticket.c" />
     <ClCompile Include="..\..\src\obfs\verify.c" />
-    <ClCompile Include="..\..\src\utils.c" />
+    <ClCompile Include="..\..\src\ssrutils.c" />
     <ClCompile Include="src\getopt.c" />
     <ClCompile Include="src\getopt_long.c" />
   </ItemGroup>
@@ -43,6 +43,7 @@
     <ClInclude Include="..\..\src\cache.h" />
     <ClInclude Include="..\..\src\client\defs.h" />
     <ClInclude Include="..\..\src\client\s5.h" />
+    <ClInclude Include="..\..\src\client\util.h" />
     <ClInclude Include="..\..\src\encrypt.h" />
     <ClInclude Include="..\..\src\obfs\auth.h" />
     <ClInclude Include="..\..\src\obfs\auth_chain.h" />
@@ -53,7 +54,7 @@
     <ClInclude Include="..\..\src\obfs\obfsutil.h" />
     <ClInclude Include="..\..\src\obfs\tls1.2_ticket.h" />
     <ClInclude Include="..\..\src\obfs\verify.h" />
-    <ClInclude Include="..\..\src\utils.h" />
+    <ClInclude Include="..\..\src\ssrutils.h" />
     <ClInclude Include="include\getopt.h" />
     <ClInclude Include="include\getopt_long.h" />
   </ItemGroup>

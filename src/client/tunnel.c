@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include "util.h"
 
 /* A connection is modeled as an abstraction on top of two simple state
  * machines, one for reading and one for writing.  Either state machine
@@ -116,7 +117,7 @@ void tunnel_initialize(struct listener_ctx *lx) {
 
     tunnel_count++;
 
-    tunnel = xmalloc(sizeof(*tunnel));
+    tunnel = malloc(sizeof(*tunnel));
 
     tunnel->lx = lx;
     tunnel->state = session_handshake;

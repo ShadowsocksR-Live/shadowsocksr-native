@@ -19,26 +19,28 @@
  * IN THE SOFTWARE.
  */
 
-#include "defs.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "util.h"
+
+static const char *progname = __FILE__;  /* Reset in main(). */
+
+void _setprogname(const char *name) {
+    progname = name;
+}
+
+const char *_getprogname(void) {
+#if defined(_MSC_VER)
+    return strrchr(progname, '\\') + 1;
+#else
+    return strrchr(progname, '/') + 1; // return progname;
+#endif // defined(_MSC_VER)
+}
+
 
 static void pr_do(FILE *stream, const char *label, const char *fmt, va_list ap);
-
-void * xmalloc(size_t size) {
-    void *ptr;
-
-    ptr = malloc(size);
-    if (ptr == NULL) {
-        pr_err("out of memory, need %lu bytes", (unsigned long)size);
-        exit(1);
-    }
-    memset(ptr, 0, size);
-
-    return ptr;
-}
 
 void pr_info(const char *fmt, ...) {
     va_list ap;

@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "util.h"
 
 #define DEFAULT_CONF_PATH "/etc/ssr-native/config.json"
 
@@ -40,13 +41,11 @@ static void parse_opts(struct server_config *cf, int argc, char **argv);
 static bool parse_config_file(const char *file, struct server_config *cf);
 static void usage(void);
 
-static const char *progname = __FILE__;  /* Reset in main(). */
-
 int main(int argc, char **argv) {
     struct server_config *config;
     int err;
 
-    progname = argv[0];
+    _setprogname(argv[0]);
 
     config = config_create();
     parse_opts(config, argc, argv);
@@ -59,14 +58,6 @@ int main(int argc, char **argv) {
     }
 
     return 0;
-}
-
-const char *_getprogname(void) {
-#if defined(_MSC_VER)
-    return strrchr(progname, '\\') + 1;
-#else
-    return strrchr(progname, '/') + 1; // return progname;
-#endif // defined(_MSC_VER)
 }
 
 static struct server_config * config_create(void) {

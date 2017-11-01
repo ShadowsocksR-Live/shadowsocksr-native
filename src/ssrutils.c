@@ -42,7 +42,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "utils.h"
+#include "ssrutils.h"
 
 #ifdef HAVE_SETRLIMIT
 #include <sys/time.h>

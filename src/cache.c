@@ -29,7 +29,7 @@
 #include <stdlib.h>
 
 #include "cache.h"
-#include "utils.h"
+#include "ssrutils.h"
 
 #ifdef __MINGW32__
 #include "win32.h"

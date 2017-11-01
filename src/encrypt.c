@@ -82,7 +82,7 @@
 
 #include "cache.h"
 #include "encrypt.h"
-#include "utils.h"
+#include "ssrutils.h"
 
 #define OFFSET_ROL(p, o) ((uint64_t)(*(p + o)) << (8 * o))
 
@@ -454,7 +454,7 @@ cipher_iv_size(const struct cipher_wrapper *cipher)
 {
 #if defined(USE_CRYPTO_OPENSSL)
     if (cipher->core == NULL) {
-        return cipher->iv_len;
+        return (int) cipher->iv_len;
     } else {
         return EVP_CIPHER_iv_length(cipher->core);
     }
