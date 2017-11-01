@@ -85,8 +85,6 @@ static void socket_write_done_cb(uv_write_t *req, int status);
 static void socket_close(struct socket_ctx *c);
 static void socket_close_done_cb(uv_handle_t *handle);
 
-int tunnel_count = 0;
-
 static bool tunnel_is_dead(struct tunnel_ctx *tunnel) {
     return (tunnel->state == session_dead);
 }
@@ -94,6 +92,8 @@ static bool tunnel_is_dead(struct tunnel_ctx *tunnel) {
 static void tunnel_add_ref(struct tunnel_ctx *tunnel) {
     tunnel->ref_count++;
 }
+
+int tunnel_count = 0;
 
 static void tunnel_release(struct tunnel_ctx *tunnel) {
     tunnel->ref_count--;

@@ -27,12 +27,12 @@
 
 #define S5_ERR_MAP(V)                                                         \
   V(-1, bad_version, "Bad protocol version.")                                 \
-  V(-2, bad_cmd, "Bad protocol command.")                                     \
-  V(-3, bad_atyp, "Bad address type.")                                        \
-  V(0, ok, "No error.")                                                       \
-  V(1, auth_select, "Select authentication method.")                          \
-  V(2, auth_verify, "Verify authentication.")                                 \
-  V(3, exec_cmd, "Execute command.")                                          \
+  V(-2, bad_cmd,     "Bad protocol command.")                                 \
+  V(-3, bad_atyp,    "Bad address type.")                                     \
+  V( 0, ok,          "No error.")                                             \
+  V( 1, auth_select, "Select authentication method.")                         \
+  V( 2, auth_verify, "Verify authentication.")                                \
+  V( 3, exec_cmd,    "Execute command.")                                      \
 
 typedef enum s5_err {
 #define S5_ERR_GEN(code, name, _) s5_ ## name = code,
