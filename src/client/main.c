@@ -24,6 +24,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define DEFAULT_CONF_PATH "/etc/ssr-native/config.json"
+
 #if HAVE_UNISTD_H
 #include <unistd.h>  /* getopt */
 #endif
@@ -32,7 +34,9 @@
 #define DEFAULT_BIND_PORT     1080
 #define DEFAULT_IDLE_TIMEOUT  (60 * 1000)
 
+static struct server_config * config_create(void);
 static void parse_opts(struct server_config *cf, int argc, char **argv);
+static bool parse_config_file(const char *file, struct server_config *cf);
 static void usage(void);
 
 static const char *progname = __FILE__;  /* Reset in main(). */
@@ -43,10 +47,7 @@ int main(int argc, char **argv) {
 
     progname = argv[0];
 
-    config = (struct server_config *) calloc(1, sizeof(*config));
-    config->bind_host = strdup(DEFAULT_BIND_HOST);
-    config->bind_port = DEFAULT_BIND_PORT;
-    config->idle_timeout = DEFAULT_IDLE_TIMEOUT;
+    config = config_create();
     parse_opts(config, argc, argv);
 
     err = listener_run(config, uv_default_loop());
@@ -65,30 +66,26 @@ const char *_getprogname(void) {
 #endif // defined(_MSC_VER)
 }
 
+static struct server_config * config_create(void) {
+    struct server_config *config;
+
+    config = (struct server_config *) calloc(1, sizeof(*config));
+    config->listen_host = strdup(DEFAULT_BIND_HOST);
+    config->listen_port = DEFAULT_BIND_PORT;
+    config->idle_timeout = DEFAULT_IDLE_TIMEOUT;
+
+    return config;
+}
+
 static void parse_opts(struct server_config *cf, int argc, char **argv) {
     int opt;
 
-    while (-1 != (opt = getopt(argc, argv, "b:p:t:h"))) {
+    while (-1 != (opt = getopt(argc, argv, "c:h"))) {
         switch (opt) {
-        case 'b':
-            if (cf->bind_host) {
-                free(cf->bind_host);
-            }
-            cf->bind_host = strdup(optarg);
-            break;
-
-        case 'p':
-            if (1 != sscanf(optarg, "%hu", &cf->bind_port)) {
-                pr_err("bad port number: %s", optarg);
+        case 'c':
+            if (parse_config_file(optarg, cf) == false) {
                 usage();
             }
-            break;
-        case 't':
-            if (1 != sscanf(optarg, "%ud", &cf->idle_timeout)) {
-                pr_err("bad idle timeout: %s", optarg);
-                usage();
-            }
-            cf->idle_timeout *= 1000;
             break;
         case 'h':
         default:
@@ -97,17 +94,20 @@ static void parse_opts(struct server_config *cf, int argc, char **argv) {
     }
 }
 
+static bool parse_config_file(const char *file, struct server_config *cf) {
+    return false;
+}
+
 static void usage(void) {
     printf("Usage:\n"
         "\n"
-        "  %s [-b <address>] [-h] [-p <port>]\n"
+        "  %s -c <config file> [-h]\n"
         "\n"
         "Options:\n"
         "\n"
-        "  -b <hostname|address>  Bind to this address or hostname.\n"
-        "                         Default: \"127.0.0.1\"\n"
+        "  -c <config file>       Configure file path.\n"
+        "                         Default: " DEFAULT_CONF_PATH "\n"
         "  -h                     Show this help message.\n"
-        "  -p <port>              Bind to this port number.  Default: 1080\n"
         "",
         progname);
     exit(1);

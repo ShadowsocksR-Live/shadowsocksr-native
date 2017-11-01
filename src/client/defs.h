@@ -47,8 +47,8 @@ typedef size_t uv_buf_len_t;
 #endif
 
 struct server_config {
-    char *bind_host;
-    unsigned short bind_port;
+    char *listen_host;
+    unsigned short listen_port;
     unsigned int idle_timeout;
 };
 

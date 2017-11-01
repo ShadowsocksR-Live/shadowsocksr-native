@@ -56,7 +56,7 @@ int listener_run(struct server_config *cf, uv_loop_t *loop) {
     uv_getaddrinfo_t *req = (uv_getaddrinfo_t *)malloc(sizeof(*req));
     req->data = state;
 
-    err = uv_getaddrinfo(loop, req, getaddrinfo_done_cb, cf->bind_host, NULL, &hints);
+    err = uv_getaddrinfo(loop, req, getaddrinfo_done_cb, cf->listen_host, NULL, &hints);
     if (err != 0) {
         pr_err("getaddrinfo: %s", uv_strerror(err));
         return err;
@@ -70,7 +70,7 @@ int listener_run(struct server_config *cf, uv_loop_t *loop) {
     /* Please Valgrind. */
     uv_loop_delete(loop);
 
-    free(state->config->bind_host);
+    free(state->config->listen_host);
     free(state->config);
     free(state->listeners);
     free(state);
@@ -107,7 +107,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
     free(req);
 
     if (status < 0) {
-        pr_err("getaddrinfo(\"%s\"): %s", cf->bind_host, uv_strerror(status));
+        pr_err("getaddrinfo(\"%s\"): %s", cf->listen_host, uv_strerror(status));
         uv_freeaddrinfo(addrs);
         return;
     }
@@ -123,7 +123,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
     }
 
     if (ipv4_naddrs == 0 && ipv6_naddrs == 0) {
-        pr_err("%s has no IPv4/6 addresses", cf->bind_host);
+        pr_err("%s has no IPv4/6 addresses", cf->listen_host);
         uv_freeaddrinfo(addrs);
         return;
     }
@@ -138,11 +138,11 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
 
         if (ai->ai_family == AF_INET) {
             s.addr4 = *(const struct sockaddr_in *) ai->ai_addr;
-            s.addr4.sin_port = htons(cf->bind_port);
+            s.addr4.sin_port = htons(cf->listen_port);
             addrv = &s.addr4.sin_addr;
         } else if (ai->ai_family == AF_INET6) {
             s.addr6 = *(const struct sockaddr_in6 *) ai->ai_addr;
-            s.addr6.sin6_port = htons(cf->bind_port);
+            s.addr6.sin6_port = htons(cf->listen_port);
             addrv = &s.addr6.sin6_addr;
         } else {
             UNREACHABLE();
@@ -164,7 +164,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
         }
 
         if (err != 0) {
-            pr_err("%s(\"%s:%hu\"): %s", what, addrbuf, cf->bind_port, uv_strerror(err));
+            pr_err("%s(\"%s:%hu\"): %s", what, addrbuf, cf->listen_port, uv_strerror(err));
             while (n > 0) {
                 n -= 1;
                 uv_close((uv_handle_t *)(&lx->tcp_handle), NULL);
@@ -172,7 +172,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
             break;
         }
 
-        pr_info("listening on %s:%hu", addrbuf, cf->bind_port);
+        pr_info("listening on %s:%hu", addrbuf, cf->listen_port);
         n += 1;
     }
 
