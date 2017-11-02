@@ -108,11 +108,11 @@ static void tunnel_release(struct tunnel_ctx *tunnel) {
 }
 
 /* |incoming| has been initialized by listener.c when this is called. */
-void tunnel_initialize(struct listener_ctx *lx) {
+void tunnel_initialize(uv_tcp_t *lx) {
     struct socket_ctx *incoming;
     struct socket_ctx *outgoing;
     struct tunnel_ctx *tunnel;
-    uv_stream_t *server = (uv_stream_t *)&lx->tcp_handle;
+    uv_stream_t *server = (uv_stream_t *)lx;
     uv_loop_t *loop = server->loop;
     struct server_config *config = server->data;
 
@@ -130,7 +130,7 @@ void tunnel_initialize(struct listener_ctx *lx) {
     incoming->result = 0;
     incoming->rdstate = socket_stop;
     incoming->wrstate = socket_stop;
-    incoming->idle_timeout = lx->idle_timeout;
+    incoming->idle_timeout = config->idle_timeout;
     CHECK(0 == uv_tcp_init(loop, &incoming->handle.tcp));
     CHECK(0 == uv_accept(server, &incoming->handle.stream));
     CHECK(0 == uv_timer_init(loop, &incoming->timer_handle));
@@ -140,7 +140,7 @@ void tunnel_initialize(struct listener_ctx *lx) {
     outgoing->result = 0;
     outgoing->rdstate = socket_stop;
     outgoing->wrstate = socket_stop;
-    outgoing->idle_timeout = lx->idle_timeout;
+    outgoing->idle_timeout = config->idle_timeout;
     CHECK(0 == uv_tcp_init(loop, &outgoing->handle.tcp));
     CHECK(0 == uv_timer_init(loop, &outgoing->timer_handle));
 
@@ -622,7 +622,7 @@ static void socket_getaddrinfo(struct socket_ctx *c, const char *hostname) {
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
-    CHECK(0 == uv_getaddrinfo(tunnel->lx->tcp_handle.loop,
+    CHECK(0 == uv_getaddrinfo(tunnel->lx->loop,
         &c->t.addrinfo_req,
         socket_getaddrinfo_done_cb,
         hostname,

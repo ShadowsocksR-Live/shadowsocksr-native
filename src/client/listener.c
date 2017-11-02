@@ -31,7 +31,7 @@
 
 struct server_state {
     struct server_config *config;
-    struct listener_ctx *listeners;
+    uv_tcp_t *listeners;
 };
 
 static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrinfo *addrs);
@@ -88,7 +88,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
     const void *addrv = NULL;
     const char *what;
     uv_loop_t *loop;
-    struct listener_ctx *lx;
+    uv_tcp_t *lx;
     unsigned int n;
     int err;
     union {
@@ -152,22 +152,21 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
         }
 
         lx = state->listeners + n;
-        lx->idle_timeout = state->config->idle_timeout;
-        CHECK(0 == uv_tcp_init(loop, &lx->tcp_handle));
+        CHECK(0 == uv_tcp_init(loop, lx));
 
         what = "uv_tcp_bind";
-        err = uv_tcp_bind(&lx->tcp_handle, &s.addr, 0);
+        err = uv_tcp_bind(lx, &s.addr, 0);
         if (err == 0) {
             what = "uv_listen";
-            lx->tcp_handle.data = state->config;
-            err = uv_listen((uv_stream_t *)&lx->tcp_handle, 128, listen_incoming_connection_cb);
+            lx->data = state->config;
+            err = uv_listen((uv_stream_t *)lx, 128, listen_incoming_connection_cb);
         }
 
         if (err != 0) {
             pr_err("%s(\"%s:%hu\"): %s", what, addrbuf, cf->listen_port, uv_strerror(err));
             while (n > 0) {
                 n -= 1;
-                uv_close((uv_handle_t *)(&lx->tcp_handle), NULL);
+                uv_close((uv_handle_t *)(lx), NULL);
             }
             break;
         }
@@ -180,23 +179,19 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
 }
 
 static void listen_incoming_connection_cb(uv_stream_t *server, int status) {
-    struct listener_ctx *lx;
-
     CHECK(status == 0);
-    lx = CONTAINER_OF(server, struct listener_ctx, tcp_handle);
-
-    tunnel_initialize(lx);
+    tunnel_initialize((uv_tcp_t *)server);
 }
 
-bool can_auth_none(const struct listener_ctx *lx, const struct tunnel_ctx *cx) {
+bool can_auth_none(const uv_tcp_t *lx, const struct tunnel_ctx *cx) {
     return true;
 }
 
-bool can_auth_passwd(const struct listener_ctx *lx, const struct tunnel_ctx *cx) {
+bool can_auth_passwd(const uv_tcp_t *lx, const struct tunnel_ctx *cx) {
     return false;
 }
 
-bool can_access(const struct listener_ctx *lx, const struct tunnel_ctx *cx, const struct sockaddr *addr) {
+bool can_access(const uv_tcp_t *lx, const struct tunnel_ctx *cx, const struct sockaddr *addr) {
     const struct sockaddr_in6 *addr6;
     const struct sockaddr_in *addr4;
     const uint32_t *p;

@@ -60,11 +60,6 @@ struct server_config {
     unsigned int idle_timeout; /* Connection idle timeout in ms. */
 };
 
-struct listener_ctx {
-    unsigned int idle_timeout;  
-    uv_tcp_t tcp_handle;
-};
-
 enum socket_state {
     socket_stop,  /* Stopped. */
     socket_busy,  /* Busy; waiting for incoming data or for a write to complete. */
@@ -114,7 +109,7 @@ enum session_state {
 
 struct tunnel_ctx {
     enum session_state state;
-    struct listener_ctx *lx;  /* Backlink to owning listener context. */
+    uv_tcp_t *lx;  /* Backlink to owning listener context. */
     s5_ctx parser;  /* The SOCKS protocol parser. */
     struct socket_ctx incoming;  /* Connection with the SOCKS client. */
     struct socket_ctx outgoing;  /* Connection with upstream. */
@@ -123,12 +118,12 @@ struct tunnel_ctx {
 
 /* listener.c */
 int listener_run(struct server_config *cf, uv_loop_t *loop);
-bool can_auth_none(const struct listener_ctx *lx, const struct tunnel_ctx *cx);
-bool can_auth_passwd(const struct listener_ctx *lx, const struct tunnel_ctx *cx);
-bool can_access(const struct listener_ctx *lx, const struct tunnel_ctx *cx, const struct sockaddr *addr);
+bool can_auth_none(const uv_tcp_t *lx, const struct tunnel_ctx *cx);
+bool can_auth_passwd(const uv_tcp_t *lx, const struct tunnel_ctx *cx);
+bool can_access(const uv_tcp_t *lx, const struct tunnel_ctx *cx, const struct sockaddr *addr);
 
 /* tunnel.c */
-void tunnel_initialize(struct listener_ctx *lx);
+void tunnel_initialize(uv_tcp_t *lx);
 
 /* getopt.c */
 #if !HAVE_UNISTD_H
