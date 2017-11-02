@@ -57,11 +57,11 @@ struct server_config {
     char *protocol_param;
     char *obfs;
     char *obfs_param;
-    unsigned int idle_timeout;
+    unsigned int idle_timeout; /* Connection idle timeout in ms. */
 };
 
 struct listener_ctx {
-    unsigned int idle_timeout;  /* Connection idle timeout in ms. */
+    unsigned int idle_timeout;  
     uv_tcp_t tcp_handle;
 };
 

@@ -114,6 +114,7 @@ void tunnel_initialize(struct listener_ctx *lx) {
     struct tunnel_ctx *tunnel;
     uv_stream_t *server = (uv_stream_t *)&lx->tcp_handle;
     uv_loop_t *loop = server->loop;
+    struct server_config *config = server->data;
 
     tunnel_count++;
 

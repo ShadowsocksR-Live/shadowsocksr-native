@@ -127,7 +127,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
         return;
     }
 
-    state->listeners = malloc((ipv4_naddrs + ipv6_naddrs) * sizeof(state->listeners[0]));
+    state->listeners = calloc((ipv4_naddrs + ipv6_naddrs), sizeof(state->listeners[0]));
 
     n = 0;
     for (ai = addrs; ai != NULL; ai = ai->ai_next) {
@@ -159,6 +159,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
         err = uv_tcp_bind(&lx->tcp_handle, &s.addr, 0);
         if (err == 0) {
             what = "uv_listen";
+            lx->tcp_handle.data = state->config;
             err = uv_listen((uv_stream_t *)&lx->tcp_handle, 128, listen_incoming_connection_cb);
         }
 
