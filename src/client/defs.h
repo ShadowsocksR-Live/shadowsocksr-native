@@ -109,7 +109,7 @@ enum session_state {
 
 struct tunnel_ctx {
     enum session_state state;
-    uv_tcp_t *lx;  /* Backlink to owning listener context. */
+    uv_tcp_t *listener;  /* Backlink to owning listener context. */
     s5_ctx parser;  /* The SOCKS protocol parser. */
     struct socket_ctx incoming;  /* Connection with the SOCKS client. */
     struct socket_ctx outgoing;  /* Connection with upstream. */

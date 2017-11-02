@@ -108,19 +108,18 @@ static void tunnel_release(struct tunnel_ctx *tunnel) {
 }
 
 /* |incoming| has been initialized by listener.c when this is called. */
-void tunnel_initialize(uv_tcp_t *lx) {
+void tunnel_initialize(uv_tcp_t *listener) {
     struct socket_ctx *incoming;
     struct socket_ctx *outgoing;
     struct tunnel_ctx *tunnel;
-    uv_stream_t *server = (uv_stream_t *)lx;
-    uv_loop_t *loop = server->loop;
-    struct server_config *config = server->data;
+    uv_loop_t *loop = listener->loop;
+    struct server_config *config = listener->data;
 
     tunnel_count++;
 
     tunnel = malloc(sizeof(*tunnel));
 
-    tunnel->lx = lx;
+    tunnel->listener = listener;
     tunnel->state = session_handshake;
     tunnel->ref_count = 0;
     s5_init(&tunnel->parser);
@@ -132,7 +131,7 @@ void tunnel_initialize(uv_tcp_t *lx) {
     incoming->wrstate = socket_stop;
     incoming->idle_timeout = config->idle_timeout;
     CHECK(0 == uv_tcp_init(loop, &incoming->handle.tcp));
-    CHECK(0 == uv_accept(server, &incoming->handle.stream));
+    CHECK(0 == uv_accept((uv_stream_t *)listener, &incoming->handle.stream));
     CHECK(0 == uv_timer_init(loop, &incoming->timer_handle));
 
     outgoing = &tunnel->outgoing;
@@ -233,14 +232,14 @@ static void do_handshake(struct tunnel_ctx *tunnel) {
     }
 
     methods = s5_auth_methods(parser);
-    if ((methods & s5_auth_none) && can_auth_none(tunnel->lx, tunnel)) {
+    if ((methods & s5_auth_none) && can_auth_none(tunnel->listener, tunnel)) {
         s5_select_auth(parser, s5_auth_none);
         socket_write(incoming, "\5\0", 2);  /* No auth required. */
         tunnel->state = session_req_start;
         return;
     }
 
-    if ((methods & s5_auth_passwd) && can_auth_passwd(tunnel->lx, tunnel)) {
+    if ((methods & s5_auth_passwd) && can_auth_passwd(tunnel->listener, tunnel)) {
         /* TODO(bnoordhuis) Implement username/password auth. */
         do_kill(tunnel);
         return;
@@ -415,7 +414,7 @@ static void do_req_connect_start(struct tunnel_ctx *tunnel) {
     ASSERT(outgoing->rdstate == socket_stop);
     ASSERT(outgoing->wrstate == socket_stop);
 
-    if (!can_access(tunnel->lx, tunnel, &outgoing->t.addr)) {
+    if (!can_access(tunnel->listener, tunnel, &outgoing->t.addr)) {
         pr_warn("connection not allowed by ruleset");
         /* Send a 'Connection not allowed by ruleset' reply. */
         socket_write(incoming, "\5\2\0\1\0\0\0\0\0\0", 10);
@@ -622,7 +621,7 @@ static void socket_getaddrinfo(struct socket_ctx *c, const char *hostname) {
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
-    CHECK(0 == uv_getaddrinfo(tunnel->lx->loop,
+    CHECK(0 == uv_getaddrinfo(tunnel->listener->loop,
         &c->t.addrinfo_req,
         socket_getaddrinfo_done_cb,
         hostname,
