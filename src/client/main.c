@@ -65,7 +65,7 @@ static struct server_config * config_create(void) {
     struct server_config *config;
 
     config = (struct server_config *) calloc(1, sizeof(*config));
-    config->listen_host = strdup(DEFAULT_BIND_HOST);
+    string_safe_assign(&config->listen_host, DEFAULT_BIND_HOST);
     config->listen_port = DEFAULT_BIND_PORT;
     config->idle_timeout = DEFAULT_IDLE_TIMEOUT;
 
@@ -73,8 +73,16 @@ static struct server_config * config_create(void) {
 }
 
 static void config_release(struct server_config *cf) {
-    free(cf->listen_host);
-    free(cf);
+    object_safe_free(&cf->listen_host);
+    object_safe_free(&cf->remote_host);
+    object_safe_free(&cf->password);
+    object_safe_free(&cf->method);
+    object_safe_free(&cf->protocol);
+    object_safe_free(&cf->protocol_param);
+    object_safe_free(&cf->obfs);
+    object_safe_free(&cf->obfs_param);
+
+    object_safe_free(&cf);
 }
 
 static void parse_opts(struct server_config *cf, int argc, char **argv) {
@@ -144,7 +152,7 @@ static bool parse_config_file(const char *file, struct server_config *cf) {
             int obj_int = 0;
             const char *obj_str = NULL;
             if (json_iter_extract_string("local_address", &iter, &obj_str)) {
-                cf->listen_host = strdup(obj_str);
+                string_safe_assign(&cf->listen_host, obj_str);
                 continue;
             }
             if (json_iter_extract_int("local_port", &iter, &obj_int)) {
@@ -152,7 +160,7 @@ static bool parse_config_file(const char *file, struct server_config *cf) {
                 continue;
             }
             if (json_iter_extract_string("server", &iter, &obj_str)) {
-                cf->remote_host = strdup(obj_str);
+                string_safe_assign(&cf->remote_host, obj_str);
                 continue;
             }
             if (json_iter_extract_int("server_port", &iter, &obj_int)) {
@@ -160,27 +168,27 @@ static bool parse_config_file(const char *file, struct server_config *cf) {
                 continue;
             }
             if (json_iter_extract_string("password", &iter, &obj_str)) {
-                cf->password = strdup(obj_str);
+                string_safe_assign(&cf->password, obj_str);
                 continue;
             }
             if (json_iter_extract_string("method", &iter, &obj_str)) {
-                cf->method = strdup(obj_str);
+                string_safe_assign(&cf->method, obj_str);
                 continue;
             }
             if (json_iter_extract_string("protocol", &iter, &obj_str)) {
-                cf->protocol = strdup(obj_str);
+                string_safe_assign(&cf->protocol, obj_str);
                 continue;
             }
             if (json_iter_extract_string("protocol_param", &iter, &obj_str)) {
-                cf->protocol_param = strdup(obj_str);
+                string_safe_assign(&cf->protocol_param, obj_str);
                 continue;
             }
             if (json_iter_extract_string("obfs", &iter, &obj_str)) {
-                cf->obfs = strdup(obj_str);
+                string_safe_assign(&cf->obfs, obj_str);
                 continue;
             }
             if (json_iter_extract_string("obfs_param", &iter, &obj_str)) {
-                cf->obfs_param = strdup(obj_str);
+                string_safe_assign(&cf->obfs_param, obj_str);
                 continue;
             }
             if (json_iter_extract_int("timeout", &iter, &obj_int)) {

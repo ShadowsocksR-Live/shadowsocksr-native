@@ -11,6 +11,9 @@
 void _setprogname(const char *name);
 const char *_getprogname(void);
 
+void string_safe_assign(char **target, const char *value);
+void object_safe_free(void **obj);
+
 /* util.c */
 #if defined(__GNUC__)
 # define ATTRIBUTE_FORMAT_PRINTF(a, b) __attribute__((format(printf, a, b)))
