@@ -10,3 +10,6 @@
 [submodule "depends/openssl4w"]
 	path = depends/openssl4w
 	url = https://github.com/ShadowsocksR-Live/openssl4w.git
+[submodule "depends/json-c4w"]
+	path = depends/json-c4w
+	url = https://github.com/ShadowsocksR-Live/json-c4w.git
