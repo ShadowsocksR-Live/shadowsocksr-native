@@ -143,6 +143,7 @@ bool json_iter_extract_int(const char *key, const struct json_object_iter *iter,
 }
 
 static bool parse_config_file(const char *file, struct server_config *cf) {
+    bool result = false;
     json_object *jso = NULL;
     do {
         jso = json_object_from_file(file);
@@ -198,11 +199,12 @@ static bool parse_config_file(const char *file, struct server_config *cf) {
                 continue;
             }
         }
+        result = true;
     } while (0);
     if (jso) {
         json_object_put(jso);
     }
-    return false;
+    return result;
 }
 
 static void usage(void) {
