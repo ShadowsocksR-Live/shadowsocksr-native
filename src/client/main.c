@@ -32,9 +32,11 @@
 #include <unistd.h>  /* getopt */
 #endif
 
+#define SECONDS_PER_MINUTE    1000
+
 #define DEFAULT_BIND_HOST     "127.0.0.1"
 #define DEFAULT_BIND_PORT     1080
-#define DEFAULT_IDLE_TIMEOUT  (60 * 1000)
+#define DEFAULT_IDLE_TIMEOUT  (60 * SECONDS_PER_MINUTE)
 
 static struct server_config * config_create(void);
 static void config_release(struct server_config *cf);
@@ -192,7 +194,7 @@ static bool parse_config_file(const char *file, struct server_config *cf) {
                 continue;
             }
             if (json_iter_extract_int("timeout", &iter, &obj_int)) {
-                cf->idle_timeout = obj_int;
+                cf->idle_timeout = obj_int * SECONDS_PER_MINUTE;
                 continue;
             }
         }
