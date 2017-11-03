@@ -112,6 +112,7 @@ bool json_iter_extract_string(const char *key, const struct json_object_iter *it
         if (key == NULL || iter == NULL || value==NULL) {
             break;
         }
+        *value = NULL;
         if (strcmp(iter->key, key) != 0) {
             break;
         }
@@ -181,6 +182,10 @@ static bool parse_config_file(const char *file, struct server_config *cf) {
                 continue;
             }
             if (json_iter_extract_string("protocol", &iter, &obj_str)) {
+                if (obj_str && strcmp(obj_str, "verify_sha1") == 0) {
+                    // LOGI("The verify_sha1 protocol is deprecate! Fallback to origin protocol.");
+                    obj_str = NULL;
+                }
                 string_safe_assign(&cf->protocol, obj_str);
                 continue;
             }
