@@ -18,7 +18,7 @@ set(SOURCE_FILES_OBFS
         obfs/verify.c)
 
 set(SOURCE_FILES_LOCAL
-        utils.c
+        ssrutils.c
         jconf.c
         json.c
         encrypt.c
@@ -62,7 +62,7 @@ set(SOURCE_FILES_MANAGER
         manager.c)
 
 set(SOURCE_FILES_REDIR
-        utils.c
+        ssrutils.c
         jconf.c
         json.c
         encrypt.c

@@ -56,7 +56,7 @@
 #include <libcork/core.h>
 #include <udns.h>
 
-#include "utils.h"
+#include "ssrutils.h"
 #include "netutils.h"
 #include "cache.h"
 #include "udprelay.h"

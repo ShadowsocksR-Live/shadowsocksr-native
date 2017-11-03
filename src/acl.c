@@ -24,7 +24,7 @@
 #include <ctype.h>
 
 #include "rule.h"
-#include "utils.h"
+#include "ssrutils.h"
 #include "cache.h"
 #include "acl.h"
 

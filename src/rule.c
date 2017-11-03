@@ -37,7 +37,7 @@ extern void ss_error(const char *s);
 #endif
 
 #include "rule.h"
-#include "utils.h"
+#include "ssrutils.h"
 
 static void free_rule(rule_t *);
 

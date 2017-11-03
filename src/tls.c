@@ -45,7 +45,7 @@
 
 #include "tls.h"
 #include "protocol.h"
-#include "utils.h"
+#include "ssrutils.h"
 
 #define SERVER_NAME_LEN 256
 #define TLS_HEADER_LEN 5

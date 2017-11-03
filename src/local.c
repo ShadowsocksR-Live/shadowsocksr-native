@@ -63,7 +63,7 @@
 #endif
 
 #include "netutils.h"
-#include "utils.h"
+#include "ssrutils.h"
 #include "socks5.h"
 #include "acl.h"
 #include "http.h"
