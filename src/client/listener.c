@@ -88,7 +88,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
     const void *addrv = NULL;
     const char *what;
     uv_loop_t *loop;
-    uv_tcp_t *lx;
+    uv_tcp_t *listener;
     unsigned int n;
     int err;
     union {
@@ -151,22 +151,22 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
             UNREACHABLE();
         }
 
-        lx = state->listeners + n;
-        CHECK(0 == uv_tcp_init(loop, lx));
+        listener = state->listeners + n;
+        CHECK(0 == uv_tcp_init(loop, listener));
 
         what = "uv_tcp_bind";
-        err = uv_tcp_bind(lx, &s.addr, 0);
+        err = uv_tcp_bind(listener, &s.addr, 0);
         if (err == 0) {
             what = "uv_listen";
-            lx->data = state->config;
-            err = uv_listen((uv_stream_t *)lx, 128, listen_incoming_connection_cb);
+            listener->data = state->config;
+            err = uv_listen((uv_stream_t *)listener, 128, listen_incoming_connection_cb);
         }
 
         if (err != 0) {
             pr_err("%s(\"%s:%hu\"): %s", what, addrbuf, cf->listen_port, uv_strerror(err));
             while (n > 0) {
                 n -= 1;
-                uv_close((uv_handle_t *)(lx), NULL);
+                uv_close((uv_handle_t *)(listener), NULL);
             }
             break;
         }
