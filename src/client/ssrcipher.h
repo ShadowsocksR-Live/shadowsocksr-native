@@ -10,7 +10,7 @@
 #include "obfs.h"
 
 struct server_env_t {
-    struct server_config *config;
+    struct server_config *config; // __weak_ptr
 
     struct cipher_env_t *cipher;
 

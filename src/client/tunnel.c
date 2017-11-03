@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "util.h"
+#include "ssrcipher.h"
 
 /* A connection is modeled as an abstraction on top of two simple state
  * machines, one for reading and one for writing.  Either state machine
@@ -118,6 +119,8 @@ void tunnel_initialize(uv_tcp_t *listener) {
     tunnel_count++;
 
     tunnel = malloc(sizeof(*tunnel));
+
+    struct server_env_t *env = create_ssr_cipher_env(config);
 
     tunnel->listener = listener;
     tunnel->state = session_handshake;
