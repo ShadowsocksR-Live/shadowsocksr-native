@@ -37,6 +37,7 @@
 #define DEFAULT_BIND_HOST     "127.0.0.1"
 #define DEFAULT_BIND_PORT     1080
 #define DEFAULT_IDLE_TIMEOUT  (60 * SECONDS_PER_MINUTE)
+#define DEFAULT_METHOD        "rc4-md5"
 
 static struct server_config * config_create(void);
 static void config_release(struct server_config *cf);
@@ -68,6 +69,7 @@ static struct server_config * config_create(void) {
 
     config = (struct server_config *) calloc(1, sizeof(*config));
     string_safe_assign(&config->listen_host, DEFAULT_BIND_HOST);
+    string_safe_assign(&config->method, DEFAULT_METHOD);
     config->listen_port = DEFAULT_BIND_PORT;
     config->idle_timeout = DEFAULT_IDLE_TIMEOUT;
 
