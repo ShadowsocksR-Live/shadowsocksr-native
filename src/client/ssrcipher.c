@@ -24,3 +24,32 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ssrcipher.h"
+#include "defs.h"
+#include "encrypt.h"
+
+struct server_env_t * create_ssr_cipher_env(struct server_config *config) {
+    srand((unsigned int)time(NULL));
+
+    struct server_env_t *env = calloc(1, sizeof(struct server_env_t));
+    env->cipher = calloc(1, sizeof(struct cipher_env_t));
+    env->config = config;
+
+    enc_init(env->cipher, config->password, config->method);
+
+    // init obfs
+    init_obfs(env, config->protocol, config->obfs);
+
+    return env;
+}
+
+void init_obfs(struct server_env_t *env, const char *protocol, const char *obfs) {
+    env->protocol_plugin = new_obfs_manager(protocol);
+    if (env->protocol_plugin) {
+        env->protocol_global = env->protocol_plugin->init_data();
+    }
+
+    env->obfs_plugin = new_obfs_manager(obfs);
+    if (env->obfs_plugin) {
+        env->obfs_global = env->obfs_plugin->init_data();
+    }
+}

@@ -81,6 +81,9 @@
     <ClCompile Include="..\..\src\ssrutils.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\client\ssrcipher.c">
+      <Filter>client</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\encrypt.h">
@@ -132,6 +135,12 @@
       <Filter>client</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ssrutils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\client\ssrcipher.h">
+      <Filter>client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\protocol.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
