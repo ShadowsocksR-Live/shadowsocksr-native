@@ -67,6 +67,7 @@ struct remote_t {
     size_t addr_len;
 
     int release_count;
+    bool dying;
 };
 
 struct local_t {
@@ -89,6 +90,7 @@ struct local_t {
     struct obfs_t *obfs;
 
     int release_count;
+    bool dying;
 };
 
 #endif // _LOCAL_H

@@ -144,6 +144,7 @@ static struct cork_dllist all_connections;
 
 
 void do_alloc_uv_buffer(size_t suggested_size, uv_buf_t *buf) {
+    suggested_size = BUF_SIZE;
     buf->base = malloc(suggested_size * sizeof(char));
     buf->len = (uv_buf_len_t) suggested_size;
 }
@@ -280,6 +281,11 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
     struct local_t *local = cork_container_of(stream, struct local_t, socket);
     struct remote_t *remote = local->remote;
     struct buffer_t *buf;
+
+    if (local->dying || (remote && remote->dying) ) {
+        do_dealloc_uv_buffer((uv_buf_t *)buf0);
+        return;
+    }
 
     if (remote == NULL) {
         buf = local->buf;
@@ -790,6 +796,10 @@ local_send_cb(uv_write_t* req, int status)
 
     free(req);
 
+    if (local->dying || (remote && remote->dying) ) {
+        return;
+    }
+
     if (status < 0) {
         LOGE("local_send_cb: %s", uv_strerror(status));
         tunnel_close_and_free(remote, local);
@@ -820,6 +830,11 @@ remote_connected_cb(uv_connect_t* req, int status)
     struct local_t *local = remote->local;
 
     free(req);
+
+    if (local->dying || remote->dying) {
+        return;
+    }
+
     if (status == 0) {
         remote->connected = true;
 
@@ -842,6 +857,10 @@ remote_timeout_cb(uv_timer_t *handle)
     struct remote_t *remote = remote_ctx->remote;
     struct local_t *local = remote->local;
 
+    if (local->dying || remote->dying) {
+        return;
+    }
+
     if (verbose) {
         LOGI("TCP connection timeout");
     }
@@ -855,6 +874,11 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
     struct remote_t *remote = cork_container_of(stream, struct remote_t, socket);
     struct local_t *local = remote->local;
     struct server_env_t *server_env = local->server_env;
+
+    if (local->dying || remote->dying) {
+        do_dealloc_uv_buffer((uv_buf_t *)buf0);
+        return;
+    }
 
     uv_timer_start(&remote->recv_ctx->watcher, remote_timeout_cb, remote->recv_ctx->watcher_interval * 1000, 0);
 
@@ -951,6 +975,10 @@ remote_send_cb(uv_write_t* req, int status)
 
     free(req);
 
+    if (local->dying || remote->dying) {
+        return;
+    }
+
     uv_timer_stop(&remote->send_ctx->watcher);
 
     if (status != 0) {
@@ -1037,6 +1065,8 @@ static void
 remote_close_and_free(struct remote_t *remote)
 {
     if (remote != NULL) {
+        remote->dying = true;
+
         uv_close((uv_handle_t *)&remote->send_ctx->watcher, remote_after_close_cb);
         ++remote->release_count;
 
@@ -1179,7 +1209,7 @@ local_after_close_cb(uv_handle_t* handle)
     --local->release_count;
     LOGI("local->release_count %d", local->release_count);
     if (local->release_count <= 0) {
-        // local_destroy(local);
+        local_destroy(local);
     }
 }
 
@@ -1187,6 +1217,8 @@ static void
 local_close_and_free(struct local_t *local)
 {
     if (local != NULL) {
+        local->dying = true;
+
         uv_read_stop((uv_stream_t *)&local->socket);
         uv_close((uv_handle_t *)&local->socket, local_after_close_cb);
 
