@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-int get_head_size(char *plaindata, int size, int def_size);
+int get_head_size(const char *plaindata, int size, int def_size);
 
 void init_shift128plus(void);
 

@@ -58,7 +58,7 @@ void init_obfs(struct server_env_t *env, const char *protocol, const char *obfs)
     }
 }
 
-struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, char *init_pkg) {
+struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, const char *init_pkg) {
     struct server_config *config = env->config;
 
     struct tunnel_cipher_ctx *tc = calloc(1, sizeof(struct tunnel_cipher_ctx));
