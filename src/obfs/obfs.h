@@ -12,6 +12,10 @@
 
 #define OBFS_HMAC_SHA1_LEN 10
 
+#ifndef SSR_BUFF_SIZE
+#define SSR_BUFF_SIZE 2048
+#endif // !SSR_BUFF_SIZE
+
 struct server_info_t {
     char host[256];
     uint16_t port;

@@ -292,7 +292,7 @@ int auth_chain_a_pack_auth_data(auth_chain_global_data *global, struct server_in
         memcpy(encrypt_key, local->user_key, local->user_key_len);
         base64_encode(encrypt_key, (unsigned int)local->user_key_len, encrypt_key_base64);
         free(encrypt_key);
-        int salt_len = strlen(salt);
+        int salt_len = (int) strlen(salt);
         int base64_len = (local->user_key_len + 2) / 3 * 4;
         memcpy(encrypt_key_base64 + base64_len, salt, salt_len);
 
@@ -330,7 +330,7 @@ int auth_chain_a_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int 
     char *plaindata = *pplaindata;
     struct server_info_t *server = (struct server_info_t *)&obfs->server;
     auth_chain_local_data *local = (auth_chain_local_data*)obfs->l_data;
-    char * out_buffer = (char*)malloc((size_t)(datalength * 2 + 4096));
+    char * out_buffer = (char*)malloc((size_t)(datalength * 2 + (SSR_BUFF_SIZE * 2)));
     char * buffer = out_buffer;
     char * data = plaindata;
     int len = datalength;
@@ -392,7 +392,7 @@ int auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int
         int data_len = (int)(((unsigned)(recv_buffer[1] ^ local->last_server_hash[15]) << 8) + (recv_buffer[0] ^ local->last_server_hash[14]));
         int rand_len = get_server_rand_len(local, data_len);
         int len = rand_len + data_len;
-        if (len >= 4096) {
+        if (len >= (SSR_BUFF_SIZE * 2)) {
             local->recv_buffer_size = 0;
             error = 1;
             break;
@@ -447,7 +447,7 @@ int auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplaindata, 
     char *plaindata = *pplaindata;
     struct server_info_t *server = (struct server_info_t *)&obfs->server;
     auth_chain_local_data *local = (auth_chain_local_data*)obfs->l_data;
-    char *out_buffer = (char *) malloc((datalength + 1024) * sizeof(char));
+    char *out_buffer = (char *) malloc((datalength + (SSR_BUFF_SIZE / 2)) * sizeof(char));
 
     if (local->user_key == NULL) {
         if(obfs->server.param != NULL && obfs->server.param[0] != 0) {

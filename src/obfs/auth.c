@@ -427,7 +427,7 @@ auth_sha1_v2_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int data
 {
     char *plaindata = *pplaindata;
     auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
-    char * out_buffer = (char*)malloc((size_t)(datalength * 2 + 4096));
+    char * out_buffer = (char*)malloc((size_t)(datalength * 2 + (SSR_BUFF_SIZE * 2)));
     char * buffer = out_buffer;
     char * data = plaindata;
     int len = datalength;
@@ -586,7 +586,7 @@ auth_sha1_v4_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int data
 {
     char *plaindata = *pplaindata;
     auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
-    char * out_buffer = (char*)malloc((size_t)(datalength * 2 + 4096));
+    char * out_buffer = (char*)malloc((size_t)(datalength * 2 + (SSR_BUFF_SIZE * 2)));
     char * buffer = out_buffer;
     char * data = plaindata;
     int len = datalength;
@@ -864,7 +864,7 @@ auth_aes128_sha1_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int 
 {
     char *plaindata = *pplaindata;
     auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
-    char * out_buffer = (char*)malloc((size_t)(datalength * 2 + 4096));
+    char * out_buffer = (char*)malloc((size_t)(datalength * 2 + (SSR_BUFF_SIZE * 2)));
     char * buffer = out_buffer;
     char * data = plaindata;
     int len = datalength;

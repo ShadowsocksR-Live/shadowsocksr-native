@@ -528,8 +528,7 @@ bytes_to_key(const struct cipher_wrapper *cipher, const digest_type_t *md,
     MD5_CTX c;
     unsigned char md_buf[MAX_MD_SIZE];
     int nkey;
-    int addmd;
-    unsigned int i, j, mds;
+    unsigned int i, mds;
 
     mds  = 16;
     nkey = 16;
@@ -541,7 +540,7 @@ bytes_to_key(const struct cipher_wrapper *cipher, const digest_type_t *md,
     }
     memset(&c, 0, sizeof(MD5_CTX));
 
-    for (j = 0, addmd = 0; j < nkey; addmd++) {
+    for (int j = 0, addmd = 0; j < nkey; addmd++) {
         MD5_Init(&c);
         if (addmd) {
             MD5_Update(&c, md_buf, mds);
@@ -941,10 +940,10 @@ cipher_context_update(struct cipher_ctx_t *ctx, uint8_t *output, size_t *olen,
 #endif
     cipher_core_ctx_t *core_ctx = ctx->core_ctx;
 #if defined(USE_CRYPTO_OPENSSL)
-    int err = 0, tlen = *olen;
-    err = EVP_CipherUpdate(core_ctx, (uint8_t *)output, &tlen,
-                           (const uint8_t *)input, ilen);
-    *olen = tlen;
+    int err = 0, tlen = (int)*olen;
+    err = EVP_CipherUpdate(core_ctx, (unsigned char *)output, &tlen,
+                           (const unsigned char *)input, (int)ilen);
+    *olen = (size_t)tlen;
     return err;
 #elif defined(USE_CRYPTO_POLARSSL)
     return !cipher_update(core_ctx, (const uint8_t *)input, ilen,
@@ -1076,7 +1075,7 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
 
         uint8_t iv[MAX_IV_LENGTH];
 
-        rand_bytes(iv, iv_len);
+        rand_bytes(iv, (int)iv_len);
         cipher_context_set_iv(env, &cipher_ctx, iv, iv_len, 1);
         memcpy(cipher->buffer, iv, iv_len);
 
@@ -1423,7 +1422,7 @@ enc_table_init(struct cipher_env_t * env, enum cipher_index method, const char *
     }
 
     if (method == TABLE) {
-        env->enc_key_len = strlen(pass);
+        env->enc_key_len = (int) strlen(pass);
         memcpy(&env->enc_key, pass, env->enc_key_len);
     } else {
         const digest_type_t *md = get_digest_type("MD5");

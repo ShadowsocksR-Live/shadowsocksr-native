@@ -94,7 +94,7 @@ size_t tls12_ticket_auth_client_encode(struct obfs_t *obfs, char **pencryptdata,
     char * out_buffer = NULL;
 
     if (local->handshake_status == 8) {
-        if (datalength < 1024) {
+        if (datalength < (SSR_BUFF_SIZE / 2)) {
             if ((int)*capacity < datalength + 5) {
                 *pencryptdata = (char*)realloc(*pencryptdata, *capacity = (size_t)((datalength + 5) * 2));
                 encryptdata = *pencryptdata;
@@ -107,21 +107,21 @@ size_t tls12_ticket_auth_client_encode(struct obfs_t *obfs, char **pencryptdata,
             encryptdata[4] = (char)datalength;
             return datalength + 5;
         } else {
-            out_buffer = (char*)malloc((size_t)(datalength + 4096));
+            out_buffer = (char*)malloc((size_t)(datalength + (SSR_BUFF_SIZE * 2)));
             int start = 0;
             int outlength = 0;
             int len;
-            while (datalength - start > 2048) {
-                len = xorshift128plus() % 4096 + 100;
+            while (datalength - start > SSR_BUFF_SIZE) {
+                len = xorshift128plus() % (SSR_BUFF_SIZE * 2) + 100;
                 if (len > datalength - start) {
-                    len = datalength - start;
+                    len = (int)datalength - start;
                 }
                 tls12_ticket_auth_pack_data(encryptdata, start, len, out_buffer, outlength);
                 outlength += len + 5;
                 start += len;
             }
             if (datalength - start > 0) {
-                len = datalength - start;
+                len = (int)datalength - start;
                 tls12_ticket_auth_pack_data(encryptdata, start, len, out_buffer, outlength);
                 outlength += len + 5;
             }
@@ -136,26 +136,26 @@ size_t tls12_ticket_auth_client_encode(struct obfs_t *obfs, char **pencryptdata,
     }
 
     if (datalength > 0) {
-        if (datalength < 1024) {
+        if (datalength < (SSR_BUFF_SIZE / 2)) {
             local->send_buffer = (char*)realloc(local->send_buffer, (size_t)(local->send_buffer_size + datalength + 5));
-            tls12_ticket_auth_pack_data(encryptdata, 0, datalength, local->send_buffer, local->send_buffer_size);
-            local->send_buffer_size += datalength + 5;
+            tls12_ticket_auth_pack_data(encryptdata, 0, (int)datalength, local->send_buffer, local->send_buffer_size);
+            local->send_buffer_size += (int)datalength + 5;
         } else {
-            out_buffer = (char*)malloc((size_t)(datalength + 4096));
+            out_buffer = (char*)malloc((size_t)(datalength + (SSR_BUFF_SIZE * 2)));
             int start = 0;
             int outlength = 0;
             int len;
-            while (datalength - start > 2048) {
-                len = xorshift128plus() % 4096 + 100;
+            while (datalength - start > SSR_BUFF_SIZE) {
+                len = xorshift128plus() % (SSR_BUFF_SIZE * 2) + 100;
                 if (len > datalength - start) {
-                    len = datalength - start;
+                    len = (int)datalength - start;
                 }
                 tls12_ticket_auth_pack_data(encryptdata, start, len, out_buffer, outlength);
                 outlength += len + 5;
                 start += len;
             }
             if (datalength - start > 0) {
-                len = datalength - start;
+                len = (int)datalength - start;
                 tls12_ticket_auth_pack_data(encryptdata, start, len, out_buffer, outlength);
                 outlength += len + 5;
             }
@@ -171,7 +171,7 @@ size_t tls12_ticket_auth_client_encode(struct obfs_t *obfs, char **pencryptdata,
     }
 
     if (local->handshake_status == 0) {
-#define CSTR_DECL(name, len, str) const char* name = str; const size_t (len) = sizeof(str) - 1;
+#define CSTR_DECL(name, len, str) const char* (name) = (str); const size_t (len) = sizeof(str) - 1;
         CSTR_DECL(tls_data0, tls_data0_len, "\x00\x1c\xc0\x2b\xc0\x2f\xcc\xa9\xcc\xa8\xcc\x14\xcc\x13\xc0\x0a\xc0\x14\xc0\x09\xc0\x13\x00\x9c\x00\x35\x00\x2f\x00\x0a\x01\x00"
                 );
         CSTR_DECL(tls_data1, tls_data1_len, "\xff\x01\x00\x01\x00"
@@ -180,12 +180,12 @@ size_t tls12_ticket_auth_client_encode(struct obfs_t *obfs, char **pencryptdata,
         CSTR_DECL(tls_data3, tls_data3_len, "\x00\x0d\x00\x16\x00\x14\x06\x01\x06\x03\x05\x01\x05\x03\x04\x01\x04\x03\x03\x01\x03\x03\x02\x01\x02\x03\x00\x05\x00\x05\x01\x00\x00\x00\x00\x00\x12\x00\x00\x75\x50\x00\x00\x00\x0b\x00\x02\x01\x00\x00\x0a\x00\x06\x00\x04\x00\x17\x00\x18"
                 //"00150066000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" // padding
                 );
-        uint8_t tls_data[2048];
+        uint8_t * tls_data = (uint8_t *)calloc(SSR_BUFF_SIZE, sizeof(uint8_t));
         size_t tls_data_len = 0;
         memcpy(tls_data, tls_data1, tls_data1_len);
         tls_data_len += tls_data1_len;
 
-        char hosts[1024];
+        char hosts[(SSR_BUFF_SIZE / 2)];
         char * phost[128];
         int host_num = 0;
         int pos;
@@ -236,13 +236,13 @@ size_t tls12_ticket_auth_client_encode(struct obfs_t *obfs, char **pencryptdata,
         datalength = 11 + 32 + 1 + 32 + tls_data0_len + 2 + tls_data_len;
         out_buffer = (char*)malloc((size_t)datalength);
         char *pdata = out_buffer + datalength - tls_data_len;
-        int len = tls_data_len;
+        int len = (int)tls_data_len;
         memcpy(pdata, tls_data, tls_data_len);
         pdata[-1] = (char)tls_data_len;
         pdata[-2] = (char)(tls_data_len >> 8);
         pdata -= 2; len += 2;
         memcpy(pdata - tls_data0_len, tls_data0, tls_data0_len);
-        pdata -= tls_data0_len; len += tls_data0_len;
+        pdata -= tls_data0_len; len += (int)tls_data0_len;
         memcpy(pdata - 32, global->local_client_id, 32);
         pdata -= 32; len += 32;
         pdata[-1] = 0x20;
@@ -268,6 +268,8 @@ size_t tls12_ticket_auth_client_encode(struct obfs_t *obfs, char **pencryptdata,
         pdata -= 1; len += 1;
 
         local->handshake_status = 1;
+
+        free(tls_data);
     } else if (datalength == 0) {
         datalength = local->send_buffer_size + 43;
         out_buffer = (char*)malloc((size_t)datalength);
@@ -312,7 +314,7 @@ size_t tls12_ticket_auth_client_decode(struct obfs_t *obfs, char **pencryptdata,
 
     *needsendback = 0;
     if (local->handshake_status == 8) {
-        local->recv_buffer_size += datalength;
+        local->recv_buffer_size += (int) datalength;
         local->recv_buffer = (char*)realloc(local->recv_buffer, (size_t)local->recv_buffer_size);
         memcpy(local->recv_buffer + local->recv_buffer_size - datalength, encryptdata, datalength);
         datalength = 0;
