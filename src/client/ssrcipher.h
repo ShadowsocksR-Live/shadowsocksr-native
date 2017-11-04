@@ -21,7 +21,15 @@ struct server_env_t {
     void *obfs_global;
 };
 
-struct server_env_t * create_ssr_cipher_env(struct server_config *config);
-void init_obfs(struct server_env_t *env, const char *protocol, const char *obfs);
+struct tunnel_cipher_ctx {
+    struct enc_ctx *e_ctx;
+    struct enc_ctx *d_ctx;
+    struct obfs_t *protocol;
+    struct obfs_t *obfs;
+};
+
+struct server_env_t * ssr_cipher_env_create(struct server_config *config);
+struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, char *init_pkg);
+void tunnel_cipher_release(struct server_env_t *env, struct tunnel_cipher_ctx *tc);
 
 #endif // defined(__SSR_CIPHER__)
