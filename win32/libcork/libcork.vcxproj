@@ -88,7 +88,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;__MINGW32__;CORK_LIB_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../libcork/include;$(ProjectDir)include;$(ProjectDir)../../depends/pthreads4w/code;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)/../../libcork/include;$(ProjectDir)/include;$(ProjectDir)/../../depends/pthreads4w/code;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -105,7 +105,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;__MINGW32__;CORK_LIB_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../libcork/include;$(ProjectDir)include;$(ProjectDir)../../depends/pthreads4w/code;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)/../../libcork/include;$(ProjectDir)/include;$(ProjectDir)/../../depends/pthreads4w/code;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -124,7 +124,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;__MINGW32__;CORK_LIB_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../libcork/include;$(ProjectDir)include;$(ProjectDir)../../depends/pthreads4w/code;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)/../../libcork/include;$(ProjectDir)/include;$(ProjectDir)/../../depends/pthreads4w/code;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -145,7 +145,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;__MINGW32__;CORK_LIB_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../libcork/include;$(ProjectDir)include;$(ProjectDir)../../depends/pthreads4w/code;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)/../../libcork/include;$(ProjectDir)/include;$(ProjectDir)/../../depends/pthreads4w/code;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>

@@ -52,6 +52,10 @@ static inline LONG __sync_val_compare_and_swap(LONG volatile * Destination, LONG
     return InterlockedCompareExchange(Destination, ExChange, Comperand);
 }
 
+static inline void * __sync_ptr_compare_and_swap(void * volatile * Destination, void *Comperand, void *ExChange) {
+    return InterlockedCompareExchangePointer(Destination, ExChange, Comperand);
+}
+
 #define cork_int_atomic_add        InterlockedAdd
 #define cork_uint_atomic_add       InterlockedAdd
 #define cork_size_atomic_add       InterlockedAdd
@@ -67,7 +71,7 @@ static inline LONG __sync_val_compare_and_swap(LONG volatile * Destination, LONG
 #define cork_int_cas               __sync_val_compare_and_swap
 #define cork_uint_cas              __sync_val_compare_and_swap
 #define cork_size_cas              __sync_val_compare_and_swap
-#define cork_ptr_cas               __sync_val_compare_and_swap
+#define cork_ptr_cas               __sync_ptr_compare_and_swap
 
 #else
 #error "No atomics implementation!"
