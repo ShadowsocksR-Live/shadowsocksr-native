@@ -21,7 +21,7 @@
  */
 
 #include "win32.h"
-#include "utils.h"
+#include "ssrutils.h"
 
 #ifdef setsockopt
 #undef setsockopt

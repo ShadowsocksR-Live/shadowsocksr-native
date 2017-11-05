@@ -41,6 +41,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libuv", "libuv\libuv.vcxpro
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "json", "..\depends\json-c4w\win32\json.vcxproj", "{F1F4BA6A-0368-4F34-95BB-C29A2244A772}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ssr-old", "ssr-client\ssr-old.vcxproj", "{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -129,6 +131,14 @@ Global
 		{F1F4BA6A-0368-4F34-95BB-C29A2244A772}.Release|x64.Build.0 = Release|x64
 		{F1F4BA6A-0368-4F34-95BB-C29A2244A772}.Release|x86.ActiveCfg = Release|Win32
 		{F1F4BA6A-0368-4F34-95BB-C29A2244A772}.Release|x86.Build.0 = Release|Win32
+		{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}.Debug|x64.ActiveCfg = Debug|x64
+		{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}.Debug|x64.Build.0 = Debug|x64
+		{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}.Debug|x86.ActiveCfg = Debug|Win32
+		{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}.Debug|x86.Build.0 = Debug|Win32
+		{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}.Release|x64.ActiveCfg = Release|x64
+		{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}.Release|x64.Build.0 = Release|x64
+		{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}.Release|x86.ActiveCfg = Release|Win32
+		{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

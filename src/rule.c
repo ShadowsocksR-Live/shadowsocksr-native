@@ -111,7 +111,7 @@ lookup_rule(const struct cork_dllist *rules, const char *name, size_t name_len)
     cork_dllist_foreach_void(rules, curr, next) {
         rule_t *rule = cork_container_of(curr, rule_t, entries);
         if (pcre_exec(rule->pattern_re, NULL,
-                      name, name_len, 0, 0, NULL, 0) >= 0)
+                      name, (int)name_len, 0, 0, NULL, 0) >= 0)
             return rule;
     }
 
