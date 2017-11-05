@@ -144,7 +144,6 @@ static struct cork_dllist all_connections;
 
 
 void do_alloc_uv_buffer(size_t suggested_size, uv_buf_t *buf) {
-    suggested_size = BUF_SIZE;
     buf->base = malloc(suggested_size * sizeof(char));
     buf->len = (uv_buf_len_t) suggested_size;
 }
