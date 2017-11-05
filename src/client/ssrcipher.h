@@ -31,5 +31,6 @@ struct tunnel_cipher_ctx {
 struct server_env_t * ssr_cipher_env_create(struct server_config *config);
 struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, const char *init_pkg);
 void tunnel_cipher_release(struct server_env_t *env, struct tunnel_cipher_ctx *tc);
+int tunnel_encrypt(struct server_env_t *env, struct tunnel_cipher_ctx *tc, struct buffer_t *buf);
 
 #endif // defined(__SSR_CIPHER__)

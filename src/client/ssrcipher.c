@@ -127,3 +127,30 @@ void tunnel_cipher_release(struct server_env_t *env, struct tunnel_cipher_ctx *t
     }
     // SSR end
 }
+
+// insert shadowsocks header
+int tunnel_encrypt(struct server_env_t *env, struct tunnel_cipher_ctx *tc, struct buffer_t *buf) {
+    assert(buf->capacity >= SSR_BUFF_SIZE);
+
+    // SSR beg
+    struct obfs_manager *protocol_plugin = env->protocol_plugin;
+
+    if (protocol_plugin && protocol_plugin->client_pre_encrypt) {
+        buf->len = (size_t)protocol_plugin->client_pre_encrypt(
+            tc->protocol, &buf->buffer, (int)buf->len, &buf->capacity);
+    }
+    int err = ss_encrypt(env->cipher, buf, tc->e_ctx, SSR_BUFF_SIZE);
+    if (err != 0) {
+        // LOGE("local invalid password or cipher");
+        // tunnel_close_and_free(remote, local);
+        return err;
+    }
+
+    struct obfs_manager *obfs_plugin = env->obfs_plugin;
+    if (obfs_plugin && obfs_plugin->client_encode) {
+        buf->len = obfs_plugin->client_encode(
+            tc->obfs, &buf->buffer, buf->len, &buf->capacity);
+    }
+    // SSR end
+    return 0;
+}
