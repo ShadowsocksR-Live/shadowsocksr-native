@@ -1047,8 +1047,8 @@ static void
 remote_after_close_cb(uv_handle_t* handle)
 {
     struct remote_t *remote = handle->data;
-    --remote->release_count;
-    if (remote->release_count == 0) {
+    --remote->ref_count;
+    if (remote->ref_count == 0) {
         remote_destroy(remote);
     }
 }
@@ -1061,16 +1061,16 @@ remote_close_and_free(struct remote_t *remote)
 
         remote->send_ctx->watcher.data = remote;
         uv_close((uv_handle_t *)&remote->send_ctx->watcher, remote_after_close_cb);
-        ++remote->release_count;
+        ++remote->ref_count;
 
         remote->recv_ctx->watcher.data = remote;
         uv_close((uv_handle_t *)&remote->recv_ctx->watcher, remote_after_close_cb);
-        ++remote->release_count;
+        ++remote->ref_count;
 
         uv_read_stop((uv_stream_t *)&remote->socket);
         remote->socket.data = remote;
         uv_close((uv_handle_t *)&remote->socket, remote_after_close_cb);
-        ++remote->release_count;
+        ++remote->ref_count;
     }
 }
 
@@ -1169,8 +1169,8 @@ local_after_close_cb(uv_handle_t* handle)
 {
     struct local_t *local = cork_container_of(handle, struct local_t, socket);
 
-    --local->release_count;
-    if (local->release_count <= 0) {
+    --local->ref_count;
+    if (local->ref_count == 0) {
         local_destroy(local);
     }
 }
@@ -1184,7 +1184,7 @@ local_close_and_free(struct local_t *local)
         uv_read_stop((uv_stream_t *)&local->socket);
         uv_close((uv_handle_t *)&local->socket, local_after_close_cb);
 
-        ++local->release_count;
+        ++local->ref_count;
     }
 }
 
