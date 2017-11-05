@@ -46,6 +46,8 @@ typedef size_t uv_buf_len_t;
 #include <stdbool.h>
 #endif
 
+#include "obfs.h"
+
 struct server_config {
     char *listen_host;
     unsigned short listen_port;
@@ -89,7 +91,7 @@ struct socket_ctx {
         struct sockaddr_in6 addr6;
         struct sockaddr_in addr4;
         struct sockaddr addr;
-        char buf[2048];  /* Scratch space. Used to read data into. */
+        char buf[SSR_BUFF_SIZE];  /* Scratch space. Used to read data into. */
     } t;
 };
 

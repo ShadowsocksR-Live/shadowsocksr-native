@@ -120,7 +120,7 @@ void tunnel_initialize(uv_tcp_t *listener) {
 
     tunnel = malloc(sizeof(*tunnel));
 
-    struct server_env_t *env = create_ssr_cipher_env(config);
+    struct server_env_t *env = ssr_cipher_env_create(config);
 
     tunnel->listener = listener;
     tunnel->state = session_handshake;
