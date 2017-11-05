@@ -1054,7 +1054,7 @@ remote_destroy(struct remote_t *remote)
 static void
 remote_after_close_cb(uv_handle_t* handle)
 {
-    struct remote_t *remote = cork_container_of(handle, struct remote_t, socket);
+    struct remote_t *remote = handle->data;
     --remote->release_count;
     LOGI("remote->release_count %d", remote->release_count);
     if (remote->release_count <= 0) {
@@ -1068,13 +1068,16 @@ remote_close_and_free(struct remote_t *remote)
     if (remote != NULL) {
         remote->dying = true;
 
+        remote->send_ctx->watcher.data = remote;
         uv_close((uv_handle_t *)&remote->send_ctx->watcher, remote_after_close_cb);
         ++remote->release_count;
 
+        remote->recv_ctx->watcher.data = remote;
         uv_close((uv_handle_t *)&remote->recv_ctx->watcher, remote_after_close_cb);
         ++remote->release_count;
 
         uv_read_stop((uv_stream_t *)&remote->socket);
+        remote->socket.data = remote;
         uv_close((uv_handle_t *)&remote->socket, remote_after_close_cb);
         ++remote->release_count;
     }
