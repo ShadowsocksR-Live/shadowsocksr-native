@@ -1039,7 +1039,7 @@ remote_new_object(uv_loop_t *loop, int timeout)
 static void
 remote_destroy(struct remote_t *remote)
 {
-    LOGI("remote object destroyed");
+    //LOGI("remote object destroyed");
 
     if (remote->local != NULL) {
         remote->local->remote = NULL;
@@ -1171,7 +1171,7 @@ local_destroy(struct local_t *local)
     cork_dllist_remove(&local->entries);
     cork_dllist_remove(&local->entries_all);
 
-    LOGI("local object destroyed");
+    // LOGI("local object destroyed");
 
     if (local->remote != NULL) {
         local->remote->local = NULL;
