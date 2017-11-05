@@ -32,6 +32,8 @@
 
 #include "common.h"
 
+#define SECONDS_PER_MINUTE    1000
+
 // use this as a listener or environment
 struct listener_t {
     uv_tcp_t socket;

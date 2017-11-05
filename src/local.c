@@ -838,7 +838,7 @@ remote_connected_cb(uv_connect_t* req, int status)
     if (status == 0) {
         remote->connected = true;
 
-        uv_timer_start(&remote->recv_ctx->watcher, remote_timeout_cb, remote->recv_ctx->watcher_interval * 1000, 0);
+        uv_timer_start(&remote->recv_ctx->watcher, remote_timeout_cb, remote->recv_ctx->watcher_interval, 0);
         uv_read_start((uv_stream_t *)&remote->socket, on_alloc, remote_recv_cb);
 
         remote_send_data(remote);
@@ -881,7 +881,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         return;
     }
 
-    uv_timer_start(&remote->recv_ctx->watcher, remote_timeout_cb, remote->recv_ctx->watcher_interval * 1000, 0);
+    uv_timer_start(&remote->recv_ctx->watcher, remote_timeout_cb, remote->recv_ctx->watcher_interval, 0);
 
 #ifdef ANDROID
     stat_update_cb();
@@ -999,7 +999,7 @@ remote_send_data(struct remote_t *remote)
     write_req->data = remote;
 
     uv_write(write_req, (uv_stream_t *)&remote->socket, &tmp, 1, remote_send_cb);
-    uv_timer_start(&remote->send_ctx->watcher, remote_timeout_cb, remote->send_ctx->watcher_interval * 1000, 0);
+    uv_timer_start(&remote->send_ctx->watcher, remote_timeout_cb, remote->send_ctx->watcher_interval, 0);
 }
 
 static void 
@@ -1027,7 +1027,7 @@ remote_new_object(uv_loop_t *loop, int timeout)
     remote->recv_ctx->remote    = remote;
     remote->send_ctx->remote    = remote;
 
-    int timeMax = min(MAX_CONNECT_TIMEOUT, timeout);
+    int timeMax = min(MAX_CONNECT_TIMEOUT * SECONDS_PER_MINUTE, timeout);
     uv_timer_init(loop, &remote->send_ctx->watcher);
     remote->send_ctx->watcher_interval = (uint64_t) timeMax;
 
@@ -1644,7 +1644,7 @@ main(int argc, char **argv)
 
     cork_dllist_init(&listener->connections_eden);
 
-    listener->timeout = atoi(timeout);
+    listener->timeout = atoi(timeout) * SECONDS_PER_MINUTE;
     listener->iface = ss_strdup(iface);
     listener->mptcp = mptcp;
     listener->tunnel_addr = tunnel_addr;
