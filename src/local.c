@@ -1059,7 +1059,7 @@ remote_after_close_cb(uv_handle_t* handle)
     struct remote_t *remote = handle->data;
     --remote->release_count;
     if (remote->release_count == 0) {
-        // remote_destroy(remote);
+        remote_destroy(remote);
     }
 }
 
