@@ -831,7 +831,7 @@ remote_connected_cb(uv_connect_t* req, int status)
 
     free(req);
 
-    if (local->dying || remote->dying) {
+    if (local==NULL || local->dying || remote->dying) {
         return;
     }
 
@@ -857,7 +857,7 @@ remote_timeout_cb(uv_timer_t *handle)
     struct remote_t *remote = remote_ctx->remote;
     struct local_t *local = remote->local;
 
-    if (local->dying || remote->dying) {
+    if (local==NULL || local->dying || remote->dying) {
         return;
     }
 
@@ -872,10 +872,11 @@ static void
 remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 {
     struct remote_t *remote = cork_container_of(stream, struct remote_t, socket);
+    assert(remote);
     struct local_t *local = remote->local;
     struct server_env_t *server_env = local->server_env;
 
-    if (local->dying || remote->dying) {
+    if (local==NULL || local->dying || remote->dying) {
         do_dealloc_uv_buffer((uv_buf_t *)buf0);
         return;
     }
@@ -975,7 +976,7 @@ remote_send_cb(uv_write_t* req, int status)
 
     free(req);
 
-    if (local->dying || remote->dying) {
+    if (local==NULL || local->dying || remote->dying) {
         return;
     }
 
