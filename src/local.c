@@ -138,7 +138,6 @@ static void tunnel_close_and_free(struct remote_t *remote, struct local_t *local
 static struct remote_t * remote_new_object(uv_loop_t *loop, int timeout);
 static struct local_t * local_new_object(struct listener_t *listener);
 
-static struct cork_dllist inactive_listeners;
 static struct listener_t *current_listener;
 static struct cork_dllist all_connections;
 
@@ -266,12 +265,8 @@ launch_or_create(const char *addr, const char *port, uv_loop_t *loop, uv_tcp_t *
 static void
 free_connections(void)
 {
-    struct cork_dllist_item *curr, *next;
-    cork_dllist_foreach_void(&all_connections, curr, next) {
-        struct local_t *local = cork_container_of(curr, struct local_t, entries_all);
-        struct remote_t *remote = local->remote;
-        tunnel_close_and_free(remote, local);
-    }
+    // TODO: release activate connections.
+    // foreach: tunnel_close_and_free(remote, local);
 }
 
 static void
@@ -714,10 +709,6 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             {
                 struct server_env_t *server_env = local->server_env;
 
-                // expelled from eden
-                cork_dllist_remove(&local->entries);
-                cork_dllist_add(&server_env->connections, &local->entries);
-
                 // init server cipher
                 if (server_env->cipher.enc_method > TABLE) {
                     local->e_ctx = ss_malloc(sizeof(struct enc_ctx));
@@ -1094,9 +1085,6 @@ local_new_object(struct listener_t *listener)
     local->buf = buffer_alloc(BUF_SIZE);
     local->stage = STAGE_INIT;
 
-    cork_dllist_add(&listener->connections_eden, &local->entries);
-    cork_dllist_add(&all_connections, &local->entries_all);
-
     return local;
 }
 
@@ -1138,38 +1126,10 @@ listener_release(struct listener_t *listener)
 }
 
 static void
-listener_check_and_free(struct listener_t *listener)
-{
-    int i;
-
-    if(listener == current_listener) {
-        return;
-    }
-    // if this connection is created from an inactive listener, then we need to free the listener
-    // when the last connection of that listener is colsed
-    if(!cork_dllist_is_empty(&listener->connections_eden)) {
-        return;
-    }
-
-    for(i = 0; i < listener->server_num; i++) {
-        if(!cork_dllist_is_empty(&listener->servers[i].connections)) {
-            return;
-        }
-    }
-
-    // No connections anymore
-    cork_dllist_remove(&listener->entries);
-    listener_release(listener);
-}
-
-static void
 local_destroy(struct local_t *local)
 {
     struct listener_t *listener = local->listener;
     struct server_env_t *server_env = local->server_env;
-
-    cork_dllist_remove(&local->entries);
-    cork_dllist_remove(&local->entries_all);
 
     // LOGI("local object destroyed");
 
@@ -1202,9 +1162,6 @@ local_destroy(struct local_t *local)
     }
 
     ss_free(local);
-
-    // after free server, we need to check the listener
-    listener_check_and_free(listener);
 }
 
 static void
@@ -1697,8 +1654,6 @@ main(int argc, char **argv)
                 ss_free(serv_cfg->protocol);
             }
 
-            cork_dllist_init(&serv->connections);
-
             // init obfs
             init_obfs(serv, serv_cfg->protocol, serv_cfg->protocol_param, serv_cfg->obfs, serv_cfg->obfs_param);
 
@@ -1731,8 +1686,6 @@ main(int argc, char **argv)
             enc_init(&serv->cipher, password, method);
             serv->psw = ss_strdup(password);
 
-            cork_dllist_init(&serv->connections);
-
             // init obfs
             init_obfs(serv, protocol, protocol_param, obfs, obfs_param);
 
@@ -1741,7 +1694,6 @@ main(int argc, char **argv)
     }
 
     // Init listeners
-    cork_dllist_init(&inactive_listeners);
     current_listener = listener;
 
     uv_loop_t *loop = uv_default_loop();
@@ -1804,8 +1756,6 @@ main(int argc, char **argv)
         LOGI("running from root user");
     }
 #endif
-
-    cork_dllist_init(&all_connections);
 
     free_jconf(conf);
 
@@ -1958,11 +1908,6 @@ start_ss_local_server(struct config_t listener)
 
     // init obfs
     init_obfs(serv, serv_cfg->protocol, serv_cfg->protocol_param, serv_cfg->obfs, serv_cfg->obfs_param);
-
-    // Init connections
-    cork_dllist_init(&serv->connections);
-
-    cork_dllist_init(&inactive_listeners); //
 
     // Enter the loop
     ev_run(loop, 0);

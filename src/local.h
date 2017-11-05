@@ -82,9 +82,6 @@ struct local_t {
 
     struct buffer_t *buf;
 
-    struct cork_dllist_item entries;
-    struct cork_dllist_item entries_all; // for all_connections
-
     struct server_env_t *server_env;  // __weak_ptr
 
     // SSR

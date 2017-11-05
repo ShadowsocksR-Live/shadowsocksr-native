@@ -60,8 +60,6 @@ struct server_env_t {
     char *psw; // raw password
     struct cipher_env_t cipher;
 
-    struct cork_dllist connections;
-
     // SSR
     char *protocol_name; // for logging use only?
     char *obfs_name; // for logging use only?
