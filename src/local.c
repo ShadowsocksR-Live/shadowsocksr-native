@@ -1046,7 +1046,7 @@ remote_destroy(struct remote_t *remote)
 static void
 remote_after_close_cb(uv_handle_t* handle)
 {
-    struct remote_t *remote = handle->data;
+    struct remote_t *remote = (struct remote_t *) handle->data;
     --remote->ref_count;
     if (remote->ref_count == 0) {
         remote_destroy(remote);
@@ -1167,7 +1167,7 @@ local_destroy(struct local_t *local)
 static void
 local_after_close_cb(uv_handle_t* handle)
 {
-    struct local_t *local = cork_container_of(handle, struct local_t, socket);
+    struct local_t *local = (struct local_t *) handle->data;
 
     --local->ref_count;
     if (local->ref_count == 0) {
@@ -1182,6 +1182,7 @@ local_close_and_free(struct local_t *local)
         local->dying = true;
 
         uv_read_stop((uv_stream_t *)&local->socket);
+        local->socket.data = local;
         uv_close((uv_handle_t *)&local->socket, local_after_close_cb);
 
         ++local->ref_count;
