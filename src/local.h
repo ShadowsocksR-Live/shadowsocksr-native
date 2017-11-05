@@ -39,9 +39,6 @@ struct listener_t {
     uv_tcp_t socket;
     struct ss_host_port tunnel_addr;
 
-    struct cork_dllist_item entries; // for inactive listener list
-    struct cork_dllist connections_eden; // For connections just created but not attach to a server
-
     char *iface;
     int timeout;
     int mptcp;

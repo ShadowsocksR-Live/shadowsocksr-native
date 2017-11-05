@@ -1603,8 +1603,6 @@ main(int argc, char **argv)
     // Setup listeners
     struct listener_t *listener = (struct listener_t *)ss_malloc(sizeof(struct listener_t));
 
-    cork_dllist_init(&listener->connections_eden);
-
     listener->timeout = atoi(timeout) * SECONDS_PER_MINUTE;
     listener->iface = ss_strdup(iface);
     listener->mptcp = mptcp;
