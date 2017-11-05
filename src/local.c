@@ -1040,6 +1040,8 @@ remote_new_object(uv_loop_t *loop, int timeout)
 static void
 remote_destroy(struct remote_t *remote)
 {
+    LOGI("remote object destroyed");
+
     if (remote->local != NULL) {
         remote->local->remote = NULL;
     }
@@ -1056,8 +1058,7 @@ remote_after_close_cb(uv_handle_t* handle)
 {
     struct remote_t *remote = handle->data;
     --remote->release_count;
-    LOGI("remote->release_count %d", remote->release_count);
-    if (remote->release_count <= 0) {
+    if (remote->release_count == 0) {
         // remote_destroy(remote);
     }
 }
