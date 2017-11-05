@@ -1171,6 +1171,8 @@ local_destroy(struct local_t *local)
     cork_dllist_remove(&local->entries);
     cork_dllist_remove(&local->entries_all);
 
+    LOGI("local object destroyed");
+
     if (local->remote != NULL) {
         local->remote->local = NULL;
     }
@@ -1211,7 +1213,6 @@ local_after_close_cb(uv_handle_t* handle)
     struct local_t *local = cork_container_of(handle, struct local_t, socket);
 
     --local->release_count;
-    LOGI("local->release_count %d", local->release_count);
     if (local->release_count <= 0) {
         local_destroy(local);
     }
