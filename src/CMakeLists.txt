@@ -93,14 +93,14 @@ if (!APPLE)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 endif()
 
-add_executable(ss_local ${SOURCE_FILES_LOCAL})
+add_executable(ssr_local ${SOURCE_FILES_LOCAL})
 #add_executable(ss_tunnel ${SOURCE_FILES_TUNNEL})
 #add_executable(ss_server ${SOURCE_FILES_SERVER})
 #add_executable(ss_manager ${SOURCE_FILES_MANAGER})
 add_executable(ss_redir ${SOURCE_FILES_REDIR})
 add_library(libshadowsocks-libev ${SOURCE_FILES_LOCAL})
 
-set_target_properties(ss_local PROPERTIES COMPILE_DEFINITIONS MODULE_LOCAL)
+set_target_properties(ssr_local PROPERTIES COMPILE_DEFINITIONS MODULE_LOCAL)
 #set_target_properties(ss_tunnel PROPERTIES
 #        COMPILE_DEFINITIONS MODULE_TUNNEL
 #        )
@@ -136,7 +136,7 @@ if (WIN32)
     list ( APPEND ss_lib_net Ws2_32 )
 endif()
 
-target_link_libraries(ss_local
+target_link_libraries(ssr_local
         ${ss_lib_net}
 )
 #target_link_libraries(ss_tunnel
