@@ -1685,6 +1685,7 @@ main(int argc, char **argv)
 
             // Setup keys
             LOGI("initializing ciphers... %s", method);
+            serv->cipher = (struct cipher_env_t *) ss_malloc(sizeof(struct cipher_env_t));
             enc_init(serv->cipher, password, method);
             serv->psw = ss_strdup(password);
 
