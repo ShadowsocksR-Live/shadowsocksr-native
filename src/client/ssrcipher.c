@@ -31,6 +31,16 @@
 
 void init_obfs(struct server_env_t *env, const char *protocol, const char *obfs);
 
+const char * ssr_strerror(enum ssr_err err) {
+#define SSR_ERR_GEN(_, name, errmsg) case (name): return errmsg;
+    switch (err) {
+        SSR_ERR_MAP(SSR_ERR_GEN)
+    default:;  /* Silence ssr_max_errors -Wswitch warning. */
+    }
+#undef SSR_ERR_GEN
+    return "Unknown error.";
+}
+
 struct server_env_t * ssr_cipher_env_create(struct server_config *config) {
     srand((unsigned int)time(NULL));
 
@@ -129,7 +139,7 @@ void tunnel_cipher_release(struct server_env_t *env, struct tunnel_cipher_ctx *t
 }
 
 // insert shadowsocks header
-int tunnel_encrypt(struct server_env_t *env, struct tunnel_cipher_ctx *tc, struct buffer_t *buf) {
+enum ssr_err tunnel_encrypt(struct server_env_t *env, struct tunnel_cipher_ctx *tc, struct buffer_t *buf) {
     assert(buf->capacity >= SSR_BUFF_SIZE);
 
     // SSR beg
@@ -143,7 +153,7 @@ int tunnel_encrypt(struct server_env_t *env, struct tunnel_cipher_ctx *tc, struc
     if (err != 0) {
         // LOGE("local invalid password or cipher");
         // tunnel_close_and_free(remote, local);
-        return err;
+        return ssr_invalid_password;
     }
 
     struct obfs_manager *obfs_plugin = env->obfs_plugin;
@@ -152,5 +162,60 @@ int tunnel_encrypt(struct server_env_t *env, struct tunnel_cipher_ctx *tc, struc
             tc->obfs, &buf->buffer, buf->len, &buf->capacity);
     }
     // SSR end
-    return 0;
+    return ssr_ok;
 }
+
+enum ssr_err tunnel_decrypt(struct server_env_t *env, struct tunnel_cipher_ctx *tc,
+struct buffer_t *buf, fn_feedback feedback, void *ptr)
+{
+    assert(buf->len <= SSR_BUFF_SIZE);
+
+    // SSR beg
+    struct obfs_manager *obfs_plugin = env->obfs_plugin;
+    if (obfs_plugin && obfs_plugin->client_decode) {
+        int needsendback = 0;
+        ssize_t len = obfs_plugin->client_decode(tc->obfs, &buf->buffer, buf->len, &buf->capacity, &needsendback);
+        if (len < 0) {
+            //tunnel_close_and_free(remote, local);
+            return ssr_client_decode;
+        }
+        buf->len = (size_t)len;
+        if (needsendback && obfs_plugin->client_encode) {
+            struct buffer_t *sendback = buffer_alloc(SSR_BUFF_SIZE);
+            sendback->len = obfs_plugin->client_encode(tc->obfs, &sendback->buffer, 0, &sendback->capacity);
+            assert(feedback);
+            feedback(sendback, ptr);
+            //remote_send_data(remote);
+            //local_read_start(local);
+            buffer_free(sendback);
+        }
+    }
+    if (buf->len > 0) {
+        int err = ss_decrypt(env->cipher, buf, tc->d_ctx, SSR_BUFF_SIZE);
+        if (err != 0) {
+            //LOGE("remote invalid password or cipher");
+            //tunnel_close_and_free(remote, local);
+            return ssr_invalid_password;
+        }
+    }
+    struct obfs_manager *protocol_plugin = env->protocol_plugin;
+    if (protocol_plugin && protocol_plugin->client_post_decrypt) {
+        ssize_t len = (size_t)protocol_plugin->client_post_decrypt(
+            tc->protocol, &buf->buffer, (int)buf->len, &buf->capacity);
+        if (len < 0) {
+            //tunnel_close_and_free(remote, local);
+            return ssr_client_post_decrypt;
+        }
+        buf->len = (size_t)len;
+        //if (buf->len == 0) {
+        //    return 0; // continue; <========
+        //}
+    }
+    // SSR end
+
+    //if (buf->len) {
+    //    //local_send_data(local, buf->buffer, (unsigned int)buf->len);
+    //}
+    return ssr_ok;
+}
+
