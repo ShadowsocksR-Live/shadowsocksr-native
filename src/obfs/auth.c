@@ -1,5 +1,6 @@
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 #include "auth.h"
 #include "obfsutil.h"
 #include "crc32.h"
@@ -321,7 +322,7 @@ auth_sha1_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int datalen
     return len;
 }
 
-int
+ssize_t
 auth_sha1_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity)
 {
     char *plaindata = *pplaindata;
@@ -363,7 +364,7 @@ auth_sha1_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datale
     }
     memmove(plaindata, out_buffer, len);
     free(out_buffer);
-    return len;
+    return (ssize_t)len;
 }
 
 int
@@ -463,7 +464,7 @@ auth_sha1_v2_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int data
     return len;
 }
 
-int
+ssize_t
 auth_sha1_v2_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity)
 {
     char *plaindata = *pplaindata;
@@ -516,7 +517,7 @@ auth_sha1_v2_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int dat
         len = -1;
     }
     free(out_buffer);
-    return len;
+    return (ssize_t) len;
 }
 
 int
@@ -622,7 +623,7 @@ auth_sha1_v4_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int data
     return len;
 }
 
-int
+ssize_t
 auth_sha1_v4_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity)
 {
     char *plaindata = *pplaindata;
@@ -681,7 +682,7 @@ auth_sha1_v4_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int dat
         len = -1;
     }
     free(out_buffer);
-    return len;
+    return (ssize_t)len;
 }
 
 unsigned int
@@ -901,7 +902,7 @@ auth_aes128_sha1_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int 
     return len;
 }
 
-int
+ssize_t
 auth_aes128_sha1_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity)
 {
     char *plaindata = *pplaindata;
@@ -980,7 +981,7 @@ auth_aes128_sha1_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int
     }
     free(out_buffer);
     free(key);
-    return len;
+    return (ssize_t)len;
 }
 
 int

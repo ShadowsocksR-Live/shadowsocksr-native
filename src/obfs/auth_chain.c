@@ -1,5 +1,6 @@
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 #include "auth.h"
 #include "obfsutil.h"
 #include "crc32.h"
@@ -368,7 +369,7 @@ int auth_chain_a_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int 
     return len;
 }
 
-int auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity) {
+ssize_t auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity) {
     char *plaindata = *pplaindata;
     auth_chain_local_data *local = (auth_chain_local_data*)obfs->l_data;
     struct server_info_t *server = (struct server_info_t*)&obfs->server;
@@ -440,7 +441,7 @@ int auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int
     }
     free(out_buffer);
     free(key);
-    return len;
+    return (ssize_t)len;
 }
 
 int auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity) {

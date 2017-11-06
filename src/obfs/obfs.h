@@ -60,7 +60,7 @@ struct obfs_manager {
             size_t datalength,
             size_t* capacity,
             int *needsendback);
-    int (*client_post_decrypt)(struct obfs_t *obfs,
+    ssize_t (*client_post_decrypt)(struct obfs_t *obfs,
             char **pplaindata,
             int datalength,
             size_t* capacity);
