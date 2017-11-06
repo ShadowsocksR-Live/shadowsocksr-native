@@ -55,7 +55,7 @@ struct obfs_manager {
             char **pencryptdata,
             size_t datalength,
             size_t* capacity);
-    size_t (*client_decode)(struct obfs_t *obfs,
+    ssize_t (*client_decode)(struct obfs_t *obfs,
             char **pencryptdata,
             size_t datalength,
             size_t* capacity,

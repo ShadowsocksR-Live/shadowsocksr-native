@@ -307,7 +307,7 @@ size_t tls12_ticket_auth_client_encode(struct obfs_t *obfs, char **pencryptdata,
     return datalength;
 }
 
-size_t tls12_ticket_auth_client_decode(struct obfs_t *obfs, char **pencryptdata, size_t datalength, size_t* capacity, int *needsendback) {
+ssize_t tls12_ticket_auth_client_decode(struct obfs_t *obfs, char **pencryptdata, size_t datalength, size_t* capacity, int *needsendback) {
     char *encryptdata = *pencryptdata;
     tls12_ticket_auth_local_data *local = (tls12_ticket_auth_local_data*)obfs->l_data;
     tls12_ticket_auth_global_data *global = (tls12_ticket_auth_global_data*)obfs->server.g_data;
@@ -335,7 +335,7 @@ size_t tls12_ticket_auth_client_decode(struct obfs_t *obfs, char **pencryptdata,
             local->recv_buffer_size -= 5 + size;
             memmove(local->recv_buffer, local->recv_buffer + 5 + size, local->recv_buffer_size);
         }
-        return datalength;
+        return (ssize_t)datalength;
     }
     if (datalength < 11 + 32 + 1 + 32) {
         return -1;

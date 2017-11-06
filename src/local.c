@@ -916,12 +916,13 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
         if (obfs_plugin && obfs_plugin->client_decode) {
             int needsendback;
-            local->buf->len = obfs_plugin->client_decode(local->obfs, &local->buf->buffer, local->buf->len, &local->buf->capacity, &needsendback);
-            if ((ssize_t)local->buf->len < 0) {
+            ssize_t len = obfs_plugin->client_decode(local->obfs, &local->buf->buffer, local->buf->len, &local->buf->capacity, &needsendback);
+            if (len < 0) {
                 LOGE("client_decode nread = %d", (int)nread);
                 tunnel_close_and_free(remote, local);
                 break; // return;
             }
+            local->buf->len = len;
             if (needsendback && obfs_plugin->client_encode) {
                 remote->buf->len = obfs_plugin->client_encode(local->obfs, &remote->buf->buffer, 0, &remote->buf->capacity);
                 remote_send_data(remote);

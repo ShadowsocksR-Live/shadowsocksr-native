@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "http_simple.h"
 #include "obfsutil.h"
@@ -183,12 +184,12 @@ size_t http_simple_client_encode(struct obfs_t *obfs, char **pencryptdata, size_
     return outlength;
 }
 
-size_t http_simple_client_decode(struct obfs_t *obfs, char **pencryptdata, size_t datalength, size_t* capacity, int *needsendback) {
+ssize_t http_simple_client_decode(struct obfs_t *obfs, char **pencryptdata, size_t datalength, size_t* capacity, int *needsendback) {
     char *encryptdata = *pencryptdata;
     http_simple_local_data *local = (http_simple_local_data*)obfs->l_data;
     *needsendback = 0;
     if (local->has_recv_header) {
-        return datalength;
+        return (ssize_t)datalength;
     }
     char* data_begin = strstr(encryptdata, "\r\n\r\n");
     if (data_begin) {
@@ -197,7 +198,7 @@ size_t http_simple_client_decode(struct obfs_t *obfs, char **pencryptdata, size_
         local->has_recv_header = 1;
         outlength = datalength - (data_begin - encryptdata);
         memmove(encryptdata, data_begin, outlength);
-        return outlength;
+        return (ssize_t)outlength;
     } else {
         return 0;
     }
