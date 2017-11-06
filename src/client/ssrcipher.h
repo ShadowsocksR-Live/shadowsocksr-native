@@ -32,7 +32,7 @@ struct tunnel_cipher_ctx {
   V( 0, ssr_ok,                 "All is OK.")                                  \
   V(-1, ssr_client_decode,      "client decode error.")                        \
   V(-2, ssr_invalid_password,   "invalid password or cipher.")                 \
-  V(-3, ssr_client_post_decrypt,"client_post_decrypt error.")                  \
+  V(-3, ssr_client_post_decrypt,"client post decrypt error.")                  \
 
 typedef enum ssr_err {
 #define SSR_ERR_GEN(code, name, _) name = code,
@@ -42,7 +42,9 @@ typedef enum ssr_err {
 } ssr_err;
 
 const char *ssr_strerror(enum ssr_err err);
+
 struct server_env_t * ssr_cipher_env_create(struct server_config *config);
+void ssr_cipher_env_release(struct server_env_t *env);
 struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, const char *init_pkg);
 void tunnel_cipher_release(struct server_env_t *env, struct tunnel_cipher_ctx *tc);
 enum ssr_err tunnel_encrypt(struct server_env_t *env, struct tunnel_cipher_ctx *tc, struct buffer_t *buf);

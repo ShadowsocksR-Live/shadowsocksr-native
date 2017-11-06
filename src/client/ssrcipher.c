@@ -56,6 +56,23 @@ struct server_env_t * ssr_cipher_env_create(struct server_config *config) {
     return env;
 }
 
+void ssr_cipher_env_release(struct server_env_t *env) {
+    object_safe_free(&env->protocol_global);
+    object_safe_free(&env->obfs_global);
+    if (env->protocol_plugin) {
+        free_obfs_manager(env->protocol_plugin);
+        env->protocol_plugin = NULL;
+    }
+    if (env->obfs_plugin) {
+        free_obfs_manager(env->obfs_plugin);
+        env->obfs_plugin = NULL;
+    }
+    enc_release(env->cipher);
+    object_safe_free(&env->cipher);
+
+    object_safe_free(&env);
+}
+
 void init_obfs(struct server_env_t *env, const char *protocol, const char *obfs) {
     env->protocol_plugin = new_obfs_manager(protocol);
     if (env->protocol_plugin) {
