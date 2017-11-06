@@ -58,7 +58,7 @@ struct server_env_t {
     int addr_udp_len;
 
     char *psw; // raw password
-    struct cipher_env_t cipher;
+    struct cipher_env_t *cipher;
 
     // SSR
     char *protocol_name; // for logging use only?
