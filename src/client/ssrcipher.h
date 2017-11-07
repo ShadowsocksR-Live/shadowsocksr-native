@@ -22,6 +22,7 @@ struct server_env_t {
 };
 
 struct tunnel_cipher_ctx {
+    struct server_env_t *env; // __weak_ptr
     struct enc_ctx *e_ctx;
     struct enc_ctx *d_ctx;
     struct obfs_t *protocol;
@@ -46,11 +47,10 @@ const char *ssr_strerror(enum ssr_err err);
 struct server_env_t * ssr_cipher_env_create(struct server_config *config);
 void ssr_cipher_env_release(struct server_env_t *env);
 struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, const char *init_pkg);
-void tunnel_cipher_release(struct server_env_t *env, struct tunnel_cipher_ctx *tc);
-enum ssr_err tunnel_encrypt(struct server_env_t *env, struct tunnel_cipher_ctx *tc, struct buffer_t *buf);
+void tunnel_cipher_release(struct tunnel_cipher_ctx *tc);
+enum ssr_err tunnel_encrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf);
 
 typedef void(*fn_feedback)(const struct buffer_t *buf, void *ptr);
-enum ssr_err tunnel_decrypt(struct server_env_t *env, struct tunnel_cipher_ctx *tc,
-    struct buffer_t *buf, fn_feedback feedback, void *ptr);
+enum ssr_err tunnel_decrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf, fn_feedback feedback, void *ptr);
 
 #endif // defined(__SSR_CIPHER__)

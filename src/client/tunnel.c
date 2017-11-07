@@ -104,6 +104,9 @@ static void tunnel_release(struct tunnel_ctx *tunnel) {
         if (tunnel_count == 0) {
             pr_info("Great! tunnel count is zero.");
         }
+        if (tunnel->cipher) {
+            tunnel_cipher_release(tunnel->cipher);
+        }
         free(tunnel);
     }
 }
@@ -114,14 +117,15 @@ void tunnel_initialize(uv_tcp_t *listener) {
     struct socket_ctx *outgoing;
     struct tunnel_ctx *tunnel;
     uv_loop_t *loop = listener->loop;
-    struct server_config *config = listener->data;
+    struct server_env_t *env = listener->data;
+    struct server_config *config = env->config;
 
     tunnel_count++;
 
-    tunnel = malloc(sizeof(*tunnel));
+    tunnel = calloc(1, sizeof(*tunnel));
 
-    struct server_env_t *env = ssr_cipher_env_create(config);
-
+    tunnel->env = env;
+    tunnel->cipher = NULL;
     tunnel->listener = listener;
     tunnel->state = session_handshake;
     tunnel->ref_count = 0;

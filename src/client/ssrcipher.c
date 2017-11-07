@@ -90,6 +90,8 @@ struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, const 
 
     struct tunnel_cipher_ctx *tc = calloc(1, sizeof(struct tunnel_cipher_ctx));
 
+    tc->env = env;
+
     // init server cipher
     if (env->cipher->enc_method > TABLE) {
         tc->e_ctx = calloc(1, sizeof(struct enc_ctx));
@@ -134,7 +136,9 @@ struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, const 
    return tc;
 }
 
-void tunnel_cipher_release(struct server_env_t *env, struct tunnel_cipher_ctx *tc) {
+void tunnel_cipher_release(struct tunnel_cipher_ctx *tc) {
+    assert(tc);
+    struct server_env_t *env = tc->env;
     if (tc->e_ctx != NULL) {
         enc_ctx_release(env->cipher, tc->e_ctx);
         object_safe_free(&tc->e_ctx);
@@ -153,12 +157,15 @@ void tunnel_cipher_release(struct server_env_t *env, struct tunnel_cipher_ctx *t
         tc->protocol = NULL;
     }
     // SSR end
+
+    free(tc);
 }
 
 // insert shadowsocks header
-enum ssr_err tunnel_encrypt(struct server_env_t *env, struct tunnel_cipher_ctx *tc, struct buffer_t *buf) {
+enum ssr_err tunnel_encrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf) {
     assert(buf->capacity >= SSR_BUFF_SIZE);
 
+    struct server_env_t *env = tc->env;
     // SSR beg
     struct obfs_manager *protocol_plugin = env->protocol_plugin;
 
@@ -182,10 +189,11 @@ enum ssr_err tunnel_encrypt(struct server_env_t *env, struct tunnel_cipher_ctx *
     return ssr_ok;
 }
 
-enum ssr_err tunnel_decrypt(struct server_env_t *env, struct tunnel_cipher_ctx *tc,
-struct buffer_t *buf, fn_feedback feedback, void *ptr)
+enum ssr_err tunnel_decrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf, fn_feedback feedback, void *ptr)
 {
     assert(buf->len <= SSR_BUFF_SIZE);
+
+    struct server_env_t *env = tc->env;
 
     // SSR beg
     struct obfs_manager *obfs_plugin = env->obfs_plugin;

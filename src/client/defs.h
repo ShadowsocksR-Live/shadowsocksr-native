@@ -111,6 +111,8 @@ enum session_state {
 
 struct tunnel_ctx {
     enum session_state state;
+    struct server_env_t *env; // __weak_ptr
+    struct tunnel_cipher_ctx *cipher;
     uv_tcp_t *listener;  /* Backlink to owning listener context. */
     s5_ctx parser;  /* The SOCKS protocol parser. */
     struct socket_ctx incoming;  /* Connection with the SOCKS client. */

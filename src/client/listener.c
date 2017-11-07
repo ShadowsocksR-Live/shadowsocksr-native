@@ -24,13 +24,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include "util.h"
+#include "ssrcipher.h"
 
 #ifndef INET6_ADDRSTRLEN
 # define INET6_ADDRSTRLEN 63
 #endif
 
 struct server_state {
-    struct server_config *config;
+    struct server_env_t *env;
     uv_tcp_t *listeners;
 };
 
@@ -44,7 +45,7 @@ int listener_run(struct server_config *cf, uv_loop_t *loop) {
 
     state = (struct server_state *) calloc(1, sizeof(*state));
     state->listeners = NULL;
-    state->config = cf;
+    state->env = ssr_cipher_env_create(cf);
 
     /* Resolve the address of the interface that we should bind to.
     * The getaddrinfo callback starts the server and everything else.
@@ -71,6 +72,7 @@ int listener_run(struct server_config *cf, uv_loop_t *loop) {
     /* Please Valgrind. */
     uv_loop_delete(loop);
 
+    ssr_cipher_env_release(state->env);
     free(state->listeners);
     free(state);
 
@@ -83,6 +85,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
     unsigned int ipv4_naddrs;
     unsigned int ipv6_naddrs;
     struct server_state *state;
+    struct server_env_t *env;
     const struct server_config *cf;
     struct addrinfo *ai;
     const void *addrv = NULL;
@@ -101,7 +104,8 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
 
     state = (struct server_state *) req->data;
     ASSERT(state);
-    cf = state->config;
+    env = state->env;
+    cf = env->config;
 
     free(req);
 
@@ -158,7 +162,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
         err = uv_tcp_bind(listener, &s.addr, 0);
         if (err == 0) {
             what = "uv_listen";
-            listener->data = state->config;
+            listener->data = env;
             err = uv_listen((uv_stream_t *)listener, 128, listen_incoming_connection_cb);
         }
 
