@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <uv.h>
 #include "util.h"
 
 static const char *progname = __FILE__;  /* Reset in main(). */
@@ -82,4 +83,37 @@ static void pr_do(FILE *stream, const char *label, const char *fmt, va_list ap) 
     vsnprintf(fmtbuf, size, fmt, ap);
     fprintf(stream, "%s:%s: %s\n", _getprogname(), label, fmtbuf);
     free(fmtbuf);
+}
+
+int convert_address(const char *addr_str, unsigned short port, void *ipv4_or_ipv6)
+{
+    struct addrinfo hints = { 0 }, *ai = NULL;
+    int status;
+    char port_buffer[6] = { 0 };
+
+    if (addr_str == NULL || port == 0 || ipv4_or_ipv6 == NULL) {
+        return -1;
+    }
+
+    sprintf(port_buffer, "%hu", port);
+
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV | AI_PASSIVE;
+
+    if ((status = getaddrinfo(addr_str, port_buffer, &hints, &ai)) != 0) {
+        return -1;
+    }
+
+    // Note, we're taking the first valid address, there may be more than one
+    if (ai->ai_family == AF_INET) {
+        *((struct sockaddr_in *)ipv4_or_ipv6) = *(const struct sockaddr_in *) ai->ai_addr;
+        ((struct sockaddr_in *)ipv4_or_ipv6)->sin_port = htons(port);
+    } else if (ai->ai_family == AF_INET6) {
+        *((struct sockaddr_in6 *)ipv4_or_ipv6) = *(const struct sockaddr_in6 *) ai->ai_addr;
+        ((struct sockaddr_in6 *)ipv4_or_ipv6)->sin6_port = htons(port);
+    }
+
+    freeaddrinfo(ai);
+    return 0;
 }

@@ -24,4 +24,7 @@ void pr_info(const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(1, 2);
 void pr_warn(const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(1, 2);
 void pr_err(const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(1, 2);
 
+// ipv4_or_ipv6: pointer of struct sockaddr_in6/sockaddr_in
+int convert_address(const char *addr_str, unsigned short port, void *ipv4_or_ipv6);
+
 #endif // defined(__UTIL_H__)
