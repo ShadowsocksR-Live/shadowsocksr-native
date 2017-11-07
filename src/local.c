@@ -939,12 +939,13 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         }
         struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
         if (protocol_plugin && protocol_plugin->client_post_decrypt) {
-            local->buf->len = (size_t)protocol_plugin->client_post_decrypt(local->protocol, &local->buf->buffer, (int)local->buf->len, &local->buf->capacity);
-            if ((int)local->buf->len < 0) {
+            ssize_t len = protocol_plugin->client_post_decrypt(local->protocol, &local->buf->buffer, (int)local->buf->len, &local->buf->capacity);
+            if (len < 0) {
                 LOGE("client_post_decrypt and nread=%d", (int)nread);
                 tunnel_close_and_free(remote, local);
                 break; // return;
             }
+            local->buf->len = len;
             if (local->buf->len == 0) {
                 continue;
             }
