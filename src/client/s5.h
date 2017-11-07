@@ -48,9 +48,9 @@ typedef enum s5_auth_method {
 } s5_auth_method;
 
 typedef enum s5_atyp {
-    s5_atyp_ipv4,
-    s5_atyp_ipv6,
-    s5_atyp_host
+    s5_atyp_ipv4 = 1,
+    s5_atyp_host = 3,
+    s5_atyp_ipv6 = 4,
 } s5_atyp;
 
 typedef enum s5_cmd {
