@@ -25,6 +25,7 @@
 #include <string.h>
 #include "util.h"
 #include "ssrcipher.h"
+#include "encrypt.h"
 
 /* A connection is modeled as an abstraction on top of two simple state
  * machines, one for reading and one for writing.  Either state machine
@@ -86,6 +87,7 @@ static void socket_write(struct socket_ctx *c, const void *data, size_t len);
 static void socket_write_done_cb(uv_write_t *req, int status);
 static void socket_close(struct socket_ctx *c);
 static void socket_close_done_cb(uv_handle_t *handle);
+static struct buffer_t * initial_package_create(const s5_ctx *parser);
 
 static bool tunnel_is_dead(struct tunnel_ctx *tunnel) {
     return (tunnel->state == session_dead);
@@ -800,4 +802,42 @@ static void socket_close_done_cb(uv_handle_t *handle) {
     tunnel = c->tunnel;
 
     tunnel_release(tunnel);
+}
+
+static struct buffer_t * initial_package_create(const s5_ctx *parser) {
+    parser->daddr;
+    parser->dport;
+    struct buffer_t *buffer = buffer_alloc(SSR_BUFF_SIZE);
+
+    char *iter = buffer->buffer;
+    char len;
+    iter[0] = (char) parser->atyp;
+    iter++;
+
+    switch (parser->atyp) {
+    case s5_atyp_ipv4:  // IPv4
+        memcpy(iter, parser->daddr, sizeof(struct in_addr));
+        iter += sizeof(struct in_addr);
+        break;
+    case s5_atyp_ipv6:  // IPv6
+        memcpy(iter, parser->daddr, sizeof(struct in6_addr));
+        iter += sizeof(struct in6_addr);
+        break;
+    case s5_atyp_host:
+        len = (char)strlen(parser->daddr);
+        iter[0] = len;
+        iter++;
+        memcpy(iter, parser->daddr, len);
+        iter += len;
+        break;
+    default:
+        assert(0);
+        break;
+    }
+    *((unsigned short *)iter) = htons(parser->dport);
+    iter += sizeof(unsigned short);
+
+    buffer->len = iter - buffer->buffer;
+
+    return buffer;
 }
