@@ -283,6 +283,16 @@ buffer_alloc(size_t capacity)
     return ptr;
 }
 
+struct buffer_t * buffer_clone(struct buffer_t *ptr) {
+    if (ptr == NULL) {
+        return NULL;
+    }
+    struct buffer_t *result = buffer_alloc(ptr->capacity);
+    result->len = ptr->len;
+    memcpy(result->buffer, ptr->buffer, ptr->len);
+    return result;
+}
+
 int
 buffer_realloc(struct buffer_t *ptr, size_t capacity)
 {
