@@ -46,7 +46,7 @@ const char *ssr_strerror(enum ssr_err err);
 
 struct server_env_t * ssr_cipher_env_create(struct server_config *config);
 void ssr_cipher_env_release(struct server_env_t *env);
-struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, const char *init_pkg);
+struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, const struct buffer_t *init_pkg);
 void tunnel_cipher_release(struct tunnel_cipher_ctx *tc);
 enum ssr_err tunnel_encrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf);
 
