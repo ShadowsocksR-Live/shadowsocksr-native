@@ -27,6 +27,8 @@
 #include "ssrcipher.h"
 #include "encrypt.h"
 
+#define IMPL_SSR_CLIENT 0
+
 /* A connection is modeled as an abstraction on top of two simple state
  * machines, one for reading and one for writing.  Either state machine
  * is, when active, in one of three states: busy, done or stop; the fourth
@@ -109,6 +111,7 @@ static void tunnel_release(struct tunnel_ctx *tunnel) {
         if (tunnel->cipher) {
             tunnel_cipher_release(tunnel->cipher);
         }
+        buffer_free(tunnel->init_pkg);
         free(tunnel);
     }
 }
@@ -289,6 +292,11 @@ static void do_req_parse(struct tunnel_ctx *tunnel) {
     uint8_t *data;
     size_t size;
     enum s5_err err;
+    struct server_env_t *env;
+    struct server_config *config;
+
+    env = tunnel->env;
+    config = env->config;
 
     parser = &tunnel->parser;
     incoming = &tunnel->incoming;
@@ -344,6 +352,22 @@ static void do_req_parse(struct tunnel_ctx *tunnel) {
     }
     ASSERT(parser->cmd == s5_cmd_tcp_connect);
 
+#if IMPL_SSR_CLIENT
+
+    tunnel->init_pkg = initial_package_create(parser);
+    tunnel->cipher = tunnel_cipher_create(tunnel->env, tunnel->init_pkg);
+
+    union sockaddr_universal remote_addr = { 0 };
+    if (convert_address(config->remote_host, config->remote_port, &remote_addr) != 0) {
+        socket_getaddrinfo(outgoing, config->remote_host);
+        tunnel->state = session_req_lookup;
+        return;
+    }
+
+    memcpy(&outgoing->t.addr, &remote_addr, sizeof(remote_addr));
+
+#else
+
     if (parser->atyp == s5_atyp_host) {
         socket_getaddrinfo(outgoing, (const char *)parser->daddr);
         tunnel->state = session_req_lookup;
@@ -367,6 +391,7 @@ static void do_req_parse(struct tunnel_ctx *tunnel) {
     } else {
         UNREACHABLE();
     }
+#endif // IMPL_SSR_CLIENT
 
     do_req_connect_start(tunnel);
 }
@@ -461,6 +486,14 @@ static void do_req_connect(struct tunnel_ctx *tunnel) {
     /* Build and send the reply.  Not very pretty but gets the job done. */
     buf = (uint8_t *)incoming->t.buf;
     if (outgoing->result == 0) {
+#if IMPL_SSR_CLIENT
+        buf[0] = 5;  /* Version. */
+        buf[1] = 0;  /* Success. */
+        buf[2] = 0;  /* Reserved. */
+        memcpy(buf+3, tunnel->init_pkg, tunnel->init_pkg->len);
+        socket_write(incoming, buf, 3+ tunnel->init_pkg->len);
+        tunnel->state = session_proxy_start;
+#else
         /* The RFC mandates that the SOCKS server must include the local port
         * and address in the reply.  So that's what we do.
         */
@@ -487,6 +520,7 @@ static void do_req_connect(struct tunnel_ctx *tunnel) {
             UNREACHABLE();
         }
         tunnel->state = session_proxy_start;
+#endif  // IMPL_SSR_CLIENT
         return;
     } else {
         s5_ctx *parser = &tunnel->parser;
