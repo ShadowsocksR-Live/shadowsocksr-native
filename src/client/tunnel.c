@@ -27,7 +27,7 @@
 #include "ssrcipher.h"
 #include "encrypt.h"
 
-#define IMPL_SSR_CLIENT 0
+#define IMPL_SSR_CLIENT 1
 
 /* A connection is modeled as an abstraction on top of two simple state
  * machines, one for reading and one for writing.  Either state machine
@@ -72,6 +72,7 @@ static void do_req_parse(struct tunnel_ctx *tunnel);
 static void do_req_lookup(struct tunnel_ctx *tunnel);
 static void do_req_connect_start(struct tunnel_ctx *tunnel);
 static void do_req_connect(struct tunnel_ctx *tunnel);
+static void do_ssr_auth(struct tunnel_ctx *tunnel);
 static void do_proxy_start(struct tunnel_ctx *tunnel);
 static void do_proxy(struct tunnel_ctx *tunnel);
 static void do_kill(struct tunnel_ctx *tunnel);
@@ -90,6 +91,7 @@ static void socket_write_done_cb(uv_write_t *req, int status);
 static void socket_close(struct socket_ctx *c);
 static void socket_close_done_cb(uv_handle_t *handle);
 static struct buffer_t * initial_package_create(const s5_ctx *parser);
+static void tunnel_decrypt_feedback(const struct buffer_t *buf, void *ptr);
 
 static bool tunnel_is_dead(struct tunnel_ctx *tunnel) {
     return (tunnel->state == session_dead);
@@ -183,6 +185,9 @@ static void do_next(struct tunnel_ctx *tunnel) {
         break;
     case session_req_connect:
         do_req_connect(tunnel);
+        break;
+    case session_ssr_auth:
+        do_ssr_auth(tunnel);
         break;
     case session_proxy_start:
         do_proxy_start(tunnel);
@@ -487,12 +492,16 @@ static void do_req_connect(struct tunnel_ctx *tunnel) {
     buf = (uint8_t *)incoming->t.buf;
     if (outgoing->result == 0) {
 #if IMPL_SSR_CLIENT
-        buf[0] = 5;  /* Version. */
-        buf[1] = 0;  /* Success. */
-        buf[2] = 0;  /* Reserved. */
-        memcpy(buf+3, tunnel->init_pkg, tunnel->init_pkg->len);
-        socket_write(incoming, buf, 3+ tunnel->init_pkg->len);
-        tunnel->state = session_proxy_start;
+        struct buffer_t *tmp = buffer_clone(tunnel->init_pkg);
+        if (ssr_ok != tunnel_encrypt(tunnel->cipher, tmp)) {
+            buffer_free(tmp);
+            do_kill(tunnel);
+            return;
+        }
+        socket_write(outgoing, tmp->buffer, tmp->len);
+        buffer_free(tmp);
+
+        tunnel->state = session_ssr_auth;
 #else
         /* The RFC mandates that the SOCKS server must include the local port
         * and address in the reply.  So that's what we do.
@@ -543,6 +552,37 @@ static void do_req_connect(struct tunnel_ctx *tunnel) {
 
     UNREACHABLE();
     do_kill(tunnel);
+}
+
+static void do_ssr_auth(struct tunnel_ctx *tunnel) {
+    struct socket_ctx *incoming;
+    struct socket_ctx *outgoing;
+    struct buffer_t *init_pkg;
+    uint8_t *buf;
+
+    incoming = &tunnel->incoming;
+    outgoing = &tunnel->outgoing;
+    ASSERT(incoming->rdstate == socket_stop);
+    ASSERT(incoming->wrstate == socket_stop);
+    ASSERT(outgoing->rdstate == socket_stop);
+    ASSERT(outgoing->wrstate == socket_done);
+    outgoing->wrstate = socket_stop;
+
+    if (outgoing->result < 0) {
+        pr_err("write error: %s", uv_strerror((int)outgoing->result));
+        do_kill(tunnel);
+        return;
+    }
+
+    buf = (uint8_t *)incoming->t.buf;
+    init_pkg = tunnel->init_pkg;
+
+    buf[0] = 5;  /* Version. */
+    buf[1] = 0;  /* Success. */
+    buf[2] = 0;  /* Reserved. */
+    memcpy(buf + 3, init_pkg->buffer, init_pkg->len);
+    socket_write(incoming, buf, 3 + init_pkg->len);
+    tunnel->state = session_proxy_start;
 }
 
 static void do_proxy_start(struct tunnel_ctx *tunnel) {
@@ -623,8 +663,29 @@ static int socket_cycle(const char *who, struct socket_ctx *a, struct socket_ctx
         if (b->rdstate == socket_stop) {
             socket_read(b);
         } else if (b->rdstate == socket_done) {
+#if IMPL_SSR_CLIENT
+            struct tunnel_ctx *tunnel = a->tunnel;
+            struct tunnel_cipher_ctx *tc = tunnel->cipher;
+            struct buffer_t *buf = buffer_alloc(SSR_BUFF_SIZE);
+            enum ssr_err error;
+            buf->len = b->result;
+            memcpy(buf->buffer, b->t.buf, b->result);
+            if (&tunnel->incoming == a) {
+                error = tunnel_decrypt(tc, buf, tunnel_decrypt_feedback, tunnel);
+            } else {
+                error = tunnel_encrypt(tc, buf);
+            }
+            if (error != ssr_ok) {
+                buffer_free(buf);
+                return -1;
+            }
+            socket_write(a, buf->buffer, buf->len);
+            buffer_free(buf);
+            b->rdstate = socket_stop;
+#else
             socket_write(a, b->t.buf, b->result);
             b->rdstate = socket_stop;  /* Triggers the call to socket_read() above. */
+#endif // IMPL_SSR_CLIENT
         }
     }
 
@@ -874,4 +935,9 @@ static struct buffer_t * initial_package_create(const s5_ctx *parser) {
     buffer->len = iter - buffer->buffer;
 
     return buffer;
+}
+
+static void tunnel_decrypt_feedback(const struct buffer_t *buf, void *ptr) {
+    struct tunnel_ctx *tunnel = (struct tunnel_ctx *)ptr;
+    socket_write(&tunnel->outgoing, buf->buffer, buf->len);
 }
