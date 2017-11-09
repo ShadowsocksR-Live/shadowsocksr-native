@@ -47,18 +47,31 @@ static void usage(void);
 
 int main(int argc, char **argv) {
     struct server_config *config;
-    int err;
+    int err = -1;
 
-    _setprogname(argv[0]);
+    do {
+        _setprogname(argv[0]);
 
-    config = config_create();
-    parse_opts(config, argc, argv);
+        if (argc < 2) {
+            break;
+        }
 
-    err = listener_run(config, uv_default_loop());
+        config = config_create();
+        if (config == NULL) {
+            break;
+        }
+        parse_opts(config, argc, argv);
+        if (config->method == NULL || config->password==NULL || config->remote_host==NULL) {
+            break;
+        }
 
-    config_release(config);
-    if (err) {
-        exit(1);
+        err = listener_run(config, uv_default_loop());
+
+        config_release(config);
+    } while(0);
+
+    if (err != 0) {
+        usage();
     }
 
     return 0;
