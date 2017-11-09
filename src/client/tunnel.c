@@ -671,7 +671,7 @@ static int socket_cycle(const char *who, struct socket_ctx *a, struct socket_ctx
             struct tunnel_cipher_ctx *tc = tunnel->cipher;
             struct buffer_t *buf = buffer_alloc(SSR_BUFF_SIZE);
             enum ssr_err error;
-            buf->len = b->result;
+            buf->len = (size_t)b->result;
             memcpy(buf->buffer, b->t.buf, b->result);
             if (&tunnel->incoming == a) {
                 error = tunnel_decrypt(tc, buf, tunnel_decrypt_feedback, tunnel);
