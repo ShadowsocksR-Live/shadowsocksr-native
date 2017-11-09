@@ -24,6 +24,10 @@
 #include <string.h>
 #include "ssrbuffer.h"
 
+#ifndef max
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+
 struct buffer_t * buffer_alloc(size_t capacity) {
     struct buffer_t *ptr = calloc(1, sizeof(struct buffer_t));
     ptr->buffer = calloc(capacity, sizeof(char));

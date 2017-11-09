@@ -18,6 +18,8 @@ set(SOURCE_FILES_OBFS
         obfs/verify.c)
 
 set(SOURCE_FILES_LOCAL
+        ssrbuffer.c
+        ssrbuffer.h
         ssrutils.c
         jconf.c
         json.c
@@ -31,6 +33,28 @@ set(SOURCE_FILES_LOCAL
         includeobfs.h
         ${SOURCE_FILES_OBFS}
         ${SOURCE_FILES_SNI})
+
+set(SOURCE_FILES_CLIENT
+        cache.c
+        cache.h
+        encrypt.c
+        encrypt.h
+        ssrbuffer.c
+        ssrbuffer.h
+        ssrutils.c
+        ssrutils.h
+        client/defs.h
+        client/listener.c
+        client/main.c
+        client/s5.c
+        client/s5.h
+        client/ssrcipher.c
+        client/ssrcipher.h
+        client/tunnel.c
+        client/util.c
+        client/util.h
+        ${SOURCE_FILES_OBFS}
+        )
 
 set(SOURCE_FILES_TUNNEL
         utils.c
@@ -93,6 +117,7 @@ if (!APPLE)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 endif()
 
+add_executable(ssr_client ${SOURCE_FILES_CLIENT})
 add_executable(ssr_local ${SOURCE_FILES_LOCAL})
 #add_executable(ss_tunnel ${SOURCE_FILES_TUNNEL})
 #add_executable(ss_server ${SOURCE_FILES_SERVER})
@@ -100,6 +125,7 @@ add_executable(ssr_local ${SOURCE_FILES_LOCAL})
 add_executable(ss_redir ${SOURCE_FILES_REDIR})
 add_library(libshadowsocks-libev ${SOURCE_FILES_LOCAL})
 
+set_target_properties(ssr_client PROPERTIES COMPILE_DEFINITIONS MODULE_LOCAL)
 set_target_properties(ssr_local PROPERTIES COMPILE_DEFINITIONS MODULE_LOCAL)
 #set_target_properties(ss_tunnel PROPERTIES
 #        COMPILE_DEFINITIONS MODULE_TUNNEL
@@ -119,6 +145,7 @@ target_compile_definitions(libshadowsocks-libev
 set_target_properties(libshadowsocks-libev PROPERTIES SUFFIX ".la")
 
 set (ss_lib_common
+        libjson-c.a
         libuv.a
         m
         libcork)
@@ -135,6 +162,9 @@ set (ss_lib_net
 if (WIN32)
     list ( APPEND ss_lib_net Ws2_32 )
 endif()
+
+
+target_link_libraries(ssr_client ${ss_lib_net})
 
 target_link_libraries(ssr_local
         ${ss_lib_net}

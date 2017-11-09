@@ -42,7 +42,7 @@ const char *_getprogname(void) {
 }
 
 void string_safe_assign(char **target, const char *value) {
-    object_safe_free(target);
+    object_safe_free((void **)target);
     if (target && value) {
         *target = strdup(value);
     }

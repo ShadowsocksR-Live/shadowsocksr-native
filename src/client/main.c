@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <json.h>
+#include <json-c/json.h>
 #include "util.h"
 
 #define DEFAULT_CONF_PATH "/etc/ssr-native/config.json"
@@ -77,16 +77,16 @@ static struct server_config * config_create(void) {
 }
 
 static void config_release(struct server_config *cf) {
-    object_safe_free(&cf->listen_host);
-    object_safe_free(&cf->remote_host);
-    object_safe_free(&cf->password);
-    object_safe_free(&cf->method);
-    object_safe_free(&cf->protocol);
-    object_safe_free(&cf->protocol_param);
-    object_safe_free(&cf->obfs);
-    object_safe_free(&cf->obfs_param);
+    object_safe_free((void **)&cf->listen_host);
+    object_safe_free((void **)&cf->remote_host);
+    object_safe_free((void **)&cf->password);
+    object_safe_free((void **)&cf->method);
+    object_safe_free((void **)&cf->protocol);
+    object_safe_free((void **)&cf->protocol_param);
+    object_safe_free((void **)&cf->obfs);
+    object_safe_free((void **)&cf->obfs_param);
 
-    object_safe_free(&cf);
+    object_safe_free((void **)&cf);
 }
 
 static void parse_opts(struct server_config *cf, int argc, char **argv) {

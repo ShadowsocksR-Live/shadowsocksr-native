@@ -44,6 +44,9 @@ typedef enum ssr_err {
 
 const char *ssr_strerror(enum ssr_err err);
 
+struct tunnel_cipher_ctx;
+struct buffer_t;
+
 struct server_env_t * ssr_cipher_env_create(struct server_config *config);
 void ssr_cipher_env_release(struct server_env_t *env);
 struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, const struct buffer_t *init_pkg);

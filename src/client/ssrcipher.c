@@ -69,9 +69,9 @@ void ssr_cipher_env_release(struct server_env_t *env) {
         env->obfs_plugin = NULL;
     }
     enc_release(env->cipher);
-    object_safe_free(&env->cipher);
+    object_safe_free((void **)&env->cipher);
 
-    object_safe_free(&env);
+    object_safe_free((void **)&env);
 }
 
 void init_obfs(struct server_env_t *env, const char *protocol, const char *obfs) {
@@ -142,11 +142,11 @@ void tunnel_cipher_release(struct tunnel_cipher_ctx *tc) {
     struct server_env_t *env = tc->env;
     if (tc->e_ctx != NULL) {
         enc_ctx_release(env->cipher, tc->e_ctx);
-        object_safe_free(&tc->e_ctx);
+        object_safe_free((void **)&tc->e_ctx);
     }
     if (tc->d_ctx != NULL) {
         enc_ctx_release(env->cipher, tc->d_ctx);
-        object_safe_free(&tc->d_ctx);
+        object_safe_free((void **)&tc->d_ctx);
     }
     // SSR beg
     if (env->obfs_plugin) {
