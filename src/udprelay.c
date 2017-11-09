@@ -62,6 +62,7 @@
 #include "udprelay.h"
 #include "encrypt.h"
 #include "socks5.h"
+#include "ssrbuffer.h"
 
 #ifdef MODULE_REMOTE
 #define MAX_UDP_CONN_NUM 512

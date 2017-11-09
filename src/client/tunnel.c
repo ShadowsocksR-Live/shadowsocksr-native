@@ -26,6 +26,7 @@
 #include "util.h"
 #include "ssrcipher.h"
 #include "encrypt.h"
+#include "ssrbuffer.h"
 
 #define IMPL_SSR_CLIENT 1
 
@@ -472,13 +473,8 @@ static void do_req_connect_start(struct tunnel_ctx *tunnel) {
 }
 
 static void do_req_connect(struct tunnel_ctx *tunnel) {
-    const struct sockaddr_in6 *in6;
-    const struct sockaddr_in *in;
-    char addr_storage[sizeof(*in6)];
     struct socket_ctx *incoming;
     struct socket_ctx *outgoing;
-    uint8_t *buf;
-    int addrlen;
 
     incoming = &tunnel->incoming;
     outgoing = &tunnel->outgoing;
@@ -488,8 +484,6 @@ static void do_req_connect(struct tunnel_ctx *tunnel) {
     ASSERT(outgoing->rdstate == socket_stop);
     ASSERT(outgoing->wrstate == socket_stop);
 
-    /* Build and send the reply.  Not very pretty but gets the job done. */
-    buf = (uint8_t *)incoming->t.buf;
     if (outgoing->result == 0) {
 #if IMPL_SSR_CLIENT
         struct buffer_t *tmp = buffer_clone(tunnel->init_pkg);
@@ -503,6 +497,15 @@ static void do_req_connect(struct tunnel_ctx *tunnel) {
 
         tunnel->state = session_ssr_auth;
 #else
+        const struct sockaddr_in6 *in6;
+        const struct sockaddr_in *in;
+        char addr_storage[sizeof(*in6)];
+        int addrlen;
+        uint8_t *buf;
+
+        /* Build and send the reply.  Not very pretty but gets the job done. */
+        buf = (uint8_t *)incoming->t.buf;
+
         /* The RFC mandates that the SOCKS server must include the local port
         * and address in the reply.  So that's what we do.
         */

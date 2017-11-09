@@ -38,6 +38,7 @@
     <ClCompile Include="..\..\src\obfs\verify.c" />
     <ClCompile Include="..\..\src\rule.c" />
     <ClCompile Include="..\..\src\socks5.c" />
+    <ClCompile Include="..\..\src\ssrbuffer.c" />
     <ClCompile Include="..\..\src\ssrutils.c" />
     <ClCompile Include="..\..\src\tls.c" />
     <ClCompile Include="..\..\src\udprelay.c" />
@@ -69,6 +70,7 @@
     <ClInclude Include="..\..\src\rule.h" />
     <ClInclude Include="..\..\src\shadowsocks.h" />
     <ClInclude Include="..\..\src\socks5.h" />
+    <ClInclude Include="..\..\src\ssrbuffer.h" />
     <ClInclude Include="..\..\src\ssrutils.h" />
     <ClInclude Include="..\..\src\tls.h" />
     <ClInclude Include="..\..\src\udprelay.h" />

@@ -28,6 +28,7 @@
 #include "encrypt.h"
 #include "util.h"
 #include "obfsutil.h"
+#include "ssrbuffer.h"
 
 void init_obfs(struct server_env_t *env, const char *protocol, const char *obfs);
 
@@ -107,7 +108,7 @@ struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, const 
     server_info.port = config->remote_port;
     server_info.param = config->obfs_param;
     server_info.g_data = env->obfs_global;
-    server_info.head_len = get_head_size(init_pkg->buffer, init_pkg->len, 30);
+    server_info.head_len = get_head_size(init_pkg->buffer, (int)init_pkg->len, 30);
     server_info.iv = tc->e_ctx->cipher_ctx.iv;
     server_info.iv_len = enc_get_iv_len(env->cipher);
     server_info.key = enc_get_key(env->cipher);

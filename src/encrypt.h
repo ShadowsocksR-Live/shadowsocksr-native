@@ -179,12 +179,6 @@ struct cipher_wrapper {
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 
-struct buffer_t {
-    size_t len;
-    size_t capacity;
-    char   *buffer;
-};
-
 struct chunk_t {
     uint32_t idx;
     uint32_t len;
@@ -224,12 +218,5 @@ int ss_sha1_hash_func(char *auth, char *msg, int msg_len);
 int ss_aes_128_cbc(char *encrypt, char *out_data, char *key);
 int ss_encrypt_buffer(struct cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t in_size, char *out, size_t *out_size);
 int ss_decrypt_buffer(struct cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t in_size, char *out, size_t *out_size);
-
-struct buffer_t * buffer_alloc(size_t capacity);
-struct buffer_t * buffer_clone(struct buffer_t *ptr);
-int buffer_realloc(struct buffer_t *ptr, size_t capacity);
-void buffer_free(struct buffer_t *ptr);
-
-//extern struct cipher_env_t cipher_env;
 
 #endif // _ENCRYPT_H

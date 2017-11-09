@@ -70,6 +70,7 @@
 #include "tls.h"
 #include "local.h"
 #include "udprelay.h"
+#include "ssrbuffer.h"
 
 #ifndef LIB_ONLY
 #ifdef __APPLE__

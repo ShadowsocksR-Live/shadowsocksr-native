@@ -83,6 +83,7 @@
 #include "cache.h"
 #include "encrypt.h"
 #include "ssrutils.h"
+#include "ssrbuffer.h"
 
 #define OFFSET_ROL(p, o) ((uint64_t)(*(p + o)) << (8 * o))
 
@@ -271,54 +272,6 @@ cipher_index_from_name(const char *name)
         }
     }
     return m;
-}
-
-struct buffer_t *
-buffer_alloc(size_t capacity)
-{
-    struct buffer_t *ptr = ss_malloc(sizeof(struct buffer_t));
-    sodium_memzero(ptr, sizeof(struct buffer_t));
-    ptr->buffer    = ss_malloc(capacity);
-    ptr->capacity = capacity;
-    return ptr;
-}
-
-struct buffer_t * buffer_clone(struct buffer_t *ptr) {
-    if (ptr == NULL) {
-        return NULL;
-    }
-    struct buffer_t *result = buffer_alloc(ptr->capacity);
-    result->len = ptr->len;
-    memcpy(result->buffer, ptr->buffer, ptr->len);
-    return result;
-}
-
-int
-buffer_realloc(struct buffer_t *ptr, size_t capacity)
-{
-    if (ptr == NULL) {
-        return -1;
-    }
-    size_t real_capacity = max(capacity, ptr->capacity);
-    if (ptr->capacity < real_capacity) {
-        ptr->buffer    = ss_realloc(ptr->buffer, real_capacity);
-        ptr->capacity = real_capacity;
-    }
-    return (int) real_capacity;
-}
-
-void
-buffer_free(struct buffer_t *ptr)
-{
-    if (ptr == NULL) {
-        return;
-    }
-    ptr->len      = 0;
-    ptr->capacity = 0;
-    if (ptr->buffer != NULL) {
-        ss_free(ptr->buffer);
-    }
-    ss_free(ptr);
 }
 
 static int
