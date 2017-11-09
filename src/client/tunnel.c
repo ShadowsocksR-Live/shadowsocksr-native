@@ -539,7 +539,7 @@ static void do_req_connect(struct tunnel_ctx *tunnel) {
         char *addr = NULL;
 
         if (parser->atyp == s5_atyp_host) {
-            addr = parser->daddr;
+            addr = (char *)parser->daddr;
         } else if (parser->atyp == s5_atyp_ipv4) {
             addr = inet_ntoa(*(struct in_addr *)parser->daddr);
         } else {
@@ -905,8 +905,6 @@ static void socket_close_done_cb(uv_handle_t *handle) {
 }
 
 static struct buffer_t * initial_package_create(const s5_ctx *parser) {
-    parser->daddr;
-    parser->dport;
     struct buffer_t *buffer = buffer_alloc(SSR_BUFF_SIZE);
 
     char *iter = buffer->buffer;
@@ -924,7 +922,7 @@ static struct buffer_t * initial_package_create(const s5_ctx *parser) {
         iter += sizeof(struct in6_addr);
         break;
     case s5_atyp_host:
-        len = (char)strlen(parser->daddr);
+        len = (char)strlen((char *)parser->daddr);
         iter[0] = len;
         iter++;
         memcpy(iter, parser->daddr, len);
