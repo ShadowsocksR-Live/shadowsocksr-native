@@ -682,7 +682,9 @@ static int socket_cycle(const char *who, struct socket_ctx *a, struct socket_ctx
                 buffer_free(buf);
                 return -1;
             }
-            socket_write(a, buf->buffer, buf->len);
+            if (buf->len > 0) {
+                socket_write(a, buf->buffer, buf->len);
+            }
             buffer_free(buf);
             b->rdstate = socket_stop;
 #else

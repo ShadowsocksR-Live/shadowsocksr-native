@@ -176,8 +176,6 @@ enum ssr_err tunnel_encrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf) 
     }
     int err = ss_encrypt(env->cipher, buf, tc->e_ctx, SSR_BUFF_SIZE);
     if (err != 0) {
-        // LOGE("local invalid password or cipher");
-        // tunnel_close_and_free(remote, local);
         return ssr_invalid_password;
     }
 
@@ -202,7 +200,6 @@ enum ssr_err tunnel_decrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf, 
         int needsendback = 0;
         ssize_t len = obfs_plugin->client_decode(tc->obfs, &buf->buffer, buf->len, &buf->capacity, &needsendback);
         if (len < 0) {
-            //tunnel_close_and_free(remote, local);
             return ssr_client_decode;
         }
         buf->len = (size_t)len;
@@ -211,16 +208,12 @@ enum ssr_err tunnel_decrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf, 
             sendback->len = obfs_plugin->client_encode(tc->obfs, &sendback->buffer, 0, &sendback->capacity);
             assert(feedback);
             feedback(sendback, ptr);
-            //remote_send_data(remote);
-            //local_read_start(local);
             buffer_free(sendback);
         }
     }
     if (buf->len > 0) {
         int err = ss_decrypt(env->cipher, buf, tc->d_ctx, SSR_BUFF_SIZE);
         if (err != 0) {
-            //LOGE("remote invalid password or cipher");
-            //tunnel_close_and_free(remote, local);
             return ssr_invalid_password;
         }
     }
@@ -229,19 +222,11 @@ enum ssr_err tunnel_decrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf, 
         ssize_t len = (size_t)protocol_plugin->client_post_decrypt(
             tc->protocol, &buf->buffer, (int)buf->len, &buf->capacity);
         if (len < 0) {
-            //tunnel_close_and_free(remote, local);
             return ssr_client_post_decrypt;
         }
         buf->len = (size_t)len;
-        //if (buf->len == 0) {
-        //    return 0; // continue; <========
-        //}
     }
     // SSR end
-
-    //if (buf->len) {
-    //    //local_send_data(local, buf->buffer, (unsigned int)buf->len);
-    //}
     return ssr_ok;
 }
 
