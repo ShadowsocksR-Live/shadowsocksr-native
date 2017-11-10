@@ -28,6 +28,11 @@
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 #endif
 
+#ifndef min
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+
+
 struct buffer_t * buffer_alloc(size_t capacity) {
     struct buffer_t *ptr = calloc(1, sizeof(struct buffer_t));
     ptr->buffer = calloc(capacity, sizeof(char));
@@ -55,6 +60,13 @@ int buffer_realloc(struct buffer_t *ptr, size_t capacity) {
         ptr->capacity = real_capacity;
     }
     return (int)real_capacity;
+}
+
+int buffer_store(struct buffer_t *ptr, const char *data, size_t size) {
+    int result = buffer_realloc(ptr, size);
+    memcpy(ptr->buffer, data, size);
+    ptr->len = size;
+    return min((int)size, result);
 }
 
 void buffer_free(struct buffer_t *ptr) {

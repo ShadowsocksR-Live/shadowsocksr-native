@@ -34,6 +34,7 @@ struct buffer_t {
 struct buffer_t * buffer_alloc(size_t capacity);
 struct buffer_t * buffer_clone(struct buffer_t *ptr);
 int buffer_realloc(struct buffer_t *ptr, size_t capacity);
+int buffer_store(struct buffer_t *ptr, const char *data, size_t size);
 void buffer_free(struct buffer_t *ptr);
 
 #endif // __SSR_BUFFER_H__
