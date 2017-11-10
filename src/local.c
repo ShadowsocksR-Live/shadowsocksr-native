@@ -270,6 +270,73 @@ free_connections(void)
     // foreach: tunnel_close_and_free(remote, local);
 }
 
+int tunnel_encrypt(struct local_t *local, struct buffer_t *buf) {
+    assert(buf->capacity >= SSR_BUFF_SIZE);
+
+    struct server_env_t *env = local->server_env;
+    // SSR beg
+    struct obfs_manager *protocol_plugin = env->protocol_plugin;
+
+    if (protocol_plugin && protocol_plugin->client_pre_encrypt) {
+        buf->len = (size_t)protocol_plugin->client_pre_encrypt(
+            local->protocol, &buf->buffer, (int)buf->len, &buf->capacity);
+    }
+    int err = ss_encrypt(env->cipher, buf, local->e_ctx, SSR_BUFF_SIZE);
+    if (err != 0) {
+        return -1;
+    }
+
+    struct obfs_manager *obfs_plugin = env->obfs_plugin;
+    if (obfs_plugin && obfs_plugin->client_encode) {
+        buf->len = obfs_plugin->client_encode(
+            local->obfs, &buf->buffer, buf->len, &buf->capacity);
+    }
+    // SSR end
+    return 0;
+}
+
+int tunnel_decrypt(struct local_t *local, struct buffer_t *buf, struct buffer_t **feedback)
+{
+    assert(buf->len <= SSR_BUFF_SIZE);
+
+    struct server_env_t *env = local->server_env;
+
+    // SSR beg
+    struct obfs_manager *obfs_plugin = env->obfs_plugin;
+    if (obfs_plugin && obfs_plugin->client_decode) {
+        int needsendback = 0;
+        ssize_t len = obfs_plugin->client_decode(local->obfs, &buf->buffer, buf->len, &buf->capacity, &needsendback);
+        if (len < 0) {
+            return -1;
+        }
+        buf->len = (size_t)len;
+        if (needsendback && obfs_plugin->client_encode) {
+            struct buffer_t *sendback = buffer_alloc(SSR_BUFF_SIZE);
+            sendback->len = obfs_plugin->client_encode(local->obfs, &sendback->buffer, 0, &sendback->capacity);
+            assert(feedback);
+            *feedback = sendback;
+        }
+    }
+    if (buf->len > 0) {
+        int err = ss_decrypt(env->cipher, buf, local->d_ctx, SSR_BUFF_SIZE);
+        if (err != 0) {
+            return -1;
+        }
+    }
+    struct obfs_manager *protocol_plugin = env->protocol_plugin;
+    if (protocol_plugin && protocol_plugin->client_post_decrypt) {
+        ssize_t len = (size_t)protocol_plugin->client_post_decrypt(
+            local->protocol, &buf->buffer, (int)buf->len, &buf->capacity);
+        if (len < 0) {
+            return -1;
+        }
+        buf->len = (size_t)len;
+    }
+    // SSR end
+    return 0;
+}
+
+
 static void
 local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 {
@@ -340,34 +407,17 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             }
 
             // insert shadowsocks header
-            {
-                struct server_env_t *server_env = local->server_env;
-                // SSR beg
-                struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
-
-                if (protocol_plugin && protocol_plugin->client_pre_encrypt) {
-                    remote->buf->len = (size_t) protocol_plugin->client_pre_encrypt(local->protocol, &remote->buf->buffer, (int)remote->buf->len, &remote->buf->capacity);
-                }
-                int err = ss_encrypt(server_env->cipher, remote->buf, local->e_ctx, BUF_SIZE);
-
-                if (err) {
-                    LOGE("local invalid password or cipher");
-                    tunnel_close_and_free(remote, local);
-                    return;
-                }
-
-                struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
-                if (obfs_plugin && obfs_plugin->client_encode) {
-                    remote->buf->len = obfs_plugin->client_encode(local->obfs, &remote->buf->buffer, remote->buf->len, &remote->buf->capacity);
-                }
-                // SSR end
-#ifdef ANDROID
-                if (log_tx_rx) {
-                    tx += buf->len;
-                }
-#endif
+            int r = tunnel_encrypt(local, remote->buf);
+            if (r < 0) {
+                LOGE("local invalid password or cipher");
+                tunnel_close_and_free(remote, local);
+                return;
             }
-
+#ifdef ANDROID
+            if (log_tx_rx) {
+                tx += buf->len;
+            }
+#endif
             if (!remote->connected) {
 #ifdef ANDROID
                 if (vpn) {
@@ -913,45 +963,22 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             rx += local->buf->len;
         }
 #endif
-        // SSR beg
-        struct obfs_manager *obfs_plugin = server_env->obfs_plugin;
-        if (obfs_plugin && obfs_plugin->client_decode) {
-            int needsendback;
-            ssize_t len = obfs_plugin->client_decode(local->obfs, &local->buf->buffer, local->buf->len, &local->buf->capacity, &needsendback);
-            if (len < 0) {
-                LOGE("client_decode nread = %d", (int)nread);
-                tunnel_close_and_free(remote, local);
-                break; // return;
-            }
-            local->buf->len = len;
-            if (needsendback && obfs_plugin->client_encode) {
-                remote->buf->len = obfs_plugin->client_encode(local->obfs, &remote->buf->buffer, 0, &remote->buf->capacity);
-                remote_send_data(remote);
-                local_read_start(local);
-            }
+        struct buffer_t *feedback = NULL;
+        int r = tunnel_decrypt(local, local->buf, &feedback);
+        if (feedback != NULL) {
+            buffer_store(remote->buf, feedback->buffer, feedback->len);
+            buffer_free(feedback);
+
+            remote_send_data(remote);
+            local_read_start(local);
         }
-        if (local->buf->len > 0) {
-            int err = ss_decrypt(server_env->cipher, local->buf, local->d_ctx, FIXED_BUFF_SIZE);
-            if (err) {
-                LOGE("remote invalid password or cipher");
-                tunnel_close_and_free(remote, local);
-                break; // return;
-            }
+        if (r < 0) {
+            tunnel_close_and_free(remote, local);
+            break;
         }
-        struct obfs_manager *protocol_plugin = server_env->protocol_plugin;
-        if (protocol_plugin && protocol_plugin->client_post_decrypt) {
-            ssize_t len = protocol_plugin->client_post_decrypt(local->protocol, &local->buf->buffer, (int)local->buf->len, &local->buf->capacity);
-            if (len < 0) {
-                LOGE("client_post_decrypt and nread=%d", (int)nread);
-                tunnel_close_and_free(remote, local);
-                break; // return;
-            }
-            local->buf->len = len;
-            if (local->buf->len == 0) {
-                continue;
-            }
+        if (local->buf->len == 0) {
+            continue;
         }
-        // SSR end
 
         local_send_data(local, local->buf->buffer, (unsigned int)local->buf->len);
     } // for loop
