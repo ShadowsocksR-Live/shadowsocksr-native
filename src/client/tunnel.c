@@ -92,7 +92,6 @@ static void socket_write_done_cb(uv_write_t *req, int status);
 static void socket_close(struct socket_ctx *c);
 static void socket_close_done_cb(uv_handle_t *handle);
 static struct buffer_t * initial_package_create(const s5_ctx *parser);
-static void tunnel_decrypt_feedback(const struct buffer_t *buf, void *ptr);
 
 static bool tunnel_is_dead(struct tunnel_ctx *tunnel) {
     return (tunnel->state == session_dead);
@@ -674,7 +673,12 @@ static int socket_cycle(const char *who, struct socket_ctx *a, struct socket_ctx
             buf->len = (size_t)b->result;
             memcpy(buf->buffer, b->t.buf, b->result);
             if (&tunnel->incoming == a) {
-                error = tunnel_decrypt(tc, buf, tunnel_decrypt_feedback, tunnel);
+                struct buffer_t *feedback = NULL;
+                error = tunnel_decrypt(tc, buf, &feedback);
+                if (feedback) {
+                    socket_write(&tunnel->outgoing, feedback->buffer, feedback->len);
+                    buffer_free(feedback);
+                }
             } else {
                 error = tunnel_encrypt(tc, buf);
             }
@@ -938,9 +942,4 @@ static struct buffer_t * initial_package_create(const s5_ctx *parser) {
     buffer->len = iter - buffer->buffer;
 
     return buffer;
-}
-
-static void tunnel_decrypt_feedback(const struct buffer_t *buf, void *ptr) {
-    struct tunnel_ctx *tunnel = (struct tunnel_ctx *)ptr;
-    socket_write(&tunnel->outgoing, buf->buffer, buf->len);
 }

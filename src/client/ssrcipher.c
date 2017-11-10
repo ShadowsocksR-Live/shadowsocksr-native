@@ -188,7 +188,7 @@ enum ssr_err tunnel_encrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf) 
     return ssr_ok;
 }
 
-enum ssr_err tunnel_decrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf, fn_feedback feedback, void *ptr)
+enum ssr_err tunnel_decrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf, struct buffer_t **feedback)
 {
     assert(buf->len <= SSR_BUFF_SIZE);
 
@@ -207,8 +207,7 @@ enum ssr_err tunnel_decrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf, 
             struct buffer_t *sendback = buffer_alloc(SSR_BUFF_SIZE);
             sendback->len = obfs_plugin->client_encode(tc->obfs, &sendback->buffer, 0, &sendback->capacity);
             assert(feedback);
-            feedback(sendback, ptr);
-            buffer_free(sendback);
+            *feedback = sendback;
         }
     }
     if (buf->len > 0) {

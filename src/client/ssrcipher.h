@@ -52,8 +52,6 @@ void ssr_cipher_env_release(struct server_env_t *env);
 struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, const struct buffer_t *init_pkg);
 void tunnel_cipher_release(struct tunnel_cipher_ctx *tc);
 enum ssr_err tunnel_encrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf);
-
-typedef void(*fn_feedback)(const struct buffer_t *buf, void *ptr);
-enum ssr_err tunnel_decrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf, fn_feedback feedback, void *ptr);
+enum ssr_err tunnel_decrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf, struct buffer_t **feedback);
 
 #endif // defined(__SSR_CIPHER__)
