@@ -189,6 +189,12 @@ static void do_next(struct tunnel_ctx *tunnel) {
     case session_ssr_auth_sent:
         do_ssr_auth_sent(tunnel);
         break;
+    case session_ssr_auth_respone:
+        break;
+    case session_ssr_feedback_sent:
+        break;
+    case session_ssr_feedback_respone:
+        break;
     case session_proxy_start:
         do_proxy_start(tunnel);
         break;
@@ -612,6 +618,8 @@ static void do_proxy_start(struct tunnel_ctx *tunnel) {
 
 /* Proxy incoming data back and forth. */
 static void do_proxy(struct tunnel_ctx *tunnel) {
+    tunnel->state = session_proxy;
+
     if (socket_cycle("client", &tunnel->incoming, &tunnel->outgoing) != 0) {
         do_kill(tunnel);
         return;
@@ -621,8 +629,6 @@ static void do_proxy(struct tunnel_ctx *tunnel) {
         do_kill(tunnel);
         return;
     }
-
-    tunnel->state = session_proxy;
 }
 
 static void do_kill(struct tunnel_ctx *tunnel) {
@@ -666,6 +672,8 @@ static int socket_cycle(const char *who, struct socket_ctx *a, struct socket_ctx
             socket_read(b);
         } else if (b->rdstate == socket_done) {
 #if IMPL_SSR_CLIENT
+            b->rdstate = socket_stop;
+
             struct tunnel_ctx *tunnel = a->tunnel;
             struct tunnel_cipher_ctx *tc = tunnel->cipher;
             struct buffer_t *buf = buffer_alloc(SSR_BUFF_SIZE);
@@ -675,9 +683,8 @@ static int socket_cycle(const char *who, struct socket_ctx *a, struct socket_ctx
             if (&tunnel->incoming == a) {
                 struct buffer_t *feedback = NULL;
                 error = tunnel_decrypt(tc, buf, &feedback);
-                if (feedback) {
-                    socket_write(&tunnel->outgoing, feedback->buffer, feedback->len);
-                    buffer_free(feedback);
+                if (feedback == NULL) {
+                    
                 }
             } else {
                 error = tunnel_encrypt(tc, buf);
@@ -690,7 +697,6 @@ static int socket_cycle(const char *who, struct socket_ctx *a, struct socket_ctx
                 socket_write(a, buf->buffer, buf->len);
             }
             buffer_free(buf);
-            b->rdstate = socket_stop;
 #else
             socket_write(a, b->t.buf, b->result);
             b->rdstate = socket_stop;  /* Triggers the call to socket_read() above. */
