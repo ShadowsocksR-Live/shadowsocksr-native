@@ -73,7 +73,7 @@ static void do_req_parse(struct tunnel_ctx *tunnel);
 static void do_req_lookup(struct tunnel_ctx *tunnel);
 static void do_req_connect_start(struct tunnel_ctx *tunnel);
 static void do_req_connect(struct tunnel_ctx *tunnel);
-static void do_ssr_auth(struct tunnel_ctx *tunnel);
+static void do_ssr_auth_sent(struct tunnel_ctx *tunnel);
 static void do_proxy_start(struct tunnel_ctx *tunnel);
 static void do_proxy(struct tunnel_ctx *tunnel);
 static void do_kill(struct tunnel_ctx *tunnel);
@@ -186,8 +186,8 @@ static void do_next(struct tunnel_ctx *tunnel) {
     case session_req_connect:
         do_req_connect(tunnel);
         break;
-    case session_ssr_auth:
-        do_ssr_auth(tunnel);
+    case session_ssr_auth_sent:
+        do_ssr_auth_sent(tunnel);
         break;
     case session_proxy_start:
         do_proxy_start(tunnel);
@@ -494,7 +494,7 @@ static void do_req_connect(struct tunnel_ctx *tunnel) {
         socket_write(outgoing, tmp->buffer, tmp->len);
         buffer_free(tmp);
 
-        tunnel->state = session_ssr_auth;
+        tunnel->state = session_ssr_auth_sent;
 #else
         const struct sockaddr_in6 *in6;
         const struct sockaddr_in *in;
@@ -556,11 +556,9 @@ static void do_req_connect(struct tunnel_ctx *tunnel) {
     do_kill(tunnel);
 }
 
-static void do_ssr_auth(struct tunnel_ctx *tunnel) {
+static void do_ssr_auth_sent(struct tunnel_ctx *tunnel) {
     struct socket_ctx *incoming;
     struct socket_ctx *outgoing;
-    struct buffer_t *init_pkg;
-    uint8_t *buf;
 
     incoming = &tunnel->incoming;
     outgoing = &tunnel->outgoing;
@@ -576,12 +574,14 @@ static void do_ssr_auth(struct tunnel_ctx *tunnel) {
         return;
     }
 
+    uint8_t *buf;
+    struct buffer_t *init_pkg;
     buf = (uint8_t *)incoming->t.buf;
     init_pkg = tunnel->init_pkg;
 
-    buf[0] = 5;  /* Version. */
-    buf[1] = 0;  /* Success. */
-    buf[2] = 0;  /* Reserved. */
+    buf[0] = 5;  // Version.
+    buf[1] = 0;  // Success.
+    buf[2] = 0;  // Reserved.
     memcpy(buf + 3, init_pkg->buffer, init_pkg->len);
     socket_write(incoming, buf, 3 + init_pkg->len);
     tunnel->state = session_proxy_start;

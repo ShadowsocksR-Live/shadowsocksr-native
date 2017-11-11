@@ -103,7 +103,7 @@ enum session_state {
     session_req_parse,        /* Wait for request data. */
     session_req_lookup,       /* Wait for upstream hostname DNS lookup to complete. */
     session_req_connect,      /* Wait for uv_tcp_connect() to complete. */
-    session_ssr_auth,
+    session_ssr_auth_sent,
     session_proxy_start,      /* Connected. Start piping data. */
     session_proxy,            /* Connected. Pipe data back and forth. */
     session_kill,             /* Tear down session. */
