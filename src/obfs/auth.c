@@ -865,7 +865,7 @@ auth_aes128_sha1_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, int 
 {
     char *plaindata = *pplaindata;
     auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
-    char * out_buffer = (char*)malloc((size_t)(datalength * 2 + (SSR_BUFF_SIZE * 2)));
+    char * out_buffer = (char*)calloc((size_t)(datalength * 2 + (SSR_BUFF_SIZE * 2)), sizeof(char));
     char * buffer = out_buffer;
     char * data = plaindata;
     int len = datalength;

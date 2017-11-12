@@ -363,19 +363,11 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
     do_dealloc_uv_buffer((uv_buf_t *)buf0);
 
-    if (nread == UV_EOF) {
-        // connection closed
-        tunnel_close_and_free(remote, local);
-        return;
-    } else if (nread == 0) {
-        // http://docs.libuv.org/en/v1.x/stream.html
-        // (errno == EAGAIN || errno == EWOULDBLOCK): no data, continue to wait for recv
-        return;
-    } else if (nread < 0) {
-        if (verbose) {
-            ERROR("local recieve callback for recv");
+    if (nread <= 0) {
+        if (nread < 0) {
+            assert(nread == UV_EOF || nread == UV_ECONNRESET);
+            tunnel_close_and_free(remote, local);
         }
-        tunnel_close_and_free(remote, local);
         return;
     }
 
@@ -400,11 +392,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
     while (1) {
         // local socks5 server
         if (local->stage == STAGE_STREAM) {
-            if (remote == NULL) {
-                LOGE("invalid remote");
-                tunnel_close_and_free(remote, local);
-                return;
-            }
+            assert(remote);
 
             // insert shadowsocks header
             int r = tunnel_encrypt(local, remote->buf);
@@ -446,7 +434,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 uv_tcp_connect(connect, &remote->socket, addr, remote_connected_cb);
                 return;
             } else {
-                if (nread > 0 && remote->buf->len == 0) {
+                if (remote->buf->len == 0) {
                     local_read_stop(local);
                     return;
                 }
