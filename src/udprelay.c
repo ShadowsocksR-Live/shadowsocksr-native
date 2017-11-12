@@ -638,7 +638,7 @@ close_and_free_query(EV_P_ struct query_ctx *ctx)
 #endif
 
 static void
-remote_after_close_cb(uv_handle_t* handle)
+remote_close_done_cb(uv_handle_t* handle)
 {
     struct remote_ctx_t *ctx = cork_container_of(handle, struct remote_ctx_t, io);
     --ctx->ref_count;
@@ -653,11 +653,11 @@ void
 close_and_free_remote(struct remote_ctx_t *ctx)
 {
     if (ctx != NULL) {
-        uv_close((uv_handle_t *)&ctx->watcher, remote_after_close_cb);
+        uv_close((uv_handle_t *)&ctx->watcher, remote_close_done_cb);
         ++ctx->ref_count;
 
         uv_udp_recv_stop(&ctx->io);
-        uv_close((uv_handle_t *)&ctx->io, remote_after_close_cb);
+        uv_close((uv_handle_t *)&ctx->io, remote_close_done_cb);
         ++ctx->ref_count;
     }
 }

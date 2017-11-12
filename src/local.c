@@ -1074,7 +1074,7 @@ remote_destroy(struct remote_t *remote)
 }
 
 static void
-remote_after_close_cb(uv_handle_t* handle)
+remote_close_done_cb(uv_handle_t* handle)
 {
     struct remote_t *remote = (struct remote_t *) handle->data;
     --remote->ref_count;
@@ -1090,16 +1090,16 @@ remote_close_and_free(struct remote_t *remote)
         remote->dying = true;
 
         remote->send_ctx->watcher.data = remote;
-        uv_close((uv_handle_t *)&remote->send_ctx->watcher, remote_after_close_cb);
+        uv_close((uv_handle_t *)&remote->send_ctx->watcher, remote_close_done_cb);
         ++remote->ref_count;
 
         remote->recv_ctx->watcher.data = remote;
-        uv_close((uv_handle_t *)&remote->recv_ctx->watcher, remote_after_close_cb);
+        uv_close((uv_handle_t *)&remote->recv_ctx->watcher, remote_close_done_cb);
         ++remote->ref_count;
 
         uv_read_stop((uv_stream_t *)&remote->socket);
         remote->socket.data = remote;
-        uv_close((uv_handle_t *)&remote->socket, remote_after_close_cb);
+        uv_close((uv_handle_t *)&remote->socket, remote_close_done_cb);
         ++remote->ref_count;
     }
 }
@@ -1196,7 +1196,7 @@ local_destroy(struct local_t *local)
 }
 
 static void
-local_after_close_cb(uv_handle_t* handle)
+local_close_done_cb(uv_handle_t* handle)
 {
     struct local_t *local = (struct local_t *) handle->data;
 
@@ -1212,9 +1212,9 @@ local_close_and_free(struct local_t *local)
     if (local != NULL) {
         local->dying = true;
 
-        uv_read_stop((uv_stream_t *)&local->socket);
+        local_read_stop(local);
         local->socket.data = local;
-        uv_close((uv_handle_t *)&local->socket, local_after_close_cb);
+        uv_close((uv_handle_t *)&local->socket, local_close_done_cb);
 
         ++local->ref_count;
     }
@@ -1287,7 +1287,7 @@ accept_cb(uv_stream_t* server, int status)
         return;
     }
 
-    uv_read_start((uv_stream_t*)&local->socket, on_alloc, local_recv_cb);
+    local_read_start(local);
 }
 
 static void
