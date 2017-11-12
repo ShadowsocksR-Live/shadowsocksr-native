@@ -189,12 +189,6 @@ static void do_next(struct tunnel_ctx *tunnel) {
     case session_ssr_auth_sent:
         do_ssr_auth_sent(tunnel);
         break;
-    case session_ssr_auth_respone:
-        break;
-    case session_ssr_feedback_sent:
-        break;
-    case session_ssr_feedback_respone:
-        break;
     case session_proxy_start:
         do_proxy_start(tunnel);
         break;
@@ -611,14 +605,78 @@ static void do_proxy_start(struct tunnel_ctx *tunnel) {
         return;
     }
 
-    socket_read(incoming);
     socket_read(outgoing);
+    socket_read(incoming);
     tunnel->state = session_proxy;
 }
 
 /* Proxy incoming data back and forth. */
 static void do_proxy(struct tunnel_ctx *tunnel) {
     tunnel->state = session_proxy;
+#if IMPL_SSR_CLIENT
+    struct socket_ctx *incoming = &tunnel->incoming;
+    struct socket_ctx *outgoing = &tunnel->outgoing;
+
+    if (incoming->result < 0 || outgoing->result <0) {
+        do_kill(tunnel);
+    }
+
+    struct tunnel_cipher_ctx *tc = tunnel->cipher;
+
+    if (incoming->wrstate == socket_done) {
+        incoming->wrstate = socket_stop;
+    }
+    if (incoming->wrstate == socket_stop) {
+        if (outgoing->rdstate == socket_stop) {
+            socket_read(outgoing);
+        } else if (outgoing->rdstate == socket_done) {
+            outgoing->rdstate = socket_stop;
+
+            struct buffer_t *buf = buffer_alloc(SSR_BUFF_SIZE);
+            buffer_store(buf, outgoing->t.buf, (size_t) outgoing->result);
+
+            struct buffer_t *feedback = NULL;
+            if (ssr_ok != tunnel_decrypt(tc, buf, &feedback)) {
+                do_kill(tunnel);
+                return;
+            }
+            if (feedback) {
+                ASSERT(buf->len == 0);
+                socket_write(outgoing, feedback->buffer, feedback->len);
+                buffer_free(feedback);
+            }
+
+            if (buf->len > 0) {
+                socket_write(incoming, buf->buffer, buf->len);
+            }
+            buffer_free(buf);
+        }
+    }
+
+    if (outgoing->wrstate == socket_done) {
+        outgoing->wrstate = socket_stop;
+    }
+    if (outgoing->wrstate == socket_stop) {
+        if (incoming->rdstate == socket_stop) {
+            socket_read(incoming);
+        } else if (incoming->rdstate == socket_done) {
+            incoming->rdstate = socket_stop;
+            struct buffer_t *buf = buffer_alloc(SSR_BUFF_SIZE);
+            buffer_store(buf, incoming->t.buf, (size_t)incoming->result);
+            if (ssr_ok != tunnel_encrypt(tc, buf)) {
+                do_kill(tunnel);
+                return;
+            }
+            if (buf->len > 0) {
+                socket_write(outgoing, buf->buffer, buf->len);
+            } else {
+                ASSERT(false);
+            }
+            buffer_free(buf);
+        }
+    }
+
+#else
 
     if (socket_cycle("client", &tunnel->incoming, &tunnel->outgoing) != 0) {
         do_kill(tunnel);
@@ -629,6 +687,7 @@ static void do_proxy(struct tunnel_ctx *tunnel) {
         do_kill(tunnel);
         return;
     }
+#endif // IMPL_SSR_CLIENT
 }
 
 static void do_kill(struct tunnel_ctx *tunnel) {
@@ -671,36 +730,8 @@ static int socket_cycle(const char *who, struct socket_ctx *a, struct socket_ctx
         if (b->rdstate == socket_stop) {
             socket_read(b);
         } else if (b->rdstate == socket_done) {
-#if IMPL_SSR_CLIENT
-            b->rdstate = socket_stop;
-
-            struct tunnel_ctx *tunnel = a->tunnel;
-            struct tunnel_cipher_ctx *tc = tunnel->cipher;
-            struct buffer_t *buf = buffer_alloc(SSR_BUFF_SIZE);
-            enum ssr_err error;
-            buf->len = (size_t)b->result;
-            memcpy(buf->buffer, b->t.buf, b->result);
-            if (&tunnel->incoming == a) {
-                struct buffer_t *feedback = NULL;
-                error = tunnel_decrypt(tc, buf, &feedback);
-                if (feedback == NULL) {
-                    
-                }
-            } else {
-                error = tunnel_encrypt(tc, buf);
-            }
-            if (error != ssr_ok) {
-                buffer_free(buf);
-                return -1;
-            }
-            if (buf->len > 0) {
-                socket_write(a, buf->buffer, buf->len);
-            }
-            buffer_free(buf);
-#else
             socket_write(a, b->t.buf, b->result);
             b->rdstate = socket_stop;  /* Triggers the call to socket_read() above. */
-#endif // IMPL_SSR_CLIENT
         }
     }
 
