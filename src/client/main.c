@@ -26,7 +26,11 @@
 #include <json-c/json.h>
 #include "util.h"
 
+#if defined(WIN32)
+#define DEFAULT_CONF_PATH "config.json"
+#else
 #define DEFAULT_CONF_PATH "/etc/ssr-native/config.json"
+#endif // defined(WIN32)
 
 #if HAVE_UNISTD_H
 #include <unistd.h>  /* getopt */
@@ -41,34 +45,41 @@
 
 static struct server_config * config_create(void);
 static void config_release(struct server_config *cf);
-static void parse_opts(struct server_config *cf, int argc, char **argv);
+static const char * parse_opts(int argc, char **argv);
 static bool parse_config_file(const char *file, struct server_config *cf);
 static void usage(void);
 
 int main(int argc, char **argv) {
-    struct server_config *config;
+    struct server_config *config = NULL;
     int err = -1;
+    const char *config_path = NULL;
 
     do {
         _setprogname(argv[0]);
 
-        if (argc < 2) {
+        config_path = DEFAULT_CONF_PATH;
+        if (argc > 1) {
+            config_path = parse_opts(argc, argv);
+        }
+
+        if (config_path == NULL) {
             break;
         }
 
         config = config_create();
-        if (config == NULL) {
+        if (parse_config_file(config_path, config) == false) {
             break;
         }
-        parse_opts(config, argc, argv);
+
         if (config->method == NULL || config->password==NULL || config->remote_host==NULL) {
             break;
         }
 
         err = listener_run(config, uv_default_loop());
 
-        config_release(config);
     } while(0);
+
+    config_release(config);
 
     if (err != 0) {
         usage();
@@ -90,6 +101,9 @@ static struct server_config * config_create(void) {
 }
 
 static void config_release(struct server_config *cf) {
+    if (cf == NULL) {
+        return;
+    }
     object_safe_free((void **)&cf->listen_host);
     object_safe_free((void **)&cf->remote_host);
     object_safe_free((void **)&cf->password);
@@ -102,21 +116,20 @@ static void config_release(struct server_config *cf) {
     object_safe_free((void **)&cf);
 }
 
-static void parse_opts(struct server_config *cf, int argc, char **argv) {
+static const char * parse_opts(int argc, char **argv) {
     int opt;
 
     while (-1 != (opt = getopt(argc, argv, "c:h"))) {
         switch (opt) {
         case 'c':
-            if (parse_config_file(optarg, cf) == false) {
-                usage();
-            }
+            return optarg;
             break;
         case 'h':
         default:
-            usage();
+            break;
         }
     }
+    return NULL;
 }
 
 bool json_iter_extract_string(const char *key, const struct json_object_iter *iter, const char **value) {
