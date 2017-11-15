@@ -34,11 +34,13 @@ void _setprogname(const char *name) {
 }
 
 const char *_getprogname(void) {
+    const char *name = NULL;
 #if defined(_MSC_VER)
-    return strrchr(progname, '\\') + 1;
+    name = strrchr(progname, '\\');
 #else
-    return strrchr(progname, '/') + 1; // return progname;
+    name = strrchr(progname, '/');
 #endif // defined(_MSC_VER)
+    return name ? name + 1 : progname;
 }
 
 void string_safe_assign(char **target, const char *value) {
