@@ -290,6 +290,10 @@ For Windows, use the following commands -- don't laugh at me, I know `--recursiv
 ```bash
 git submodule update --init
 
+cd depends/json-c4w
+git submodule update --init
+cd ../..
+
 cd depends/openssl4w
 git submodule update --init
 cd ../..
