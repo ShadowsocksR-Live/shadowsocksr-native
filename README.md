@@ -2,8 +2,8 @@
 
 ## Intro
 
-[Shadowsocks-libev](http://shadowsocks.org) is a lightweight secured SOCKS5
-proxy for embedded devices and low-end boxes.
+**ShadowsocksR** is a lightweight secured SOCKS5 proxy for embedded devices and low-end boxes
+derived from [Shadowsocks-libev](http://shadowsocks.org).
 
 It is a port of [Shadowsocks](https://github.com/shadowsocks/shadowsocks)
 created by [@clowwindy](https://github.com/clowwindy), which is maintained by
@@ -285,7 +285,7 @@ brew install shadowsocks-libev
 
 ### Windows
 
-For Windows, use the following commands -- don't laugh at me, I know `--recursive`, I'm a Chinese -- then open win32/ssr-native.sln with Visual Studio 2015. Enjoy it!
+For Windows, use the following commands -- don't laugh at me, I know `--recursive`, I'm a Chinese living with `GFW` -- then open win32/ssr-native.sln with Visual Studio 2015. Enjoy it!
 
 ```bash
 git submodule update --init
@@ -304,7 +304,7 @@ cd ../..
 ```
 
 Another way, use either MinGW (msys) or Cygwin to build.
-At the moment, only `ss-local` is supported to build against MinGW (msys).
+At the moment, only `ssr-client` is supported to build against MinGW (msys).
 
 If you are using MinGW (msys), please download OpenSSL or PolarSSL source tarball
 to the home directory of msys, and build it like this (may take a few minutes):
