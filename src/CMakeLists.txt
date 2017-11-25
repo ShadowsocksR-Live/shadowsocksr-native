@@ -117,32 +117,23 @@ if (!APPLE)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 endif()
 
-add_executable(ssr_client ${SOURCE_FILES_CLIENT})
-add_executable(ssr_local ${SOURCE_FILES_LOCAL})
+add_executable(ssr-client ${SOURCE_FILES_CLIENT})
+add_executable(ssr-local ${SOURCE_FILES_LOCAL})
 #add_executable(ss_tunnel ${SOURCE_FILES_TUNNEL})
 #add_executable(ss_server ${SOURCE_FILES_SERVER})
 #add_executable(ss_manager ${SOURCE_FILES_MANAGER})
-add_executable(ss_redir ${SOURCE_FILES_REDIR})
-add_library(libshadowsocks-libev ${SOURCE_FILES_LOCAL})
+#add_executable(ss_redir ${SOURCE_FILES_REDIR})
+#add_library(libssr-native ${SOURCE_FILES_LOCAL})
 
-set_target_properties(ssr_client PROPERTIES COMPILE_DEFINITIONS MODULE_LOCAL)
-set_target_properties(ssr_local PROPERTIES COMPILE_DEFINITIONS MODULE_LOCAL)
-#set_target_properties(ss_tunnel PROPERTIES
-#        COMPILE_DEFINITIONS MODULE_TUNNEL
-#        )
-#set_target_properties(ss_server PROPERTIES
-#        COMPILE_DEFINITIONS MODULE_REMOTE
-#        )
-#set_target_properties(ss_manager PROPERTIES
-#        COMPILE_DEFINITIONS MODULE_MANAGER
-#        )
-set_target_properties(ss_redir PROPERTIES
-        COMPILE_DEFINITIONS MODULE_REDIR
-        )
-target_compile_definitions(libshadowsocks-libev
-        PRIVATE MODULE_LOCAL LIB_ONLY
-        )
-set_target_properties(libshadowsocks-libev PROPERTIES SUFFIX ".la")
+set_target_properties(ssr-client PROPERTIES COMPILE_DEFINITIONS MODULE_LOCAL)
+set_target_properties(ssr-local PROPERTIES COMPILE_DEFINITIONS MODULE_LOCAL)
+#set_target_properties(ss_tunnel PROPERTIES COMPILE_DEFINITIONS MODULE_TUNNEL)
+#set_target_properties(ss_server PROPERTIES COMPILE_DEFINITIONS MODULE_REMOTE)
+#set_target_properties(ss_manager PROPERTIES COMPILE_DEFINITIONS MODULE_MANAGER)
+#set_target_properties(ss_redir PROPERTIES COMPILE_DEFINITIONS MODULE_REDIR)
+
+#target_compile_definitions(libssr-native PRIVATE MODULE_LOCAL LIB_ONLY)
+#set_target_properties(libssr-native PROPERTIES SUFFIX ".la")
 
 set (ss_lib_common
         libjson-c.a
@@ -164,20 +155,11 @@ if (WIN32)
 endif()
 
 
-target_link_libraries(ssr_client ${ss_lib_net})
+target_link_libraries(ssr-client ${ss_lib_net})
 
-target_link_libraries(ssr_local
-        ${ss_lib_net}
-)
-#target_link_libraries(ss_tunnel
-#        ${ss_lib_net}
-#        )
-#target_link_libraries(ss_server
-#        ${ss_lib_net}
-#        )
-#target_link_libraries(ss_manager
-#        ${ss_lib_common}
-#        )
-target_link_libraries(ss_redir
-        ${ss_lib_net}
-        )
+target_link_libraries(ssr-local ${ss_lib_net})
+
+#target_link_libraries(ss_tunnel ${ss_lib_net} )
+#target_link_libraries(ss_server ${ss_lib_net} )
+#target_link_libraries(ss_manager ${ss_lib_common} )
+#target_link_libraries(ss_redir ${ss_lib_net})

@@ -95,7 +95,7 @@ host_triplet = @host@
 @USE_SYSTEM_SHARED_LIB_FALSE@am__append_3 = $(top_builddir)/libev/libev.la \
 @USE_SYSTEM_SHARED_LIB_FALSE@                  $(top_builddir)/libsodium/src/libsodium/libsodium.la
 
-bin_PROGRAMS = ssr-local$(EXEEXT)
+bin_PROGRAMS = ssr-local$(EXEEXT) ssr-client$(EXEEXT)
 #ss_tunnel_LDADD = $(SS_COMMON_LIBS)
 #ss_server_LDADD = $(SS_COMMON_LIBS)
 #ss_manager_LDADD = $(SS_COMMON_LIBS)
@@ -127,14 +127,45 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
+am__dirstamp = $(am__leading_dot)dirstamp
+am__objects_1 = obfs/ssr_client-auth.$(OBJEXT) \
+	obfs/ssr_client-auth_chain.$(OBJEXT) \
+	obfs/ssr_client-base64.$(OBJEXT) \
+	obfs/ssr_client-crc32.$(OBJEXT) \
+	obfs/ssr_client-http_simple.$(OBJEXT) \
+	obfs/ssr_client-obfs.$(OBJEXT) \
+	obfs/ssr_client-obfsutil.$(OBJEXT) \
+	obfs/ssr_client-tls1.2_ticket.$(OBJEXT) \
+	obfs/ssr_client-verify.$(OBJEXT)
+am_ssr_client_OBJECTS = ssr_client-cache.$(OBJEXT) \
+	ssr_client-encrypt.$(OBJEXT) ssr_client-ssrbuffer.$(OBJEXT) \
+	ssr_client-ssrutils.$(OBJEXT) \
+	client/ssr_client-listener.$(OBJEXT) \
+	client/ssr_client-main.$(OBJEXT) \
+	client/ssr_client-s5.$(OBJEXT) \
+	client/ssr_client-ssrcipher.$(OBJEXT) \
+	client/ssr_client-tunnel.$(OBJEXT) \
+	client/ssr_client-util.$(OBJEXT) $(am__objects_1)
+ssr_client_OBJECTS = $(am_ssr_client_OBJECTS)
+am__DEPENDENCIES_1 =
+am__DEPENDENCIES_2 = $(top_builddir)/libipset/libipset.la \
+	$(top_builddir)/libcork/libcork.la $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__append_3)
+ssr_client_DEPENDENCIES = $(am__DEPENDENCIES_2)
+AM_V_lt = $(am__v_lt_@AM_V@)
+am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
+am__v_lt_0 = --silent
+am__v_lt_1 = 
+ssr_client_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(ssr_client_CFLAGS) \
+	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 am__ssr_local_SOURCES_DIST = ssrbuffer.c ssrbuffer.h ssrutils.c \
 	jconf.c json.c encrypt.c udprelay.c cache.c acl.c netutils.c \
 	local.c obfs/auth.c obfs/auth_chain.c obfs/base64.c \
 	obfs/crc32.c obfs/http_simple.c obfs/obfs.c obfs/obfsutil.c \
 	obfs/tls1.2_ticket.c obfs/verify.c http.c tls.c socks5.c \
 	socks5.h shadowsocks.h rule.c win32.c
-am__dirstamp = $(am__leading_dot)dirstamp
-am__objects_1 = obfs/ssr_local-auth.$(OBJEXT) \
+am__objects_2 = obfs/ssr_local-auth.$(OBJEXT) \
 	obfs/ssr_local-auth_chain.$(OBJEXT) \
 	obfs/ssr_local-base64.$(OBJEXT) obfs/ssr_local-crc32.$(OBJEXT) \
 	obfs/ssr_local-http_simple.$(OBJEXT) \
@@ -142,27 +173,19 @@ am__objects_1 = obfs/ssr_local-auth.$(OBJEXT) \
 	obfs/ssr_local-obfsutil.$(OBJEXT) \
 	obfs/ssr_local-tls1.2_ticket.$(OBJEXT) \
 	obfs/ssr_local-verify.$(OBJEXT)
-am__objects_2 = ssr_local-http.$(OBJEXT) ssr_local-tls.$(OBJEXT) \
+am__objects_3 = ssr_local-http.$(OBJEXT) ssr_local-tls.$(OBJEXT) \
 	ssr_local-socks5.$(OBJEXT) ssr_local-rule.$(OBJEXT)
-@BUILD_WINCOMPAT_TRUE@am__objects_3 = ssr_local-win32.$(OBJEXT)
+@BUILD_WINCOMPAT_TRUE@am__objects_4 = ssr_local-win32.$(OBJEXT)
 am_ssr_local_OBJECTS = ssr_local-ssrbuffer.$(OBJEXT) \
 	ssr_local-ssrutils.$(OBJEXT) ssr_local-jconf.$(OBJEXT) \
 	ssr_local-json.$(OBJEXT) ssr_local-encrypt.$(OBJEXT) \
 	ssr_local-udprelay.$(OBJEXT) ssr_local-cache.$(OBJEXT) \
 	ssr_local-acl.$(OBJEXT) ssr_local-netutils.$(OBJEXT) \
-	ssr_local-local.$(OBJEXT) $(am__objects_1) $(am__objects_2) \
-	$(am__objects_3)
+	ssr_local-local.$(OBJEXT) $(am__objects_2) $(am__objects_3) \
+	$(am__objects_4)
 ssr_local_OBJECTS = $(am_ssr_local_OBJECTS)
-am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(top_builddir)/libipset/libipset.la \
-	$(top_builddir)/libcork/libcork.la $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__append_3)
 ssr_local_DEPENDENCIES = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
 	$(am__append_5)
-AM_V_lt = $(am__v_lt_@AM_V@)
-am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
-am__v_lt_0 = --silent
-am__v_lt_1 = 
 ssr_local_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(ssr_local_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -200,8 +223,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(ssr_local_SOURCES)
-DIST_SOURCES = $(am__ssr_local_SOURCES_DIST)
+SOURCES = $(ssr_client_SOURCES) $(ssr_local_SOURCES)
+DIST_SOURCES = $(ssr_client_SOURCES) $(am__ssr_local_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -391,6 +414,18 @@ obfs_SOURCE = \
 ssr_local_SOURCES = ssrbuffer.c ssrbuffer.h ssrutils.c jconf.c json.c \
 	encrypt.c udprelay.c cache.c acl.c netutils.c local.c \
 	$(obfs_SOURCE) $(sni_src) $(am__append_6)
+ssr_client_SOURCES = cache.c             \
+                    encrypt.c           \
+                    ssrbuffer.c         \
+                    ssrutils.c          \
+                    client/listener.c   \
+                    client/main.c       \
+                    client/s5.c         \
+                    client/ssrcipher.c  \
+                    client/tunnel.c     \
+                    client/util.c       \
+                    $(obfs_SOURCE)
+
 
 #ss_tunnel_SOURCES = utils.c \
 #                    jconf.c \
@@ -417,6 +452,8 @@ ssr_local_SOURCES = ssrbuffer.c ssrbuffer.h ssrutils.c jconf.c json.c \
 #                     jconf.c \
 #                     json.c \
 #                     manager.c
+ssr_client_LDADD = $(SS_COMMON_LIBS) -ljson-c
+ssr_client_CFLAGS = $(AM_CFLAGS) -DMODULE_LOCAL -I$(top_srcdir)/src/obfs
 ssr_local_LDADD = $(SS_COMMON_LIBS) $(am__append_4) $(am__append_5)
 #ss_tunnel_LDADD += $(top_builddir)/libudns/libudns.la
 #ss_server_LDADD += $(top_builddir)/libudns/libudns.la
@@ -503,12 +540,52 @@ clean-binPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
+client/$(am__dirstamp):
+	@$(MKDIR_P) client
+	@: > client/$(am__dirstamp)
+client/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) client/$(DEPDIR)
+	@: > client/$(DEPDIR)/$(am__dirstamp)
+client/ssr_client-listener.$(OBJEXT): client/$(am__dirstamp) \
+	client/$(DEPDIR)/$(am__dirstamp)
+client/ssr_client-main.$(OBJEXT): client/$(am__dirstamp) \
+	client/$(DEPDIR)/$(am__dirstamp)
+client/ssr_client-s5.$(OBJEXT): client/$(am__dirstamp) \
+	client/$(DEPDIR)/$(am__dirstamp)
+client/ssr_client-ssrcipher.$(OBJEXT): client/$(am__dirstamp) \
+	client/$(DEPDIR)/$(am__dirstamp)
+client/ssr_client-tunnel.$(OBJEXT): client/$(am__dirstamp) \
+	client/$(DEPDIR)/$(am__dirstamp)
+client/ssr_client-util.$(OBJEXT): client/$(am__dirstamp) \
+	client/$(DEPDIR)/$(am__dirstamp)
 obfs/$(am__dirstamp):
 	@$(MKDIR_P) obfs
 	@: > obfs/$(am__dirstamp)
 obfs/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) obfs/$(DEPDIR)
 	@: > obfs/$(DEPDIR)/$(am__dirstamp)
+obfs/ssr_client-auth.$(OBJEXT): obfs/$(am__dirstamp) \
+	obfs/$(DEPDIR)/$(am__dirstamp)
+obfs/ssr_client-auth_chain.$(OBJEXT): obfs/$(am__dirstamp) \
+	obfs/$(DEPDIR)/$(am__dirstamp)
+obfs/ssr_client-base64.$(OBJEXT): obfs/$(am__dirstamp) \
+	obfs/$(DEPDIR)/$(am__dirstamp)
+obfs/ssr_client-crc32.$(OBJEXT): obfs/$(am__dirstamp) \
+	obfs/$(DEPDIR)/$(am__dirstamp)
+obfs/ssr_client-http_simple.$(OBJEXT): obfs/$(am__dirstamp) \
+	obfs/$(DEPDIR)/$(am__dirstamp)
+obfs/ssr_client-obfs.$(OBJEXT): obfs/$(am__dirstamp) \
+	obfs/$(DEPDIR)/$(am__dirstamp)
+obfs/ssr_client-obfsutil.$(OBJEXT): obfs/$(am__dirstamp) \
+	obfs/$(DEPDIR)/$(am__dirstamp)
+obfs/ssr_client-tls1.2_ticket.$(OBJEXT): obfs/$(am__dirstamp) \
+	obfs/$(DEPDIR)/$(am__dirstamp)
+obfs/ssr_client-verify.$(OBJEXT): obfs/$(am__dirstamp) \
+	obfs/$(DEPDIR)/$(am__dirstamp)
+
+ssr-client$(EXEEXT): $(ssr_client_OBJECTS) $(ssr_client_DEPENDENCIES) $(EXTRA_ssr_client_DEPENDENCIES) 
+	@rm -f ssr-client$(EXEEXT)
+	$(AM_V_CCLD)$(ssr_client_LINK) $(ssr_client_OBJECTS) $(ssr_client_LDADD) $(LIBS)
 obfs/ssr_local-auth.$(OBJEXT): obfs/$(am__dirstamp) \
 	obfs/$(DEPDIR)/$(am__dirstamp)
 obfs/ssr_local-auth_chain.$(OBJEXT): obfs/$(am__dirstamp) \
@@ -534,11 +611,16 @@ ssr-local$(EXEEXT): $(ssr_local_OBJECTS) $(ssr_local_DEPENDENCIES) $(EXTRA_ssr_l
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f client/*.$(OBJEXT)
 	-rm -f obfs/*.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ssr_client-cache.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ssr_client-encrypt.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ssr_client-ssrbuffer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ssr_client-ssrutils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ssr_local-acl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ssr_local-cache.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ssr_local-encrypt.Po@am__quote@
@@ -554,6 +636,21 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ssr_local-tls.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ssr_local-udprelay.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ssr_local-win32.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@client/$(DEPDIR)/ssr_client-listener.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@client/$(DEPDIR)/ssr_client-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@client/$(DEPDIR)/ssr_client-s5.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@client/$(DEPDIR)/ssr_client-ssrcipher.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@client/$(DEPDIR)/ssr_client-tunnel.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@client/$(DEPDIR)/ssr_client-util.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@obfs/$(DEPDIR)/ssr_client-auth.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@obfs/$(DEPDIR)/ssr_client-auth_chain.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@obfs/$(DEPDIR)/ssr_client-base64.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@obfs/$(DEPDIR)/ssr_client-crc32.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@obfs/$(DEPDIR)/ssr_client-http_simple.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@obfs/$(DEPDIR)/ssr_client-obfs.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@obfs/$(DEPDIR)/ssr_client-obfsutil.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@obfs/$(DEPDIR)/ssr_client-tls1.2_ticket.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@obfs/$(DEPDIR)/ssr_client-verify.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@obfs/$(DEPDIR)/ssr_local-auth.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@obfs/$(DEPDIR)/ssr_local-auth_chain.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@obfs/$(DEPDIR)/ssr_local-base64.Po@am__quote@
@@ -587,6 +684,272 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+ssr_client-cache.o: cache.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT ssr_client-cache.o -MD -MP -MF $(DEPDIR)/ssr_client-cache.Tpo -c -o ssr_client-cache.o `test -f 'cache.c' || echo '$(srcdir)/'`cache.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ssr_client-cache.Tpo $(DEPDIR)/ssr_client-cache.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='cache.c' object='ssr_client-cache.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o ssr_client-cache.o `test -f 'cache.c' || echo '$(srcdir)/'`cache.c
+
+ssr_client-cache.obj: cache.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT ssr_client-cache.obj -MD -MP -MF $(DEPDIR)/ssr_client-cache.Tpo -c -o ssr_client-cache.obj `if test -f 'cache.c'; then $(CYGPATH_W) 'cache.c'; else $(CYGPATH_W) '$(srcdir)/cache.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ssr_client-cache.Tpo $(DEPDIR)/ssr_client-cache.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='cache.c' object='ssr_client-cache.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o ssr_client-cache.obj `if test -f 'cache.c'; then $(CYGPATH_W) 'cache.c'; else $(CYGPATH_W) '$(srcdir)/cache.c'; fi`
+
+ssr_client-encrypt.o: encrypt.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT ssr_client-encrypt.o -MD -MP -MF $(DEPDIR)/ssr_client-encrypt.Tpo -c -o ssr_client-encrypt.o `test -f 'encrypt.c' || echo '$(srcdir)/'`encrypt.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ssr_client-encrypt.Tpo $(DEPDIR)/ssr_client-encrypt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='encrypt.c' object='ssr_client-encrypt.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o ssr_client-encrypt.o `test -f 'encrypt.c' || echo '$(srcdir)/'`encrypt.c
+
+ssr_client-encrypt.obj: encrypt.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT ssr_client-encrypt.obj -MD -MP -MF $(DEPDIR)/ssr_client-encrypt.Tpo -c -o ssr_client-encrypt.obj `if test -f 'encrypt.c'; then $(CYGPATH_W) 'encrypt.c'; else $(CYGPATH_W) '$(srcdir)/encrypt.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ssr_client-encrypt.Tpo $(DEPDIR)/ssr_client-encrypt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='encrypt.c' object='ssr_client-encrypt.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o ssr_client-encrypt.obj `if test -f 'encrypt.c'; then $(CYGPATH_W) 'encrypt.c'; else $(CYGPATH_W) '$(srcdir)/encrypt.c'; fi`
+
+ssr_client-ssrbuffer.o: ssrbuffer.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT ssr_client-ssrbuffer.o -MD -MP -MF $(DEPDIR)/ssr_client-ssrbuffer.Tpo -c -o ssr_client-ssrbuffer.o `test -f 'ssrbuffer.c' || echo '$(srcdir)/'`ssrbuffer.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ssr_client-ssrbuffer.Tpo $(DEPDIR)/ssr_client-ssrbuffer.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ssrbuffer.c' object='ssr_client-ssrbuffer.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o ssr_client-ssrbuffer.o `test -f 'ssrbuffer.c' || echo '$(srcdir)/'`ssrbuffer.c
+
+ssr_client-ssrbuffer.obj: ssrbuffer.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT ssr_client-ssrbuffer.obj -MD -MP -MF $(DEPDIR)/ssr_client-ssrbuffer.Tpo -c -o ssr_client-ssrbuffer.obj `if test -f 'ssrbuffer.c'; then $(CYGPATH_W) 'ssrbuffer.c'; else $(CYGPATH_W) '$(srcdir)/ssrbuffer.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ssr_client-ssrbuffer.Tpo $(DEPDIR)/ssr_client-ssrbuffer.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ssrbuffer.c' object='ssr_client-ssrbuffer.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o ssr_client-ssrbuffer.obj `if test -f 'ssrbuffer.c'; then $(CYGPATH_W) 'ssrbuffer.c'; else $(CYGPATH_W) '$(srcdir)/ssrbuffer.c'; fi`
+
+ssr_client-ssrutils.o: ssrutils.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT ssr_client-ssrutils.o -MD -MP -MF $(DEPDIR)/ssr_client-ssrutils.Tpo -c -o ssr_client-ssrutils.o `test -f 'ssrutils.c' || echo '$(srcdir)/'`ssrutils.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ssr_client-ssrutils.Tpo $(DEPDIR)/ssr_client-ssrutils.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ssrutils.c' object='ssr_client-ssrutils.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o ssr_client-ssrutils.o `test -f 'ssrutils.c' || echo '$(srcdir)/'`ssrutils.c
+
+ssr_client-ssrutils.obj: ssrutils.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT ssr_client-ssrutils.obj -MD -MP -MF $(DEPDIR)/ssr_client-ssrutils.Tpo -c -o ssr_client-ssrutils.obj `if test -f 'ssrutils.c'; then $(CYGPATH_W) 'ssrutils.c'; else $(CYGPATH_W) '$(srcdir)/ssrutils.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ssr_client-ssrutils.Tpo $(DEPDIR)/ssr_client-ssrutils.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ssrutils.c' object='ssr_client-ssrutils.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o ssr_client-ssrutils.obj `if test -f 'ssrutils.c'; then $(CYGPATH_W) 'ssrutils.c'; else $(CYGPATH_W) '$(srcdir)/ssrutils.c'; fi`
+
+client/ssr_client-listener.o: client/listener.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT client/ssr_client-listener.o -MD -MP -MF client/$(DEPDIR)/ssr_client-listener.Tpo -c -o client/ssr_client-listener.o `test -f 'client/listener.c' || echo '$(srcdir)/'`client/listener.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) client/$(DEPDIR)/ssr_client-listener.Tpo client/$(DEPDIR)/ssr_client-listener.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='client/listener.c' object='client/ssr_client-listener.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o client/ssr_client-listener.o `test -f 'client/listener.c' || echo '$(srcdir)/'`client/listener.c
+
+client/ssr_client-listener.obj: client/listener.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT client/ssr_client-listener.obj -MD -MP -MF client/$(DEPDIR)/ssr_client-listener.Tpo -c -o client/ssr_client-listener.obj `if test -f 'client/listener.c'; then $(CYGPATH_W) 'client/listener.c'; else $(CYGPATH_W) '$(srcdir)/client/listener.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) client/$(DEPDIR)/ssr_client-listener.Tpo client/$(DEPDIR)/ssr_client-listener.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='client/listener.c' object='client/ssr_client-listener.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o client/ssr_client-listener.obj `if test -f 'client/listener.c'; then $(CYGPATH_W) 'client/listener.c'; else $(CYGPATH_W) '$(srcdir)/client/listener.c'; fi`
+
+client/ssr_client-main.o: client/main.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT client/ssr_client-main.o -MD -MP -MF client/$(DEPDIR)/ssr_client-main.Tpo -c -o client/ssr_client-main.o `test -f 'client/main.c' || echo '$(srcdir)/'`client/main.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) client/$(DEPDIR)/ssr_client-main.Tpo client/$(DEPDIR)/ssr_client-main.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='client/main.c' object='client/ssr_client-main.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o client/ssr_client-main.o `test -f 'client/main.c' || echo '$(srcdir)/'`client/main.c
+
+client/ssr_client-main.obj: client/main.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT client/ssr_client-main.obj -MD -MP -MF client/$(DEPDIR)/ssr_client-main.Tpo -c -o client/ssr_client-main.obj `if test -f 'client/main.c'; then $(CYGPATH_W) 'client/main.c'; else $(CYGPATH_W) '$(srcdir)/client/main.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) client/$(DEPDIR)/ssr_client-main.Tpo client/$(DEPDIR)/ssr_client-main.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='client/main.c' object='client/ssr_client-main.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o client/ssr_client-main.obj `if test -f 'client/main.c'; then $(CYGPATH_W) 'client/main.c'; else $(CYGPATH_W) '$(srcdir)/client/main.c'; fi`
+
+client/ssr_client-s5.o: client/s5.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT client/ssr_client-s5.o -MD -MP -MF client/$(DEPDIR)/ssr_client-s5.Tpo -c -o client/ssr_client-s5.o `test -f 'client/s5.c' || echo '$(srcdir)/'`client/s5.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) client/$(DEPDIR)/ssr_client-s5.Tpo client/$(DEPDIR)/ssr_client-s5.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='client/s5.c' object='client/ssr_client-s5.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o client/ssr_client-s5.o `test -f 'client/s5.c' || echo '$(srcdir)/'`client/s5.c
+
+client/ssr_client-s5.obj: client/s5.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT client/ssr_client-s5.obj -MD -MP -MF client/$(DEPDIR)/ssr_client-s5.Tpo -c -o client/ssr_client-s5.obj `if test -f 'client/s5.c'; then $(CYGPATH_W) 'client/s5.c'; else $(CYGPATH_W) '$(srcdir)/client/s5.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) client/$(DEPDIR)/ssr_client-s5.Tpo client/$(DEPDIR)/ssr_client-s5.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='client/s5.c' object='client/ssr_client-s5.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o client/ssr_client-s5.obj `if test -f 'client/s5.c'; then $(CYGPATH_W) 'client/s5.c'; else $(CYGPATH_W) '$(srcdir)/client/s5.c'; fi`
+
+client/ssr_client-ssrcipher.o: client/ssrcipher.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT client/ssr_client-ssrcipher.o -MD -MP -MF client/$(DEPDIR)/ssr_client-ssrcipher.Tpo -c -o client/ssr_client-ssrcipher.o `test -f 'client/ssrcipher.c' || echo '$(srcdir)/'`client/ssrcipher.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) client/$(DEPDIR)/ssr_client-ssrcipher.Tpo client/$(DEPDIR)/ssr_client-ssrcipher.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='client/ssrcipher.c' object='client/ssr_client-ssrcipher.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o client/ssr_client-ssrcipher.o `test -f 'client/ssrcipher.c' || echo '$(srcdir)/'`client/ssrcipher.c
+
+client/ssr_client-ssrcipher.obj: client/ssrcipher.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT client/ssr_client-ssrcipher.obj -MD -MP -MF client/$(DEPDIR)/ssr_client-ssrcipher.Tpo -c -o client/ssr_client-ssrcipher.obj `if test -f 'client/ssrcipher.c'; then $(CYGPATH_W) 'client/ssrcipher.c'; else $(CYGPATH_W) '$(srcdir)/client/ssrcipher.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) client/$(DEPDIR)/ssr_client-ssrcipher.Tpo client/$(DEPDIR)/ssr_client-ssrcipher.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='client/ssrcipher.c' object='client/ssr_client-ssrcipher.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o client/ssr_client-ssrcipher.obj `if test -f 'client/ssrcipher.c'; then $(CYGPATH_W) 'client/ssrcipher.c'; else $(CYGPATH_W) '$(srcdir)/client/ssrcipher.c'; fi`
+
+client/ssr_client-tunnel.o: client/tunnel.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT client/ssr_client-tunnel.o -MD -MP -MF client/$(DEPDIR)/ssr_client-tunnel.Tpo -c -o client/ssr_client-tunnel.o `test -f 'client/tunnel.c' || echo '$(srcdir)/'`client/tunnel.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) client/$(DEPDIR)/ssr_client-tunnel.Tpo client/$(DEPDIR)/ssr_client-tunnel.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='client/tunnel.c' object='client/ssr_client-tunnel.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o client/ssr_client-tunnel.o `test -f 'client/tunnel.c' || echo '$(srcdir)/'`client/tunnel.c
+
+client/ssr_client-tunnel.obj: client/tunnel.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT client/ssr_client-tunnel.obj -MD -MP -MF client/$(DEPDIR)/ssr_client-tunnel.Tpo -c -o client/ssr_client-tunnel.obj `if test -f 'client/tunnel.c'; then $(CYGPATH_W) 'client/tunnel.c'; else $(CYGPATH_W) '$(srcdir)/client/tunnel.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) client/$(DEPDIR)/ssr_client-tunnel.Tpo client/$(DEPDIR)/ssr_client-tunnel.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='client/tunnel.c' object='client/ssr_client-tunnel.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o client/ssr_client-tunnel.obj `if test -f 'client/tunnel.c'; then $(CYGPATH_W) 'client/tunnel.c'; else $(CYGPATH_W) '$(srcdir)/client/tunnel.c'; fi`
+
+client/ssr_client-util.o: client/util.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT client/ssr_client-util.o -MD -MP -MF client/$(DEPDIR)/ssr_client-util.Tpo -c -o client/ssr_client-util.o `test -f 'client/util.c' || echo '$(srcdir)/'`client/util.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) client/$(DEPDIR)/ssr_client-util.Tpo client/$(DEPDIR)/ssr_client-util.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='client/util.c' object='client/ssr_client-util.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o client/ssr_client-util.o `test -f 'client/util.c' || echo '$(srcdir)/'`client/util.c
+
+client/ssr_client-util.obj: client/util.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT client/ssr_client-util.obj -MD -MP -MF client/$(DEPDIR)/ssr_client-util.Tpo -c -o client/ssr_client-util.obj `if test -f 'client/util.c'; then $(CYGPATH_W) 'client/util.c'; else $(CYGPATH_W) '$(srcdir)/client/util.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) client/$(DEPDIR)/ssr_client-util.Tpo client/$(DEPDIR)/ssr_client-util.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='client/util.c' object='client/ssr_client-util.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o client/ssr_client-util.obj `if test -f 'client/util.c'; then $(CYGPATH_W) 'client/util.c'; else $(CYGPATH_W) '$(srcdir)/client/util.c'; fi`
+
+obfs/ssr_client-auth.o: obfs/auth.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT obfs/ssr_client-auth.o -MD -MP -MF obfs/$(DEPDIR)/ssr_client-auth.Tpo -c -o obfs/ssr_client-auth.o `test -f 'obfs/auth.c' || echo '$(srcdir)/'`obfs/auth.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) obfs/$(DEPDIR)/ssr_client-auth.Tpo obfs/$(DEPDIR)/ssr_client-auth.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='obfs/auth.c' object='obfs/ssr_client-auth.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o obfs/ssr_client-auth.o `test -f 'obfs/auth.c' || echo '$(srcdir)/'`obfs/auth.c
+
+obfs/ssr_client-auth.obj: obfs/auth.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT obfs/ssr_client-auth.obj -MD -MP -MF obfs/$(DEPDIR)/ssr_client-auth.Tpo -c -o obfs/ssr_client-auth.obj `if test -f 'obfs/auth.c'; then $(CYGPATH_W) 'obfs/auth.c'; else $(CYGPATH_W) '$(srcdir)/obfs/auth.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) obfs/$(DEPDIR)/ssr_client-auth.Tpo obfs/$(DEPDIR)/ssr_client-auth.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='obfs/auth.c' object='obfs/ssr_client-auth.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o obfs/ssr_client-auth.obj `if test -f 'obfs/auth.c'; then $(CYGPATH_W) 'obfs/auth.c'; else $(CYGPATH_W) '$(srcdir)/obfs/auth.c'; fi`
+
+obfs/ssr_client-auth_chain.o: obfs/auth_chain.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT obfs/ssr_client-auth_chain.o -MD -MP -MF obfs/$(DEPDIR)/ssr_client-auth_chain.Tpo -c -o obfs/ssr_client-auth_chain.o `test -f 'obfs/auth_chain.c' || echo '$(srcdir)/'`obfs/auth_chain.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) obfs/$(DEPDIR)/ssr_client-auth_chain.Tpo obfs/$(DEPDIR)/ssr_client-auth_chain.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='obfs/auth_chain.c' object='obfs/ssr_client-auth_chain.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o obfs/ssr_client-auth_chain.o `test -f 'obfs/auth_chain.c' || echo '$(srcdir)/'`obfs/auth_chain.c
+
+obfs/ssr_client-auth_chain.obj: obfs/auth_chain.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT obfs/ssr_client-auth_chain.obj -MD -MP -MF obfs/$(DEPDIR)/ssr_client-auth_chain.Tpo -c -o obfs/ssr_client-auth_chain.obj `if test -f 'obfs/auth_chain.c'; then $(CYGPATH_W) 'obfs/auth_chain.c'; else $(CYGPATH_W) '$(srcdir)/obfs/auth_chain.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) obfs/$(DEPDIR)/ssr_client-auth_chain.Tpo obfs/$(DEPDIR)/ssr_client-auth_chain.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='obfs/auth_chain.c' object='obfs/ssr_client-auth_chain.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o obfs/ssr_client-auth_chain.obj `if test -f 'obfs/auth_chain.c'; then $(CYGPATH_W) 'obfs/auth_chain.c'; else $(CYGPATH_W) '$(srcdir)/obfs/auth_chain.c'; fi`
+
+obfs/ssr_client-base64.o: obfs/base64.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT obfs/ssr_client-base64.o -MD -MP -MF obfs/$(DEPDIR)/ssr_client-base64.Tpo -c -o obfs/ssr_client-base64.o `test -f 'obfs/base64.c' || echo '$(srcdir)/'`obfs/base64.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) obfs/$(DEPDIR)/ssr_client-base64.Tpo obfs/$(DEPDIR)/ssr_client-base64.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='obfs/base64.c' object='obfs/ssr_client-base64.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o obfs/ssr_client-base64.o `test -f 'obfs/base64.c' || echo '$(srcdir)/'`obfs/base64.c
+
+obfs/ssr_client-base64.obj: obfs/base64.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT obfs/ssr_client-base64.obj -MD -MP -MF obfs/$(DEPDIR)/ssr_client-base64.Tpo -c -o obfs/ssr_client-base64.obj `if test -f 'obfs/base64.c'; then $(CYGPATH_W) 'obfs/base64.c'; else $(CYGPATH_W) '$(srcdir)/obfs/base64.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) obfs/$(DEPDIR)/ssr_client-base64.Tpo obfs/$(DEPDIR)/ssr_client-base64.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='obfs/base64.c' object='obfs/ssr_client-base64.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o obfs/ssr_client-base64.obj `if test -f 'obfs/base64.c'; then $(CYGPATH_W) 'obfs/base64.c'; else $(CYGPATH_W) '$(srcdir)/obfs/base64.c'; fi`
+
+obfs/ssr_client-crc32.o: obfs/crc32.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT obfs/ssr_client-crc32.o -MD -MP -MF obfs/$(DEPDIR)/ssr_client-crc32.Tpo -c -o obfs/ssr_client-crc32.o `test -f 'obfs/crc32.c' || echo '$(srcdir)/'`obfs/crc32.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) obfs/$(DEPDIR)/ssr_client-crc32.Tpo obfs/$(DEPDIR)/ssr_client-crc32.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='obfs/crc32.c' object='obfs/ssr_client-crc32.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o obfs/ssr_client-crc32.o `test -f 'obfs/crc32.c' || echo '$(srcdir)/'`obfs/crc32.c
+
+obfs/ssr_client-crc32.obj: obfs/crc32.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT obfs/ssr_client-crc32.obj -MD -MP -MF obfs/$(DEPDIR)/ssr_client-crc32.Tpo -c -o obfs/ssr_client-crc32.obj `if test -f 'obfs/crc32.c'; then $(CYGPATH_W) 'obfs/crc32.c'; else $(CYGPATH_W) '$(srcdir)/obfs/crc32.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) obfs/$(DEPDIR)/ssr_client-crc32.Tpo obfs/$(DEPDIR)/ssr_client-crc32.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='obfs/crc32.c' object='obfs/ssr_client-crc32.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o obfs/ssr_client-crc32.obj `if test -f 'obfs/crc32.c'; then $(CYGPATH_W) 'obfs/crc32.c'; else $(CYGPATH_W) '$(srcdir)/obfs/crc32.c'; fi`
+
+obfs/ssr_client-http_simple.o: obfs/http_simple.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT obfs/ssr_client-http_simple.o -MD -MP -MF obfs/$(DEPDIR)/ssr_client-http_simple.Tpo -c -o obfs/ssr_client-http_simple.o `test -f 'obfs/http_simple.c' || echo '$(srcdir)/'`obfs/http_simple.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) obfs/$(DEPDIR)/ssr_client-http_simple.Tpo obfs/$(DEPDIR)/ssr_client-http_simple.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='obfs/http_simple.c' object='obfs/ssr_client-http_simple.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o obfs/ssr_client-http_simple.o `test -f 'obfs/http_simple.c' || echo '$(srcdir)/'`obfs/http_simple.c
+
+obfs/ssr_client-http_simple.obj: obfs/http_simple.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT obfs/ssr_client-http_simple.obj -MD -MP -MF obfs/$(DEPDIR)/ssr_client-http_simple.Tpo -c -o obfs/ssr_client-http_simple.obj `if test -f 'obfs/http_simple.c'; then $(CYGPATH_W) 'obfs/http_simple.c'; else $(CYGPATH_W) '$(srcdir)/obfs/http_simple.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) obfs/$(DEPDIR)/ssr_client-http_simple.Tpo obfs/$(DEPDIR)/ssr_client-http_simple.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='obfs/http_simple.c' object='obfs/ssr_client-http_simple.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o obfs/ssr_client-http_simple.obj `if test -f 'obfs/http_simple.c'; then $(CYGPATH_W) 'obfs/http_simple.c'; else $(CYGPATH_W) '$(srcdir)/obfs/http_simple.c'; fi`
+
+obfs/ssr_client-obfs.o: obfs/obfs.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT obfs/ssr_client-obfs.o -MD -MP -MF obfs/$(DEPDIR)/ssr_client-obfs.Tpo -c -o obfs/ssr_client-obfs.o `test -f 'obfs/obfs.c' || echo '$(srcdir)/'`obfs/obfs.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) obfs/$(DEPDIR)/ssr_client-obfs.Tpo obfs/$(DEPDIR)/ssr_client-obfs.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='obfs/obfs.c' object='obfs/ssr_client-obfs.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o obfs/ssr_client-obfs.o `test -f 'obfs/obfs.c' || echo '$(srcdir)/'`obfs/obfs.c
+
+obfs/ssr_client-obfs.obj: obfs/obfs.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT obfs/ssr_client-obfs.obj -MD -MP -MF obfs/$(DEPDIR)/ssr_client-obfs.Tpo -c -o obfs/ssr_client-obfs.obj `if test -f 'obfs/obfs.c'; then $(CYGPATH_W) 'obfs/obfs.c'; else $(CYGPATH_W) '$(srcdir)/obfs/obfs.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) obfs/$(DEPDIR)/ssr_client-obfs.Tpo obfs/$(DEPDIR)/ssr_client-obfs.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='obfs/obfs.c' object='obfs/ssr_client-obfs.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o obfs/ssr_client-obfs.obj `if test -f 'obfs/obfs.c'; then $(CYGPATH_W) 'obfs/obfs.c'; else $(CYGPATH_W) '$(srcdir)/obfs/obfs.c'; fi`
+
+obfs/ssr_client-obfsutil.o: obfs/obfsutil.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT obfs/ssr_client-obfsutil.o -MD -MP -MF obfs/$(DEPDIR)/ssr_client-obfsutil.Tpo -c -o obfs/ssr_client-obfsutil.o `test -f 'obfs/obfsutil.c' || echo '$(srcdir)/'`obfs/obfsutil.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) obfs/$(DEPDIR)/ssr_client-obfsutil.Tpo obfs/$(DEPDIR)/ssr_client-obfsutil.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='obfs/obfsutil.c' object='obfs/ssr_client-obfsutil.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o obfs/ssr_client-obfsutil.o `test -f 'obfs/obfsutil.c' || echo '$(srcdir)/'`obfs/obfsutil.c
+
+obfs/ssr_client-obfsutil.obj: obfs/obfsutil.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT obfs/ssr_client-obfsutil.obj -MD -MP -MF obfs/$(DEPDIR)/ssr_client-obfsutil.Tpo -c -o obfs/ssr_client-obfsutil.obj `if test -f 'obfs/obfsutil.c'; then $(CYGPATH_W) 'obfs/obfsutil.c'; else $(CYGPATH_W) '$(srcdir)/obfs/obfsutil.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) obfs/$(DEPDIR)/ssr_client-obfsutil.Tpo obfs/$(DEPDIR)/ssr_client-obfsutil.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='obfs/obfsutil.c' object='obfs/ssr_client-obfsutil.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o obfs/ssr_client-obfsutil.obj `if test -f 'obfs/obfsutil.c'; then $(CYGPATH_W) 'obfs/obfsutil.c'; else $(CYGPATH_W) '$(srcdir)/obfs/obfsutil.c'; fi`
+
+obfs/ssr_client-tls1.2_ticket.o: obfs/tls1.2_ticket.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT obfs/ssr_client-tls1.2_ticket.o -MD -MP -MF obfs/$(DEPDIR)/ssr_client-tls1.2_ticket.Tpo -c -o obfs/ssr_client-tls1.2_ticket.o `test -f 'obfs/tls1.2_ticket.c' || echo '$(srcdir)/'`obfs/tls1.2_ticket.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) obfs/$(DEPDIR)/ssr_client-tls1.2_ticket.Tpo obfs/$(DEPDIR)/ssr_client-tls1.2_ticket.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='obfs/tls1.2_ticket.c' object='obfs/ssr_client-tls1.2_ticket.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o obfs/ssr_client-tls1.2_ticket.o `test -f 'obfs/tls1.2_ticket.c' || echo '$(srcdir)/'`obfs/tls1.2_ticket.c
+
+obfs/ssr_client-tls1.2_ticket.obj: obfs/tls1.2_ticket.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT obfs/ssr_client-tls1.2_ticket.obj -MD -MP -MF obfs/$(DEPDIR)/ssr_client-tls1.2_ticket.Tpo -c -o obfs/ssr_client-tls1.2_ticket.obj `if test -f 'obfs/tls1.2_ticket.c'; then $(CYGPATH_W) 'obfs/tls1.2_ticket.c'; else $(CYGPATH_W) '$(srcdir)/obfs/tls1.2_ticket.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) obfs/$(DEPDIR)/ssr_client-tls1.2_ticket.Tpo obfs/$(DEPDIR)/ssr_client-tls1.2_ticket.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='obfs/tls1.2_ticket.c' object='obfs/ssr_client-tls1.2_ticket.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o obfs/ssr_client-tls1.2_ticket.obj `if test -f 'obfs/tls1.2_ticket.c'; then $(CYGPATH_W) 'obfs/tls1.2_ticket.c'; else $(CYGPATH_W) '$(srcdir)/obfs/tls1.2_ticket.c'; fi`
+
+obfs/ssr_client-verify.o: obfs/verify.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT obfs/ssr_client-verify.o -MD -MP -MF obfs/$(DEPDIR)/ssr_client-verify.Tpo -c -o obfs/ssr_client-verify.o `test -f 'obfs/verify.c' || echo '$(srcdir)/'`obfs/verify.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) obfs/$(DEPDIR)/ssr_client-verify.Tpo obfs/$(DEPDIR)/ssr_client-verify.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='obfs/verify.c' object='obfs/ssr_client-verify.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o obfs/ssr_client-verify.o `test -f 'obfs/verify.c' || echo '$(srcdir)/'`obfs/verify.c
+
+obfs/ssr_client-verify.obj: obfs/verify.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -MT obfs/ssr_client-verify.obj -MD -MP -MF obfs/$(DEPDIR)/ssr_client-verify.Tpo -c -o obfs/ssr_client-verify.obj `if test -f 'obfs/verify.c'; then $(CYGPATH_W) 'obfs/verify.c'; else $(CYGPATH_W) '$(srcdir)/obfs/verify.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) obfs/$(DEPDIR)/ssr_client-verify.Tpo obfs/$(DEPDIR)/ssr_client-verify.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='obfs/verify.c' object='obfs/ssr_client-verify.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_client_CFLAGS) $(CFLAGS) -c -o obfs/ssr_client-verify.obj `if test -f 'obfs/verify.c'; then $(CYGPATH_W) 'obfs/verify.c'; else $(CYGPATH_W) '$(srcdir)/obfs/verify.c'; fi`
 
 ssr_local-ssrbuffer.o: ssrbuffer.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ssr_local_CFLAGS) $(CFLAGS) -MT ssr_local-ssrbuffer.o -MD -MP -MF $(DEPDIR)/ssr_local-ssrbuffer.Tpo -c -o ssr_local-ssrbuffer.o `test -f 'ssrbuffer.c' || echo '$(srcdir)/'`ssrbuffer.c
@@ -1045,6 +1408,8 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f client/$(DEPDIR)/$(am__dirstamp)
+	-rm -f client/$(am__dirstamp)
 	-rm -f obfs/$(DEPDIR)/$(am__dirstamp)
 	-rm -f obfs/$(am__dirstamp)
 
@@ -1056,7 +1421,7 @@ clean: clean-am
 clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ./$(DEPDIR) obfs/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) client/$(DEPDIR) obfs/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -1102,7 +1467,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ./$(DEPDIR) obfs/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) client/$(DEPDIR) obfs/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

@@ -22,6 +22,7 @@ SS_COMMON_LIBS += $(top_builddir)/libev/libev.la \
 endif
 
 bin_PROGRAMS = ssr-local
+bin_PROGRAMS += ssr-client
 #bin_PROGRAMS += ss-tunnel
 if !BUILD_WINCOMPAT
 #bin_PROGRAMS += ss-server ss-manager
@@ -59,6 +60,18 @@ ssr_local_SOURCES = ssrbuffer.c       \
                     $(obfs_SOURCE)    \
                     $(sni_src)
 
+ssr_client_SOURCES= cache.c             \
+                    encrypt.c           \
+                    ssrbuffer.c         \
+                    ssrutils.c          \
+                    client/listener.c   \
+                    client/main.c       \
+                    client/s5.c         \
+                    client/ssrcipher.c  \
+                    client/tunnel.c     \
+                    client/util.c       \
+                    $(obfs_SOURCE)
+
 #ss_tunnel_SOURCES = utils.c \
 #                    jconf.c \
 #                    json.c \
@@ -84,6 +97,10 @@ ssr_local_SOURCES = ssrbuffer.c       \
 #                     jconf.c \
 #                     json.c \
 #                     manager.c
+
+ssr_client_LDADD = $(SS_COMMON_LIBS) -ljson-c
+ssr_client_CFLAGS = $(AM_CFLAGS) -DMODULE_LOCAL -I$(top_srcdir)/src/obfs
+
 
 ssr_local_LDADD = $(SS_COMMON_LIBS)
 #ss_tunnel_LDADD = $(SS_COMMON_LIBS)
