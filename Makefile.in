@@ -203,7 +203,7 @@ am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.h.in \
 	$(top_srcdir)/auto/ltmain.sh $(top_srcdir)/auto/missing \
 	AUTHORS COPYING INSTALL auto/ar-lib auto/compile \
 	auto/config.guess auto/config.rpath auto/config.sub \
-	auto/depcomp auto/install-sh auto/ltmain.sh auto/missing
+	auto/install-sh auto/ltmain.sh auto/missing
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -289,6 +289,7 @@ LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
+LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
