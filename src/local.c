@@ -140,7 +140,6 @@ static struct remote_t * remote_new_object(uv_loop_t *loop, int timeout);
 static struct local_t * local_new_object(struct listener_t *listener);
 
 static struct listener_t *current_listener;
-static struct cork_dllist all_connections;
 
 
 void do_alloc_uv_buffer(size_t suggested_size, uv_buf_t *buf) {
@@ -905,6 +904,8 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
     struct local_t *local = remote->local;
     struct server_env_t *server_env = local->server_env;
 
+    (void)server_env;
+
     if (local==NULL || local->dying || remote->dying) {
         do_dealloc_uv_buffer((uv_buf_t *)buf0);
         return;
@@ -1150,6 +1151,7 @@ local_destroy(struct local_t *local)
     struct listener_t *listener = local->listener;
     struct server_env_t *server_env = local->server_env;
 
+    (void)listener;
     // LOGI("local object destroyed");
 
     if (local->remote != NULL) {

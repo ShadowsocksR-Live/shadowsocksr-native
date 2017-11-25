@@ -174,6 +174,7 @@ static void do_dealloc_uv_buffer(uv_buf_t *buf) {
     buf->len = 0;
 }
 
+/*
 #ifndef __MINGW32__
 static int
 setnonblocking(int fd)
@@ -186,6 +187,7 @@ setnonblocking(int fd)
 }
 
 #endif
+*/
 
 #if defined(MODULE_REMOTE) && defined(SO_BROADCAST)
 static int
@@ -775,6 +777,7 @@ remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
 {
     struct remote_ctx_t *remote_ctx = cork_container_of(handle, struct remote_ctx_t, io);
     struct server_ctx_t *server_ctx = remote_ctx->server_ctx;
+    struct buffer_t *buf = NULL;
 
     // server has been closed
     if (server_ctx == NULL) {
@@ -803,7 +806,7 @@ remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
         goto CLEAN_UP;
     }
 
-    struct buffer_t *buf = buffer_alloc(max((size_t)buf_size, (size_t)nread));
+    buf = buffer_alloc(max((size_t)buf_size, (size_t)nread));
     memcpy(buf->buffer, buf0->base, (size_t)nread);
     buf->len = (size_t)nread;
 
@@ -917,6 +920,7 @@ remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
     }
 
     size_t remote_src_addr_len = get_sockaddr_len((struct sockaddr *)&remote_ctx->src_addr);
+    (void)remote_src_addr_len;
 
 #ifdef MODULE_REDIR
 
@@ -996,6 +1000,7 @@ server_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
 
     socklen_t src_addr_len = sizeof(src_addr);
     unsigned int offset    = 0;
+    (void)src_addr_len;
 
 #ifdef MODULE_REDIR
     char control_buffer[64] = { 0 };
@@ -1267,6 +1272,7 @@ server_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const stru
 
     const struct sockaddr *remote_addr = server_ctx->remote_addr;
     const int remote_addr_len          = server_ctx->remote_addr_len;
+    (void)remote_addr_len;
 
     if (remote_ctx == NULL) {
         remote_ctx = ss_malloc(sizeof(struct remote_ctx_t));

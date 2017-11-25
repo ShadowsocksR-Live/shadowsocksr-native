@@ -187,7 +187,7 @@ if test x$has_stack_protector = xyes && test x$enable_ssp = xyes; then
    AC_MSG_NOTICE([-fstack-protector enabled in CFLAGS])
 fi
 
-AM_CONDITIONAL(BUILD_REDIRECTOR, test "$os_support" = "linux")
+#AM_CONDITIONAL(BUILD_REDIRECTOR, test "$os_support" = "linux")
 AM_CONDITIONAL(BUILD_WINCOMPAT, test "$os_support" = "mingw")
 
 dnl Checks for header files.
