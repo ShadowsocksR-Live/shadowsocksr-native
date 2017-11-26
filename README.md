@@ -2,22 +2,21 @@
 
 ## Intro
 
-**ShadowsocksR** is a lightweight secured SOCKS5 proxy for embedded devices and low-end boxes
-derived from [Shadowsocks-libev](http://shadowsocks.org).
+**ShadowsocksR** is a lightweight secured SOCKS5 proxy for embedded devices and low-end boxes.
+It's derived from [Shadowsocks-libev](http://shadowsocks.org).
 
-It is a port of [Shadowsocks](https://github.com/shadowsocks/shadowsocks)
-created by [@clowwindy](https://github.com/clowwindy), which is maintained by
-[@madeye](https://github.com/madeye) and [@linusyang](https://github.com/linusyang).
+It is a port of [ShadowsocksR](https://github.com/breakwa11)
+created by [@breakwa11](https://github.com/breakwa11), 
+which is maintained by [@ssrlive](https://github.com/ssrlive).
 
-Current version: 2.5.6 | [Changelog](debian/changelog)
-
-Travis CI: [![Travis CI](https://travis-ci.org/shadowsocks/shadowsocks-libev.svg?branch=master)](https://travis-ci.org/shadowsocks/shadowsocks-libev)
+Current version: 0.1 | [Changelog](debian/changelog)
 
 ## Features
 
-Shadowsocks-libev is written in pure C and only depends on
-[libev](http://software.schmorp.de/pkg/libev.html) and
-[OpenSSL](http://www.openssl.org/) or [mbedTLS](https://tls.mbed.org/) or [PolarSSL](https://polarssl.org/).
+ShadowsocksR-native is written in pure C and only depends on
+[libuv](https://github.com/libuv/libuv) and
+[OpenSSL](https://github.com/openssl/openssl) and 
+[json-c](https://github.com/json-c/json-c).
 
 In normal usage, the memory footprint is about 600KB and the CPU utilization is
 no more than 5% on a low-end router (Buffalo WHR-G300N V2 with a 400MHz MIPS CPU,
