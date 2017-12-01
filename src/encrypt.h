@@ -29,24 +29,12 @@
 
 #ifndef __MINGW32__
 #include <sys/socket.h>
-#else
-
-#ifdef max
-#undef max
-#endif
-
-#ifdef min
-#undef min
-#endif
-
 #endif
 
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
-
-#if defined(USE_CRYPTO_OPENSSL)
 
 #include <openssl/evp.h>
 #include <openssl/sha.h>
@@ -57,59 +45,6 @@ typedef EVP_MD digest_type_t;
 #define MAX_KEY_LENGTH EVP_MAX_KEY_LENGTH
 #define MAX_IV_LENGTH EVP_MAX_IV_LENGTH
 #define MAX_MD_SIZE EVP_MAX_MD_SIZE
-
-#elif defined(USE_CRYPTO_POLARSSL)
-
-#include <polarssl/cipher.h>
-#include <polarssl/md.h>
-typedef cipher_info_t cipher_core_t;
-typedef cipher_context_t cipher_core_ctx_t;
-typedef md_info_t digest_type_t;
-#define MAX_KEY_LENGTH 64
-#define MAX_IV_LENGTH POLARSSL_MAX_IV_LENGTH
-#define MAX_MD_SIZE POLARSSL_MD_MAX_SIZE
-
-#elif defined(USE_CRYPTO_MBEDTLS)
-
-#include <mbedtls/cipher.h>
-#include <mbedtls/md.h>
-typedef mbedtls_cipher_info_t cipher_core_t;
-typedef mbedtls_cipher_context_t cipher_core_ctx_t;
-typedef mbedtls_md_info_t digest_type_t;
-#define MAX_KEY_LENGTH 64
-#define MAX_IV_LENGTH MBEDTLS_MAX_IV_LENGTH
-#define MAX_MD_SIZE MBEDTLS_MD_MAX_SIZE
-
-/* we must have MBEDTLS_CIPHER_MODE_CFB defined */
-#if !defined(MBEDTLS_CIPHER_MODE_CFB)
-#error Cipher Feedback mode a.k.a CFB not supported by your mbed TLS.
-#endif
-
-#endif
-
-#ifdef USE_CRYPTO_APPLECC
-
-#include <CommonCrypto/CommonCrypto.h>
-
-#define kCCAlgorithmInvalid UINT32_MAX
-#define kCCContextValid 0
-#define kCCContextInvalid -1
-
-typedef struct {
-    CCCryptorRef cryptor;
-    int valid;
-    CCOperation encrypt;
-    CCAlgorithm cipher;
-    CCMode mode;
-    CCPadding padding;
-    uint8_t iv[MAX_IV_LENGTH];
-    uint8_t key[MAX_KEY_LENGTH];
-    size_t iv_len;
-    size_t key_len;
-} cipher_cc_t;
-
-#endif
-
 
 enum cipher_index {
     NONE,
@@ -151,9 +86,6 @@ struct cipher_env_t {
 
 struct cipher_ctx_t {
     cipher_core_ctx_t *core_ctx;
-#ifdef USE_CRYPTO_APPLECC
-    cipher_cc_t cc;
-#endif
     uint8_t iv[MAX_IV_LENGTH];
 };
 
@@ -176,7 +108,9 @@ struct cipher_wrapper {
 #define MD5_BYTES 16U
 #define SHA1_BYTES 20U
 
+#undef min
 #define min(a, b) (((a) < (b)) ? (a) : (b))
+#undef max
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 
 struct chunk_t {

@@ -287,7 +287,7 @@ void
 usage()
 {
     printf("\n");
-    printf("shadowsocks-libev %s with %s\n\n", VERSION, USING_CRYPTO);
+    printf("shadowsocks-libev %s with %s\n\n", VERSION, "OPENSSL"); // USING_CRYPTO);
     printf(
         "  maintained by Max Lv <max.c.lv@gmail.com> and Linus Yang <laokongzi@gmail.com>\n\n");
     printf("  usage:\n\n");
