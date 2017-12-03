@@ -29,6 +29,16 @@
 #include "obfsutil.h"
 #include "ssrbuffer.h"
 
+const char * ssr_strerror(enum ssr_err err) {
+#define SSR_ERR_GEN(_, name, errmsg) case (name): return errmsg;
+    switch (err) {
+        SSR_ERR_MAP(SSR_ERR_GEN)
+        default:;  /* Silence ssr_max_errors -Wswitch warning. */
+    }
+#undef SSR_ERR_GEN
+    return "Unknown error.";
+}
+
 void init_obfs(struct server_env_t *env, const char *protocol, const char *obfs);
 
 void object_safe_free(void **obj) {
@@ -45,14 +55,32 @@ void string_safe_assign(char **target, const char *value) {
     }
 }
 
-const char * ssr_strerror(enum ssr_err err) {
-#define SSR_ERR_GEN(_, name, errmsg) case (name): return errmsg;
-    switch (err) {
-        SSR_ERR_MAP(SSR_ERR_GEN)
-    default:;  /* Silence ssr_max_errors -Wswitch warning. */
+struct server_config * config_create(void) {
+    struct server_config *config;
+
+    config = (struct server_config *) calloc(1, sizeof(*config));
+    string_safe_assign(&config->listen_host, DEFAULT_BIND_HOST);
+    string_safe_assign(&config->method, DEFAULT_METHOD);
+    config->listen_port = DEFAULT_BIND_PORT;
+    config->idle_timeout = DEFAULT_IDLE_TIMEOUT;
+
+    return config;
+}
+
+void config_release(struct server_config *cf) {
+    if (cf == NULL) {
+        return;
     }
-#undef SSR_ERR_GEN
-    return "Unknown error.";
+    object_safe_free((void **)&cf->listen_host);
+    object_safe_free((void **)&cf->remote_host);
+    object_safe_free((void **)&cf->password);
+    object_safe_free((void **)&cf->method);
+    object_safe_free((void **)&cf->protocol);
+    object_safe_free((void **)&cf->protocol_param);
+    object_safe_free((void **)&cf->obfs);
+    object_safe_free((void **)&cf->obfs_param);
+
+    object_safe_free((void **)&cf);
 }
 
 struct server_env_t * ssr_cipher_env_create(struct server_config *config) {

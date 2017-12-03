@@ -66,6 +66,16 @@ struct buffer_t;
 void object_safe_free(void **obj);
 void string_safe_assign(char **target, const char *value);
 
+#define SECONDS_PER_MINUTE    1000
+
+#define DEFAULT_BIND_HOST     "127.0.0.1"
+#define DEFAULT_BIND_PORT     1080
+#define DEFAULT_IDLE_TIMEOUT  (60 * SECONDS_PER_MINUTE)
+#define DEFAULT_METHOD        "rc4-md5"
+
+struct server_config * config_create(void);
+void config_release(struct server_config *cf);
+
 struct server_env_t * ssr_cipher_env_create(struct server_config *config);
 void ssr_cipher_env_release(struct server_env_t *env);
 struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, const struct buffer_t *init_pkg);
