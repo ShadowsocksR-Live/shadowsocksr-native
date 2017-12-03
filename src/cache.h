@@ -51,7 +51,7 @@ struct cache {
     void (*free_cb) (void *key, void *element); /**<Callback function to free cache entries */
 };
 
-int cache_create(struct cache **dst, const size_t capacity,
+int cache_create(struct cache **dst, size_t capacity,
                         void (*free_cb)(void *key, void *element));
 int cache_delete(struct cache *cache, int keep_data);
 int cache_clear(struct cache *cache, ev_tstamp age);

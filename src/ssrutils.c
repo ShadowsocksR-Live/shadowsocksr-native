@@ -191,7 +191,7 @@ run_as(const char *user)
                  pwd->pw_name, strerror(errno));
             return 0;
         }
-        if (initgroups(pwd->pw_name, pwd->pw_gid) == -1) {
+        if (initgroups(pwd->pw_name, (int)pwd->pw_gid) == -1) {
             LOGE("Could not change supplementary groups for user '%s'.", pwd->pw_name);
             return 0;
         }
@@ -284,10 +284,10 @@ ss_memory_size(void *ptr)
 }
 
 void
-usage()
+usage(const char *version, const char *encrypt_lib)
 {
     printf("\n");
-    printf("shadowsocks-libev %s with %s\n\n", VERSION, "OPENSSL"); // USING_CRYPTO);
+    printf("shadowsocks-libev %s with %s\n\n", version, encrypt_lib);
     printf(
         "  maintained by Max Lv <max.c.lv@gmail.com> and Linus Yang <laokongzi@gmail.com>\n\n");
     printf("  usage:\n\n");

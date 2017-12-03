@@ -11,6 +11,20 @@
 
 struct cipher_env_t;
 
+struct server_config {
+    char *listen_host;
+    unsigned short listen_port;
+    char *remote_host;
+    unsigned short remote_port;
+    char *password;
+    char *method;
+    char *protocol;
+    char *protocol_param;
+    char *obfs;
+    char *obfs_param;
+    unsigned int idle_timeout; /* Connection idle timeout in ms. */
+};
+
 struct server_env_t {
     struct server_config *config; // __weak_ptr
 
@@ -48,6 +62,9 @@ const char *ssr_strerror(enum ssr_err err);
 
 struct tunnel_cipher_ctx;
 struct buffer_t;
+
+void object_safe_free(void **obj);
+void string_safe_assign(char **target, const char *value);
 
 struct server_env_t * ssr_cipher_env_create(struct server_config *config);
 void ssr_cipher_env_release(struct server_env_t *env);

@@ -21,6 +21,7 @@
  */
 
 #include <stdint.h>
+#include <ctype.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -83,15 +84,15 @@ static const char *supported_ciphers[CIPHER_NUM] = {
     "chacha20-ietf"
 };
 
-static const int supported_ciphers_iv_size[CIPHER_NUM] = {
+static int supported_ciphers_iv_size[CIPHER_NUM] = {
     0 ,  0,  0,  6, 16, 16, 16, 16, 16, 16, 16,  8, 16, 16, 16,  8,  8,  8,  8, 16,  8,  8, 12
 };
 
-static const int supported_ciphers_key_size[CIPHER_NUM] = {
+static int supported_ciphers_key_size[CIPHER_NUM] = {
     16, 16, 16, 16, 16, 16, 24, 32, 16, 24, 32, 16, 16, 24, 32, 16,  8, 16, 16, 16, 32, 32, 32
 };
 
-static const char *
+const char *
 cipher_name_from_index(enum cipher_index index)
 {
     if (index < NONE || index >= CIPHER_NUM) {
@@ -101,19 +102,28 @@ cipher_name_from_index(enum cipher_index index)
     return supported_ciphers[index];
 }
 
+static int strcicmp(char const *a, char const *b) {
+    for (;; a++, b++) {
+        int d = tolower(*a) - tolower(*b);
+        if (d != 0 || !*a) {
+            return d;
+        }
+    }
+}
+
 enum cipher_index
 cipher_index_from_name(const char *name)
 {
     enum cipher_index m = NONE;
     if (name != NULL) {
         for (m = NONE; m < CIPHER_NUM; ++m) {
-            if (strcmp(name, supported_ciphers[m]) == 0) {
+            if (strcicmp(name, supported_ciphers[m]) == 0) {
                 break;
             }
         }
         if (m >= CIPHER_NUM) {
             LOGE("Invalid cipher name: %s, use rc4-md5 instead", name);
-            m = RC4_MD5; // TODO: maybe something is wrong.
+            // m = RC4_MD5;
         }
     }
     return m;
@@ -150,16 +160,16 @@ static void
 merge(uint8_t *left, int llength, uint8_t *right,
       int rlength, uint32_t salt, uint64_t key)
 {
-    uint8_t *ltmp = (uint8_t *)malloc(llength * sizeof(uint8_t));
-    uint8_t *rtmp = (uint8_t *)malloc(rlength * sizeof(uint8_t));
+    uint8_t *ltmp = (uint8_t *)malloc((size_t)llength * sizeof(uint8_t));
+    uint8_t *rtmp = (uint8_t *)malloc((size_t)rlength * sizeof(uint8_t));
 
     uint8_t *ll = ltmp;
     uint8_t *rr = rtmp;
 
     uint8_t *result = left;
 
-    memcpy(ltmp, left, llength * sizeof(uint8_t));
-    memcpy(rtmp, right, rlength * sizeof(uint8_t));
+    memcpy(ltmp, left, (size_t)llength * sizeof(uint8_t));
+    memcpy(rtmp, right, (size_t)rlength * sizeof(uint8_t));
 
     while (llength > 0 && rlength > 0) {
         if (random_compare(ll, rr, salt, key) <= 0) {
@@ -205,7 +215,7 @@ merge_sort(uint8_t array[], int length, uint32_t salt, uint64_t key)
         return;
     }
 
-    middle = length / 2;
+    middle = (uint8_t)length / 2;
 
     llength = length - middle;
 
@@ -268,7 +278,7 @@ bytes_to_key_with_size(const char *pass, size_t len, uint8_t *md, size_t md_size
     enc_md5((const unsigned char *)pass, len, result);
     memcpy(md, result, 16);
     int i = 16;
-    for (; i < md_size; i += 16) {
+    for (; i < (int)md_size; i += 16) {
         memcpy(result + 16, pass, len);
         enc_md5(result, 16 + len, result);
         memcpy(md + i, result, 16);
@@ -319,7 +329,7 @@ bytes_to_key(const struct cipher_wrapper *cipher, const digest_type_t *md,
 int
 rand_bytes(uint8_t *output, int len)
 {
-    randombytes_buf(output, len);
+    randombytes_buf(output, (size_t)len);
     // always return success
     return 0;
 }
@@ -429,7 +439,7 @@ cipher_context_set_iv(struct cipher_env_t *env, struct cipher_ctx_t *ctx, uint8_
         FATAL("Cannot set key and IV");
     }
 #ifdef DEBUG
-    dump("IV", (char *)iv, iv_len);
+    dump("IV", (char *)iv, (int)iv_len);
 #endif
 }
 
@@ -458,7 +468,7 @@ int
 ss_md5_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len)
 {
     uint8_t hash[MD5_BYTES];
-    HMAC(EVP_md5(), auth_key, key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash, NULL);
+    HMAC(EVP_md5(), auth_key, key_len, (unsigned char *)msg, (size_t)msg_len, (unsigned char *)hash, NULL);
     memcpy(auth, hash, MD5_BYTES);
 
     return 0;
@@ -468,7 +478,7 @@ int
 ss_md5_hash_func(char *auth, char *msg, int msg_len)
 {
     uint8_t hash[MD5_BYTES];
-    MD5((uint8_t *)msg, msg_len, (uint8_t *)hash);
+    MD5((unsigned char *)msg, (size_t)msg_len, (unsigned char *)hash);
     memcpy(auth, hash, MD5_BYTES);
 
     return 0;
@@ -478,7 +488,7 @@ int
 ss_sha1_hmac_with_key(char *auth, char *msg, int msg_len, uint8_t *auth_key, int key_len)
 {
     uint8_t hash[SHA1_BYTES];
-    HMAC(EVP_sha1(), auth_key, key_len, (uint8_t *)msg, msg_len, (uint8_t *)hash, NULL);
+    HMAC(EVP_sha1(), auth_key, key_len, (unsigned char *)msg, (size_t)msg_len, (unsigned char *)hash, NULL);
     memcpy(auth, hash, SHA1_BYTES);
 
     return 0;
@@ -488,7 +498,7 @@ int
 ss_sha1_hash_func(char *auth, char *msg, int msg_len)
 {
     uint8_t hash[SHA1_BYTES];
-    SHA1((uint8_t *)msg, msg_len, (uint8_t *)hash);
+    SHA1((unsigned char *)msg, (size_t)msg_len, (unsigned char *)hash);
     memcpy(auth, hash, SHA1_BYTES);
 
     return 0;
@@ -513,7 +523,7 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
         struct cipher_ctx_t cipher_ctx;
         cipher_context_init(env, &cipher_ctx, 1);
 
-        size_t iv_len = env->enc_iv_len;
+        size_t iv_len = (size_t) env->enc_iv_len;
         int err       = 1;
 
         struct buffer_t *cipher = buffer_alloc(max(iv_len + plain->len, capacity));
@@ -543,8 +553,8 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
         }
 
 #ifdef DEBUG
-        dump("PLAIN", plain->buffer, plain->len);
-        dump("CIPHER", cipher->buffer + iv_len, cipher->len);
+        dump("PLAIN", plain->buffer, (int)plain->len);
+        dump("CIPHER", cipher->buffer + iv_len, (int)cipher->len);
 #endif
 
         cipher_context_release(env, &cipher_ctx);
@@ -576,7 +586,7 @@ ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx
         int err       = 1;
         size_t iv_len = 0;
         if (!ctx->init) {
-            iv_len = env->enc_iv_len;
+            iv_len = (size_t)env->enc_iv_len;
         }
 
         struct buffer_t *cipher = buffer_alloc(max(iv_len + plain->len, capacity));
@@ -590,7 +600,7 @@ ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx
         }
 
         if (env->enc_method >= SALSA20) {
-            int padding = ctx->counter % SODIUM_BLOCK_SIZE;
+            size_t padding = (size_t)(ctx->counter % SODIUM_BLOCK_SIZE);
             buffer_realloc(cipher, max(iv_len + (padding + cipher->len) * 2, capacity));
             if (padding) {
                 buffer_realloc(plain, max(plain->len + padding, capacity));
@@ -621,8 +631,8 @@ ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx
         }
 
 #ifdef DEBUG
-        dump("PLAIN", plain->buffer, plain->len);
-        dump("CIPHER", cipher->buffer + iv_len, cipher->len);
+        dump("PLAIN", plain->buffer, (int)plain->len);
+        dump("CIPHER", cipher->buffer + iv_len, (int)cipher->len);
 #endif
 
         buffer_realloc(plain, max(iv_len + cipher->len, capacity));
@@ -647,9 +657,9 @@ ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx
 int
 ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacity)
 {
-    int method = env->enc_method;
+    enum cipher_index method = env->enc_method;
     if (method > TABLE) {
-        size_t iv_len = env->enc_iv_len;
+        size_t iv_len = (size_t)env->enc_iv_len;
         int ret       = 1;
 
         if (cipher->len <= iv_len) {
@@ -684,8 +694,8 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
         }
 
 #ifdef DEBUG
-        dump("PLAIN", plain->buffer, plain->len);
-        dump("CIPHER", cipher->buffer + iv_len, cipher->len - iv_len);
+        dump("PLAIN", plain->buffer, (int)plain->len);
+        dump("CIPHER", cipher->buffer + iv_len, (int)(cipher->len - iv_len));
 #endif
 
         cipher_context_release(env, &cipher_ctx);
@@ -722,7 +732,7 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
 
         if (!ctx->init) {
             uint8_t iv[MAX_IV_LENGTH];
-            iv_len      = env->enc_iv_len;
+            iv_len      = (size_t)env->enc_iv_len;
             plain->len -= iv_len;
 
             memcpy(iv, cipher->buffer, iv_len);
@@ -740,7 +750,7 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
         }
 
         if (env->enc_method >= SALSA20) {
-            int padding = ctx->counter % SODIUM_BLOCK_SIZE;
+            size_t padding = (size_t)(ctx->counter % SODIUM_BLOCK_SIZE);
             buffer_realloc(plain, max((plain->len + padding) * 2, capacity));
 
             if (padding) {
@@ -771,8 +781,8 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
         }
 
 #ifdef DEBUG
-        dump("PLAIN", plain->buffer, plain->len);
-        dump("CIPHER", cipher->buffer + iv_len, cipher->len - iv_len);
+        dump("PLAIN", plain->buffer, (int)plain->len);
+        dump("CIPHER", cipher->buffer + iv_len, (int)(cipher->len - iv_len));
 #endif
 
         buffer_realloc(cipher, max(plain->len, capacity));
@@ -857,14 +867,14 @@ enc_table_init(struct cipher_env_t * env, enum cipher_index method, const char *
         key += OFFSET_ROL(digest, i);
     }
     for (i = 0; i < 256; ++i) {
-        env->enc_table[i] = i;
+        env->enc_table[i] = (uint8_t)i;
     }
     for (i = 1; i < 1024; ++i) {
         merge_sort(env->enc_table, 256, i, key);
     }
     for (i = 0; i < 256; ++i) {
         // gen decrypt table from encrypt table
-        env->dec_table[env->enc_table[i]] = i;
+        env->dec_table[env->enc_table[i]] = (uint8_t)i;
     }
 
     if (method == TABLE) {
@@ -898,7 +908,7 @@ enc_key_init(struct cipher_env_t *env, enum cipher_index method, const char *pas
 
     OpenSSL_add_all_algorithms();
 
-    struct cipher_wrapper cipher = { NULL };
+    struct cipher_wrapper cipher = { NULL, 0, 0 };
 
     // Initialize sodium for random generator
     if (sodium_init() == -1) {
@@ -907,8 +917,8 @@ enc_key_init(struct cipher_env_t *env, enum cipher_index method, const char *pas
 
     if (method == SALSA20 || method == CHACHA20 || method == CHACHA20IETF) {
         cipher.core    = NULL;
-        cipher.key_len = supported_ciphers_key_size[method];
-        cipher.iv_len  = supported_ciphers_iv_size[method];
+        cipher.key_len = (size_t) supported_ciphers_key_size[method];
+        cipher.iv_len  = (size_t) supported_ciphers_iv_size[method];
     } else {
         cipher.core = (cipher_core_t *)get_cipher_of_type(method);
     }

@@ -73,6 +73,9 @@ enum cipher_index {
     CIPHER_NUM,
 };
 
+const char * cipher_name_from_index(enum cipher_index index);
+enum cipher_index cipher_index_from_name(const char *name);
+
 struct cipher_env_t {
     uint8_t *enc_table;
     uint8_t *dec_table;

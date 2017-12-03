@@ -35,6 +35,9 @@
 #include <getopt.h>
 #include <stddef.h>
 
+#include <openssl/opensslv.h>
+#define USING_CRYPTO OPENSSL_VERSION_TEXT
+
 #ifndef __MINGW32__
 #include <errno.h>
 #include <arpa/inet.h>
@@ -251,7 +254,7 @@ launch_or_create(const char *addr, const char *port, uv_loop_t *loop, uv_tcp_t *
          *          in the caller's launchd.plist(5).
          */
         if (port == NULL) {
-            usage();
+            usage(VERSION, USING_CRYPTO);
             exit(EXIT_FAILURE);
         }
         return create_and_bind(addr, port, loop, tcp);
@@ -1368,7 +1371,7 @@ main(int argc, char **argv)
                     mptcp = 1;
                     LOGI("enable multipath TCP");
                 } else if (option_index == 4) {
-                    usage();
+                    usage(VERSION, USING_CRYPTO);
                     exit(EXIT_SUCCESS);
                 } else if (option_index == 5) {
                     hostnames[remote_num] = optarg;
@@ -1443,7 +1446,7 @@ main(int argc, char **argv)
                 verbose = 1;
                 break;
             case 'h':
-                usage();
+                usage(VERSION, USING_CRYPTO);
                 exit(EXIT_SUCCESS);
             case 'A':
                 LOGI("The 'A' argument is deprecate! Ignored.");
@@ -1471,7 +1474,7 @@ main(int argc, char **argv)
     }
 
     if (opterr) {
-        usage();
+        usage(VERSION, USING_CRYPTO);
         exit(EXIT_FAILURE);
     }
 
@@ -1565,7 +1568,7 @@ main(int argc, char **argv)
         local_port == NULL ||
         #endif
         password == NULL) {
-        usage();
+        usage(VERSION, USING_CRYPTO);
         exit(EXIT_FAILURE);
     }
 

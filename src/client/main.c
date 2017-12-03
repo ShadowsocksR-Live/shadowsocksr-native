@@ -25,6 +25,7 @@
 #include <string.h>
 #include <json-c/json.h>
 #include "util.h"
+#include "ssrcipher.h"
 
 #if defined(WIN32)
 #define DEFAULT_CONF_PATH "config.json"
