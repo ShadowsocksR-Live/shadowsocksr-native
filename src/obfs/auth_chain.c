@@ -420,7 +420,7 @@ ssize_t auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata,
                 (char*)recv_buffer + pos, (size_t)data_len, (char *)buffer, &out_len);
 
         if (local->recv_id == 1) {
-            server->tcp_mss = (uint16_t)(((uint16_t)buffer[0]) | (((uint16_t)buffer[1]) << 8));
+            server->tcp_mss = (uint16_t)(buffer[0] | (buffer[1] << 8));
             memmove(buffer, buffer + 2, out_len -= 2);
         }
         memcpy(local->last_server_hash, hash, 16);
