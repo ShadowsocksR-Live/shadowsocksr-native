@@ -817,7 +817,7 @@ auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_i
         }
 
         char encrypt_key_base64[256] = {0};
-        unsigned char *encrypt_key = (unsigned char *) malloc(local->user_key_len * sizeof(unsigned char));
+        unsigned char *encrypt_key = (unsigned char *) malloc((size_t)local->user_key_len * sizeof(unsigned char));
         memcpy(encrypt_key, local->user_key, local->user_key_len);
         base64_encode(encrypt_key, (unsigned int)local->user_key_len, encrypt_key_base64);
         free(encrypt_key);

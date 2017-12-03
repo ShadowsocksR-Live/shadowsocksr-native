@@ -87,13 +87,13 @@ size_t http_simple_client_encode(struct obfs_t *obfs, char **pencryptdata, size_
     int host_num = 0;
     int pos;
     char hostport[128];
-    int head_size = obfs->server.head_len + (int)(xorshift128plus() & 0x3F);
-    int outlength;
+    size_t head_size = (size_t)obfs->server.head_len + (xorshift128plus() & 0x3F);
+    size_t outlength;
     char * out_buffer = (char*)malloc((size_t)(datalength + SSR_BUFF_SIZE));
     char * body_buffer = NULL;
     if ((size_t)head_size > datalength)
-        head_size = (int) datalength;
-    http_simple_encode_head(local, encryptdata, head_size);
+        head_size = datalength;
+    http_simple_encode_head(local, encryptdata, (int)head_size);
     if (obfs->server.param && strlen(obfs->server.param) == 0)
         obfs->server.param = NULL;
     strncpy(hosts, obfs->server.param ? obfs->server.param : obfs->server.host, sizeof hosts);
@@ -165,11 +165,11 @@ size_t http_simple_client_encode(struct obfs_t *obfs, char **pencryptdata, size_
             );
     }
     //LOGI("http header: %s", out_buffer);
-    outlength = (int)strlen(out_buffer);
-    memmove(out_buffer + outlength, encryptdata + head_size, datalength - head_size);
-    outlength += (int)datalength - head_size;
+    outlength = strlen(out_buffer);
+    memmove(out_buffer + outlength, encryptdata + head_size, datalength - (size_t)head_size);
+    outlength += datalength - head_size;
     local->has_sent_header = 1;
-    if ((int)*capacity < outlength) {
+    if (*capacity < outlength) {
         *pencryptdata = (char*)realloc(*pencryptdata, *capacity = (size_t)(outlength * 2));
         encryptdata = *pencryptdata;
     }
@@ -193,12 +193,12 @@ ssize_t http_simple_client_decode(struct obfs_t *obfs, char **pencryptdata, size
     }
     char* data_begin = strstr(encryptdata, "\r\n\r\n");
     if (data_begin) {
-        size_t outlength;
+        ssize_t outlength;
         data_begin += 4;
         local->has_recv_header = 1;
-        outlength = datalength - (data_begin - encryptdata);
-        memmove(encryptdata, data_begin, outlength);
-        return (ssize_t)outlength;
+        outlength = (ssize_t)datalength - (data_begin - encryptdata);
+        memmove(encryptdata, data_begin, (size_t)outlength);
+        return outlength;
     } else {
         return 0;
     }
@@ -229,13 +229,13 @@ size_t http_post_client_encode(struct obfs_t *obfs, char **pencryptdata, size_t 
     int host_num = 0;
     int pos;
     char hostport[128];
-    int head_size = obfs->server.head_len + (int)(xorshift128plus() & 0x3F);
-    int outlength;
+    size_t head_size = (size_t)obfs->server.head_len + (xorshift128plus() & 0x3F);
+    size_t outlength;
     char * out_buffer = (char*)malloc((size_t)(datalength + (SSR_BUFF_SIZE * 2)));
     char * body_buffer = NULL;
     if ((size_t)head_size > datalength)
-        head_size = (int) datalength;
-    http_simple_encode_head(local, encryptdata, head_size);
+        head_size = datalength;
+    http_simple_encode_head(local, encryptdata, (int)head_size);
     if (obfs->server.param && strlen(obfs->server.param) == 0)
         obfs->server.param = NULL;
     strncpy(hosts, obfs->server.param ? obfs->server.param : obfs->server.host, sizeof hosts);
@@ -311,11 +311,11 @@ size_t http_post_client_encode(struct obfs_t *obfs, char **pencryptdata, size_t 
             );
     }
     //LOGI("http header: %s", out_buffer);
-    outlength = (int)strlen(out_buffer);
+    outlength = strlen(out_buffer);
     memmove(out_buffer + outlength, encryptdata + head_size, datalength - head_size);
-    outlength += (int)datalength - head_size;
+    outlength += datalength - head_size;
     local->has_sent_header = 1;
-    if ((int)*capacity < outlength) {
+    if (*capacity < outlength) {
         *pencryptdata = (char*)realloc(*pencryptdata, *capacity = (size_t)(outlength * 2));
         encryptdata = *pencryptdata;
     }

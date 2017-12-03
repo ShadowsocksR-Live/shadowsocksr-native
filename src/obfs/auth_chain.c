@@ -45,8 +45,8 @@ void shift128plus_init_from_bin(shift128plus_ctx* ctx, uint8_t* bin, int bin_siz
 void shift128plus_init_from_bin_datalen(shift128plus_ctx* ctx, uint8_t* bin, int bin_size, int datalen) {
     uint8_t fill_bin[16] = {0};
     memcpy(fill_bin, bin, bin_size);
-    fill_bin[0] = datalen;
-    fill_bin[1] = datalen >> 8;
+    fill_bin[0] = (uint8_t)datalen;
+    fill_bin[1] = (uint8_t)(datalen >> 8);
     if (*(uint8_t*)&g_endian_test == 1) {
         memcpy(ctx, fill_bin, 16);
     } else {
@@ -172,7 +172,7 @@ unsigned int udp_get_rand_len(shift128plus_ctx* random, uint8_t* last_hash) {
 
 unsigned int get_rand_start_pos(int rand_len, shift128plus_ctx* random) {
     if (rand_len > 0) {
-        return shift128plus_next(random) % 8589934609 % rand_len;
+        return (unsigned int)(shift128plus_next(random) % 8589934609 % (uint64_t)rand_len);
     }
     return 0;
 }
@@ -195,10 +195,10 @@ int auth_chain_a_pack_data(char *data, int datalength, char *outdata, auth_chain
         uint8_t * rnd_data = (uint8_t *) malloc(rand_len * sizeof(uint8_t));
         rand_bytes(rnd_data, (int)rand_len);
         if (datalength > 0) {
-            int start_pos = get_rand_start_pos(rand_len, &local->random_client);
+            unsigned int start_pos = get_rand_start_pos((int)rand_len, &local->random_client);
             size_t out_len;
             ss_encrypt_buffer(&local->cipher, local->cipher_client_ctx,
-                    data, datalength, &outdata[2 + start_pos], &out_len);
+                    data, (size_t)datalength, &outdata[2 + start_pos], &out_len);
             memcpy(outdata + 2, rnd_data, start_pos);
             memcpy(outdata + 2 + start_pos + datalength, rnd_data + start_pos, rand_len - start_pos);
         } else {
@@ -285,11 +285,11 @@ int auth_chain_a_pack_auth_data(auth_chain_global_data *global, struct server_in
             }
         }
         for (int i = 0; i < 4; ++i) {
-            uid[i] = local->uid[i] ^ local->last_client_hash[8 + i];
+            uid[i] = (uint8_t)local->uid[i] ^ local->last_client_hash[8 + i];
         }
 
         char encrypt_key_base64[256] = {0};
-        unsigned char *encrypt_key = (unsigned char *) malloc(local->user_key_len * sizeof(unsigned char));
+        unsigned char *encrypt_key = (unsigned char *) malloc((size_t)local->user_key_len * sizeof(unsigned char));
         memcpy(encrypt_key, local->user_key, local->user_key_len);
         base64_encode(encrypt_key, (unsigned int)local->user_key_len, encrypt_key_base64);
         free(encrypt_key);
@@ -313,7 +313,7 @@ int auth_chain_a_pack_auth_data(auth_chain_global_data *global, struct server_in
     }
 
     char password[256] = {0};
-    base64_encode(local->user_key, local->user_key_len, password);
+    base64_encode(local->user_key, (unsigned int)local->user_key_len, password);
     base64_encode(local->last_client_hash, 16, password + strlen(password));
     local->cipher_init_flag = 1;
     enc_init(&local->cipher, password, "rc4");
@@ -384,14 +384,14 @@ ssize_t auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata,
     uint8_t *key = (uint8_t*)malloc((size_t)key_len);
     memcpy(key, local->user_key, local->user_key_len);
 
-    char * out_buffer = (char*)malloc((size_t)local->recv_buffer_size);
-    char * buffer = out_buffer;
+    uint8_t * out_buffer = (uint8_t *)malloc((size_t)local->recv_buffer_size);
+    uint8_t * buffer = out_buffer;
     char error = 0;
     while (local->recv_buffer_size > 4) {
         memintcopy_lt(key + key_len - 4, local->recv_id);
 
         int data_len = (int)(((unsigned)(recv_buffer[1] ^ local->last_server_hash[15]) << 8) + (recv_buffer[0] ^ local->last_server_hash[14]));
-        int rand_len = get_server_rand_len(local, data_len);
+        int rand_len = (int)get_server_rand_len(local, data_len);
         int len = rand_len + data_len;
         if (len >= (SSR_BUFF_SIZE * 2)) {
             local->recv_buffer_size = 0;
@@ -409,7 +409,7 @@ ssize_t auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata,
             break;
         }
 
-        int pos;
+        unsigned int pos;
         if (data_len > 0 && rand_len > 0) {
             pos = 2 + get_rand_start_pos(rand_len, &local->random_server);
         } else {
@@ -417,10 +417,10 @@ ssize_t auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata,
         }
         size_t out_len;
         ss_decrypt_buffer(&local->cipher, local->cipher_server_ctx,
-                (char*)recv_buffer + pos, data_len, buffer, &out_len);
+                (char*)recv_buffer + pos, (size_t)data_len, (char *)buffer, &out_len);
 
         if (local->recv_id == 1) {
-            server->tcp_mss = (uint8_t)buffer[0] | ((uint8_t)buffer[1] << 8);
+            server->tcp_mss = (uint16_t)(((uint16_t)buffer[0]) | (((uint16_t)buffer[1]) << 8));
             memmove(buffer, buffer + 2, out_len -= 2);
         }
         memcpy(local->last_server_hash, hash, 16);
@@ -448,7 +448,7 @@ int auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplaindata, 
     char *plaindata = *pplaindata;
     struct server_info_t *server = (struct server_info_t *)&obfs->server;
     auth_chain_local_data *local = (auth_chain_local_data*)obfs->l_data;
-    char *out_buffer = (char *) malloc((datalength + (SSR_BUFF_SIZE / 2)) * sizeof(char));
+    char *out_buffer = (char *) malloc(((size_t)datalength + (SSR_BUFF_SIZE / 2)) * sizeof(char));
 
     if (local->user_key == NULL) {
         if(obfs->server.param != NULL && obfs->server.param[0] != 0) {
@@ -479,13 +479,13 @@ int auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplaindata, 
     char auth_data[3];
     uint8_t hash[16];
     ss_md5_hmac_with_key((char*)hash, auth_data, 3, server->key, server->key_len);
-    int rand_len = udp_get_rand_len(&local->random_client, hash);
-    uint8_t *rnd_data = (uint8_t *) malloc(rand_len * sizeof(uint8_t));
+    int rand_len = (int) udp_get_rand_len(&local->random_client, hash);
+    uint8_t *rnd_data = (uint8_t *) malloc((size_t)rand_len * sizeof(uint8_t));
     rand_bytes(rnd_data, (int)rand_len);
     int outlength = datalength + rand_len + 8;
 
     char password[256] = {0};
-    base64_encode(local->user_key, local->user_key_len, password);
+    base64_encode(local->user_key, (unsigned int)local->user_key_len, password);
     base64_encode(hash, 16, password + strlen(password));
 
     {
@@ -494,13 +494,13 @@ int auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplaindata, 
         enc_ctx_init(&local->cipher, &ctx, 1);
         size_t out_len;
         ss_encrypt_buffer(&local->cipher, &ctx,
-                plaindata, datalength, out_buffer, &out_len);
+                plaindata, (size_t)datalength, out_buffer, &out_len);
         enc_ctx_release(&local->cipher, &ctx);
         enc_release(&local->cipher);
     }
     uint8_t uid[4];
     for (int i = 0; i < 4; ++i) {
-        uid[i] = local->uid[i] ^ hash[i];
+        uid[i] = ((uint8_t)local->uid[i]) ^ hash[i];
     }
     memmove(out_buffer + datalength, rnd_data, rand_len);
     memmove(out_buffer + outlength - 8, auth_data, 3);
@@ -537,11 +537,11 @@ int auth_chain_a_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaindata,
     }
     ss_md5_hmac_with_key((char*)hash, plaindata + datalength - 8, 7, server->key, server->key_len);
 
-    int rand_len = udp_get_rand_len(&local->random_server, hash);
+    int rand_len = (int)udp_get_rand_len(&local->random_server, hash);
     int outlength = datalength - rand_len - 8;
 
     char password[256] = {0};
-    base64_encode(local->user_key, local->user_key_len, password);
+    base64_encode(local->user_key, (unsigned int)local->user_key_len, password);
     base64_encode(hash, 16, password + strlen(password));
 
     {
@@ -550,7 +550,7 @@ int auth_chain_a_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaindata,
         enc_ctx_init(&local->cipher, &ctx, 0);
         size_t out_len;
         ss_decrypt_buffer(&local->cipher, &ctx,
-                plaindata, outlength, plaindata, &out_len);
+                plaindata, (size_t)outlength, plaindata, &out_len);
         enc_ctx_release(&local->cipher, &ctx);
         enc_release(&local->cipher);
     }

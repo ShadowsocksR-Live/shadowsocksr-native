@@ -17,7 +17,7 @@ void verify_simple_local_data_init(verify_simple_local_data* local) {
     local->recv_buffer_size = 0;
 }
 
-struct obfs_t * verify_simple_new_obfs() {
+struct obfs_t * verify_simple_new_obfs(void) {
     struct obfs_t * obfs = new_obfs();
     obfs->l_data = malloc(sizeof(verify_simple_local_data));
     verify_simple_local_data_init((verify_simple_local_data*)obfs->l_data);
