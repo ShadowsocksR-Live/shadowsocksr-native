@@ -10,3 +10,6 @@
 [submodule "depends/pthreads4w"]
 	path = depends/pthreads4w
 	url = https://github.com/ShadowsocksR-Live/pthreads4w.git
+[submodule "depends/openssl"]
+	path = depends/openssl
+	url = https://github.com/ShadowsocksR-Live/openssl.git
