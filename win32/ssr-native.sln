@@ -15,11 +15,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libsodium", "libsodium\libs
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{70412B63-AABC-4DE7-AF99-E5B84BC086BA}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libcrypto", "..\depends\openssl4w\win32\libcrypto\libcrypto.vcxproj", "{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libuv", "libuv\libuv.vcxproj", "{44EA013F-AD0F-4D53-8E06-0B4EF26F4B65}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "json-c", "..\depends\json-c\win32\json-c.vcxproj", "{F1F4BA6A-0368-4F34-95BB-C29A2244A772}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libcrypto", "..\depends\openssl\win32\libcrypto\libcrypto.vcxproj", "{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,14 +45,6 @@ Global
 		{26D5A4F7-2AC2-4FA2-A9F8-F25120B10BB5}.Release|x64.Build.0 = Release|x64
 		{26D5A4F7-2AC2-4FA2-A9F8-F25120B10BB5}.Release|x86.ActiveCfg = Release|Win32
 		{26D5A4F7-2AC2-4FA2-A9F8-F25120B10BB5}.Release|x86.Build.0 = Release|Win32
-		{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}.Debug|x64.ActiveCfg = Debug|x64
-		{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}.Debug|x64.Build.0 = Debug|x64
-		{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}.Debug|x86.ActiveCfg = Debug|Win32
-		{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}.Debug|x86.Build.0 = Debug|Win32
-		{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}.Release|x64.ActiveCfg = Release|x64
-		{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}.Release|x64.Build.0 = Release|x64
-		{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}.Release|x86.ActiveCfg = Release|Win32
-		{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}.Release|x86.Build.0 = Release|Win32
 		{44EA013F-AD0F-4D53-8E06-0B4EF26F4B65}.Debug|x64.ActiveCfg = Debug|x64
 		{44EA013F-AD0F-4D53-8E06-0B4EF26F4B65}.Debug|x64.Build.0 = Debug|x64
 		{44EA013F-AD0F-4D53-8E06-0B4EF26F4B65}.Debug|x86.ActiveCfg = Debug|Win32
@@ -69,6 +61,14 @@ Global
 		{F1F4BA6A-0368-4F34-95BB-C29A2244A772}.Release|x64.Build.0 = Release|x64
 		{F1F4BA6A-0368-4F34-95BB-C29A2244A772}.Release|x86.ActiveCfg = Release|Win32
 		{F1F4BA6A-0368-4F34-95BB-C29A2244A772}.Release|x86.Build.0 = Release|Win32
+		{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}.Debug|x64.ActiveCfg = Debug|x64
+		{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}.Debug|x64.Build.0 = Debug|x64
+		{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}.Debug|x86.ActiveCfg = Debug|Win32
+		{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}.Debug|x86.Build.0 = Debug|Win32
+		{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}.Release|x64.ActiveCfg = Release|x64
+		{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}.Release|x64.Build.0 = Release|x64
+		{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}.Release|x86.ActiveCfg = Release|Win32
+		{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
