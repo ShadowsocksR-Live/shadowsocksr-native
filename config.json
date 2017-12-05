@@ -1,6 +1,4 @@
 {
-    "local_address": "127.0.0.1",
-    "local_port": 1080,
     "server": "your_server_ip",
     "server_port": 443,
     "method": "aes-128-ctr",
@@ -9,5 +7,7 @@
     "protocol_param": "",
     "obfs": "tls1.2_ticket_auth",
     "obfs_param": "",
+    "local_address": "127.0.0.1",
+    "local_port": 1080,
     "timeout": 300
 }
