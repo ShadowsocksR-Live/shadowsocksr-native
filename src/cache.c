@@ -53,7 +53,7 @@ ev_tstamp ev_time(void);
  *  @return EINVAL if dst is NULL, ENOMEM if malloc fails, 0 otherwise
  */
 int
-cache_create(struct cache **dst, const size_t capacity,
+cache_create(struct cache **dst, size_t capacity,
              void (*free_cb)(void *key, void *element))
 {
     struct cache *newObj = NULL;

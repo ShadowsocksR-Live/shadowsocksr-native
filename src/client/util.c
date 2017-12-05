@@ -43,20 +43,6 @@ const char *_getprogname(void) {
     return name ? name + 1 : progname;
 }
 
-void string_safe_assign(char **target, const char *value) {
-    object_safe_free((void **)target);
-    if (target && value) {
-        *target = strdup(value);
-    }
-}
-
-void object_safe_free(void **obj) {
-    if (obj && *obj) {
-        free(*obj);
-        *obj = NULL;
-    }
-}
-
 static void pr_do(FILE *stream, const char *label, const char *fmt, va_list ap);
 
 void pr_info(const char *fmt, ...) {

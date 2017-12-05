@@ -197,7 +197,7 @@ char *ss_itoa(int i);
 int ss_isnumeric(const char *s);
 int run_as(const char *user);
 void FATAL(const char *msg);
-void usage(void);
+void usage(const char *version, const char *encrypt_lib);
 void daemonize(const char *path);
 char *ss_strndup(const char *s, size_t n);
 char *ss_strdup(const char *s);

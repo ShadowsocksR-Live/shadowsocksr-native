@@ -25,6 +25,7 @@
 #include <string.h>
 #include <json-c/json.h>
 #include "util.h"
+#include "ssrcipher.h"
 
 #if defined(WIN32)
 #define DEFAULT_CONF_PATH "config.json"
@@ -36,15 +37,6 @@
 #include <unistd.h>  /* getopt */
 #endif
 
-#define SECONDS_PER_MINUTE    1000
-
-#define DEFAULT_BIND_HOST     "127.0.0.1"
-#define DEFAULT_BIND_PORT     1080
-#define DEFAULT_IDLE_TIMEOUT  (60 * SECONDS_PER_MINUTE)
-#define DEFAULT_METHOD        "rc4-md5"
-
-static struct server_config * config_create(void);
-static void config_release(struct server_config *cf);
 static const char * parse_opts(int argc, char **argv);
 static bool parse_config_file(const char *file, struct server_config *cf);
 static void usage(void);
@@ -86,34 +78,6 @@ int main(int argc, char **argv) {
     }
 
     return 0;
-}
-
-static struct server_config * config_create(void) {
-    struct server_config *config;
-
-    config = (struct server_config *) calloc(1, sizeof(*config));
-    string_safe_assign(&config->listen_host, DEFAULT_BIND_HOST);
-    string_safe_assign(&config->method, DEFAULT_METHOD);
-    config->listen_port = DEFAULT_BIND_PORT;
-    config->idle_timeout = DEFAULT_IDLE_TIMEOUT;
-
-    return config;
-}
-
-static void config_release(struct server_config *cf) {
-    if (cf == NULL) {
-        return;
-    }
-    object_safe_free((void **)&cf->listen_host);
-    object_safe_free((void **)&cf->remote_host);
-    object_safe_free((void **)&cf->password);
-    object_safe_free((void **)&cf->method);
-    object_safe_free((void **)&cf->protocol);
-    object_safe_free((void **)&cf->protocol_param);
-    object_safe_free((void **)&cf->obfs);
-    object_safe_free((void **)&cf->obfs_param);
-
-    object_safe_free((void **)&cf);
 }
 
 static const char * parse_opts(int argc, char **argv) {

@@ -23,23 +23,64 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "ssrcipher.h"
-#include "defs.h"
 #include "encrypt.h"
-#include "util.h"
 #include "obfsutil.h"
 #include "ssrbuffer.h"
-
-void init_obfs(struct server_env_t *env, const char *protocol, const char *obfs);
 
 const char * ssr_strerror(enum ssr_err err) {
 #define SSR_ERR_GEN(_, name, errmsg) case (name): return errmsg;
     switch (err) {
         SSR_ERR_MAP(SSR_ERR_GEN)
-    default:;  /* Silence ssr_max_errors -Wswitch warning. */
+        default:;  /* Silence ssr_max_errors -Wswitch warning. */
     }
 #undef SSR_ERR_GEN
     return "Unknown error.";
+}
+
+void init_obfs(struct server_env_t *env, const char *protocol, const char *obfs);
+
+void object_safe_free(void **obj) {
+    if (obj && *obj) {
+        free(*obj);
+        *obj = NULL;
+    }
+}
+
+void string_safe_assign(char **target, const char *value) {
+    object_safe_free((void **)target);
+    if (target && value) {
+        *target = strdup(value);
+    }
+}
+
+struct server_config * config_create(void) {
+    struct server_config *config;
+
+    config = (struct server_config *) calloc(1, sizeof(*config));
+    string_safe_assign(&config->listen_host, DEFAULT_BIND_HOST);
+    string_safe_assign(&config->method, DEFAULT_METHOD);
+    config->listen_port = DEFAULT_BIND_PORT;
+    config->idle_timeout = DEFAULT_IDLE_TIMEOUT;
+
+    return config;
+}
+
+void config_release(struct server_config *cf) {
+    if (cf == NULL) {
+        return;
+    }
+    object_safe_free((void **)&cf->listen_host);
+    object_safe_free((void **)&cf->remote_host);
+    object_safe_free((void **)&cf->password);
+    object_safe_free((void **)&cf->method);
+    object_safe_free((void **)&cf->protocol);
+    object_safe_free((void **)&cf->protocol_param);
+    object_safe_free((void **)&cf->obfs);
+    object_safe_free((void **)&cf->obfs_param);
+
+    object_safe_free((void **)&cf);
 }
 
 struct server_env_t * ssr_cipher_env_create(struct server_config *config) {
@@ -102,7 +143,7 @@ struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, const 
     }
     // SSR beg
 
-    struct server_info_t server_info = { 0 };
+    struct server_info_t server_info = { {0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
     strcpy(server_info.host, config->remote_host);
     server_info.port = config->remote_port;
@@ -110,9 +151,9 @@ struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, const 
     server_info.g_data = env->obfs_global;
     server_info.head_len = get_head_size(init_pkg->buffer, (int)init_pkg->len, 30);
     server_info.iv = tc->e_ctx->cipher_ctx.iv;
-    server_info.iv_len = enc_get_iv_len(env->cipher);
+    server_info.iv_len = (uint16_t) enc_get_iv_len(env->cipher);
     server_info.key = enc_get_key(env->cipher);
-    server_info.key_len = enc_get_key_len(env->cipher);
+    server_info.key_len = (uint16_t) enc_get_key_len(env->cipher);
     server_info.tcp_mss = 1452;
     server_info.buffer_size = SSR_BUFF_SIZE;
     server_info.cipher_env = env->cipher;
@@ -129,7 +170,7 @@ struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, const 
         tc->protocol = env->protocol_plugin->new_obfs();
         int p_len = env->protocol_plugin->get_overhead(tc->protocol);
         int o_len = (env->obfs_plugin ? env->obfs_plugin->get_overhead(tc->obfs) : 0);
-        server_info.overhead = p_len + o_len;
+        server_info.overhead = (uint16_t)(p_len + o_len);
         env->protocol_plugin->set_server_info(tc->protocol, &server_info);
     }
     // SSR end
@@ -218,7 +259,7 @@ enum ssr_err tunnel_decrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf, 
     }
     struct obfs_manager *protocol_plugin = env->protocol_plugin;
     if (protocol_plugin && protocol_plugin->client_post_decrypt) {
-        ssize_t len = (size_t)protocol_plugin->client_post_decrypt(
+        ssize_t len = protocol_plugin->client_post_decrypt(
             tc->protocol, &buf->buffer, (int)buf->len, &buf->capacity);
         if (len < 0) {
             return ssr_client_post_decrypt;

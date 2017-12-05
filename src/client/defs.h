@@ -48,19 +48,7 @@ typedef size_t uv_buf_len_t;
 
 #include "obfs.h"
 
-struct server_config {
-    char *listen_host;
-    unsigned short listen_port;
-    char *remote_host;
-    unsigned short remote_port;
-    char *password;
-    char *method;
-    char *protocol;
-    char *protocol_param;
-    char *obfs;
-    char *obfs_param;
-    unsigned int idle_timeout; /* Connection idle timeout in ms. */
-};
+struct server_config;
 
 enum socket_state {
     socket_stop,  /* Stopped. */
