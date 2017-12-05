@@ -10,3 +10,6 @@
 [submodule "depends/json-c"]
 	path = depends/json-c
 	url = https://github.com/ShadowsocksR-Live/json-c.git
+[submodule "depends/pthreads4w"]
+	path = depends/pthreads4w
+	url = https://github.com/ShadowsocksR-Live/pthreads4w.git
