@@ -54,29 +54,11 @@ refer to the [Wiki page](https://github.com/shadowsocks/shadowsocks/wiki/Feature
 For a complete list of avaliable configure-time option,
 try `configure --help`.
 
-#### Using alternative crypto library
+#### Using one crypto library only
 
-There are three crypto libraries available:
+There are one crypto libraries available:
 
 - OpenSSL (**default**)
-- mbedTLS
-- PolarSSL (Deprecated)
-
-##### mbedTLS
-To build against mbedTLS, specify `--with-crypto-library=mbedtls`
-and `--with-mbedtls=/path/to/mbedtls` when running `./configure`.
-
-Windows users will need extra work when compiling mbedTLS library,
-see [this issue](https://github.com/shadowsocks/shadowsocks-libev/issues/422) for detail info.
-
-##### PolarSSL (Deprecated)
-
-To build against PolarSSL, specify `--with-crypto-library=polarssl`
-and `--with-polarssl=/path/to/polarssl` when running `./configure`.
-
-* PolarSSL __1.2.5 or newer__ is required. Currently, PolarSSL does __NOT__ support
-CAST5-CFB, DES-CFB, IDEA-CFB, RC2-CFB and SEED-CFB.
-* RC4 is only support by PolarSSL __1.3.0 or above__.
 
 #### Using shared library from system
 
@@ -284,31 +266,17 @@ brew install shadowsocks-libev
 
 ### Windows
 
-For Windows, use the following commands -- don't laugh at me, I know `--recursive`, I'm a Chinese living with `GFW` -- then open win32/ssr-native.sln with Visual Studio 2015. Enjoy it!
+For Windows, chekout the project using the following commands then open win32/ssr-native.sln with Visual Studio 2015. Enjoy it!
 
 ```bash
+git clone https://github.com/ShadowsocksR-Live/shadowsocksr-native.git 
 git submodule update --init
-
-cd depends/json-c4w
-git submodule update --init
-cd ../..
-
-cd depends/openssl4w
-git submodule update --init
-cd ../..
-
-cd depends/pthreads4w
-git submodule update --init
-cd ../..
 ```
-
 Another way, use either MinGW (msys) or Cygwin to build.
 At the moment, only `ssr-client` is supported to build against MinGW (msys).
 
-If you are using MinGW (msys), please download OpenSSL or PolarSSL source tarball
+If you are using MinGW (msys), please download OpenSSL source tarball
 to the home directory of msys, and build it like this (may take a few minutes):
-
-#### OpenSSL
 
 ```bash
 tar zxf openssl-1.0.1e.tar.gz
@@ -317,29 +285,11 @@ cd openssl-1.0.1e
 make && make install
 ```
 
-#### PolarSSL
-
-```bash
-tar zxf polarssl-1.3.2-gpl.tgz
-cd polarssl-1.3.2
-make lib WINDOWS=1
-make install DESTDIR="$HOME/prebuilt"
-```
-
 Then, build the binary using the commands below, and all `.exe` files
 will be built at `$HOME/ss/bin`:
 
-#### OpenSSL
-
 ```bash
 ./configure --prefix="$HOME/ss" --with-openssl="$HOME/prebuilt"
-make && make install
-```
-
-#### PolarSSL
-
-```bash
-./configure --prefix="$HOME/ss" --with-crypto-library=polarssl --with-polarssl=$HOME/prebuilt
 make && make install
 ```
 
@@ -414,23 +364,24 @@ notes:
     Linux platform with iptables.
 
 ```
+
 ## Sample configure file
 config.json
 ```json
 {
-    "local_address": "0.0.0.0",
-    "local_port": 1080,
-    "method": "aes-128-ctr",
-    "obfs": "tls1.2_ticket_auth",
-    "obfs_param": "",
-    "password": "password",
-    "protocol": "auth_aes128_md5",
     "server": "123.45.67.89",
     "server_port": 443,
+    "method": "aes-128-ctr",
+    "password": "password",
+    "protocol": "auth_aes128_md5",
+    "protocol_param": "",
+    "obfs": "tls1.2_ticket_auth",
+    "obfs_param": "",
+    "local_address": "0.0.0.0",
+    "local_port": 1080,
     "timeout": 300
 }
 ```
-
 
 ## Advanced usage
 
