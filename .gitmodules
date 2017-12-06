@@ -13,3 +13,6 @@
 [submodule "depends/openssl"]
 	path = depends/openssl
 	url = https://github.com/ShadowsocksR-Live/openssl.git
+[submodule "depends/libsodium"]
+	path = depends/libsodium
+	url = https://github.com/ShadowsocksR-Live/libsodium.git
