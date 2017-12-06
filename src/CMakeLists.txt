@@ -105,7 +105,7 @@ include_directories(${libcork_include_dirs})
 include_directories(${libipset_include_dirs})
 include_directories(${libudns_include_dirs})
 include_directories(${libsodium_include_dirs})
-
+include_directories(${libjson_c_include_dirs})
 
 if (WIN32)
     list ( APPEND SOURCE_FILES_LOCAL win32.c )
@@ -136,7 +136,7 @@ set_target_properties(ssr-local PROPERTIES COMPILE_DEFINITIONS MODULE_LOCAL)
 #set_target_properties(libssr-native PROPERTIES SUFFIX ".la")
 
 set (ss_lib_common
-        libjson-c.a
+        json-c-static
         libuv.a
         m
         libcork)
