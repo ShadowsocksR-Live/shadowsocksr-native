@@ -25,7 +25,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pcre", "..\depends\pcre4w\w
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pthreads", "..\depends\pthreads4w\win32\pthreads.vcxproj", "{2E31B77F-BB1B-4294-8178-FCC0CEDD6D34}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libuv", "libuv\libuv.vcxproj", "{44EA013F-AD0F-4D53-8E06-0B4EF26F4B65}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libuv", "..\depends\libuv\win32\libuv.vcxproj", "{44EA013F-AD0F-4D53-8E06-0B4EF26F4B65}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ssr-old", "ssr-client\ssr-old.vcxproj", "{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}"
 	ProjectSection(ProjectDependencies) = postProject
