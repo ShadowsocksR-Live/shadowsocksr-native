@@ -13,3 +13,6 @@
 [submodule "depends/libsodium"]
 	path = depends/libsodium
 	url = https://github.com/ShadowsocksR-Live/libsodium.git
+[submodule "depends/libuv"]
+	path = depends/libuv
+	url = https://github.com/ShadowsocksR-Live/libuv.git

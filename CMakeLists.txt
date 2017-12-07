@@ -28,10 +28,8 @@ configure_file ( ${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINA
 add_subdirectory(libsodium)
 add_subdirectory(libcork)
 add_subdirectory(libipset)
-add_subdirectory(libev)
-
+add_subdirectory(depends/libuv)
 add_subdirectory(depends/json-c)
-set(libjson_c_include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/depends)
 
 include_directories( ${CMAKE_CURRENT_BINARY_DIR} )
 

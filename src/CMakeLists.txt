@@ -100,12 +100,12 @@ include_directories(obfs)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${libev_include_dirs})
+include_directories(${LIBUVDIR}/include)
 include_directories(${libcork_include_dirs})
 include_directories(${libipset_include_dirs})
 include_directories(${libudns_include_dirs})
 include_directories(${libsodium_include_dirs})
-include_directories(${libjson_c_include_dirs})
+include_directories(${LIB_JSON_C_DIR}/..)
 
 if (WIN32)
     list ( APPEND SOURCE_FILES_LOCAL win32.c )
@@ -137,7 +137,7 @@ set_target_properties(ssr-local PROPERTIES COMPILE_DEFINITIONS MODULE_LOCAL)
 
 set (ss_lib_common
         json-c-static
-        libuv.a
+        uv
         m
         libcork)
 
