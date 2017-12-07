@@ -25,7 +25,7 @@ include ( configure )
 
 configure_file ( ${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h )
 
-add_subdirectory(libsodium)
+add_subdirectory(depends/libsodium)
 add_subdirectory(libcork)
 add_subdirectory(libipset)
 add_subdirectory(depends/libuv)
