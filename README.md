@@ -2,7 +2,7 @@
 
 ## Intro
 
-**ShadowsocksR** is a lightweight secured SOCKS5 proxy for embedded devices and low-end boxes.
+**ShadowsocksR-native** is a lightweight secured SOCKS5 proxy for embedded devices and low-end boxes.
 It's derived from [Shadowsocks-libev](http://shadowsocks.org).
 
 It is a port of [ShadowsocksR](https://github.com/breakwa11)
@@ -16,6 +16,7 @@ Current version: 0.1 | [Changelog](debian/changelog)
 ShadowsocksR-native is written in pure C and only depends on
 [libuv](https://github.com/libuv/libuv) and
 [OpenSSL](https://github.com/openssl/openssl) and 
+[libsodium](https://github.com/jedisct1/libsodium) and
 [json-c](https://github.com/json-c/json-c).
 
 In normal usage, the memory footprint is about 600KB and the CPU utilization is
