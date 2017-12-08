@@ -217,7 +217,15 @@ e.g. Ubuntu, Debian or Linux Mint, you can build the binary like this:
 
 ```bash
 # Debian / Ubuntu
-sudo apt-get install --no-install-recommends build-essential autoconf libtool libssl-dev libpcre3-dev asciidoc xmlto libuv1
+sudo apt-get install --no-install-recommends build-essential autoconf libtool libssl-dev libpcre3-dev asciidoc xmlto
+sudo apt install git cmake automake
+
+git clone https://github.com/ShadowsocksR-Live/shadowsocksr-native.git
+cd shadowsocksr-native
+git submodule update --init
+
+cmake CMakeLists.txt && make
+
 # CentOS / Fedora / RHEL
 sudo yum install gcc autoconf libtool automake make zlib-devel openssl-devel asciidoc xmlto libuv1
 ./configure && make
