@@ -14,8 +14,8 @@ Current version: 0.1 | [Changelog](debian/changelog)
 ## Features
 
 ShadowsocksR-native is written in pure C and only depends on
-[libuv](https://github.com/libuv/libuv) and
-[OpenSSL](https://github.com/openssl/openssl) and 
+[libuv](https://github.com/libuv/libuv) ,
+[OpenSSL](https://github.com/openssl/openssl) , 
 [libsodium](https://github.com/jedisct1/libsodium) and
 [json-c](https://github.com/json-c/json-c).
 
