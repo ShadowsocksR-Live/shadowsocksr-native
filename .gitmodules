@@ -1,6 +1,3 @@
-[submodule "depends/pcre4w"]
-	path = depends/pcre4w
-	url = https://github.com/ShadowsocksR-Live/pcre4w.git
 [submodule "depends/json-c"]
 	path = depends/json-c
 	url = https://github.com/ShadowsocksR-Live/json-c.git
