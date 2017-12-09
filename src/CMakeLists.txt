@@ -106,6 +106,7 @@ include_directories(${libipset_include_dirs})
 include_directories(${libudns_include_dirs})
 include_directories(${libsodium_include_dirs})
 include_directories(${LIB_JSON_C_DIR}/..)
+include_directories(${PCRE_INCLUDE_DIR})
 
 if (WIN32)
     list ( APPEND SOURCE_FILES_LOCAL win32.c )
@@ -145,7 +146,7 @@ set (ss_lib_net
         ${ss_lib_common}
         ${LIBCRYPTO}
         libipset
-        ${PCRE_LIBRARIES}
+        pcre #${PCRE_LIBRARIES}
         udns
         sodium
         )

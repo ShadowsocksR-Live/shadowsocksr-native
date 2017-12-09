@@ -16,3 +16,6 @@
 [submodule "depends/pcre"]
 	path = depends/pcre
 	url = https://github.com/ShadowsocksR-Live/pcre.git
+[submodule "depends/zlib"]
+	path = depends/zlib
+	url = https://github.com/ShadowsocksR-Live/zlib.git

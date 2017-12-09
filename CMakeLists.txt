@@ -16,14 +16,16 @@ project(${PROJECT_NAME})
 set(VERSION 2.5.6)
 
 
-set(with_crypto_library "openssl" CACHE STRING "build with the given crypto library, TYPE=openssl|polarssl|mbedtls default=openssl")
+set(with_crypto_library "openssl" CACHE STRING "build with the given crypto library, TYPE=openssl")
 
-
+add_subdirectory(depends/zlib/staticbuild)
+add_subdirectory(depends/pcre/staticbuild)
 
 include ( cmake/dist.cmake )
 include ( configure )
 
 configure_file ( ${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h )
+ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
 add_subdirectory(depends/libsodium)
 add_subdirectory(libcork)

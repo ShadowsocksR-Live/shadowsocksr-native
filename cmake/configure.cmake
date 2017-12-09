@@ -1,17 +1,16 @@
 # Build args
 
 if (${with_crypto_library} STREQUAL "openssl")
-    find_package(ZLIB REQUIRED)
     find_package(OpenSSL REQUIRED)
     set(USE_CRYPTO_OPENSSL 1)
-    set(LIBCRYPTO
-            ${ZLIB_LIBRARIES}
-            ${OPENSSL_CRYPTO_LIBRARY})
-
-    include_directories(${ZLIB_INCLUDE_DIR})
+    set(LIBCRYPTO ${OPENSSL_CRYPTO_LIBRARY})
     include_directories(${OPENSSL_INCLUDE_DIR})
+    list ( APPEND CMAKE_REQUIRED_INCLUDES ${OPENSSL_INCLUDE_DIR})
 
-    list ( APPEND CMAKE_REQUIRED_INCLUDES ${ZLIB_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR})
+#    find_package(ZLIB REQUIRED)
+#    list(APPEND LIBCRYPTO ${ZLIB_LIBRARIES})
+#    include_directories(${ZLIB_INCLUDE_DIR})
+#    list(APPEND CMAKE_REQUIRED_INCLUDES ${ZLIB_INCLUDE_DIR})
 
 elseif(${with_crypto_library} STREQUAL "polarssl")
     find_package(polarssl REQUIRED)
