@@ -13,3 +13,6 @@
 [submodule "depends/libuv"]
 	path = depends/libuv
 	url = https://github.com/ShadowsocksR-Live/libuv.git
+[submodule "depends/pcre"]
+	path = depends/pcre
+	url = https://github.com/ShadowsocksR-Live/pcre.git
