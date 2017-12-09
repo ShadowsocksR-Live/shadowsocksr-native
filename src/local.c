@@ -123,8 +123,6 @@ static int nofile = 0;
 #endif
 #endif
 
-static const char *VERSION = "VERSION";
-
 static void local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0);
 static void local_send_cb(uv_write_t* req, int status);
 static void local_send_data(struct local_t *local, char *data, unsigned int size);
