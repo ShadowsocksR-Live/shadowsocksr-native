@@ -137,7 +137,7 @@ set_target_properties(ssr-local PROPERTIES COMPILE_DEFINITIONS MODULE_LOCAL)
 #set_target_properties(libssr-native PROPERTIES SUFFIX ".la")
 
 set (ss_lib_common
-        json-c-static
+        json-c
         uv
         m
         libcork)

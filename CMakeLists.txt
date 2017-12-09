@@ -31,7 +31,7 @@ add_subdirectory(depends/libsodium)
 add_subdirectory(libcork)
 add_subdirectory(libipset)
 add_subdirectory(depends/libuv)
-add_subdirectory(depends/json-c)
+add_subdirectory(depends/json-c/staticbuild)
 
 include_directories( ${CMAKE_CURRENT_BINARY_DIR} )
 
