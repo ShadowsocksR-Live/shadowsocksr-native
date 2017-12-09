@@ -21,7 +21,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libipset", "libipset\libips
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libcrypto", "..\depends\openssl\win32\libcrypto\libcrypto.vcxproj", "{663D1B2D-6BB0-43FA-BB4A-2769C0B80E85}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pcre", "..\depends\pcre4w\win32\pcre.vcxproj", "{7B2F6734-4D74-4598-BABA-025A636057B5}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pcre", "..\depends\pcre\win32\pcre.vcxproj", "{7B2F6734-4D74-4598-BABA-025A636057B5}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pthreads", "..\depends\pthreads4w\win32\pthreads.vcxproj", "{2E31B77F-BB1B-4294-8178-FCC0CEDD6D34}"
 EndProject
