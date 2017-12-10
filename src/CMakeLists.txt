@@ -144,7 +144,7 @@ set (ss_lib_common
 
 set (ss_lib_net
         ${ss_lib_common}
-        ${LIBCRYPTO}
+        libcrypto.a # ${LIBCRYPTO} # OpenSSL library
         libipset
         pcre #${PCRE_LIBRARIES}
         udns
