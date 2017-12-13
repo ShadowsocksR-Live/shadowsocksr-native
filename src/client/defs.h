@@ -27,12 +27,10 @@
 
 #if defined(_WIN32)
 typedef ULONG uv_buf_len_t;
-#define bool int
-#define true 1
-#define false 0
 #else
 typedef size_t uv_buf_len_t;
 #endif // defined(_WIN32)
+
 
 #include <assert.h>
 #include <stddef.h>      /* size_t, ssize_t */
