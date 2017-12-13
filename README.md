@@ -42,7 +42,7 @@ refer to the [Wiki page](https://github.com/shadowsocks/shadowsocks/wiki/Feature
 - [Archlinux](#archlinux)
 - [NixOS](#nixos)
 - [Nix](#nix)
-- [Directly build and install on UNIX-like system](#linux)
+- [Linux & Ubuntu (UNIX-like system) from source code](#linux)
 - [FreeBSD](#freebsd)
 - [OpenWRT](#openwrt)
 - [OS X](#os-x)
@@ -217,15 +217,25 @@ e.g. Ubuntu, Debian or Linux Mint, you can build the binary like this:
 
 ```bash
 # Debian / Ubuntu
-sudo apt-get install --no-install-recommends build-essential autoconf libtool libssl-dev libpcre3-dev asciidoc xmlto
+sudo apt-get install --no-install-recommends build-essential autoconf libtool asciidoc xmlto
 sudo apt install git cmake automake
 
 git clone https://github.com/ShadowsocksR-Live/shadowsocksr-native.git
 cd shadowsocksr-native
 git submodule update --init
 
-cmake CMakeLists.txt && make
+# build openssl library
+cd depends/openssl
+./config --prefix=/usr
+make
+sudo make install
+cd ../..
 
+# build ShadowsocksR-Native
+cmake CMakeLists.txt && make
+```
+
+```bash
 # CentOS / Fedora / RHEL
 sudo yum install gcc autoconf libtool automake make zlib-devel openssl-devel asciidoc xmlto libuv1
 ./configure && make
