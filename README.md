@@ -220,18 +220,14 @@ e.g. Ubuntu, Debian or Linux Mint, you can build the binary like this:
 sudo apt-get install --no-install-recommends build-essential autoconf libtool asciidoc xmlto
 sudo apt install git cmake automake
 
+# install OpenSSL
+sudo apt-get install libssl-dev
+
 git clone https://github.com/ShadowsocksR-Live/shadowsocksr-native.git
 cd shadowsocksr-native
 git submodule update --init
 
-# build openssl library
-cd depends/openssl
-./config --prefix=/usr
-make
-sudo make install
-cd ../..
-
-# build ShadowsocksR-Native
+# build ShadowsocksR-native
 cmake CMakeLists.txt && make
 ```
 
