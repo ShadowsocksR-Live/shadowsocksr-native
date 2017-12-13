@@ -42,9 +42,7 @@ typedef size_t uv_buf_len_t;
 #include <sys/socket.h>  /* sockaddr */
 #endif // defined(_MSC_VER)
 
-#if !defined(_MSC_VER)
 #include <stdbool.h>
-#endif
 
 #include "obfs.h"
 
