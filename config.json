@@ -1,0 +1,31 @@
+{
+    "password": "password",
+    "method": "aes-128-ctr",
+    "protocol": "auth_aes128_md5", // "origin", // 
+    "protocol_param": "",
+    "obfs": "tls1.2_ticket_auth", // "plain", // 
+    "obfs_param": "",
+
+    "udp": false,
+    "timeout": 300,
+
+    "server_settings": {
+        "listen_address": "0.0.0.0",
+        "listen_port": 12475
+    },
+
+    "client_settings": {
+        "server": "12.34.56.78",
+        "server_port": 12475,
+        "listen_address": "0.0.0.0",
+        "listen_port": 1080
+    },
+
+    "over_tls_settings": {
+        "enable": false,
+        "server_domain": "goodsitesample.com",
+        "path": "/udg151df/",
+        "root_cert_file": ""
+    }
+}
+

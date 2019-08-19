@@ -1,0 +1,340 @@
+/* Copyright StrongLoop, Inc. All rights reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ */
+
+#include "defs.h"
+//#include <netinet/in.h>  /* INET6_ADDRSTRLEN */
+#include <stdlib.h>
+#include <string.h>
+#include "dump_info.h"
+#include "tunnel.h"
+#include "ssr_executive.h"
+#include "ssr_client_api.h"
+#include "common.h"
+#if UDP_RELAY_ENABLE
+#include "udprelay.h"
+#endif // UDP_RELAY_ENABLE
+
+#ifndef INET6_ADDRSTRLEN
+# define INET6_ADDRSTRLEN 63
+#endif
+
+struct udp_listener_ctx_t;
+
+struct listener_t {
+    uv_tcp_t *tcp_server;
+    struct udp_listener_ctx_t *udp_server;
+};
+
+struct ssr_client_state {
+    struct server_env_t *env;
+
+    uv_signal_t *sigint_watcher;
+    uv_signal_t *sigterm_watcher;
+
+    bool shutting_down;
+    
+    int listener_count;
+    struct listener_t *listeners;
+
+    void(*feedback_state)(struct ssr_client_state *state, void *p);
+    void *ptr;
+};
+
+static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrinfo *addrs);
+static void listen_incoming_connection_cb(uv_stream_t *server, int status);
+static void signal_quit(uv_signal_t* handle, int signum);
+
+int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ssr_client_state *state, void *p), void *p) {
+    uv_loop_t * loop = NULL;
+    struct addrinfo hints;
+    struct ssr_client_state *state;
+    int err;
+    uv_getaddrinfo_t *req;
+
+    loop = (uv_loop_t *) calloc(1, sizeof(uv_loop_t));
+    uv_loop_init(loop);
+
+    state = (struct ssr_client_state *) calloc(1, sizeof(*state));
+    state->listeners = NULL;
+    state->env = ssr_cipher_env_create(cf, state);
+    state->feedback_state = feedback_state;
+    state->ptr = p;
+
+    loop->data = state->env;
+
+    /* Resolve the address of the interface that we should bind to.
+    * The getaddrinfo callback starts the server and everything else.
+    */
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+
+    req = (uv_getaddrinfo_t *)calloc(1, sizeof(*req));
+
+    err = uv_getaddrinfo(loop, req, getaddrinfo_done_cb, cf->listen_host, NULL, &hints);
+    if (err != 0) {
+        pr_err("getaddrinfo: %s", uv_strerror(err));
+        if (state->feedback_state) {
+            state->feedback_state(state, state->ptr);
+        }
+        return err;
+    }
+
+    // Setup signal handler
+    state->sigint_watcher = (uv_signal_t *) calloc(1, sizeof(uv_signal_t));
+    uv_signal_init(loop, state->sigint_watcher);
+    uv_signal_start(state->sigint_watcher, signal_quit, SIGINT);
+
+    state->sigterm_watcher = (uv_signal_t *) calloc(1, sizeof(uv_signal_t));
+    uv_signal_init(loop, state->sigterm_watcher);
+    uv_signal_start(state->sigterm_watcher, signal_quit, SIGTERM);
+
+    /* Start the event loop.  Control continues in getaddrinfo_done_cb(). */
+    err = uv_run(loop, UV_RUN_DEFAULT);
+    if (err != 0) {
+        pr_err("uv_run: %s", uv_strerror(err));
+    }
+
+    ssr_cipher_env_release(state->env);
+
+    if (state->listeners) {
+        free(state->listeners);
+    }
+
+    free(state->sigint_watcher);
+    free(state->sigterm_watcher);
+    
+    free(state);
+
+    free(loop);
+    
+    return err;
+}
+
+static void tcp_close_done_cb(uv_handle_t* handle) {
+    free((void *)((uv_tcp_t *)handle));
+}
+
+void ssr_run_loop_shutdown(struct ssr_client_state *state) {
+    if (state==NULL) {
+        return;
+    }
+    
+    if (state->shutting_down) {
+        return;
+    }
+    state->shutting_down = true;
+
+    uv_signal_stop(state->sigint_watcher);
+    uv_signal_stop(state->sigterm_watcher);
+
+    if (state->listeners && state->listener_count) {
+        size_t n = 0;
+        for (n = 0; n < (size_t) state->listener_count; ++n) {
+            struct udp_listener_ctx_t *udp_server;
+            struct listener_t *listener = state->listeners + n;
+
+            uv_tcp_t *tcp_server = listener->tcp_server;
+            if (tcp_server) {
+                uv_close((uv_handle_t *)tcp_server, tcp_close_done_cb);
+            }
+
+#if UDP_RELAY_ENABLE
+            udp_server = listener->udp_server;
+            if (udp_server) {
+                udprelay_shutdown(udp_server);
+            }
+#endif // UDP_RELAY_ENABLE
+        }
+    }
+
+    client_shutdown(state->env);
+
+    pr_info(" ");
+    pr_info("terminated.\n");
+}
+
+int ssr_get_listen_socket_fd(struct ssr_client_state *state) {
+    if (state==NULL || state->listener_count==0 || state->listeners==NULL) {
+        return 0;
+    }
+    ASSERT(state->listener_count == 1);
+    return (int) uv_stream_fd(state->listeners[0].tcp_server);
+}
+
+/* Bind a server to each address that getaddrinfo() reported. */
+static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrinfo *addrs) {
+    char addrbuf[INET6_ADDRSTRLEN + 1];
+    unsigned int ipv4_naddrs;
+    unsigned int ipv6_naddrs;
+    struct ssr_client_state *state;
+    struct server_env_t *env;
+    const struct server_config *cf;
+    struct addrinfo *ai;
+    const void *addrv = NULL;
+    const char *what;
+    uv_loop_t *loop;
+    unsigned int n;
+    int err;
+    union sockaddr_universal s = { 0 };
+
+    loop = req->loop;
+
+    env = (struct server_env_t *) loop->data;
+    state = (struct ssr_client_state *) env->data;
+    ASSERT(state);
+    cf = env->config;
+
+    free(req);
+
+    if (status < 0) {
+        pr_err("getaddrinfo(\"%s\"): %s", cf->listen_host, uv_strerror(status));
+        uv_freeaddrinfo(addrs);
+        if (state->feedback_state) {
+            state->feedback_state(state, state->ptr);
+        }
+        return;
+    }
+
+    ipv4_naddrs = 0;
+    ipv6_naddrs = 0;
+    for (ai = addrs; ai != NULL; ai = ai->ai_next) {
+        if (ai->ai_family == AF_INET) {
+            ipv4_naddrs += 1;
+        } else if (ai->ai_family == AF_INET6) {
+            ipv6_naddrs += 1;
+        }
+    }
+
+    if (ipv4_naddrs == 0 && ipv6_naddrs == 0) {
+        pr_err("%s has no IPv4/6 addresses", cf->listen_host);
+        uv_freeaddrinfo(addrs);
+        return;
+    }
+
+    state->listener_count = (ipv4_naddrs + ipv6_naddrs);
+    state->listeners = (struct listener_t *) calloc(state->listener_count, sizeof(state->listeners[0]));
+
+    n = 0;
+    for (ai = addrs; ai != NULL; ai = ai->ai_next) {
+        struct listener_t *listener;
+        uv_tcp_t *tcp_server;
+        uint16_t port;
+
+        if (ai->ai_family != AF_INET && ai->ai_family != AF_INET6) {
+            continue;
+        }
+
+        if (ai->ai_family == AF_INET) {
+            s.addr4 = *(const struct sockaddr_in *) ai->ai_addr;
+            s.addr4.sin_port = htons(cf->listen_port);
+            addrv = &s.addr4.sin_addr;
+        } else if (ai->ai_family == AF_INET6) {
+            s.addr6 = *(const struct sockaddr_in6 *) ai->ai_addr;
+            s.addr6.sin6_port = htons(cf->listen_port);
+            addrv = &s.addr6.sin6_addr;
+        } else {
+            UNREACHABLE();
+        }
+
+        if (uv_inet_ntop(s.addr.sa_family, addrv, addrbuf, sizeof(addrbuf)) != 0) {
+            UNREACHABLE();
+        }
+
+        listener = state->listeners + n;
+
+        listener->tcp_server = (uv_tcp_t *)calloc(1, sizeof(listener->tcp_server[0]));
+        tcp_server = listener->tcp_server;
+        VERIFY(0 == uv_tcp_init(loop, tcp_server));
+
+        what = "uv_tcp_bind";
+        err = uv_tcp_bind(tcp_server, &s.addr, 0);
+        if (err == 0) {
+            // https://unix.stackexchange.com/questions/180492/is-it-possible-to-connect-to-tcp-port-0
+            what = "uv_listen";
+            err = uv_listen((uv_stream_t *)tcp_server, 128, listen_incoming_connection_cb);
+        }
+
+        if (state->feedback_state) {
+            state->feedback_state(state, state->ptr);
+        }
+
+        if (err != 0) {
+            pr_err("%s(\"%s:%hu\"): %s", what, addrbuf, cf->listen_port, uv_strerror(err));
+            ssr_run_loop_shutdown(state);
+            break;
+        }
+
+        port = get_socket_port(tcp_server);
+
+        pr_info("listening on     %s:%hu\n", addrbuf, port);
+
+#if UDP_RELAY_ENABLE
+        if (cf->udp) {
+            union sockaddr_universal remote_addr = { 0 };
+            convert_universal_address(cf->remote_host, cf->remote_port, &remote_addr);
+
+            listener->udp_server = udprelay_begin(loop,
+                cf->listen_host, port,
+                &remote_addr,
+                NULL, 0, cf->idle_timeout,
+                state->env->cipher,
+                cf->protocol, cf->protocol_param);
+        }
+#endif // UDP_RELAY_ENABLE
+
+        n += 1;
+    }
+
+    uv_freeaddrinfo(addrs);
+}
+
+static void listen_incoming_connection_cb(uv_stream_t *server, int status) {
+    uv_loop_t *loop = server->loop;
+    struct server_env_t *env = (struct server_env_t *)loop->data;
+
+    VERIFY(status == 0);
+    client_tunnel_initialize((uv_tcp_t *)server, env->config->idle_timeout);
+}
+
+static void signal_quit(uv_signal_t* handle, int signum) {
+    switch (signum) {
+    case SIGINT:
+    case SIGTERM:
+#ifndef __MINGW32__
+    case SIGUSR1:
+#endif
+    {
+        struct server_env_t *env;
+        struct ssr_client_state *state;
+        ASSERT(handle);
+        env = (struct server_env_t *)handle->loop->data;
+        state = (struct ssr_client_state *)env->data;
+        ASSERT(state);
+        ssr_run_loop_shutdown(state);
+    }
+        break;
+    default:
+        ASSERT(0);
+        break;
+    }
+}
