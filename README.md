@@ -4,6 +4,9 @@
 
 [新特性: GFW 终结者 SSRoT](https://github.com/ShadowsocksR-Live/shadowsocksr-native/wiki)
 
+[New feature: GFW terminator SSRoT](https://palitechsociety.blogspot.com/2019/08/shadowsocksr-over-tls-ssrot-server.html)
+
+
 ## Index
 
 - [Intro](#intro)
