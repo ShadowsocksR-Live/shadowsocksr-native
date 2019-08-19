@@ -26,6 +26,7 @@
 #include "ssrutils.h"
 
 #define MAX_REQUEST_SIZE      0x8000
+#define handshake_retry_count_max 10000
 
 enum tls_cli_state {
     tls_state_stopped,
@@ -46,6 +47,7 @@ struct tls_cli_ctx {
     uv_mutex_t *mutex;
 
     bool force_exit;
+    size_t handshake_retry_count;
 
     mbedtls_ssl_context *ssl_ctx;
     mbedtls_entropy_context *entropy;
@@ -256,7 +258,11 @@ static void tls_cli_worker_thread(uv_work_t* req) {
             pr_err("failed! mbedtls_ssl_handshake returned -0x%x", -ret);
             goto exit;
         }
+        if ((++ctx->handshake_retry_count) == handshake_retry_count_max) {
+            goto exit;
+        }
         if (ctx->force_exit) { goto exit; }
+        mbedtls_net_usleep(10);
     }
 
     if (ctx->force_exit) { goto exit; }
@@ -322,7 +328,7 @@ exit:
     if (exit_code != MBEDTLS_EXIT_SUCCESS) {
         char error_buf[100] = { 0 };
         mbedtls_strerror(ret, error_buf, 100);
-        pr_info("last error was: -0x%x - %s", -ret, error_buf);
+        pr_err("last error was: -0x%x - %s", -ret, error_buf);
     }
 
     mbedtls_net_free( &server_fd );
