@@ -123,7 +123,7 @@
     <ClCompile Include="..\..\src\text_in_color.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\client\tls_cli.c">
+    <ClCompile Include="..\..\src\client\tls_cli2.c">
       <Filter>client</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ws_tls_basic.c">
