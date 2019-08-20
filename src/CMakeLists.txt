@@ -76,7 +76,7 @@ set(SOURCE_FILES_CLIENT
         tunnel.c
         tunnel.h
         client/client.c
-        client/tls_cli2.c
+        client/tls_cli.c
         client/tls_cli.h
         ws_tls_basic.c
         ws_tls_basic.h

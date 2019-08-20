@@ -26,7 +26,7 @@
     <ClCompile Include="..\..\src\client\listener.c" />
     <ClCompile Include="..\..\src\client\main.c" />
     <ClCompile Include="..\..\src\client\s5.c" />
-    <ClCompile Include="..\..\src\client\tls_cli2.c" />
+    <ClCompile Include="..\..\src\client\tls_cli.c" />
     <ClCompile Include="..\..\src\cmd_line_parser.c" />
     <ClCompile Include="..\..\src\daemon_wrapper.c" />
     <ClCompile Include="..\..\src\dump_info.c" />

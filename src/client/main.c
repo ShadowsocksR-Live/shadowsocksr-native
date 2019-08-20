@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
 
         print_remote_info(config);
 
-        putenv("UV_THREADPOOL_SIZE=64"); // uv_os_setenv("UV_THREADPOOL_SIZE", "64"); // 
+        // putenv("UV_THREADPOOL_SIZE=64"); // uv_os_setenv("UV_THREADPOOL_SIZE", "64"); // 
 
         ssr_run_loop_begin(config, &feedback_state, NULL);
         g_state = NULL;
