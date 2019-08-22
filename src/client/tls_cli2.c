@@ -93,12 +93,6 @@ void tls_client_launch(struct tunnel_ctx *tunnel, struct server_config *config) 
     tunnel_add_ref(tunnel);
     uv_async_init(loop, ctx->async, tls_cli_state_changed_notice_async_cb);
     uv_queue_work(loop, ctx->req, tls_cli_worker_thread, tls_cli_after_cb);
-
-    {
-        char tmp[0x100] = { 0 };
-        socks5_address_to_string(tunnel->desired_addr, tmp, sizeof(tmp));
-        pr_info("connecting %s:%d ...", tmp, (int)tunnel->desired_addr->port);
-    }
 }
 
 struct tls_cli_ctx * create_tls_cli_ctx(struct tunnel_ctx *tunnel, struct server_config *config) {
@@ -123,7 +117,7 @@ struct tls_cli_ctx * create_tls_cli_ctx(struct tunnel_ctx *tunnel, struct server
     tunnel->tls_ctx = ctx;
     tunnel->tunnel_tls_send_data = &tunnel_tls_send_data;
 
-     uv_mutex_init(ctx->mutex);
+    uv_mutex_init(ctx->mutex);
 
     return ctx;
 }

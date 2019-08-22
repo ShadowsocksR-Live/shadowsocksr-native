@@ -461,6 +461,11 @@ static void do_parse_s5_request(struct tunnel_ctx *tunnel) {
     if (config->over_tls_enable) {
         ctx->stage = tunnel_stage_tls_connecting;
         tls_client_launch(tunnel, config);
+        {
+            char tmp[0x100] = { 0 };
+            socks5_address_to_string(tunnel->desired_addr, tmp, sizeof(tmp));
+            pr_info("connecting %s:%d ...", tmp, (int)tunnel->desired_addr->port);
+        }
         return;
     }
     else {
@@ -980,11 +985,13 @@ static void tunnel_tls_on_data_received(struct tunnel_ctx *tunnel, const uint8_t
 
 static void tunnel_tls_on_shutting_down(struct tunnel_ctx *tunnel) {
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
+    char tmp[0x100] = { 0 };
+    socks5_address_to_string(tunnel->desired_addr, tmp, sizeof(tmp));
     assert(ctx->original_tunnel_shutdown);
     if (tunnel->tls_ctx == NULL) {
-        char tmp[0x100] = { 0 };
-        socks5_address_to_string(tunnel->desired_addr, tmp, sizeof(tmp));
         pr_err("connecting \"%s:%d\" failed.", tmp, (int)tunnel->desired_addr->port);
+    } else {
+        pr_info("---- disconnected %s:%d ----", tmp, (int)tunnel->desired_addr->port);
     }
     ctx->original_tunnel_shutdown(tunnel);
 }

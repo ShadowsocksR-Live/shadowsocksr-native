@@ -51,11 +51,6 @@ void tls_client_launch(struct tunnel_ctx *tunnel, struct server_config *config) 
 
     uv_mbed_add_ref(ctx->mbed);
     uv_mbed_connect(ctx->mbed, config->remote_host, config->remote_port, _mbed_connect_done_cb, ctx);
-    {
-        char tmp[0x100] = { 0 };
-        socks5_address_to_string(tunnel->desired_addr, tmp, sizeof(tmp));
-        pr_info("connecting %s:%d ...", tmp, (int)tunnel->desired_addr->port);
-    }
 }
 
 void tls_client_shutdown(struct tunnel_ctx *tunnel) {
@@ -136,12 +131,6 @@ static void _mbed_write_done_cb(uv_mbed_t *mbed, int status, void *p) {
 static void _mbed_close_done_cb(uv_mbed_t *mbed, void *p) {
     struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)p;
     struct tunnel_ctx *tunnel = ctx->tunnel;
-
-    {
-        char tmp[0x100] = { 0 };
-        socks5_address_to_string(tunnel->desired_addr, tmp, sizeof(tmp));
-        pr_info("---- disconnected %s:%d ----", tmp, (int)tunnel->desired_addr->port);
-    }
 
     assert(mbed == ctx->mbed);
     assert(tunnel);
