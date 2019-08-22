@@ -398,7 +398,6 @@ static void tls_cli_state_changed_notice_async_cb(uv_async_t *handle) {
     struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)handle->data;
     struct tunnel_ctx *tunnel;
 
-    uv_mutex_lock(ctx->mutex);
     tunnel = ctx->tunnel;
 
     switch (ctx->state) {
@@ -426,7 +425,6 @@ static void tls_cli_state_changed_notice_async_cb(uv_async_t *handle) {
         assert(false);
         break;
     }
-    uv_mutex_unlock(ctx->mutex);
 }
 
 static void tls_async_close_cb(uv_handle_t *handle) {
