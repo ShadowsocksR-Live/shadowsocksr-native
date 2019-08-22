@@ -26,7 +26,7 @@
 #include "ssrutils.h"
 
 #define MAX_REQUEST_SIZE      0x8000
-#define handshake_retry_count_max 10000
+#define handshake_retry_count_max 100000
 
 enum tls_cli_state {
     tls_state_stopped,
