@@ -68,7 +68,7 @@ void localtime_now(char *now_str, size_t size) {
 
     /* get the time in local time */
     sprintf(now_str, "%04d/%02d/%02d %2d:%02d",
-        gtime->tm_year + 1900, gtime->tm_mon, gtime->tm_mday,
+        gtime->tm_year + 1900, gtime->tm_mon + 1, gtime->tm_mday,
         gtime->tm_hour % 24, gtime->tm_min);
 }
 
