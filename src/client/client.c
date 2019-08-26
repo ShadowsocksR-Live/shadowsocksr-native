@@ -453,8 +453,10 @@ static void do_parse_s5_request(struct tunnel_ctx *tunnel) {
         struct server_info_t *info;
         info = protocol ? protocol->get_server_info(protocol) : (obfs ? obfs->get_server_info(obfs) : NULL);
         if (info) {
+            size_t s0 = 0;
+            const uint8_t *p0 = buffer_get_data(ctx->init_pkg, &s0);
             info->buffer_size = SSR_BUFF_SIZE;
-            info->head_len = (int) get_s5_head_size(ctx->init_pkg->buffer, ctx->init_pkg->len, 30);
+            info->head_len = (int) get_s5_head_size(p0, s0, 30);
         }
     }
 
@@ -562,13 +564,15 @@ static void do_connect_ssr_server_done(struct tunnel_ctx *tunnel) {
     ASSERT(outgoing->wrstate == socket_state_stop);
 
     if (outgoing->result == 0) {
+        const uint8_t *out_data = NULL; size_t out_data_len = 0;
         struct buffer_t *tmp = buffer_clone(ctx->init_pkg);
         if (ssr_ok != tunnel_cipher_client_encrypt(ctx->cipher, tmp)) {
             buffer_release(tmp);
             tunnel->tunnel_shutdown(tunnel);
             return;
         }
-        socket_write(outgoing, tmp->buffer, tmp->len);
+        out_data = buffer_get_data(tmp, &out_data_len);
+        socket_write(outgoing, out_data, out_data_len);
         buffer_release(tmp);
 
         ctx->stage = tunnel_stage_ssr_auth_sent;
@@ -651,8 +655,9 @@ static void do_socks5_reply_success(struct tunnel_ctx *tunnel) {
     struct socket_ctx *incoming = tunnel->incoming;
     struct socket_ctx *outgoing = tunnel->outgoing;
     uint8_t *buf;
-    struct buffer_t *init_pkg = ctx->init_pkg;
-    buf = (uint8_t *)calloc(3 + init_pkg->len, sizeof(uint8_t));
+    size_t init_data_len = 0;
+    const uint8_t *init_data = buffer_get_data(ctx->init_pkg, &init_data_len);
+    buf = (uint8_t *)calloc(3 + init_data_len + 1, sizeof(uint8_t));
 
     ASSERT(incoming->rdstate == socket_state_stop);
     ASSERT(incoming->wrstate == socket_state_stop);
@@ -662,8 +667,8 @@ static void do_socks5_reply_success(struct tunnel_ctx *tunnel) {
     buf[0] = 5;  // Version.
     buf[1] = 0;  // Success.
     buf[2] = 0;  // Reserved.
-    memcpy(buf + 3, init_pkg->buffer, init_pkg->len);
-    socket_write(incoming, buf, 3 + init_pkg->len);
+    memcpy(buf + 3, init_data, init_data_len);
+    socket_write(incoming, buf, 3 + init_data_len);
     free(buf);
     ctx->stage = tunnel_stage_auth_completion_done;
 }
@@ -881,11 +886,13 @@ static void tunnel_tls_on_connection_established(struct tunnel_ctx *tunnel) {
             unsigned short domain_port = config->remote_port;
             uint8_t *buf = NULL;
             size_t len = 0;
+            size_t typ_len = 0;
+            const uint8_t *typ = buffer_get_data(tmp, &typ_len);
             char *key = websocket_generate_sec_websocket_key(&malloc);
             ctx->sec_websocket_key = key;
 
             buf = websocket_connect_request(domain, domain_port, url_path, key,
-                tmp->buffer, tmp->len, &malloc, &len);
+                typ, typ_len, &malloc, &len);
 
             ASSERT (tunnel->tunnel_tls_send_data);
             tunnel->tunnel_tls_send_data(tunnel, buf, len);

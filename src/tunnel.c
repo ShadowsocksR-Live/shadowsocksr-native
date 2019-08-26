@@ -263,7 +263,7 @@ void tunnel_traditional_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *
             uint8_t *buf = NULL;
             ASSERT(tunnel->tunnel_extract_data);
             buf = tunnel->tunnel_extract_data(current_socket, &malloc, &len);
-            if (buf /* && size > 0 */) {
+            if (buf /* && len > 0 */) {
                 // 从当前 网口 提取数据然后写入 目标 网口 .
                 socket_write(target_socket, buf, len);
             } else {
