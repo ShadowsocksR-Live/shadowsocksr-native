@@ -1,3 +1,6 @@
+![shadowsocksr-native](https://avatars0.githubusercontent.com/u/30504070?s=200&v=4)
+
+
 # ShadowsocksR-native
 
 [![Join the chat at https://gitter.im/ShadowsocksR-Live/](https://cdn03.gitter.im/_s/9177b02/images/favicon-read.ico)](https://gitter.im/ShadowsocksR-Live/Lobby)
