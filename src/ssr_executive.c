@@ -413,10 +413,11 @@ enum ssr_error tunnel_cipher_client_decrypt(struct tunnel_cipher_ctx *tc, struct
         }
         buffer_replace(buf, result); buffer_release(result);
         if (needsendback && obfs_plugin->client_encode) {
-            BUFFER_CONSTANT_INSTANCE(empty, "", 0);
+            struct buffer_t *empty = buffer_create_from((const uint8_t *)"", 0);
             struct buffer_t *sendback = obfs_plugin->client_encode(tc->obfs, empty);
             ASSERT(feedback);
             *feedback = sendback;
+            buffer_release(empty);
         }
     }
     if (buf->len > 0) {
@@ -479,7 +480,6 @@ tunnel_cipher_server_decrypt(struct tunnel_cipher_ctx *tc,
     struct obfs_t *obfs = tc->obfs;
     struct obfs_t *protocol = tc->protocol;
     struct buffer_t *ret = NULL;
-    BUFFER_CONSTANT_INSTANCE(empty, "", 0);
 
     if (receipt) { *receipt = NULL; }
     if (confirm) { *confirm = NULL; }
@@ -492,7 +492,9 @@ tunnel_cipher_server_decrypt(struct tunnel_cipher_ctx *tc,
         }
         if (need_feedback) {
             if (receipt) {
+                struct buffer_t *empty = buffer_create_from((const uint8_t *)"", 0);
                 *receipt = obfs->server_encode(obfs, empty);
+                buffer_release(empty);
             }
             buffer_reset(ret);
             return ret;
@@ -525,7 +527,9 @@ tunnel_cipher_server_decrypt(struct tunnel_cipher_ctx *tc,
         buffer_release(ret); ret = tmp;
         if (feedback) {
             if (confirm) {
+                struct buffer_t *empty = buffer_create_from((const uint8_t *)"", 0);
                 *confirm  = tunnel_cipher_server_encrypt(tc, empty);
+                buffer_release(empty);
             }
         }
     }

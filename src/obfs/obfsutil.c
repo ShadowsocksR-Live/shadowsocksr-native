@@ -51,9 +51,11 @@ size_t ss_md5_hmac(uint8_t *auth, const uint8_t *msg, size_t msg_len, const uint
     memcpy(auth_key, iv, enc_iv_len);
     memcpy(auth_key + enc_iv_len, enc_key, enc_key_len);
     {
-        BUFFER_CONSTANT_INSTANCE(_msg, msg, msg_len);
-        BUFFER_CONSTANT_INSTANCE(_key, auth_key, enc_iv_len + enc_key_len);
+        struct buffer_t *_msg = buffer_create_from((const uint8_t *)msg, msg_len);
+        struct buffer_t *_key = buffer_create_from((const uint8_t *)auth_key, enc_iv_len + enc_key_len);
         result = ss_md5_hmac_with_key(auth, _msg, _key);
+        buffer_release(_msg);
+        buffer_release(_key);
     }
     free(auth_key);
     return result;
@@ -67,9 +69,11 @@ size_t ss_sha1_hmac(uint8_t auth[20], const uint8_t *msg, size_t msg_len, const 
     memcpy(auth_key, iv, iv_len);
     memcpy(auth_key + iv_len, key, key_len);
     {
-        BUFFER_CONSTANT_INSTANCE(_msg, msg, msg_len);
-        BUFFER_CONSTANT_INSTANCE(_key, auth_key, iv_len + key_len);
+        struct buffer_t *_msg = buffer_create_from(msg, msg_len);
+        struct buffer_t *_key = buffer_create_from(auth_key, iv_len + key_len);
         result = ss_sha1_hmac_with_key(auth, _msg, _key);
+        buffer_release(_msg);
+        buffer_release(_key);
     }
     free(auth_key);
     return result;

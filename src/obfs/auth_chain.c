@@ -414,9 +414,11 @@ size_t auth_chain_a_pack_client_data(struct obfs_t *obfs, char *data, size_t dat
     memintcopy_lt(key + key_len - 4, local->pack_id);
     ++local->pack_id;
     {
-        BUFFER_CONSTANT_INSTANCE(_msg, outdata, out_size);
-        BUFFER_CONSTANT_INSTANCE(_key, key, key_len);
+        struct buffer_t *_msg = buffer_create_from((const uint8_t *)outdata, out_size);
+        struct buffer_t *_key = buffer_create_from((const uint8_t *)key, key_len);
         ss_md5_hmac_with_key(local->last_client_hash, _msg, _key);
+        buffer_release(_msg);
+        buffer_release(_key);
     }
     memcpy(outdata + out_size, local->last_client_hash, 2);
     free(key);
@@ -503,11 +505,13 @@ size_t auth_chain_a_pack_auth_data(struct obfs_t *obfs, char *data, size_t datal
 
     // first 12 bytes
     {
-        BUFFER_CONSTANT_INSTANCE(_msg, outdata, 4);
-        BUFFER_CONSTANT_INSTANCE(_key, key, key_len);
+        struct buffer_t *_msg = buffer_create_from((const uint8_t *)outdata, 4);
+        struct buffer_t *_key = buffer_create_from((const uint8_t *)key, key_len);
         rand_bytes((uint8_t*)outdata, 4);
         ss_md5_hmac_with_key(local->last_client_hash, _msg, _key);
         memcpy(outdata + 4, local->last_client_hash, 8);
+        buffer_release(_msg);
+        buffer_release(_key);
     }
 
     free(key); key = NULL;
@@ -560,10 +564,11 @@ size_t auth_chain_a_pack_auth_data(struct obfs_t *obfs, char *data, size_t datal
     }
     // final HMAC
     {
-        BUFFER_CONSTANT_INSTANCE(_msg, encrypt, 20);
+        struct buffer_t *_msg = buffer_create_from((const uint8_t *)encrypt, 20);
         ss_md5_hmac_with_key(local->last_server_hash, _msg, local->user_key);
         memcpy(outdata + 12, encrypt, 20);
         memcpy(outdata + 12 + 20, local->last_server_hash, 4);
+        buffer_release(_msg);
     }
 
     std_base64_encode(local->user_key->buffer, (int)local->user_key->len, (unsigned char *)password);
@@ -666,9 +671,11 @@ ssize_t auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata,
             break;
         }
         {
-            BUFFER_CONSTANT_INSTANCE(_msg, recv_buffer, len - 2);
-            BUFFER_CONSTANT_INSTANCE(_key, key, key_len);
+            struct buffer_t *_msg = buffer_create_from((const uint8_t *)recv_buffer, len - 2);
+            struct buffer_t *_key = buffer_create_from((const uint8_t *)key, key_len);
             ss_md5_hmac_with_key(hash, _msg, _key);
+            buffer_release(_msg);
+            buffer_release(_key);
         }
         if (memcmp(hash, recv_buffer + len - 2, 2)) {
             local->recv_buffer->len = 0;
@@ -745,9 +752,11 @@ ssize_t auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplainda
         }
     }
     {
-        BUFFER_CONSTANT_INSTANCE(_msg, auth_data, 3);
-        BUFFER_CONSTANT_INSTANCE(_key, server->key, server->key_len);
+        struct buffer_t *_msg = buffer_create_from((const uint8_t *)auth_data, 3);
+        struct buffer_t *_key = buffer_create_from((const uint8_t *)server->key, server->key_len);
         ss_md5_hmac_with_key(hash, _msg, _key);
+        buffer_release(_msg);
+        buffer_release(_key);
     }
     rand_len = (int) udp_get_rand_len(&local->random_client, hash);
     rnd_data = (uint8_t *) malloc((size_t)rand_len * sizeof(uint8_t));
@@ -759,10 +768,11 @@ ssize_t auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplainda
 
     {
 #if 1
-        BUFFER_CONSTANT_INSTANCE(in_obj, plaindata, datalength);
+        struct buffer_t *in_obj = buffer_create_from((const uint8_t *)plaindata, datalength);
         struct buffer_t *ret = cipher_simple_update_data(password, "rc4", true, in_obj);
         memcpy(out_buffer, ret->buffer, ret->len);
         buffer_release(ret);
+        buffer_release(in_obj);
 #else
         struct cipher_env_t *cipher = cipher_env_new_instance(password, "rc4");
         struct enc_ctx *ctx = enc_ctx_new_instance(cipher, true);
@@ -780,8 +790,9 @@ ssize_t auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplainda
     memmove(out_buffer + outlength - 8, auth_data, 3);
     memmove(out_buffer + outlength - 5, uid, 4);
     {
-        BUFFER_CONSTANT_INSTANCE(_msg, out_buffer, (int)(outlength - 1));
+        struct buffer_t *_msg = buffer_create_from((const uint8_t *)out_buffer, (int)(outlength - 1));
         ss_md5_hmac_with_key(hash, _msg, local->user_key);
+        buffer_release(_msg);
     }
     memmove(out_buffer + outlength - 1, hash, 1);
 
@@ -811,16 +822,19 @@ ssize_t auth_chain_a_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaind
     }
 
     {
-        BUFFER_CONSTANT_INSTANCE(_msg, plaindata, (int)(datalength - 1));
+        struct buffer_t *_msg = buffer_create_from((const uint8_t *)plaindata, (int)(datalength - 1));
         ss_md5_hmac_with_key(hash, _msg, local->user_key);
+        buffer_release(_msg);
     }
     if (*hash != ((uint8_t*)plaindata)[datalength - 1]) {
         return 0;
     }
     {
-        BUFFER_CONSTANT_INSTANCE(_msg, plaindata + datalength - 8, 7);
-        BUFFER_CONSTANT_INSTANCE(_key, server->key, server->key_len);
+        struct buffer_t *_msg = buffer_create_from((const uint8_t *)plaindata + datalength - 8, 7);
+        struct buffer_t *_key = buffer_create_from((const uint8_t *)server->key, server->key_len);
         ss_md5_hmac_with_key(hash, _msg, _key);
+        buffer_release(_msg);
+        buffer_release(_key);
     }
     rand_len = (int)udp_get_rand_len(&local->random_server, hash);
     outlength = datalength - rand_len - 8;
@@ -830,10 +844,11 @@ ssize_t auth_chain_a_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaind
 
     {
 #if 1
-        BUFFER_CONSTANT_INSTANCE(in_obj, plaindata, outlength);
+        struct buffer_t *in_obj = buffer_create_from((const uint8_t *)plaindata, outlength);
         struct buffer_t *ret = cipher_simple_update_data(password, "rc4", false, in_obj);
         memcpy(plaindata, ret->buffer, ret->len);
         buffer_release(ret);
+        buffer_release(in_obj);
 #else
         struct cipher_env_t *cipher = cipher_env_new_instance(password, "rc4");
         struct enc_ctx *ctx = enc_ctx_new_instance(cipher, false);
@@ -863,9 +878,10 @@ struct buffer_t * auth_chain_a_server_pre_encrypt(struct obfs_t *obfs, const str
         tmp_buf = buffer_clone(buf);
     }
     while (tmp_buf->len > local->unit_len) {
-        BUFFER_CONSTANT_INSTANCE(iter, tmp_buf->buffer, local->unit_len);
+        struct buffer_t *iter = buffer_create_from((const uint8_t *)tmp_buf->buffer, local->unit_len);
 
         swap = auth_chain_a_pack_server_data(obfs, iter);
+        buffer_release(iter);
         buffer_concatenate2(ret, swap);
         buffer_release(swap);
 
@@ -906,8 +922,9 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
             struct buffer_t *mac_key = buffer_create_from(server->recv_iv, server->recv_iv_len);
             buffer_concatenate(mac_key, server->key, server->key_len);
             {
-                BUFFER_CONSTANT_INSTANCE(_msg, local->recv_buffer->buffer, 4);
+                struct buffer_t *_msg = buffer_create_from((const uint8_t *)local->recv_buffer->buffer, 4);
                 ss_md5_hmac_with_key(md5data, _msg, mac_key);
+                buffer_release(_msg);
             }
             buffer_release(mac_key);
             if (memcmp(md5data, local->recv_buffer->buffer+4, recv_len-4) != 0) {
@@ -926,8 +943,9 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
         buffer_store(local->user_key, server->key, server->key_len);
 
         {
-            BUFFER_CONSTANT_INSTANCE(_msg, local->recv_buffer->buffer + 12, 20);
+            struct buffer_t *_msg = buffer_create_from(local->recv_buffer->buffer + 12, 20);
             ss_md5_hmac_with_key(md5data, _msg, local->user_key);
+            buffer_release(_msg);
         }
         if (memcmp(md5data, local->recv_buffer->buffer+32, 4) != 0) {
             // logging.error('%s data incorrect auth HMAC-MD5 from %s:%d, data %s' % (self.no_compatible_method, self.server_info.client, self.server_info.client_port, binascii.hexlify(self.recv_buf)))
@@ -1008,8 +1026,9 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
             break;
         }
         {
-            BUFFER_CONSTANT_INSTANCE(_msg, local->recv_buffer->buffer, length + 2);
+            struct buffer_t *_msg = buffer_create_from(local->recv_buffer->buffer, length + 2);
             ss_md5_hmac_with_key(client_hash, _msg, mac_key2);
+            buffer_release(_msg);
         }
         if (memcmp(client_hash, local->recv_buffer->buffer+length+2, 2) != 0) {
             // logging.info('%s: checksum error, data %s' % (self.no_compatible_method, binascii.hexlify(self.recv_buf[:length])))

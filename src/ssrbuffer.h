@@ -39,10 +39,6 @@ struct buffer_t {
     int ref_count;
 };
 
-#define BUFFER_CONSTANT_INSTANCE(ptrName, data, data_len) \
-    struct buffer_t obj##ptrName = {(size_t)(data_len), (size_t)(data_len), (uint8_t *)(data)}; \
-    struct buffer_t *(ptrName) = & obj##ptrName
-
 struct buffer_t * buffer_create(size_t capacity);
 struct buffer_t * buffer_create_from(const uint8_t *data, size_t len);
 size_t buffer_get_length(const struct buffer_t *ptr);

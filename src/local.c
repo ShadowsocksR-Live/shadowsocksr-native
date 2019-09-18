@@ -338,10 +338,11 @@ int _tunnel_decrypt(struct local_t *local, struct buffer_t *buf, struct buffer_t
         }
         buffer_replace(buf, tmp); buffer_release(tmp);
         if (needsendback && obfs_plugin->client_encode) {
-            BUFFER_CONSTANT_INSTANCE(empty, "", 0);
+            struct buffer_t *empty = buffer_create_from((const uint8_t *)"", 0);
             struct buffer_t *sendback = obfs_plugin->client_encode(local->obfs, empty);
             assert(feedback);
             *feedback = sendback;
+            buffer_release(empty);
         }
     }
     if (buf->len > 0) {

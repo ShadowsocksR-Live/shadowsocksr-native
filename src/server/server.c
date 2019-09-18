@@ -573,8 +573,8 @@ static void do_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *incomi
     struct buffer_t *receipt = NULL;
     struct buffer_t *confirm = NULL;
     struct buffer_t *result = NULL;
+    struct buffer_t *buf = buffer_create_from((uint8_t *)incoming->buf->base, incoming->result);
     do {
-        BUFFER_CONSTANT_INSTANCE(buf, incoming->buf->base, incoming->result);
         size_t tcp_mss = _update_tcp_mss(incoming);
 
         ASSERT(incoming == tunnel->incoming);
@@ -611,6 +611,7 @@ static void do_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *incomi
         break;
     } while (0);
 
+    buffer_release(buf);
     buffer_release(receipt);
     buffer_release(confirm);
     buffer_release(result);
@@ -654,7 +655,7 @@ static void do_prepare_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socke
 
 static void do_client_feedback(struct tunnel_ctx *tunnel, struct socket_ctx *incoming) {
     struct server_ctx *ctx = (struct server_ctx *) tunnel->data;
-    BUFFER_CONSTANT_INSTANCE(buf, incoming->buf->base, incoming->result);
+    struct buffer_t *buf = buffer_create_from((uint8_t *)incoming->buf->base, incoming->result);
     struct buffer_t *result = NULL;
     struct buffer_t *receipt = NULL;
     struct buffer_t *confirm = NULL;
@@ -685,6 +686,7 @@ static void do_client_feedback(struct tunnel_ctx *tunnel, struct socket_ctx *inc
         do_prepare_parse(tunnel, incoming);
         break;
     } while(0);
+    buffer_release(buf);
     buffer_release(result);
     buffer_release(receipt);
     buffer_release(confirm);
