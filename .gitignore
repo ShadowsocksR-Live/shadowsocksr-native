@@ -94,6 +94,8 @@ doc/*.gz
 doc/*.xml
 doc/*.html
 
+Testing/
+
 #	Do not edit the following section
 # 	Edit Compile Debug Document Distribute
 *~
