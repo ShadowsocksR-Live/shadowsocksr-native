@@ -695,8 +695,7 @@ udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const 
     }
 
     buf = buffer_create(max((size_t)buf_size, (size_t)nread));
-    memcpy(buf->buffer, buf0->base, (size_t)nread);
-    buf->len = (size_t)nread;
+    buffer_store(buf, (uint8_t *)buf0->base, (size_t)nread);
 
     udp_uv_release_buffer((uv_buf_t *)buf0);
 
