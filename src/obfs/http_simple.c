@@ -116,9 +116,9 @@ uint8_t from_hex(uint8_t ch) {
 }
 
 struct buffer_t * get_data_from_http_header(const uint8_t *buf) {
-    struct buffer_t *ret = buffer_create(SSR_BUFF_SIZE);
+    uint8_t tmp[SSR_BUFF_SIZE] = { 0 };
     const uint8_t *iter = (uint8_t *) strchr((char *)buf, '%');
-    uint8_t *target = ret->buffer;
+    uint8_t *target = tmp;
     while(iter) {
         *target++ = from_hex(iter[1]) << 4 | from_hex(iter[2]);
         iter += 3;
@@ -126,8 +126,7 @@ struct buffer_t * get_data_from_http_header(const uint8_t *buf) {
             break;
         }
     }
-    ret->len = target - ret->buffer;
-    return ret;
+    return buffer_create_from(tmp, target - tmp);
 }
 
 void get_host_from_http_header(const uint8_t *buf, char host_port[128]) {

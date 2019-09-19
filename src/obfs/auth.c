@@ -215,9 +215,8 @@ static struct buffer_t * auth_aes128_not_match_return(struct obfs_t *obfs, struc
     obfs->server.overhead = 0;
     if (feedback) { *feedback = false; }
     if (local->salt && strlen(local->salt)) {
-        struct buffer_t *ret = buffer_create(SSR_BUFF_SIZE);
-        ret->len = SSR_BUFF_SIZE;
-        memset(ret->buffer, 'E', SSR_BUFF_SIZE);
+        struct buffer_t *ret = buffer_create_from((const uint8_t *)"", SSR_BUFF_SIZE);
+        memset((uint8_t *)buffer_get_data(ret, NULL), 'E', SSR_BUFF_SIZE);
         return ret;
     }
     return buffer_clone(buf);
@@ -320,36 +319,36 @@ auth_simple_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int data
     char * buffer;
     char *plaindata = *pplaindata;
     auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
-    uint8_t * recv_buffer = (uint8_t *)local->recv_buffer->buffer;
-    if (local->recv_buffer->len + datalength > 16384) {
+    const uint8_t * recv_buffer = buffer_get_data(local->recv_buffer, NULL);
+    if (buffer_get_length(local->recv_buffer) + datalength > 16384) {
         return -1;
     }
     buffer_concatenate(local->recv_buffer, (uint8_t *)plaindata, datalength);
 
-    out_buffer = (char*)calloc((size_t)local->recv_buffer->len, sizeof(char));
+    out_buffer = (char*)calloc(buffer_get_length(local->recv_buffer), sizeof(char));
     buffer = out_buffer;
-    while (local->recv_buffer->len > 2) {
+    while (buffer_get_length(local->recv_buffer) > 2) {
         int crc;
         size_t data_size;
         size_t length = (size_t)ntohs(*(uint16_t *)(recv_buffer + 0)); // ((int)recv_buffer[0] << 8) | recv_buffer[1];
         if (length >= 8192 || length < 7) {
             free(out_buffer);
-            local->recv_buffer->len = 0;
+            buffer_reset(local->recv_buffer);
             return -1;
         }
-        if (length > local->recv_buffer->len) {
+        if (length > buffer_get_length(local->recv_buffer)) {
             break;
         }
         crc = (int) crc32_imp((unsigned char*)recv_buffer, length);
         if (crc != -1) {
             free(out_buffer);
-            local->recv_buffer->len = 0;
+            buffer_reset(local->recv_buffer);
             return -1;
         }
         data_size = length - recv_buffer[2] - 6;
         memmove(buffer, recv_buffer + 2 + recv_buffer[2], data_size);
         buffer += data_size;
-        memmove(recv_buffer, recv_buffer + length, (local->recv_buffer->len -= length));
+        buffer_shortened_to(local->recv_buffer, length,  buffer_get_length(local->recv_buffer) - length);
     }
     len = (int)(buffer - out_buffer);
     if ((int)*capacity < len) {
