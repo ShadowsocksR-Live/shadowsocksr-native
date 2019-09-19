@@ -661,7 +661,11 @@ ss_md5_hmac_with_key(uint8_t auth[MD5_BYTES], const struct buffer_t *msg, const 
 #if defined(USE_CRYPTO_OPENSSL)
     HMAC(EVP_md5(), key->buffer, key->len, (unsigned char *)msg->buffer, (size_t)msg->len, (unsigned char *)hash, NULL);
 #elif defined(USE_CRYPTO_MBEDTLS)
-    mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_MD5), key->buffer, key->len, (uint8_t *)msg->buffer, msg->len, (uint8_t *)hash);
+    size_t  key_len = 0;
+    const uint8_t *key_buf = buffer_get_data(key, &key_len);
+    size_t msg_len = 0;
+    const uint8_t *msg_buf = buffer_get_data(msg, &msg_len);
+    mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_MD5), key_buf, key_len, (uint8_t *)msg_buf, msg_len, (uint8_t *)hash);
 #endif
     memcpy(auth, hash, MD5_BYTES);
 
@@ -689,7 +693,11 @@ ss_sha1_hmac_with_key(uint8_t auth[SHA1_BYTES], const struct buffer_t *msg, cons
 #if defined(USE_CRYPTO_OPENSSL)
     HMAC(EVP_sha1(), key->buffer, key->len, msg->buffer, msg->len, hash, NULL);
 #elif defined(USE_CRYPTO_MBEDTLS)
-    mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), key->buffer, key->len, msg->buffer, msg->len, hash);
+    size_t key_len = 0;
+    const uint8_t *key_buf = buffer_get_data(key, &key_len);
+    size_t msg_len = 0;
+    const uint8_t *msg_buf = buffer_get_data(msg, &msg_len);
+    mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), key_buf, key_len, msg_buf, msg_len, hash);
 #endif
     memcpy(auth, hash, SHA1_BYTES);
 
