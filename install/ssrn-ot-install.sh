@@ -250,8 +250,14 @@ function do_lets_encrypt_certificate_authority() {
     openssl genrsa 4096 > account.key
     judge "[CA] 创建帐号 key"
 
+
+    local openssl_cnf="/etc/ssl/openssl.cnf"
+    if [[ "${ID}" == "centos" ]]; then
+        openssl_cnf="/etc/pki/tls/openssl.cnf"
+    fi
+
     openssl genrsa 4096 > domain.key
-    openssl req -new -sha256 -key domain.key -subj "/" -reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=DNS:${web_svr_domain},DNS:www.${web_svr_domain}")) > domain.csr
+    openssl req -new -sha256 -key domain.key -subj "/" -reqexts SAN -config <(cat ${openssl_cnf} <(printf "[SAN]\nsubjectAltName=DNS:${web_svr_domain},DNS:www.${web_svr_domain}")) > domain.csr
     judge "[CA] 创建 CSR 文件"
 
     wget https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py
@@ -284,11 +290,16 @@ EOF
 
     chmod a+x ${site_cert_dir}/renew_cert.sh
 
-    service cron stop
+    local cron_name="cron"
+    if [[ "${ID}" == "centos" ]]; then
+        cron_name="crond"
+    fi
+
+    systemctl stop ${cron_name}
     rm -rf tmp_info
     crontab -l > tmp_info
     echo "0 0 1 * * ${site_cert_dir}/renew_cert.sh >/dev/null 2>&1" >> tmp_info && crontab tmp_info && rm -rf tmp_info
-    service cron start
+    systemctl start ${cron_name}
 
     judge "cron 计划任务更新"
 }
