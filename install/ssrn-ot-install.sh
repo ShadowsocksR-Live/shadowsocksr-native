@@ -128,7 +128,7 @@ function dependency_install() {
        ${INS} -y install crontabs
        ${INS} -y install make zlib zlib-devel gcc-c++ libtool openssl openssl-devel
     else
-        ${INS} install cron
+        ${INS} install cron vim curl -y
         ${INS} update -y
         ${INS} install make zlib1g zlib1g-dev build-essential autoconf libtool openssl libssl-dev -y
         ${INS} install python3 python python-minimal cmake git -y
