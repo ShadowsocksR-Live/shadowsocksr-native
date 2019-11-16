@@ -211,7 +211,7 @@ set_target_properties(ssr-server PROPERTIES COMPILE_DEFINITIONS MODULE_REMOTE)
 
 set (ss_lib_common
         json-c
-        uv
+        uv_a
         m
         libcork)
 
