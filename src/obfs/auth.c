@@ -1163,12 +1163,14 @@ auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_i
 
     {
         uint8_t hash[20];
+        rand_bytes((uint8_t*)outdata, 1);
+        {
         struct buffer_t *_msg = buffer_create_from(outdata, 1);
         struct buffer_t *_key = buffer_create_from(key, key_len);
-        rand_bytes((uint8_t*)outdata, 1);
         local->hmac(hash, _msg, _key);
         buffer_release(_msg);
         buffer_release(_key);
+        }
         memcpy(outdata + 1, hash, 6);
     }
 
