@@ -973,7 +973,7 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
         plain->len = cipher->len;
 
         if (!ctx->init) {
-            uint8_t iv[MAX_IV_LENGTH];
+            uint8_t iv[MAX_IV_LENGTH + 1] = { 0 };
             iv_len      = (size_t)env->enc_iv_len;
             plain->len -= iv_len;
 
@@ -1027,9 +1027,7 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
         dump("CIPHER", cipher->buffer + iv_len, (int)(cipher->len - iv_len));
 #endif
 
-        buffer_realloc(cipher, max(plain->len, capacity));
-        memcpy(cipher->buffer, plain->buffer, plain->len);
-        cipher->len = plain->len;
+        buffer_replace(cipher, plain);
 
         buffer_release(plain);
         return 0;
