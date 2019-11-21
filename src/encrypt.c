@@ -637,20 +637,21 @@ cipher_context_release(struct cipher_env_t *env, struct cipher_ctx_t *ctx)
 #endif
 }
 
-static int
+static bool
 cipher_context_update(struct cipher_ctx_t *ctx, uint8_t *output, size_t *olen,
                       const uint8_t *input, size_t ilen)
 {
     cipher_core_ctx_t *core_ctx = ctx->core_ctx;
 #if defined(USE_CRYPTO_OPENSSL)
     int err = 0, tlen = (int)*olen;
+    // https://www.openssl.org/docs/man1.1.0/man3/EVP_CipherUpdate.html
+    // return 1 for success and 0 for failure.
     err = EVP_CipherUpdate(core_ctx, (unsigned char *)output, &tlen,
                            (const unsigned char *)input, (int)ilen);
     *olen = (size_t)tlen;
-    return err;
+    return (1 == err);
 #elif defined(USE_CRYPTO_MBEDTLS)
-    return !mbedtls_cipher_update(core_ctx, (const uint8_t *)input, ilen,
-        (uint8_t *)output, olen);
+    return (0 == mbedtls_cipher_update(core_ctx, input, ilen, output, olen));
 #endif
 }
 
@@ -757,7 +758,7 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
     enum ss_cipher_type method = env->enc_method;
     if (method > ss_cipher_table) {
         size_t iv_len;
-        int err;
+        bool success;
         struct buffer_t *cipher;
         struct cipher_ctx_t cipher_ctx;
         uint8_t iv[MAX_IV_LENGTH];
@@ -765,7 +766,7 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
         cipher_context_init(env, &cipher_ctx, 1);
 
         iv_len = (size_t) env->enc_iv_len;
-        err = 1;
+        success = true;
 
         cipher = buffer_create(max(iv_len + plain->len, capacity));
         cipher->len = plain->len;
@@ -780,12 +781,12 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
                                  (const uint8_t *)iv,
                                  0, env->enc_key, method);
         } else {
-            err = cipher_context_update(&cipher_ctx, (uint8_t *)(cipher->buffer + iv_len),
+            success = cipher_context_update(&cipher_ctx, (uint8_t *)(cipher->buffer + iv_len),
                                         &cipher->len, (const uint8_t *)plain->buffer,
                                         plain->len);
         }
 
-        if (!err) {
+        if (!success) {
             cipher_context_release(env, &cipher_ctx);
             buffer_release(cipher);
             return -1;
@@ -822,7 +823,7 @@ int
 ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx, size_t capacity)
 {
     if (ctx != NULL) {
-        int err       = 1;
+        bool success       = true;
         size_t iv_len = 0;
         struct buffer_t *cipher;
         if (!ctx->init) {
@@ -859,12 +860,12 @@ ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx
                         cipher->buffer + iv_len + padding, cipher->len);
             }
         } else {
-            err =
+            success =
                 cipher_context_update(&ctx->cipher_ctx,
                                       (uint8_t *)(cipher->buffer + iv_len),
                                       &cipher->len, (const uint8_t *)plain->buffer,
                                       plain->len);
-            if (!err) {
+            if (!success) {
                 buffer_release(cipher);
                 return -1;
             }
@@ -900,7 +901,7 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
     enum ss_cipher_type method = env->enc_method;
     if (method > ss_cipher_table) {
         size_t iv_len = (size_t)env->enc_iv_len;
-        int ret       = 1;
+        bool success       = true;
         struct cipher_ctx_t cipher_ctx;
         struct buffer_t *plain;
         uint8_t iv[MAX_IV_LENGTH];
@@ -923,12 +924,12 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
                                  (uint64_t)(cipher->len - iv_len),
                                  (const uint8_t *)iv, 0, env->enc_key, method);
         } else {
-            ret = cipher_context_update(&cipher_ctx, (uint8_t *)plain->buffer, &plain->len,
+            success = cipher_context_update(&cipher_ctx, (uint8_t *)plain->buffer, &plain->len,
                                         (const uint8_t *)(cipher->buffer + iv_len),
                                         cipher->len - iv_len);
         }
 
-        if (!ret) {
+        if (!success) {
             cipher_context_release(env, &cipher_ctx);
             buffer_release(plain);
             return -1;
@@ -966,7 +967,7 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
 {
     if (ctx != NULL) {
         size_t iv_len = 0;
-        int err       = 1;
+        bool success       = true;
 
         struct buffer_t *plain = buffer_create(max(cipher->len, capacity));
         plain->len = cipher->len;
@@ -1011,12 +1012,12 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
                 memmove(plain->buffer, plain->buffer + padding, plain->len);
             }
         } else {
-            err = cipher_context_update(&ctx->cipher_ctx, (uint8_t *)plain->buffer, &plain->len,
+            success = cipher_context_update(&ctx->cipher_ctx, (uint8_t *)plain->buffer, &plain->len,
                                         (const uint8_t *)(cipher->buffer + iv_len),
                                         cipher->len - iv_len);
         }
 
-        if (!err) {
+        if (!success) {
             buffer_release(plain);
             return -1;
         }
