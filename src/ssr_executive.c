@@ -518,7 +518,8 @@ tunnel_cipher_server_decrypt(struct tunnel_cipher_ctx *tc,
 
         err = ss_decrypt(env->cipher, ret, tc->d_ctx, max(SSR_BUFF_SIZE, ret->capacity));
         if (err != 0) {
-            return NULL;
+            buffer_release(ret); ret = NULL;
+            return ret;
         }
     }
     if (protocol && protocol->server_post_decrypt) {
