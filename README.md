@@ -48,6 +48,7 @@ refer to the [Wiki page](https://github.com/shadowsocksr-live/shadowsocksr-nativ
 
 ## Encrypto method
 |     Method              |
+| ----------------------- | 
 | none, table             |
 | rc4, rc4-md5-6, rc4-md5 |
 | aes-128-cfb, aes-192-cfb, aes-256-cfb |
