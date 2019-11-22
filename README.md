@@ -46,6 +46,17 @@ no more than 5% on a low-end router (Buffalo WHR-G300N V2 with a 400MHz MIPS CPU
 For a full list of feature comparison between different versions of shadowsocks,
 refer to the [Wiki page](https://github.com/shadowsocksr-live/shadowsocksr-native/wiki/).
 
+## Encrypto method
+|     Method              |
+| none, table             |
+| rc4, rc4-md5-6, rc4-md5 |
+| aes-128-cfb, aes-192-cfb, aes-256-cfb |
+| aes-128-ctr, aes-192-ctr, aes-256-ctr |
+| camellia-128-cfb, camellia-192-cfb, camellia-256-cfb |
+| bf-cfb, cast5-cfb, des-cfb, idea-cfb, rc2-cfb, seed-cfb |
+| salsa20, chacha20, chacha20-ietf |
+
+
 ## Protocols & obfuscators
 
 | Protocols | obfuscators | 
@@ -230,25 +241,6 @@ config.json
     }
 }
 ```
-
-old config.json (deprecated.)
-```json
-{
-    "server": "123.45.67.89",
-    "server_port": 443,
-    "method": "aes-128-ctr",
-    "password": "password",
-    "protocol": "auth_aes128_md5",
-    "protocol_param": "",
-    "obfs": "tls1.2_ticket_auth",
-    "obfs_param": "",
-    "local_address": "0.0.0.0",
-    "local_port": 1080,
-    "udp": true,
-    "timeout": 300
-}
-```
-
 
 ## cmake
 

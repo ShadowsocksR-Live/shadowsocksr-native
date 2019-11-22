@@ -266,6 +266,32 @@ read_jconf(const char *file)
                     conf.server_legacy.obfs = to_string(value);
                 } else if (strcmp(name, "obfs_param") == 0) { // SSR
                     conf.server_legacy.obfs_param = to_string(value);
+                } else if (strcmp(name, "udp") == 0) {
+                    conf.mode = value->u.boolean ? TCP_AND_UDP : TCP_ONLY;
+                } else if (strcmp(name, "timeout") == 0) {
+                    conf.timeout = to_string(value);
+                } else if (strcmp(name, "server_settings") == 0) {
+                    ;
+                } else if (strcmp(name, "client_settings") == 0) {
+                    if (value->type == json_object) {
+                        conf.server_legacy.remote_num = 1;
+                        for (j = 0; j < value->u.object.length; j++) {
+                            char *cs_n = value->u.object.values[j].name;
+                            json_value *cs_v = value->u.object.values[j].value;
+                            if (strcmp(cs_n, "server") == 0) {
+                                conf.server_legacy.remote_addr[0].host = to_string(cs_v);
+                                conf.server_legacy.remote_addr[0].port = NULL;
+                            } else if (strcmp(cs_n, "server_port") == 0) {
+                                conf.server_legacy.remote_port = to_string(cs_v);
+                            } else if (strcmp(cs_n, "listen_address") == 0) {
+                                conf.server_legacy.local_addr = to_string(cs_v);
+                            } else if (strcmp(cs_n, "listen_port") == 0) {
+                                conf.server_legacy.local_port = to_string(cs_v);
+                            }
+                        }
+                    }
+                } else if (strcmp(name, "over_tls_settings") == 0) {
+                    ;
                 } else {
                     match = 0;
                 }
