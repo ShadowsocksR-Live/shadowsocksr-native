@@ -122,6 +122,9 @@ static void _mbed_write_done_cb(uv_mbed_t *mbed, int status, void *p) {
     if (status < 0) {
         int port = (int)tunnel->desired_addr->port;
         char tmp[0x100] = { 0 };
+        if (uv_mbed_is_closing(mbed)) {
+            return;
+        }
         socks5_address_to_string(tunnel->desired_addr, tmp, sizeof(tmp));
         pr_err("write \"%s:%d\" failed: %d: %s", tmp, port, status, uv_strerror(status));
         uv_mbed_close(mbed, _mbed_close_done_cb, p);
