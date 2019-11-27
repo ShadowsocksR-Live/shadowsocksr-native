@@ -1112,7 +1112,7 @@ auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_i
 
     {
         size_t enc_key_len;
-        uint8_t enc_key[16] = { 0 };
+        uint8_t enc_key[16 + 1] = { 0 };
         char encrypt_key_base64[256] = {0};
         if (buffer_get_length(local->user_key) == 0) {
             if(server->param != NULL && server->param[0] != 0) {
@@ -1147,7 +1147,7 @@ auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_i
         strcat(encrypt_key_base64, salt);
 
         enc_key_len = strlen(encrypt_key_base64);
-        bytes_to_key_with_size((uint8_t *)encrypt_key_base64, enc_key_len, enc_key, sizeof(enc_key));
+        bytes_to_key_with_size((uint8_t *)encrypt_key_base64, enc_key_len, enc_key, 16);
 
         ss_aes_128_cbc_encrypt(16, encrypt, encrypt_data, enc_key);
         memcpy(encrypt + 4, encrypt_data, 16);
