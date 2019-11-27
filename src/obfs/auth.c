@@ -215,8 +215,11 @@ static struct buffer_t * auth_aes128_not_match_return(struct obfs_t *obfs, struc
     obfs->server.overhead = 0;
     if (feedback) { *feedback = false; }
     if (local->salt && strlen(local->salt)) {
-        struct buffer_t *ret = buffer_create_from((const uint8_t *)"", SSR_BUFF_SIZE);
-        memset((uint8_t *)buffer_get_data(ret, NULL), 'E', SSR_BUFF_SIZE);
+        struct buffer_t *ret;
+        uint8_t *tmp = (uint8_t *) calloc(SSR_BUFF_SIZE+1, sizeof(uint8_t));
+        memset(tmp, 'E', SSR_BUFF_SIZE);
+        ret = buffer_create_from(tmp, SSR_BUFF_SIZE+1);
+        free(tmp);
         return ret;
     }
     return buffer_clone(buf);
@@ -378,7 +381,7 @@ size_t
 auth_sha1_pack_auth_data(auth_simple_global_data *global, struct server_info_t *server, char *data, size_t datalength, char *outdata)
 {
     time_t t;
-    uint8_t hash[SHA1_BYTES];
+    uint8_t hash[SHA1_BYTES + 1] = { 0 };
     unsigned char rand_len = (xorshift128plus() & 0x7F) + 1;
     size_t data_offset = rand_len + 4 + 2;
     size_t out_size = data_offset + datalength + 12 + OBFS_HMAC_SHA1_LEN;
@@ -515,7 +518,7 @@ auth_sha1_v2_pack_data(char *data, size_t datalength, char *outdata)
 size_t
 auth_sha1_v2_pack_auth_data(auth_simple_global_data *global, struct server_info_t *server, char *data, size_t datalength, char *outdata)
 {
-    uint8_t hash[SHA1_BYTES];
+    uint8_t hash[SHA1_BYTES + 1] = { 0 };
     unsigned int rand_len = (datalength > 1300 ? 0 : datalength > 400 ? (xorshift128plus() & 0x7F) : (xorshift128plus() & 0x3FF)) + 1;
     size_t data_offset = (size_t)rand_len + 4 + 2;
     size_t out_size = data_offset + datalength + 12 + OBFS_HMAC_SHA1_LEN;
@@ -678,7 +681,7 @@ auth_sha1_v4_pack_data(char *data, size_t datalength, char *outdata)
 size_t
 auth_sha1_v4_pack_auth_data(auth_simple_global_data *global, struct server_info_t *server, char *data, size_t datalength, char *outdata)
 {
-    uint8_t hash[SHA1_BYTES];
+    uint8_t hash[SHA1_BYTES + 1] = { 0 };
     time_t t;
     unsigned int rand_len = (datalength > 1300 ? 0 : datalength > 400 ? (xorshift128plus() & 0x7F) : (xorshift128plus() & 0x3FF)) + 1;
     size_t data_offset = (size_t)rand_len + 4 + 2;
@@ -1031,7 +1034,7 @@ auth_aes128_sha1_pack_data(uint8_t *data, size_t datalength, size_t fulldataleng
     }
 
     {
-        uint8_t hash[20];
+        uint8_t hash[SHA1_BYTES + 1] = { 0 };
         struct buffer_t *_msg = buffer_create_from(outdata, 2);
         struct buffer_t *_key = buffer_create_from(key, key_len);
         local->hmac(hash, _msg, _key);
@@ -1050,7 +1053,7 @@ auth_aes128_sha1_pack_data(uint8_t *data, size_t datalength, size_t fulldataleng
     ++local->pack_id;
 
     {
-        uint8_t hash[20];
+        uint8_t hash[SHA1_BYTES + 1] = { 0 };
         struct buffer_t *_msg = buffer_create_from(outdata, out_size - 4);
         struct buffer_t *_key = buffer_create_from(key, key_len);
         local->hmac(hash, _msg, _key);
@@ -1116,7 +1119,7 @@ auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_i
                 char *param = server->param;
                 char *delim = strchr(param, ':');
                 if(delim != NULL) {
-                    uint8_t hash[21] = {0};
+                    uint8_t hash[SHA1_BYTES + 1] = { 0 };
                     long uid_long;
                     char key_str[128];
                     char uid_str[16] = { 0 };
@@ -1152,7 +1155,7 @@ auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_i
     }
 
     {
-        uint8_t hash[20];
+        uint8_t hash[SHA1_BYTES + 1] = { 0 };
         struct buffer_t *_msg = buffer_create_from(encrypt, 20);
         struct buffer_t *_key = buffer_create_from(key, key_len);
         local->hmac(hash, _msg, _key);
@@ -1161,16 +1164,14 @@ auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_i
         memcpy(encrypt + 20, hash, 4);
     }
 
+    rand_bytes((uint8_t*)outdata, 1);
     {
-        uint8_t hash[20];
-        rand_bytes((uint8_t*)outdata, 1);
-        {
+        uint8_t hash[SHA1_BYTES + 1] = { 0 };
         struct buffer_t *_msg = buffer_create_from(outdata, 1);
         struct buffer_t *_key = buffer_create_from(key, key_len);
         local->hmac(hash, _msg, _key);
         buffer_release(_msg);
         buffer_release(_key);
-        }
         memcpy(outdata + 1, hash, 6);
     }
 
@@ -1178,7 +1179,7 @@ auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_i
     memcpy(outdata + data_offset, data, datalength);
 
     {
-        uint8_t hash[20];
+        uint8_t hash[SHA1_BYTES + 1] = { 0 };
         struct buffer_t *_msg = buffer_create_from(outdata, out_size - 4);
         local->hmac(hash, _msg, local->user_key);
         buffer_release(_msg);
@@ -1268,7 +1269,7 @@ auth_aes128_sha1_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int
         memintcopy_lt(key + key_len - 4, local->recv_id);
 
         {
-            uint8_t hash[20];
+            uint8_t hash[SHA1_BYTES + 1] = { 0 };
             struct buffer_t *_msg = buffer_create_from(recv_buffer, 2);
             struct buffer_t *_key = buffer_create_from(key, key_len);
             local->hmac(hash, _msg, _key);
@@ -1293,7 +1294,7 @@ auth_aes128_sha1_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int
         }
 
         {
-            uint8_t hash[20];
+            uint8_t hash[SHA1_BYTES + 1] = { 0 };
             struct buffer_t *_msg = buffer_create_from(recv_buffer, length - 4);
             struct buffer_t *_key = buffer_create_from(key, key_len);
             local->hmac(hash, _msg, _key);
@@ -1348,7 +1349,7 @@ auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplaindata, 
             if(delim != NULL) {
                 char key_str[128];
                 long uid_long;
-                uint8_t hash[21] = {0};
+                uint8_t hash[SHA1_BYTES + 1] = { 0 };
                 char uid_str[16] = { 0 };
 
                 strncpy(uid_str, param, delim - param);
@@ -1371,7 +1372,7 @@ auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplaindata, 
     memmove(out_buffer + datalength, local->uid, 4);
 
     {
-        uint8_t hash[20];
+        uint8_t hash[SHA1_BYTES + 1] = { 0 };
         struct buffer_t *_msg = buffer_create_from(out_buffer, (int)(outlength - 4));
         local->hmac(hash, _msg, local->user_key);
         buffer_release(_msg);
@@ -1392,7 +1393,7 @@ auth_aes128_sha1_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaindata,
 {
     char *plaindata;
     auth_simple_local_data *local;
-    uint8_t hash[20];
+    uint8_t hash[SHA1_BYTES + 1] = { 0 };
 
     if (datalength <= 4) {
         return 0;

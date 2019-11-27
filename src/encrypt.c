@@ -658,7 +658,7 @@ cipher_context_update(struct cipher_ctx_t *ctx, uint8_t *output, size_t *olen,
 size_t
 ss_md5_hmac_with_key(uint8_t auth[MD5_BYTES], const struct buffer_t *msg, const struct buffer_t *key)
 {
-    uint8_t hash[MD5_BYTES];
+    uint8_t hash[MD5_BYTES + 1] = { 0 };
 #if defined(USE_CRYPTO_OPENSSL)
     HMAC(EVP_md5(), key->buffer, key->len, (unsigned char *)msg->buffer, (size_t)msg->len, (unsigned char *)hash, NULL);
 #elif defined(USE_CRYPTO_MBEDTLS)
@@ -676,7 +676,7 @@ ss_md5_hmac_with_key(uint8_t auth[MD5_BYTES], const struct buffer_t *msg, const 
 size_t
 ss_md5_hash_func(uint8_t *auth, const uint8_t *msg, size_t msg_len)
 {
-    uint8_t hash[MD5_BYTES];
+    uint8_t hash[MD5_BYTES + 1] = { 0 };
 #if defined(USE_CRYPTO_OPENSSL)
     MD5((unsigned char *)msg, (size_t)msg_len, (unsigned char *)hash);
 #elif defined(USE_CRYPTO_MBEDTLS)
@@ -690,7 +690,7 @@ ss_md5_hash_func(uint8_t *auth, const uint8_t *msg, size_t msg_len)
 size_t
 ss_sha1_hmac_with_key(uint8_t auth[SHA1_BYTES], const struct buffer_t *msg, const struct buffer_t *key)
 {
-    uint8_t hash[SHA1_BYTES];
+    uint8_t hash[SHA1_BYTES + 1] = { 0 };
 #if defined(USE_CRYPTO_OPENSSL)
     HMAC(EVP_sha1(), key->buffer, key->len, msg->buffer, msg->len, hash, NULL);
 #elif defined(USE_CRYPTO_MBEDTLS)
@@ -708,7 +708,7 @@ ss_sha1_hmac_with_key(uint8_t auth[SHA1_BYTES], const struct buffer_t *msg, cons
 size_t
 ss_sha1_hash_func(uint8_t *auth, const uint8_t *msg, size_t msg_len)
 {
-    uint8_t hash[SHA1_BYTES];
+    uint8_t hash[SHA1_BYTES + 1] = { 0 };
 #if defined(USE_CRYPTO_OPENSSL)
     SHA1((unsigned char *)msg, (size_t)msg_len, (unsigned char *)hash);
 #elif defined(USE_CRYPTO_MBEDTLS)
