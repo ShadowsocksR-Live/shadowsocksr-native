@@ -336,6 +336,9 @@ function nginx_web_server_config_end() {
         index index.html index.htm index.nginx-debian.html;
         root  ${site_dir};
 
+        location /.well-known/acme-challenge/ {
+        }
+        
         location / {
             rewrite ^/(.*)$ https://${web_svr_domain}/$1 permanent;
         }
