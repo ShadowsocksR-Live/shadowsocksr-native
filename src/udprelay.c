@@ -1375,6 +1375,7 @@ static void udp_local_listener_close_done_cb(uv_handle_t* handle) {
 #ifdef MODULE_LOCAL
     // SSR beg
     if (server_ctx->protocol_plugin) {
+        object_safe_free(&server_ctx->protocol_global);
         obfs_instance_destroy(server_ctx->protocol_plugin);
         server_ctx->protocol_plugin = NULL;
     }
