@@ -117,11 +117,9 @@ int main(int argc, char * const argv[]) {
     int err = -1;
     struct cmd_line_info *cmds = NULL;
 
-#if __MEM_CHECK__
-    _CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
-    _CrtSetBreakAlloc(63);
-    _CrtSetBreakAlloc(64);
-#endif // __MEM_CHECK__
+    MEM_CHECK_BEGIN();
+    MEM_CHECK_BREAK_ALLOC(63);
+    MEM_CHECK_BREAK_ALLOC(64);
 
     do {
         set_app_name(argv[0]);
@@ -173,9 +171,7 @@ int main(int argc, char * const argv[]) {
     if (err != 0) {
         svr_usage();
     }
-#if __MEM_CHECK__
-    _CrtDumpMemoryLeaks();
-#endif // __MEM_CHECK__
+    MEM_CHECK_DUMP_LEAKS();
     return 0;
 }
 

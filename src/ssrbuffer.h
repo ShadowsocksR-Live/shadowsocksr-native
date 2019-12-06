@@ -30,6 +30,17 @@
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>
+
+#define MEM_CHECK_BEGIN() do { _CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF ); } while(0)
+#define MEM_CHECK_BREAK_ALLOC(x) do { _CrtSetBreakAlloc(x); } while(0)
+#define MEM_CHECK_DUMP_LEAKS() do { _CrtDumpMemoryLeaks(); } while(0)
+
+#else
+
+#define MEM_CHECK_BEGIN() do { ; } while(0)
+#define MEM_CHECK_BREAK_ALLOC(x) do { x; } while(0)
+#define MEM_CHECK_DUMP_LEAKS() do { ; } while(0)
+
 #endif // __MEM_CHECK__
 
 struct buffer_t {

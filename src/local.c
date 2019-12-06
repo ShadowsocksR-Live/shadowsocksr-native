@@ -1399,11 +1399,9 @@ main(int argc, char **argv)
             { 0,           0,                 0, 0 },
     };
 
-#if defined(__MEM_CHECK__)
-    _CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
-    _CrtSetBreakAlloc(63);
-    _CrtSetBreakAlloc(64);
-#endif // __MEM_CHECK__
+    MEM_CHECK_BEGIN();
+    MEM_CHECK_BREAK_ALLOC(63);
+    MEM_CHECK_BREAK_ALLOC(64);
 
     opterr = 0;
 
@@ -1712,10 +1710,8 @@ main(int argc, char **argv)
         config_release(local_config);
     }
     free_jconf(conf);
-	
-#if __MEM_CHECK__
-    _CrtDumpMemoryLeaks();
-#endif // __MEM_CHECK__
+
+    MEM_CHECK_DUMP_LEAKS();
 	
     return i;
 }

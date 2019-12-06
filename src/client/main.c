@@ -30,9 +30,7 @@
 #include "ssr_client_api.h"
 #include "cmd_line_parser.h"
 #include "daemon_wrapper.h"
-#if defined(__MEM_CHECK__)
 #include "ssrbuffer.h"
-#endif // __MEM_CHECK__
 
 #if HAVE_UNISTD_H
 #include <unistd.h>  /* getopt */
@@ -49,11 +47,9 @@ int main(int argc, char **argv) {
     int err = -1;
     struct cmd_line_info *cmds = NULL;
 
-#if defined(__MEM_CHECK__)
-    _CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
-    _CrtSetBreakAlloc(63);
-    _CrtSetBreakAlloc(64);
-#endif // __MEM_CHECK__
+    MEM_CHECK_BEGIN();
+    MEM_CHECK_BREAK_ALLOC(63);
+    MEM_CHECK_BREAK_ALLOC(64);
 
     do {
         set_app_name(argv[0]);
@@ -108,9 +104,7 @@ int main(int argc, char **argv) {
         usage();
     }
 
-#if __MEM_CHECK__
-    _CrtDumpMemoryLeaks();
-#endif // __MEM_CHECK__
+    MEM_CHECK_DUMP_LEAKS();
 
     return 0;
 }
