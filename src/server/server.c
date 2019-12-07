@@ -143,6 +143,8 @@ int main(int argc, char * const argv[]) {
             break;
         }
 
+        config_parse_protocol_param(config, config->protocol_param);
+
 #ifndef UDP_RELAY_ENABLE
         config->udp = false;
 #endif // UDP_RELAY_ENABLE

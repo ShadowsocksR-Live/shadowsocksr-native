@@ -13,6 +13,7 @@ struct cipher_env_t;
 struct obfs_t;
 struct tunnel_ctx;
 struct cstl_set;
+struct cstl_map;
 
 struct server_config {
     char *listen_host;
@@ -23,6 +24,8 @@ struct server_config {
     char *method;
     char *protocol;
     char *protocol_param;
+    struct cstl_map *user_id_auth_key;
+    unsigned int max_client;
     char *obfs;
     char *obfs_param;
     bool over_tls_enable;
@@ -91,6 +94,9 @@ void string_safe_assign(char **target, const char *value);
 
 struct server_config * config_create(void);
 void config_release(struct server_config *cf);
+
+void config_parse_protocol_param(struct server_config *config, const char *param);
+void config_add_user_id_with_auth_key(struct server_config *config, const char *user_id, const char *auth_key);
 
 int tunnel_ctx_compare_for_c_set(const void *left, const void *right);
 

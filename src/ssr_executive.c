@@ -83,6 +83,9 @@ void config_release(struct server_config *cf) {
     if (cf == NULL) {
         return;
     }
+
+    obj_map_destroy(cf->user_id_auth_key);
+
     object_safe_free((void **)&cf->listen_host);
     object_safe_free((void **)&cf->remote_host);
     object_safe_free((void **)&cf->password);
@@ -97,6 +100,63 @@ void config_release(struct server_config *cf) {
     object_safe_free((void **)&cf->remarks);
 
     object_safe_free((void **)&cf);
+}
+
+static int uid_cmp(const void *left, const void *right) {
+    char *l = *(char **)left;
+    char *r = *(char **)right;
+    return strcmp(l, r);
+}
+
+static void uid_destroy(void *obj) {
+    if (obj) {
+        void *str = *((void **)obj);
+        if (str) {
+            free(str);
+        }
+    }
+}
+
+/* "protocol_param":"64#12345:breakwa11,233:breakwa11", */
+void config_parse_protocol_param(struct server_config *config, const char *param) {
+    char *p0 = strdup(param), *user_id = p0, *iter, *auth_key;
+    long int max_cli = 0;
+    iter = strchr(p0, '#');
+    if (iter) {
+        *iter = '\0'; iter++;
+        max_cli = strtol(p0, NULL, 10);
+        user_id = iter;
+    }
+    config->max_client = (max_cli != 0) ? (unsigned int)max_cli : 64;
+
+    do {
+        iter = strchr(user_id, ',');
+        if (iter) {
+            *iter = '\0'; iter++;
+        }
+
+        auth_key = strchr(user_id, ':');
+        if (auth_key) {
+            *auth_key = '\0'; auth_key++;
+            config_add_user_id_with_auth_key(config, user_id, auth_key);
+        }
+
+        if (iter) {
+            user_id = iter;
+        }
+    } while (iter != NULL);
+
+    free(p0);
+}
+
+void config_add_user_id_with_auth_key(struct server_config *config, const char *user_id, const char *auth_key) {
+    char *u = strdup(user_id);
+    char *a = strdup(auth_key);
+
+    if (config->user_id_auth_key == NULL) {
+        config->user_id_auth_key = obj_map_create(uid_cmp, uid_destroy, uid_destroy);
+    }
+    obj_map_add(config->user_id_auth_key, &u, sizeof(void *), &a, sizeof(void *));
 }
 
 int tunnel_ctx_compare_for_c_set(const void *left, const void *right) {
