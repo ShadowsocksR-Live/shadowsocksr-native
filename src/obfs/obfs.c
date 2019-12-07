@@ -37,13 +37,13 @@ bool need_feedback_true(struct obfs_t *obfs) {
 void
 set_server_info(struct obfs_t *obfs, struct server_info_t *server)
 {
-    memmove(&obfs->server, server, sizeof(struct server_info_t));
+    memmove(&obfs->server_info, server, sizeof(struct server_info_t));
 }
 
 struct server_info_t *
 get_server_info(struct obfs_t *obfs)
 {
-    return &obfs->server;
+    return &obfs->server_info;
 }
 
 struct buffer_t * generic_server_pre_encrypt(struct obfs_t *obfs, const struct buffer_t *buf) {

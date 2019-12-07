@@ -126,9 +126,9 @@ static void tls12_sha1_hmac(struct obfs_t *obfs,
                             uint8_t digest[SHA1_BYTES])
 {
     size_t id_size = client_id->len;
-    size_t key_size = obfs->server.key_len;
+    size_t key_size = obfs->server_info.key_len;
     uint8_t *key = (uint8_t*)malloc(key_size + id_size);
-    memcpy(key, obfs->server.key, key_size);
+    memcpy(key, obfs->server_info.key, key_size);
     memcpy(key + key_size, client_id->buffer, id_size);
     {
         struct buffer_t *_key = buffer_create_from(key, (key_size + id_size));
@@ -192,7 +192,7 @@ struct buffer_t * tls12_ticket_auth_client_encode(struct obfs_t *obfs, const str
     uint8_t *encryptdata = buf->buffer;
     size_t datalength = buf->len;
     struct tls12_ticket_auth_local_data *local = (struct tls12_ticket_auth_local_data*)obfs->l_data;
-    struct tls12_ticket_auth_global_data *global = (struct tls12_ticket_auth_global_data*)obfs->server.g_data;
+    struct tls12_ticket_auth_global_data *global = (struct tls12_ticket_auth_global_data*)obfs->server_info.g_data;
     struct buffer_t *result = NULL;
     if (local->handshake_status == -1) {
         return buffer_clone(buf);
@@ -303,10 +303,10 @@ struct buffer_t * tls12_ticket_auth_client_encode(struct obfs_t *obfs, const str
 
         buffer_concatenate(ext_buf, (uint8_t *)tls_data1, tls_data1_len);
 
-        if (obfs->server.param && strlen(obfs->server.param) > 0) {
-            param = obfs->server.param;
+        if (obfs->server_info.param && strlen(obfs->server_info.param) > 0) {
+            param = obfs->server_info.param;
         } else {
-            param = obfs->server.host;
+            param = obfs->server_info.host;
         }
         hosts = (char *) calloc(strlen(param)+1, sizeof(*hosts));
         strcpy(hosts, param);
@@ -369,7 +369,7 @@ struct buffer_t * tls12_ticket_auth_client_encode(struct obfs_t *obfs, const str
 struct buffer_t * tls12_ticket_auth_client_decode(struct obfs_t *obfs, const struct buffer_t *buf, bool *needsendback) {
     struct buffer_t *result = buffer_create(SSR_BUFF_SIZE);
     struct tls12_ticket_auth_local_data *local = (struct tls12_ticket_auth_local_data*)obfs->l_data;
-    struct tls12_ticket_auth_global_data *global = (struct tls12_ticket_auth_global_data*)obfs->server.g_data;
+    struct tls12_ticket_auth_global_data *global = (struct tls12_ticket_auth_global_data*)obfs->server_info.g_data;
 
     *needsendback = false;
     buffer_concatenate2(local->recv_buffer, buf);
@@ -464,7 +464,7 @@ struct buffer_t * tls12_ticket_auth_server_pre_encrypt(struct obfs_t *obfs, cons
 
 struct buffer_t * tls12_ticket_auth_server_encode(struct obfs_t *obfs, const struct buffer_t *buf) {
     struct tls12_ticket_auth_local_data *local = (struct tls12_ticket_auth_local_data*)obfs->l_data;
-    struct tls12_ticket_auth_global_data *global = (struct tls12_ticket_auth_global_data*)obfs->server.g_data;
+    struct tls12_ticket_auth_global_data *global = (struct tls12_ticket_auth_global_data*)obfs->server_info.g_data;
     uint8_t rand_buf[SSR_BUFF_SIZE] = { 0 };
     uint8_t auth_data[32] = { 0 };
     size_t size = 0;
@@ -589,13 +589,13 @@ struct buffer_t * tls12_ticket_auth_server_encode(struct obfs_t *obfs, const str
 
 struct buffer_t * decode_error_return(struct obfs_t *obfs, const struct buffer_t *buf, bool *need_decrypt, bool *need_feedback) {
     struct tls12_ticket_auth_local_data *local = (struct tls12_ticket_auth_local_data*)obfs->l_data;
-    struct tls12_ticket_auth_global_data *global = (struct tls12_ticket_auth_global_data*)obfs->server.g_data;
+    struct tls12_ticket_auth_global_data *global = (struct tls12_ticket_auth_global_data*)obfs->server_info.g_data;
 
     local->handshake_status = -1;
-    if (obfs->server.overhead > 0) {
+    if (obfs->server_info.overhead > 0) {
         // self.server_info.overhead -= self.overhead
     }
-    obfs->server.overhead = 0; // self.overhead = 0
+    obfs->server_info.overhead = 0; // self.overhead = 0
     // if (self.method in ['tls1.2_ticket_auth', 'tls1.2_ticket_fastauth'])
     {
         struct buffer_t *r = buffer_create(SSR_BUFF_SIZE);
@@ -612,7 +612,7 @@ struct buffer_t * decode_error_return(struct obfs_t *obfs, const struct buffer_t
 
 struct buffer_t * tls12_ticket_auth_server_decode(struct obfs_t *obfs, const struct buffer_t *buf, bool *need_decrypt, bool *need_feedback) {
     struct tls12_ticket_auth_local_data *local = (struct tls12_ticket_auth_local_data*)obfs->l_data;
-    struct tls12_ticket_auth_global_data *global = (struct tls12_ticket_auth_global_data*)obfs->server.g_data;
+    struct tls12_ticket_auth_global_data *global = (struct tls12_ticket_auth_global_data*)obfs->server_info.g_data;
     struct buffer_t *result = NULL;
     struct buffer_t *buf_copy = NULL;
     struct buffer_t *ogn_buf = NULL;

@@ -43,7 +43,7 @@ struct server_info_t {
 };
 
 struct obfs_t {
-    struct server_info_t server;
+    struct server_info_t server_info;
     void *l_data;
 
     void * (*generate_global_init_data)(void);

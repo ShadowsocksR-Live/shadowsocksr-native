@@ -570,10 +570,10 @@ tunnel_cipher_server_decrypt(struct tunnel_cipher_ctx *tc,
             return NULL;
         }
         */
-        if (protocol && protocol->server.recv_iv[0] == 0) {
-            size_t iv_len = protocol->server.iv_len;
-            memmove(protocol->server.recv_iv, ret->buffer, iv_len);
-            protocol->server.recv_iv_len = iv_len;
+        if (protocol && protocol->server_info.recv_iv[0] == 0) {
+            size_t iv_len = protocol->server_info.iv_len;
+            memmove(protocol->server_info.recv_iv, ret->buffer, iv_len);
+            protocol->server_info.recv_iv_len = iv_len;
         }
 
         err = ss_decrypt(env->cipher, ret, tc->d_ctx, max(SSR_BUFF_SIZE, ret->capacity));

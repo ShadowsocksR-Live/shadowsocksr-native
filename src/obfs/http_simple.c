@@ -198,16 +198,16 @@ struct buffer_t * http_simple_client_encode(struct obfs_t *obfs, const struct bu
     if (local->has_sent_header) {
         return buffer_clone(buf);
     }
-    head_size = (size_t)obfs->server.head_len + (xorshift128plus() & 0x3F);
+    head_size = (size_t)obfs->server_info.head_len + (xorshift128plus() & 0x3F);
     out_buffer = (char*)malloc((size_t)(datalength + SSR_BUFF_SIZE));
     if ((size_t)head_size > datalength) {
         head_size = datalength;
     }
     http_simple_encode_head(local, encryptdata, head_size);
-    if (obfs->server.param && strlen(obfs->server.param) == 0) {
-        obfs->server.param = NULL;
+    if (obfs->server_info.param && strlen(obfs->server_info.param) == 0) {
+        obfs->server_info.param = NULL;
     }
-    strncpy(hosts, obfs->server.param ? obfs->server.param : obfs->server.host, sizeof(hosts));
+    strncpy(hosts, obfs->server_info.param ? obfs->server_info.param : obfs->server_info.host, sizeof(hosts));
     phost[host_num++] = hosts;
     for (pos = 0; hosts[pos]; ++pos) {
         if (hosts[pos] == ',') {
@@ -247,10 +247,10 @@ struct buffer_t * http_simple_client_encode(struct obfs_t *obfs, const struct bu
         }
     }
     host_num = (int)(xorshift128plus() % (uint64_t)host_num);
-    if (obfs->server.port == 80) {
+    if (obfs->server_info.port == 80) {
         sprintf(hostport, "%s", phost[host_num]);
     } else {
-        sprintf(hostport, "%s:%d", phost[host_num], obfs->server.port);
+        sprintf(hostport, "%s:%d", phost[host_num], obfs->server_info.port);
     }
     fake_path = fake_request_data((char *)local->encode_buffer->buffer);
 
@@ -459,15 +459,15 @@ struct buffer_t * http_post_client_encode(struct obfs_t *obfs, const struct buff
     if (local->has_sent_header) {
         return buffer_clone(buf);
     }
-    head_size = (size_t)obfs->server.head_len + (xorshift128plus() & 0x3F);
+    head_size = (size_t)obfs->server_info.head_len + (xorshift128plus() & 0x3F);
     out_buffer = (char*)malloc((size_t)(datalength + (SSR_BUFF_SIZE * 2)));
     if ((size_t)head_size > datalength)
         head_size = datalength;
     http_simple_encode_head(local, encryptdata, head_size);
-    if (obfs->server.param && strlen(obfs->server.param) == 0) {
-        obfs->server.param = NULL;
+    if (obfs->server_info.param && strlen(obfs->server_info.param) == 0) {
+        obfs->server_info.param = NULL;
     }
-    strncpy(hosts, obfs->server.param ? obfs->server.param : obfs->server.host, sizeof hosts);
+    strncpy(hosts, obfs->server_info.param ? obfs->server_info.param : obfs->server_info.host, sizeof(hosts));
     phost[host_num++] = hosts;
     for (pos = 0; hosts[pos]; ++pos) {
         if (hosts[pos] == ',') {
@@ -507,10 +507,10 @@ struct buffer_t * http_post_client_encode(struct obfs_t *obfs, const struct buff
         }
     }
     host_num = (int)(xorshift128plus() % (uint64_t)host_num);
-    if (obfs->server.port == 80) {
+    if (obfs->server_info.port == 80) {
         snprintf(hostport, sizeof(hostport), "%s", phost[host_num]);
     } else {
-        snprintf(hostport, sizeof(hostport), "%s:%d", phost[host_num], obfs->server.port);
+        snprintf(hostport, sizeof(hostport), "%s:%d", phost[host_num], obfs->server_info.port);
     }
 
     fake_path = fake_request_data((char *)local->encode_buffer->buffer);
