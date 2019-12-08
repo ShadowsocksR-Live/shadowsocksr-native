@@ -1474,7 +1474,7 @@ struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, stru
         int time_diff;
         uint32_t uid;
         char uid_str[32] = { 0 };
-        char *auth_key = NULL;
+        const char *auth_key = NULL;
         bool is_multi_user = false;
         bool user_exist = false;
 
