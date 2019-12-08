@@ -97,6 +97,7 @@ void config_release(struct server_config *cf);
 
 void config_parse_protocol_param(struct server_config *config, const char *param);
 void config_add_user_id_with_auth_key(struct server_config *config, const char *user_id, const char *auth_key);
+bool config_is_user_exist(struct server_config *config, const char *user_id, const char **auth_key, bool *is_multi_user);
 
 int tunnel_ctx_compare_for_c_set(const void *left, const void *right);
 

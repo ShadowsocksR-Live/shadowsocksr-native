@@ -1,6 +1,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <assert.h>
 #include "auth.h"
 #include "obfsutil.h"
 #include "crc32.h"
@@ -1452,6 +1453,7 @@ struct buffer_t * auth_aes128_sha1_server_decode(struct obfs_t *obfs, const stru
 }
 
 struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, bool *need_feedback) {
+    struct server_info_t *server_info = &obfs->server_info;
     struct buffer_t *out_buf = NULL;
     struct buffer_t *mac_key = NULL;
     uint8_t sha1data[SHA1_BYTES + 1] = { 0 };
@@ -1461,8 +1463,8 @@ struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, stru
     buffer_concatenate2(local->recv_buffer, buf);
     out_buf = buffer_create(SSR_BUFF_SIZE);
 
-    mac_key = buffer_create_from(obfs->server_info.recv_iv, obfs->server_info.recv_iv_len);
-    buffer_concatenate(mac_key, obfs->server_info.key, obfs->server_info.key_len);
+    mac_key = buffer_create_from(server_info->recv_iv, server_info->recv_iv_len);
+    buffer_concatenate(mac_key, server_info->key, server_info->key_len);
 
     if (local->has_recv_header == false) {
         uint32_t utc_time;
@@ -1470,6 +1472,11 @@ struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, stru
         uint32_t connection_id;
         uint16_t rnd_len;
         int time_diff;
+        uint32_t uid;
+        char uid_str[32] = { 0 };
+        char *auth_key = NULL;
+        bool is_multi_user = false;
+        bool user_exist = false;
 
         struct buffer_t *head;
         size_t len = local->recv_buffer->len;
@@ -1500,9 +1507,26 @@ struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, stru
             return auth_aes128_not_match_return(obfs, local->recv_buffer, need_feedback);
         }
 
-        // TODO https://github.com/ShadowsocksR-Live/shadowsocksr/blob/manyuser/shadowsocks/obfsplugin/auth.py#L670
-        buffer_store(local->user_key, obfs->server_info.key, obfs->server_info.key_len);
+        memcpy(local->uid, local->recv_buffer->buffer + 7, 4);
+        uid = (uint32_t) (*((uint32_t *)(local->uid))); // TODO: ntohl
+        sprintf(uid_str, "%d", (int)uid);
 
+        if (obfs->audit_incoming_user) {
+            user_exist = obfs->audit_incoming_user(obfs, uid_str, &auth_key, &is_multi_user);
+        }
+        if (user_exist) {
+            uint8_t hash[SHA1_BYTES + 1] = { 0 };
+            assert(is_multi_user);
+            assert(auth_key);
+            local->hash(hash, auth_key, strlen(auth_key));
+            buffer_store(local->user_key, hash, local->hash_len);
+        } else {
+            if (is_multi_user == false) {
+                buffer_store(local->user_key, server_info->key, server_info->key_len);
+            } else {
+                buffer_store(local->user_key, server_info->recv_iv, server_info->recv_iv_len);
+            }
+        }
         {
             uint8_t enc_key[16] = { 0 };
             uint8_t in_data[32 + 1] = { 0 };

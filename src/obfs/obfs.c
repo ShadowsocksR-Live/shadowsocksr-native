@@ -15,6 +15,7 @@ void rand_bytes(uint8_t *output, size_t len);
 
 #include "encrypt.h"
 #include "ssrbuffer.h"
+#include "ssr_executive.h"
 
 void * generate_global_init_data(void) {
     return calloc(1, sizeof(char));
@@ -80,7 +81,15 @@ dispose_obfs(struct obfs_t *obfs)
     free(obfs);
 }
 
+bool protocol_audit_incoming_user(struct obfs_t *obfs, const char *user_id, const char **auth_key, bool *is_multi_user) {
+    bool result = false;
+    struct server_config *config = obfs->server_info.config;
+    result = config_is_user_exist(config, user_id, auth_key, is_multi_user);
+    return result;
+}
+
 struct obfs_t * obfs_instance_create(const char *plugin_name) {
+    struct obfs_t *plug_in = NULL;
     enum ssr_protocol protocol_type;
     enum ssr_obfs obfs_type;
     if (plugin_name == NULL || strlen(plugin_name)==0) {
@@ -102,61 +111,63 @@ struct obfs_t * obfs_instance_create(const char *plugin_name) {
     init_shift128plus();
     if (ssr_obfs_http_simple == obfs_type) {
         // http_simple
-        return http_simple_new_obfs();
+        plug_in = http_simple_new_obfs();
     } else if (ssr_obfs_http_post == obfs_type) {
         // http_post
-        return http_post_new_obfs();
+        plug_in = http_post_new_obfs();
     } else if (ssr_obfs_http_mix == obfs_type) {
         // http_mix
-        return http_mix_new_obfs();
+        plug_in = http_mix_new_obfs();
     } else if (ssr_obfs_tls_1_2_ticket_auth == obfs_type) {
         // tls1.2_ticket_auth
-        return tls12_ticket_auth_new_obfs();
+        plug_in = tls12_ticket_auth_new_obfs();
     } else if (ssr_obfs_tls_1_2_ticket_fastauth == obfs_type) {
         // tls1.2_ticket_fastauth
-        return tls12_ticket_fastauth_new_obfs();
+        plug_in = tls12_ticket_fastauth_new_obfs();
     } else if (ssr_protocol_verify_simple == protocol_type) {
         // verify_simple
-        return verify_simple_new_obfs();
+        plug_in = verify_simple_new_obfs();
     } else if (ssr_protocol_auth_simple == protocol_type) {
         // auth_simple
-        return auth_simple_new_obfs();
+        plug_in = auth_simple_new_obfs();
     } else if (ssr_protocol_auth_sha1 == protocol_type) {
         // auth_sha1
-        return auth_sha1_new_obfs();
+        plug_in = auth_sha1_new_obfs();
     } else if (ssr_protocol_auth_sha1_v2 == protocol_type) {
         // auth_sha1_v2
-        return auth_sha1_v2_new_obfs();
+        plug_in = auth_sha1_v2_new_obfs();
     } else if (ssr_protocol_auth_sha1_v4 == protocol_type) {
         // auth_sha1_v4
-        return auth_sha1_v4_new_obfs();
+        plug_in = auth_sha1_v4_new_obfs();
     } else if (ssr_protocol_auth_aes128_md5 == protocol_type) {
         // auth_aes128_md5
-        return auth_aes128_md5_new_obfs();
-   } else if (ssr_protocol_auth_aes128_sha1 == protocol_type) {
+        plug_in = auth_aes128_md5_new_obfs();
+    } else if (ssr_protocol_auth_aes128_sha1 == protocol_type) {
         // auth_aes128_sha1
-        return auth_aes128_sha1_new_obfs();
+        plug_in = auth_aes128_sha1_new_obfs();
     } else if (ssr_protocol_auth_chain_a == protocol_type) {
         // auth_chain_a
-        return auth_chain_a_new_obfs();
+        plug_in = auth_chain_a_new_obfs();
     } else if (ssr_protocol_auth_chain_b == protocol_type) {
         // auth_chain_b
-        return auth_chain_b_new_obfs();
+        plug_in = auth_chain_b_new_obfs();
     } else if (ssr_protocol_auth_chain_c == protocol_type) {
         // auth_chain_c
-        return auth_chain_c_new_obfs();
+        plug_in = auth_chain_c_new_obfs();
     } else if (ssr_protocol_auth_chain_d == protocol_type) {
         // auth_chain_d
-        return auth_chain_d_new_obfs();
+        plug_in = auth_chain_d_new_obfs();
     } else if (ssr_protocol_auth_chain_e == protocol_type) {
         // auth_chain_e
-        return auth_chain_e_new_obfs();
+        plug_in = auth_chain_e_new_obfs();
     } else if (ssr_protocol_auth_chain_f == protocol_type) {
         // auth_chain_f
-        return auth_chain_f_new_obfs();
+        plug_in = auth_chain_f_new_obfs();
+    } else {
+        assert(0); // LOGE("Load obfs '%s' failed", plugin_name);
     }
-    assert(0); // LOGE("Load obfs '%s' failed", plugin_name);
-    return NULL;
+    plug_in->audit_incoming_user = &protocol_audit_incoming_user;
+    return plug_in;
 }
 
 void obfs_instance_destroy(struct obfs_t *plugin) {

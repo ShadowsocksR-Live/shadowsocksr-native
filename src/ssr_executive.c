@@ -159,6 +159,20 @@ void config_add_user_id_with_auth_key(struct server_config *config, const char *
     obj_map_add(config->user_id_auth_key, &u, sizeof(void *), &a, sizeof(void *));
 }
 
+bool config_is_user_exist(struct server_config *config, const char *user_id, const char **auth_key, bool *is_multi_user) {
+    bool result = false;
+    assert(config);
+    assert(user_id);
+    if (is_multi_user) {
+        *is_multi_user = (config->user_id_auth_key != NULL);
+    }
+    result = obj_map_exists(config->user_id_auth_key, &user_id);
+    if (result && auth_key) {
+        *auth_key = *((const char **)obj_map_find(config->user_id_auth_key, &user_id));
+    }
+    return result;
+}
+
 int tunnel_ctx_compare_for_c_set(const void *left, const void *right) {
     struct tunnel_ctx *l = *(struct tunnel_ctx **)left;
     struct tunnel_ctx *r = *(struct tunnel_ctx **)right;
@@ -345,6 +359,7 @@ struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, size_t
     if (config->remote_host && strlen(config->remote_host)) {
         strcpy(server_info.host, config->remote_host);
     }
+    server_info.config = config;
     server_info.port = config->remote_port;
     server_info.iv_len = enc_get_iv_len(env->cipher);
     memcpy(server_info.iv, enc_ctx_get_iv(tc->e_ctx), server_info.iv_len);

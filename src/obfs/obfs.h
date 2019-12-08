@@ -23,6 +23,7 @@
 
 struct buffer_t;
 struct cipher_env_t;
+struct server_config;
 
 struct server_info_t {
     char host[256];
@@ -40,6 +41,7 @@ struct server_info_t {
     uint16_t overhead;
     uint32_t buffer_size;
     struct cipher_env_t *cipher_env;
+    struct server_config *config;
 };
 
 struct obfs_t {
@@ -52,6 +54,8 @@ struct obfs_t {
     struct server_info_t * (*get_server_info)(struct obfs_t *obfs);
     void (*set_server_info)(struct obfs_t *obfs, struct server_info_t *server);
     void (*dispose)(struct obfs_t *obfs);
+
+    bool (*audit_incoming_user)(struct obfs_t *obfs, const char *user_id, const char **auth_key, bool *is_multi_user);
 
     size_t (*client_pre_encrypt)(struct obfs_t *obfs, char **pplaindata, size_t datalength, size_t* capacity);
     ssize_t (*client_post_decrypt)(struct obfs_t *obfs, char **pplaindata, int datalength, size_t* capacity);
