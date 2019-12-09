@@ -278,7 +278,9 @@ void ssr_server_shutdown(struct ssr_server_state *state) {
     state->shutting_down = true;
 
     uv_signal_stop(state->sigint_watcher);
+    uv_close((uv_handle_t*)state->sigint_watcher, NULL);
     uv_signal_stop(state->sigterm_watcher);
+    uv_close((uv_handle_t*)state->sigterm_watcher, NULL);
 
     if (state->tcp_listener) {
         uv_close((uv_handle_t *)state->tcp_listener, listener_close_done_cb);
