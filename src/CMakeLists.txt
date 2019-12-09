@@ -244,3 +244,7 @@ install(TARGETS ssr-server ssr-local ssr-client
 install(FILES ../config.json 
     DESTINATION /etc/ssr-native/)
 
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    # target_compile_definitions(ssr-server PUBLIC __AUTO_EXIT__=1 __AUTO_EXIT_TIMEOUT__=10000)
+endif()
+

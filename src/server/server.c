@@ -177,6 +177,20 @@ int main(int argc, char * const argv[]) {
     return 0;
 }
 
+#if defined(__AUTO_EXIT__)
+uv_timer_t timer_4_unix_debug = { 0 };
+#ifndef __AUTO_EXIT_TIMEOUT__
+#define __AUTO_EXIT_TIMEOUT__ 5000
+#endif
+
+static void socket_timer_expire_cb(uv_timer_t *handle) {
+    struct server_env_t *env = (struct server_env_t *)handle->loop->data;
+    struct ssr_server_state *state = (struct ssr_server_state *)env->data;
+    ASSERT(state);
+    ssr_server_shutdown(state);
+}
+#endif // __AUTO_EXIT__
+
 static int ssr_server_run_loop(struct server_config *config) {
     uv_loop_t *loop = NULL;
     struct ssr_server_state *state = NULL;
@@ -224,7 +238,14 @@ static int ssr_server_run_loop(struct server_config *config) {
         uv_signal_start(state->sigterm_watcher, signal_quit_cb, SIGTERM);
     }
 
+#if defined(__AUTO_EXIT__)
+    VERIFY(0 == uv_timer_init(loop, &timer_4_unix_debug));
+    VERIFY(0 == uv_timer_start(&timer_4_unix_debug, socket_timer_expire_cb, __AUTO_EXIT_TIMEOUT__, 0));
+#endif // __AUTO_EXIT__
+
     r = uv_run(loop, UV_RUN_DEFAULT);
+
+    VERIFY(uv_loop_close(loop) == 0);
 
     {
         ssr_cipher_env_release(state->env);
@@ -270,6 +291,11 @@ void ssr_server_shutdown(struct ssr_server_state *state) {
 #endif // UDP_RELAY_ENABLE
 
     server_shutdown(state->env);
+
+#if defined(__AUTO_EXIT__)
+    VERIFY(0 == uv_timer_stop(&timer_4_unix_debug));
+    uv_close((uv_handle_t *)&timer_4_unix_debug, NULL);
+#endif // __AUTO_EXIT__
 
     pr_info("\n");
     pr_info("terminated.\n");
