@@ -114,6 +114,8 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
         pr_err("uv_run: %s", uv_strerror(err));
     }
 
+    VERIFY(uv_loop_close(loop) == 0);
+
     ssr_cipher_env_release(state->env);
 
     if (state->listeners) {
@@ -145,7 +147,9 @@ void ssr_run_loop_shutdown(struct ssr_client_state *state) {
     state->shutting_down = true;
 
     uv_signal_stop(state->sigint_watcher);
+    uv_close((uv_handle_t*)state->sigint_watcher, NULL);
     uv_signal_stop(state->sigterm_watcher);
+    uv_close((uv_handle_t*)state->sigterm_watcher, NULL);
 
     if (state->listeners && state->listener_count) {
         size_t n = 0;
