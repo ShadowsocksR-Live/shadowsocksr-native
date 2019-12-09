@@ -122,7 +122,7 @@ static int addzonefile(const char *fname) {
     while(*e && *e != ' ' && *e != '\t' && *e != '\n')
       ++e;
     *e++ = '\0';
-    p = (char *) memcpy(ecalloc(e - p, 1), p, e - p); // strdup
+    p = (char *) memcpy(ecalloc((int)(e - p), 1), p, e - p); // strdup
     addzone(p);
   }
   fclose(f);

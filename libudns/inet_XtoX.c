@@ -133,7 +133,7 @@ static int mjt_ntop6(const void *_src, char *dst, int size) {
   for(; i < 8; ++i) {
     if (i) *p++ = ':';
     if (i == 6 && !bs && (bl == 6 || (bl == 5 && w[5] == 0xffff)))
-      return mjt_ntop4(s - 4, p, size - (p - dst));
+      return mjt_ntop4(s - 4, p, size - (int)(p - dst));
     p = hexc(p, w[i]);
   }
   *p = '\0';
@@ -243,7 +243,7 @@ static int mjt_pton6(const char *c, void *dst) {
     else
       return 0;
   }
-  v = w + 8 - a;
+  v = (unsigned int)(w + 8 - a);
   if ((v && !z) || (!v && z))
     return 0;
   for(i = w; ; ++i) {

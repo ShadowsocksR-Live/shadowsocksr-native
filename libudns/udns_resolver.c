@@ -280,7 +280,7 @@ int dns_set_opts(struct dns_ctx *ctx, const char *opts) {
     if (!*opts) break;
     for(i = 0; ; ++i) {
       if (i >= sizeof(dns_opts)/sizeof(dns_opts[0])) { ++err; break; }
-      v = strlen(dns_opts[i].name);
+      v = (unsigned int)strlen(dns_opts[i].name);
       if (strncmp(dns_opts[i].name, opts, v) != 0 ||
           (opts[v] != ':' && opts[v] != '='))
         continue;
@@ -336,7 +336,7 @@ int dns_add_srch(struct dns_ctx *ctx, const char *srch) {
     return 0;
   }
   dnl =
-    sizeof(ctx->dnsc_srchbuf) - (ctx->dnsc_srchend - ctx->dnsc_srchbuf) - 1;
+    (int)(sizeof(ctx->dnsc_srchbuf) - (ctx->dnsc_srchend - ctx->dnsc_srchbuf) - 1);
   dnl = dns_sptodn(srch, ctx->dnsc_srchend, dnl);
   if (dnl > 0)
     ctx->dnsc_srchend += dnl;
@@ -541,11 +541,11 @@ int dns_open(struct dns_ctx *ctx) {
     sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in);
 
   if (have_inet6)
-    sock = socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+    sock = (int) socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
   else
-    sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    sock = (int) socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 #else /* !HAVE_IPv6 */
-  sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+  sock = (int) socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
   ctx->dnsc_salen = sizeof(struct sockaddr_in);
 #endif /* HAVE_IPv6 */
 
@@ -797,7 +797,7 @@ dns_send_this(struct dns_ctx *ctx, struct dns_query *q,
       p += 2+2+2;
       ctx->dnsc_pbuf[DNS_H_ARCNT2] = 1;
     }
-    qlen = p - ctx->dnsc_pbuf;
+    qlen = (unsigned int)(p - ctx->dnsc_pbuf);
     assert(qlen <= ctx->dnsc_udpbuf);
   }
 
