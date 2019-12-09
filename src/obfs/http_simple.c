@@ -132,7 +132,6 @@ struct buffer_t * get_data_from_http_header(const uint8_t *buf) {
 void get_host_from_http_header(const uint8_t *buf, char host_port[128]) {
     static const char *hoststr = "Host: ";
     static const char *crlf = "\r\n";
-    struct buffer_t *ret = buffer_create(SSR_BUFF_SIZE);
     const uint8_t *iter = (uint8_t *) strstr((char *)buf, hoststr);
     if(iter) {
         const uint8_t *end = NULL;
