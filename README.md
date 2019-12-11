@@ -1,5 +1,9 @@
 ![shadowsocksr-native](https://avatars0.githubusercontent.com/u/30504070?s=200&v=4)
 
+<!--
+As I typed each line of code, I was full of fear. Cherish what you using.
+敲下每一行代码时，我都充满了恐惧；大伙且用且珍惜。
+-->
 
 # ShadowsocksR-native
 
@@ -92,11 +96,8 @@ progress of data flow
 ### Distribution-specific guide
 
 - [Debian & Ubuntu](#debian--ubuntu)
-    + [Install from repository](#debian--ubuntu)
 - [Fedora & RHEL](#fedora--rhel)
-    + [Install from repository](#centos)
 - [CentOS](#centos)
-    + [Install from repository](#centos)
 - [macOS](#macos)
 - [Windows](#windows)
 
