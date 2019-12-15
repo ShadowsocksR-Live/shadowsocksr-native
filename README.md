@@ -111,11 +111,11 @@ e.g. Ubuntu, Debian or Linux Mint, you can build the binary like this:
 ```bash
 # Debian / Ubuntu
 sudo su                       # using root account
+apt-get update -y
+apt-get upgrade -y
 apt-get install --no-install-recommends build-essential autoconf libtool asciidoc xmlto -y
 apt-get install git gcc g++ cmake automake -y
 apt-get -f install -y
-apt-get update -y
-apt-get upgrade -y
 
 cd /                          # switch to root directory
 git clone https://github.com/ShadowsocksR-Live/shadowsocksr-native.git
