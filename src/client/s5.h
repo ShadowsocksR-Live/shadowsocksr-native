@@ -42,42 +42,16 @@ enum s5_result {
     s5_result_max,
 };
 
-typedef enum s5_auth_method {
+enum s5_auth_method {
     s5_auth_none = 1 << 0,
     s5_auth_gssapi = 1 << 1,
     s5_auth_passwd = 1 << 2
-} s5_auth_method;
+};
 
-typedef enum s5_atyp {
-    s5_atyp_ipv4 = 1,
-    s5_atyp_host = 3,
-    s5_atyp_ipv6 = 4,
-} s5_atyp;
-
-typedef enum s5_cmd {
+enum s5_cmd {
     s5_cmd_tcp_connect = 1,
     s5_cmd_tcp_bind = 2,
     s5_cmd_udp_assoc = 3,
-} s5_cmd;
-
-enum s5_stage {
-    s5_stage_version,
-    s5_stage_nmethods,
-    s5_stage_methods,
-    s5_stage_auth_pw_version,
-    s5_stage_auth_pw_userlen,
-    s5_stage_auth_pw_username,
-    s5_stage_auth_pw_passlen,
-    s5_stage_auth_pw_password,
-    s5_stage_req_version,
-    s5_stage_req_cmd,
-    s5_stage_req_reserved,
-    s5_stage_req_atyp,
-    s5_stage_req_atyp_host,
-    s5_stage_req_daddr,
-    s5_stage_req_dport0,
-    s5_stage_req_dport1,
-    s5_stage_dead,
 };
 
 struct s5_ctx;
@@ -93,7 +67,7 @@ enum s5_auth_method s5_auth_methods(const struct s5_ctx *cx);
 enum s5_cmd s5_get_cmd(const struct s5_ctx *cx);
 
 /* Call after s5_parse() has returned s5_want_auth_method. */
-int s5_select_auth(struct s5_ctx *cx, s5_auth_method method);
+int s5_select_auth(struct s5_ctx *cx, enum s5_auth_method method);
 
 const char * str_s5_result(enum s5_result result);
 
