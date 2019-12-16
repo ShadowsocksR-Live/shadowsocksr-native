@@ -1,4 +1,4 @@
-/* Copyright StrongLoop, Inc. All rights reserved.
+/* Copyright ssrlive, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -19,28 +19,28 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef S5_H_
-#define S5_H_
+#ifndef __S5_H__
+#define __S5_H__
 
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 
-#define S5_ERR_MAP(V)                                                         \
-  V(-1, s5_bad_version, "Bad protocol version.")                              \
-  V(-2, s5_bad_cmd,     "Bad protocol command.")                              \
-  V(-3, s5_bad_atyp,    "Bad address type.")                                  \
-  V( 0, s5_ok,          "No error.")                                          \
-  V( 1, s5_auth_select, "Select authentication method.")                      \
-  V( 2, s5_auth_verify, "Verify authentication.")                             \
-  V( 3, s5_exec_cmd,    "Execute command.")                                   \
+#define S5_RESULT_MAP(V)                                                       \
+  V(-1, s5_result_bad_version, "Bad protocol version.")                        \
+  V(-2, s5_result_bad_cmd,     "Bad protocol command.")                        \
+  V(-3, s5_result_bad_atyp,    "Bad address type.")                            \
+  V( 0, s5_result_need_more,   "Need more data.")                              \
+  V( 1, s5_result_auth_select, "Select authentication method.")                \
+  V( 2, s5_result_auth_verify, "Verify authentication.")                       \
+  V( 3, s5_result_exec_cmd,    "Execute command.")                             \
 
-typedef enum s5_err {
-#define S5_ERR_GEN(code, name, _) name = code,
-    S5_ERR_MAP(S5_ERR_GEN)
-#undef S5_ERR_GEN
-    s5_max_errors,
-} s5_err;
+enum s5_result {
+#define S5_RESULT_GEN(code, name, _) name = code,
+    S5_RESULT_MAP(S5_RESULT_GEN)
+#undef S5_RESULT_GEN
+    s5_result_max,
+};
 
 typedef enum s5_auth_method {
     s5_auth_none = 1 << 0,
@@ -60,30 +60,30 @@ typedef enum s5_cmd {
     s5_cmd_udp_assoc = 3,
 } s5_cmd;
 
-enum s5_state {
-    s5_state_version,
-    s5_state_nmethods,
-    s5_state_methods,
-    s5_state_auth_pw_version,
-    s5_state_auth_pw_userlen,
-    s5_state_auth_pw_username,
-    s5_state_auth_pw_passlen,
-    s5_state_auth_pw_password,
-    s5_state_req_version,
-    s5_state_req_cmd,
-    s5_state_req_reserved,
-    s5_state_req_atyp,
-    s5_state_req_atyp_host,
-    s5_state_req_daddr,
-    s5_state_req_dport0,
-    s5_state_req_dport1,
-    s5_state_dead,
+enum s5_stage {
+    s5_stage_version,
+    s5_stage_nmethods,
+    s5_stage_methods,
+    s5_stage_auth_pw_version,
+    s5_stage_auth_pw_userlen,
+    s5_stage_auth_pw_username,
+    s5_stage_auth_pw_passlen,
+    s5_stage_auth_pw_password,
+    s5_stage_req_version,
+    s5_stage_req_cmd,
+    s5_stage_req_reserved,
+    s5_stage_req_atyp,
+    s5_stage_req_atyp_host,
+    s5_stage_req_daddr,
+    s5_stage_req_dport0,
+    s5_stage_req_dport1,
+    s5_stage_dead,
 };
 
 typedef struct s5_ctx {
     uint32_t arg0;  /* Scratch space for the state machine. */
     uint32_t arg1;  /* Scratch space for the state machine. */
-    enum s5_state state;
+    enum s5_stage stage;
     enum s5_auth_method methods;
     enum s5_cmd cmd;
     enum s5_atyp atyp;
@@ -97,7 +97,7 @@ typedef struct s5_ctx {
 
 void s5_init(s5_ctx *ctx);
 
-s5_err s5_parse(s5_ctx *cx, uint8_t **data, size_t *size);
+enum s5_result s5_parse(s5_ctx *cx, uint8_t **data, size_t *size);
 
 /* Only call after s5_parse() has returned s5_want_auth_method. */
 enum s5_auth_method s5_auth_methods(const s5_ctx *cx);
@@ -105,8 +105,8 @@ enum s5_auth_method s5_auth_methods(const s5_ctx *cx);
 /* Call after s5_parse() has returned s5_want_auth_method. */
 int s5_select_auth(s5_ctx *cx, s5_auth_method method);
 
-const char *s5_strerror(s5_err err);
+const char * str_s5_result(enum s5_result result);
 
 uint8_t * build_udp_assoc_package(bool allow, const char *addr_str, int port, uint8_t *buf, size_t *buf_len);
 
-#endif  /* S5_H_ */
+#endif  /* __S5_H__ */

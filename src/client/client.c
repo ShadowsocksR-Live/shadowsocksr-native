@@ -302,7 +302,7 @@ static void do_handshake(struct tunnel_ctx *tunnel) {
     s5_ctx *parser = ctx->parser;
     uint8_t *data;
     size_t size;
-    enum s5_err err;
+    enum s5_result result;
 
     ASSERT(incoming->rdstate == socket_state_stop);
     ASSERT(incoming->wrstate == socket_state_stop);
@@ -315,8 +315,8 @@ static void do_handshake(struct tunnel_ctx *tunnel) {
 
     data = (uint8_t *)incoming->buf->base;
     size = (size_t)incoming->result;
-    err = s5_parse(parser, &data, &size);
-    if (err == s5_ok) {
+    result = s5_parse(parser, &data, &size);
+    if (result == s5_result_need_more) {
         socket_read(incoming, true);
         ctx->stage = tunnel_stage_handshake;  /* Need more data. */
         return;
@@ -332,8 +332,8 @@ static void do_handshake(struct tunnel_ctx *tunnel) {
         return;
     }
 
-    if (err != s5_auth_select) {
-        pr_err("handshake error: %s", s5_strerror(err));
+    if (result != s5_result_auth_select) {
+        pr_err("handshake error: %s", str_s5_result(result));
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
@@ -386,7 +386,7 @@ static void do_parse_s5_request(struct tunnel_ctx *tunnel) {
     s5_ctx *parser = ctx->parser;
     uint8_t *data;
     size_t size;
-    enum s5_err err;
+    enum s5_result result;
     struct server_env_t *env = ctx->env;
     struct server_config *config = env->config;
 
@@ -406,8 +406,8 @@ static void do_parse_s5_request(struct tunnel_ctx *tunnel) {
 
     socks5_address_parse(data+3, size-3, tunnel->desired_addr);
 
-    err = s5_parse(parser, &data, &size);
-    if (err == s5_ok) {
+    result = s5_parse(parser, &data, &size);
+    if (result == s5_result_need_more) {
         socket_read(incoming, true);
         ctx->stage = tunnel_stage_s5_request;  /* Need more data. */
         return;
@@ -419,8 +419,8 @@ static void do_parse_s5_request(struct tunnel_ctx *tunnel) {
         return;
     }
 
-    if (err != s5_exec_cmd) {
-        pr_err("request error: %s", s5_strerror(err));
+    if (result != s5_result_exec_cmd) {
+        pr_err("request error: %s", str_s5_result(result));
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
