@@ -80,33 +80,25 @@ enum s5_stage {
     s5_stage_dead,
 };
 
-typedef struct s5_ctx {
-    uint32_t arg0;  /* Scratch space for the state machine. */
-    uint32_t arg1;  /* Scratch space for the state machine. */
-    enum s5_stage stage;
-    enum s5_auth_method methods;
-    enum s5_cmd cmd;
-    enum s5_atyp atyp;
-    uint8_t userlen;
-    uint8_t passlen;
-    uint16_t dport;
-    uint8_t username[257];
-    uint8_t password[257];
-    uint8_t daddr[257];  /* TODO(bnoordhuis) Merge with username/password. */
-} s5_ctx;
+struct s5_ctx;
 
-void s5_init(s5_ctx *ctx);
+struct s5_ctx * s5_ctx_create(void);
+void s5_ctx_release(struct s5_ctx *cx);
 
-enum s5_result s5_parse(s5_ctx *cx, uint8_t **data, size_t *size);
+enum s5_result s5_parse(struct s5_ctx *cx, uint8_t **data, size_t *size);
 
 /* Only call after s5_parse() has returned s5_want_auth_method. */
-enum s5_auth_method s5_auth_methods(const s5_ctx *cx);
+enum s5_auth_method s5_auth_methods(const struct s5_ctx *cx);
+
+enum s5_cmd s5_get_cmd(const struct s5_ctx *cx);
 
 /* Call after s5_parse() has returned s5_want_auth_method. */
-int s5_select_auth(s5_ctx *cx, s5_auth_method method);
+int s5_select_auth(struct s5_ctx *cx, s5_auth_method method);
 
 const char * str_s5_result(enum s5_result result);
 
 uint8_t * build_udp_assoc_package(bool allow, const char *addr_str, int port, uint8_t *buf, size_t *buf_len);
+uint8_t * s5_address_package_create(const struct s5_ctx *parser, void*(*allocator)(size_t size), size_t *size);
+
 
 #endif  /* __S5_H__ */

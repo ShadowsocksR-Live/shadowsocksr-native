@@ -21,6 +21,7 @@
 
 #include "s5.h"
 #include <errno.h>
+#include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>  /* abort() */
 #include <string.h>  /* memset() */
@@ -30,17 +31,36 @@
 #include <netinet/in.h>  /* ntohs */
 #endif // defined(_MSC_VER)
 
+struct s5_ctx {
+    uint32_t arg0;  /* Scratch space for the state machine. */
+    uint32_t arg1;  /* Scratch space for the state machine. */
+    enum s5_stage stage;
+    enum s5_auth_method methods;
+    enum s5_cmd cmd;
+    enum s5_atyp atyp;
+    uint8_t userlen;
+    uint8_t passlen;
+    uint16_t dport;
+    uint8_t username[257];
+    uint8_t password[257];
+    uint8_t daddr[257];
+};
 
 //
 // https://zh.wikipedia.org/zh-hans/SOCKS#SOCKS5
 //
 
-void s5_init(s5_ctx *cx) {
-    memset(cx, 0, sizeof(*cx));
+struct s5_ctx * s5_ctx_create(void) {
+    struct s5_ctx *cx = (struct s5_ctx *)calloc(1, sizeof(struct s5_ctx));
     cx->stage = s5_stage_version;
+    return cx;
 }
 
-enum s5_result s5_parse(s5_ctx *cx, uint8_t **data, size_t *size) {
+void s5_ctx_release(struct s5_ctx *cx) {
+    free(cx);
+}
+
+enum s5_result s5_parse(struct s5_ctx *cx, uint8_t **data, size_t *size) {
     enum s5_result result;
     uint8_t *p;
     uint8_t c;
@@ -235,11 +255,15 @@ out:
     return result;
 }
 
-enum s5_auth_method s5_auth_methods(const s5_ctx *cx) {
+enum s5_auth_method s5_auth_methods(const struct s5_ctx *cx) {
     return cx->methods;
 }
 
-int s5_select_auth(s5_ctx *cx, s5_auth_method method) {
+enum s5_cmd s5_get_cmd(const struct s5_ctx *cx) {
+    return cx->cmd;
+}
+
+int s5_select_auth(struct s5_ctx *cx, s5_auth_method method) {
     int err;
 
     err = 0;
@@ -317,4 +341,48 @@ uint8_t * build_udp_assoc_package(bool allow, const char *addr_str, int port, ui
         memcpy(buf + 4 + in4_addr_w, &addr.addr4.sin_port, port_w);
     }
     return buf;
+}
+
+uint8_t * s5_address_package_create(const struct s5_ctx *parser, void*(*allocator)(size_t size), size_t *size) {
+    uint8_t *buffer, *iter;
+    uint8_t len;
+
+    assert(parser);
+    assert(allocator);
+
+    buffer = (uint8_t *) allocator(0x100);
+    memset(buffer, 0, 0x100);
+    iter = buffer;
+
+    iter[0] = (uint8_t)parser->atyp;
+    iter++;
+
+    switch (parser->atyp) {
+    case s5_atyp_ipv4:  // IPv4
+        memcpy(iter, parser->daddr, sizeof(struct in_addr));
+        iter += sizeof(struct in_addr);
+        break;
+    case s5_atyp_ipv6:  // IPv6
+        memcpy(iter, parser->daddr, sizeof(struct in6_addr));
+        iter += sizeof(struct in6_addr);
+        break;
+    case s5_atyp_host:
+        len = (uint8_t)strlen((char *)parser->daddr);
+        iter[0] = len;
+        iter++;
+        memcpy(iter, parser->daddr, len);
+        iter += len;
+        break;
+    default:
+        assert(0);
+        break;
+    }
+    *((unsigned short *)iter) = htons(parser->dport);
+    iter += sizeof(unsigned short);
+
+    if (size) {
+        *size = iter - buffer;
+    }
+
+    return buffer;
 }
