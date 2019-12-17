@@ -412,3 +412,27 @@ uint8_t * s5_address_package_create(const struct s5_ctx *parser, void*(*allocato
 
     return buffer;
 }
+
+uint8_t * s5_connect_response_package(const struct s5_ctx *parser, void*(*allocator)(size_t size), size_t *size) {
+    uint8_t *buf, *addr_pkg;
+    size_t addr_size = 0;
+    assert(parser);
+    assert(allocator);
+    addr_pkg = s5_address_package_create(parser, &malloc, &addr_size);
+    buf = (uint8_t *)allocator(3 + addr_size + 1);
+    memset(buf, 0, 3 + addr_size + 1);
+    buf[0] = 5;  // Version.
+    buf[1] = 0;  // Success.
+    buf[2] = 0;  // Reserved.
+#if 0
+    memcpy(buf + 3, addr_pkg, addr_size);
+#else
+    assert(addr_size >= 7);
+    buf[3] = 1;  addr_size = 7; /* to fit a Privoxy bug. sadly */
+#endif
+    free(addr_pkg);
+    if (size) {
+        *size = addr_size + 3;
+    }
+    return buf;
+}

@@ -626,24 +626,16 @@ static void do_socks5_reply_success(struct tunnel_ctx *tunnel) {
     struct socket_ctx *incoming = tunnel->incoming;
     struct socket_ctx *outgoing = tunnel->outgoing;
     uint8_t *buf;
-    size_t init_data_len = 0;
-    const uint8_t *init_data = buffer_get_data(ctx->init_pkg, &init_data_len);
-    buf = (uint8_t *)calloc(3 + init_data_len + 1, sizeof(uint8_t));
+    size_t size = 0;
+
+    buf = s5_connect_response_package(ctx->parser, &malloc, &size);
 
     ASSERT(incoming->rdstate == socket_state_stop);
     ASSERT(incoming->wrstate == socket_state_stop);
     ASSERT(outgoing->rdstate == socket_state_stop);
     ASSERT(outgoing->wrstate == socket_state_stop);
 
-    buf[0] = 5;  // Version.
-    buf[1] = 0;  // Success.
-    buf[2] = 0;  // Reserved.
-#if 0
-    memcpy(buf + 3, init_data, init_data_len);
-#else
-    buf[3] = 1;  init_data_len = 7; /* to fit a privoxy bug. sadly */
-#endif
-    socket_write(incoming, buf, 3 + init_data_len);
+    socket_write(incoming, buf, size);
     free(buf);
     ctx->stage = tunnel_stage_auth_completion_done;
 }
