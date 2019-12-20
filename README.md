@@ -126,7 +126,7 @@ git submodule foreach -q 'git checkout $(git config -f $toplevel/.gitmodules sub
 
 # build ShadowsocksR-native
 mkdir build && cd build
-cmake ../CMakeLists.txt && make
+cmake .. && make
 # make install
 # /bin/cp -rfa src/ssr-* /usr/bin
 ```
