@@ -405,10 +405,22 @@ static void do_parse_s5_request(struct tunnel_ctx *tunnel) {
 
     if (s5_get_cmd(parser) == s5_cmd_udp_assoc) {
         // UDP ASSOCIATE requests
-        size_t len = incoming->buf->len;
-        uint8_t *buf = build_udp_assoc_package(config->udp, config->listen_host, config->listen_port,
-            (uint8_t *)incoming->buf->base, &len);
+        size_t len = 0;
+        uint8_t *buf;
+
+        union sockaddr_universal sockname;
+        int namelen = sizeof(sockname);
+        char addr[256] = { 0 };
+        uint16_t port = 0;
+
+        VERIFY(0 == uv_tcp_getsockname(&incoming->handle.tcp, (struct sockaddr *)&sockname, &namelen));
+
+        universal_address_to_string(&sockname, addr, sizeof(addr));
+        port = universal_address_get_port(&sockname);
+
+        buf = build_udp_assoc_package(config->udp, addr, port, &malloc, &len);
         socket_write(incoming, buf, len);
+        free(buf);
         ctx->stage = tunnel_stage_s5_udp_accoc;
         return;
     }
