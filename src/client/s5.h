@@ -71,7 +71,7 @@ int s5_select_auth(struct s5_ctx *cx, enum s5_auth_method method);
 
 const char * str_s5_result(enum s5_result result);
 
-uint8_t * build_udp_assoc_package(bool allow, const char *addr_str, int port, uint8_t *buf, size_t *buf_len);
+uint8_t * build_udp_assoc_package(bool allow, const char *addr_str, int port, void*(*allocator)(size_t size), size_t *size);
 uint8_t * s5_address_package_create(const struct s5_ctx *parser, void*(*allocator)(size_t size), size_t *size);
 uint8_t * s5_connect_response_package(const struct s5_ctx *parser, void*(*allocator)(size_t size), size_t *size);
 

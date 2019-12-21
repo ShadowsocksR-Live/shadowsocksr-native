@@ -232,3 +232,10 @@ char * universal_address_to_string(const union sockaddr_universal *addr, char *a
     }
     return addr_str;
 }
+
+uint16_t universal_address_get_port(const union sockaddr_universal *addr) {
+    if (addr) {
+        return ntohs(addr->addr4.sin_port);
+    }
+    return 0;
+}

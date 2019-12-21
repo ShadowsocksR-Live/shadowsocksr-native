@@ -43,5 +43,6 @@ bool socks5_address_to_universal(const struct socks5_address *s5addr, union sock
 
 int convert_universal_address(const char *addr_str, unsigned short port, union sockaddr_universal *addr);
 char * universal_address_to_string(const union sockaddr_universal *addr, char *addr_str, size_t size);
+uint16_t universal_address_get_port(const union sockaddr_universal *addr);
 
 #endif // !defined(__sockaddr_universal_h__)

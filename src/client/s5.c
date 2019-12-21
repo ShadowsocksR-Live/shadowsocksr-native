@@ -318,31 +318,26 @@ const char * str_s5_result(enum s5_result result) {
 }
 
 #include <sockaddr_universal.h>
-uint8_t * build_udp_assoc_package(bool allow, const char *addr_str, int port, uint8_t *buf, size_t *buf_len) {
+uint8_t * build_udp_assoc_package(bool allow, const char *addr_str, int port, void*(*allocator)(size_t size), size_t *size) {
+    uint8_t *buf;
+    size_t buf_len = 0;
     union sockaddr_universal addr = { 0 };
     bool ipV6;
     size_t in6_addr_w;
     size_t in4_addr_w;
     size_t port_w;
 
-    if (addr_str == NULL || buf == NULL || buf_len == NULL) {
+    if (addr_str == NULL || allocator == NULL) {
         return NULL;
     }
+
+    buf = (uint8_t *) allocator(256);
+    memset(buf, 0, 256);
 
     if (convert_universal_address(addr_str, port, &addr) != 0) {
         return NULL;
     }
     ipV6 = (addr.addr.sa_family == AF_INET6);
-
-    if (ipV6) {
-        if (*buf_len < 22) {
-            return NULL;
-        }
-    } else {
-        if (*buf_len < 10) {
-            return NULL;
-        }
-    }
 
     buf[0] = 5;  // Version.
     if (allow) {
@@ -358,13 +353,16 @@ uint8_t * build_udp_assoc_package(bool allow, const char *addr_str, int port, ui
     port_w = sizeof(addr.addr4.sin_port);
 
     if (ipV6) {
-        *buf_len = 4 + in6_addr_w + port_w;
+        buf_len = 4 + in6_addr_w + port_w;
         memcpy(buf + 4, &addr.addr6.sin6_addr, in6_addr_w);
         memcpy(buf + 4 + in6_addr_w, &addr.addr6.sin6_port, port_w);
     } else {
-        *buf_len = 4 + in4_addr_w + port_w;
+        buf_len = 4 + in4_addr_w + port_w;
         memcpy(buf + 4, &addr.addr4.sin_addr, in4_addr_w);
         memcpy(buf + 4 + in4_addr_w, &addr.addr4.sin_port, port_w);
+    }
+    if (size) {
+        *size = buf_len;
     }
     return buf;
 }
