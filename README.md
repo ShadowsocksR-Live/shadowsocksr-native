@@ -110,14 +110,14 @@ e.g. Ubuntu, Debian or Linux Mint, you can build the binary like this:
 
 ```bash
 # Debian / Ubuntu
-sudo su                       # using root account
-apt-get update -y
-apt-get upgrade -y
-apt-get install --no-install-recommends build-essential autoconf libtool asciidoc xmlto -y
-apt-get install git gcc g++ cmake automake -y
-apt-get -f install -y
+# sudo su                       # using root account
+sudo apt-get update -y
+sudo apt-get upgrade -y
+sudo apt-get install --no-install-recommends build-essential autoconf libtool asciidoc xmlto -y
+sudo apt-get install git gcc g++ cmake automake -y
+sudo apt-get -f install -y
 
-cd /                          # switch to root directory
+# cd /                          # switch to root directory
 git clone https://github.com/ShadowsocksR-Live/shadowsocksr-native.git
 mv shadowsocksr-native ssr-n  # rename shadowsocksr-native to ssr-n
 cd ssr-n                      # enter ssr-n directory. 
@@ -125,12 +125,13 @@ git submodule update --init
 git submodule foreach -q 'git checkout $(git config -f $toplevel/.gitmodules submodule.$name.branch || echo master)'
 
 # build ShadowsocksR-native
-cmake CMakeLists.txt && make
+mkdir build && cd build
+cmake .. && make
 # make install
 # /bin/cp -rfa src/ssr-* /usr/bin
 ```
 
-The target binaries are `ssr-n/src/ssr-server`, `ssr-n/src/ssr-client` and `ssr-n/src/ssr-local`.
+The target binaries are `ssr-n/build/src/ssr-server`, `ssr-n/build/src/ssr-client` and `ssr-n/build/src/ssr-local`.
 
 ### CentOS
 
