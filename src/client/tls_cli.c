@@ -40,7 +40,7 @@ static void _mbed_write_done_cb(uv_mbed_t *mbed, int status, void *p);
 static void _mbed_close_done_cb(uv_mbed_t *mbed, void *p);
 
 void tls_client_launch(struct tunnel_ctx *tunnel, struct server_config *config) {
-    uv_loop_t *loop = tunnel->listener->loop;
+    uv_loop_t *loop = tunnel->loop;
     struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)calloc(1, sizeof(*ctx));
     ctx->mbed = uv_mbed_init(loop, config->over_tls_server_domain, ctx, 0);
     ctx->config = config;

@@ -160,7 +160,7 @@ void tunnel_initialize(uv_tcp_t *listener, unsigned int idle_timeout, tunnel_ini
 
     tunnel = (struct tunnel_ctx *) calloc(1, sizeof(*tunnel));
 
-    tunnel->listener = listener;
+    tunnel->loop = loop;
     tunnel->ref_count = 0;
     tunnel->desired_addr = (struct socks5_address *)calloc(1, sizeof(struct socks5_address));
 
@@ -434,7 +434,7 @@ void socket_getaddrinfo(struct socket_ctx *c, const char *hostname) {
     uv_loop_t *loop;
 
     tunnel = c->tunnel;
-    loop = tunnel->listener->loop;
+    loop = tunnel->loop;
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;

@@ -105,9 +105,9 @@ static void tunnel_tls_on_connection_established(struct tunnel_ctx *tunnel);
 static void tunnel_tls_on_data_received(struct tunnel_ctx *tunnel, const uint8_t *data, size_t size);
 static void tunnel_tls_on_shutting_down(struct tunnel_ctx *tunnel);
 
-static bool can_auth_none(const uv_tcp_t *lx, const struct tunnel_ctx *cx);
-static bool can_auth_passwd(const uv_tcp_t *lx, const struct tunnel_ctx *cx);
-static bool can_access(const uv_tcp_t *lx, const struct tunnel_ctx *cx, const struct sockaddr *addr);
+static bool can_auth_none(const struct tunnel_ctx *cx);
+static bool can_auth_passwd(const struct tunnel_ctx *cx);
+static bool can_access(const struct tunnel_ctx *cx, const struct sockaddr *addr);
 
 static void client_tunnel_shutdown(struct tunnel_ctx *tunnel);
 
@@ -310,14 +310,14 @@ static void do_handshake(struct tunnel_ctx *tunnel) {
     }
 
     methods = s5_auth_methods(parser);
-    if ((methods & s5_auth_none) && can_auth_none(tunnel->listener, tunnel)) {
+    if ((methods & s5_auth_none) && can_auth_none(tunnel)) {
         s5_select_auth(parser, s5_auth_none);
         socket_write(incoming, "\5\0", 2);  /* No auth required. */
         ctx->stage = tunnel_stage_handshake_replied;
         return;
     }
 
-    if ((methods & s5_auth_passwd) && can_auth_passwd(tunnel->listener, tunnel)) {
+    if ((methods & s5_auth_passwd) && can_auth_passwd(tunnel)) {
         /* TODO(bnoordhuis) Implement username/password auth. */
         tunnel->tunnel_shutdown(tunnel);
         return;
@@ -518,7 +518,7 @@ static void do_connect_ssr_server(struct tunnel_ctx *tunnel) {
     ASSERT(outgoing->rdstate == socket_state_stop);
     ASSERT(outgoing->wrstate == socket_state_stop);
 
-    if (!can_access(tunnel->listener, tunnel, &outgoing->addr.addr)) {
+    if (!can_access(tunnel, &outgoing->addr.addr)) {
         pr_warn("connection not allowed by ruleset");
         /* Send a 'Connection not allowed by ruleset' reply. */
         socket_write(incoming, "\5\2\0\1\0\0\0\0\0\0", 10);
@@ -982,15 +982,15 @@ static void tunnel_tls_on_shutting_down(struct tunnel_ctx *tunnel) {
     ctx->original_tunnel_shutdown(tunnel);
 }
 
-static bool can_auth_none(const uv_tcp_t *lx, const struct tunnel_ctx *cx) {
+static bool can_auth_none(const struct tunnel_ctx *cx) {
     return true;
 }
 
-static bool can_auth_passwd(const uv_tcp_t *lx, const struct tunnel_ctx *cx) {
+static bool can_auth_passwd(const struct tunnel_ctx *cx) {
     return false;
 }
 
-static bool can_access(const uv_tcp_t *lx, const struct tunnel_ctx *cx, const struct sockaddr *addr) {
+static bool can_access(const struct tunnel_ctx *cx, const struct sockaddr *addr) {
     const struct sockaddr_in6 *addr6;
     const struct sockaddr_in *addr4;
     const uint32_t *p;

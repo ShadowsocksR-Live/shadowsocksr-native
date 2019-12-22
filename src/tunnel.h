@@ -35,7 +35,7 @@ struct tunnel_ctx {
     void *data;
     bool terminated;
     bool getaddrinfo_pending;
-    uv_tcp_t *listener;  /* Backlink to owning listener context. */
+    uv_loop_t *loop; /* Backlink to owning loop object. */
     struct socket_ctx *incoming;  /* Connection with the SOCKS client. */
     struct socket_ctx *outgoing;  /* Connection with upstream. */
     struct socks5_address *desired_addr;
