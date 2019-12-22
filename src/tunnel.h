@@ -27,6 +27,8 @@ struct socket_ctx {
     union uv_any_req req;
     union sockaddr_universal addr;
     const uv_buf_t *buf; /* Scratch space. Used to read data into. */
+
+    struct buffer_t *udp_data;
 };
 
 struct tls_cli_ctx;
