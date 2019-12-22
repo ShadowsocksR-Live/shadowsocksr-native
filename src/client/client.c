@@ -1027,3 +1027,7 @@ static bool can_access(const uv_tcp_t *lx, const struct tunnel_ctx *cx, const st
 
     return false;
 }
+
+void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_universal *src_addr, const struct buffer_t *data) {
+    ASSERT(false);
+}

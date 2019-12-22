@@ -124,6 +124,8 @@ struct udp_listener_ctx_t {
     // SSR
     struct obfs_t *protocol_plugin;
     void *protocol_global;
+
+    udp_on_recv_data_callback udp_on_recv_data;
 };
 
 #ifdef MODULE_REMOTE
@@ -869,6 +871,47 @@ CLEAN_UP:
     buffer_release(buf);
 }
 
+void udp_tls_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, const struct sockaddr* addr, unsigned flags)
+{
+    union sockaddr_universal addr_u = { 0 };
+    struct udp_listener_ctx_t *server_ctx;
+    struct buffer_t *data = NULL;
+
+    server_ctx = CONTAINER_OF(handle, struct udp_listener_ctx_t, io);
+    ASSERT(server_ctx);
+
+    if (nread < 0) {
+        LOGE("[udp] udp_tls_listener_recv_cb something wrong.");
+        goto __EXIT__;
+    } else if (nread > (ssize_t) packet_size) {
+        LOGE("[udp] udp_tls_listener_recv_cb fragmentation");
+        goto __EXIT__;
+    } else if (nread == 0) {
+        if (addr == NULL) {
+            // there is nothing to read
+            LOGE("[udp] udp_tls_listener_recv_cb there is nothing to read");
+            goto __EXIT__;
+        } else {
+            //  an empty UDP packet is received.
+            data = buffer_create_from("", 0);
+        }
+    } else {
+        data = buffer_create_from((uint8_t *)buf->base, nread);
+    }
+
+    if (addr) {
+        addr_u.addr = *addr;
+    }
+
+__EXIT__:
+    udp_uv_release_buffer((uv_buf_t *)buf);
+
+    if (server_ctx->udp_on_recv_data) {
+        server_ctx->udp_on_recv_data(server_ctx, (addr ? &addr_u : NULL), data);
+    }
+    buffer_release(data);
+}
+
 static void 
 udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const struct sockaddr* addr, unsigned flags)
 {
@@ -887,6 +930,19 @@ udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, cons
     struct udp_remote_ctx_t *remote_ctx = NULL;
     const struct sockaddr *remote_addr;
     int err;
+
+    uv_loop_t *loop;
+    struct server_env_t *env;
+    struct server_config *config;
+
+    loop = handle->loop;
+    env = (struct server_env_t *) loop->data;
+    config = env->config;
+
+    if (config->over_tls_enable) {
+        udp_tls_listener_recv_cb(handle, nread, buf0, addr, flags);
+        return;
+    }
 
     if (NULL == addr) {
         return;
@@ -937,7 +993,7 @@ udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, cons
 
     src_addr_len = msg.msg_namelen;
 #else
-    // http://docs.libuv.org/en/v1.x/udp.html
+    // http://docs.libuv.org/en/v1.x/udp.html#c.uv_udp_recv_cb
 
     if (nread <= 0) {
         // error on recv
@@ -1396,4 +1452,10 @@ void udprelay_shutdown(struct udp_listener_ctx_t *server_ctx) {
     }
     cstl_set_container_traverse(server_ctx->connections, &connection_release, NULL);
     uv_close((uv_handle_t *)&server_ctx->io, udp_local_listener_close_done_cb);
+}
+
+void udp_relay_set_udp_on_recv_data_callback(struct udp_listener_ctx_t *udp_ctx, udp_on_recv_data_callback callback) {
+    if (udp_ctx) {
+        udp_ctx->udp_on_recv_data = callback;
+    }
 }
