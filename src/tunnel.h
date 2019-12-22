@@ -73,7 +73,7 @@ size_t get_fd_tcp_mss(socket_fd fd);
 size_t socket_arrived_data_size(struct socket_ctx *socket, size_t suggested_size);
 
 typedef bool(*tunnel_init_done_cb)(struct tunnel_ctx *tunnel, void *p);
-void tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsigned int idle_timeout, tunnel_init_done_cb init_done_cb, void *p);
+struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsigned int idle_timeout, tunnel_init_done_cb init_done_cb, void *p);
 
 void tunnel_add_ref(struct tunnel_ctx *tunnel);
 void tunnel_release(struct tunnel_ctx *tunnel);

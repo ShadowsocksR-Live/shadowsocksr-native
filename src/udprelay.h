@@ -43,5 +43,6 @@ void udprelay_shutdown(struct udp_listener_ctx_t *server_ctx);
 
 typedef void (*udp_on_recv_data_callback)(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_universal *src_addr, const struct buffer_t *data);
 void udp_relay_set_udp_on_recv_data_callback(struct udp_listener_ctx_t *udp_ctx, udp_on_recv_data_callback callback);
+uv_loop_t * udp_relay_context_get_loop(struct udp_listener_ctx_t *udp_ctx);
 
 #endif // _UDPRELAY_H

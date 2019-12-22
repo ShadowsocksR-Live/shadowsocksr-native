@@ -1459,3 +1459,7 @@ void udp_relay_set_udp_on_recv_data_callback(struct udp_listener_ctx_t *udp_ctx,
         udp_ctx->udp_on_recv_data = callback;
     }
 }
+
+uv_loop_t * udp_relay_context_get_loop(struct udp_listener_ctx_t *udp_ctx) {
+    return udp_ctx->io.loop;
+}

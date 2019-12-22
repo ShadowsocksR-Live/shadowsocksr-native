@@ -11,6 +11,7 @@
 #include "tls_cli.h"
 #include "ws_tls_basic.h"
 #include "http_parser_wrapper.h"
+#include "udprelay.h"
 
 /* A connection is modeled as an abstraction on top of two simple state
  * machines, one for reading and one for writing.  Either state machine
@@ -148,11 +149,11 @@ static bool init_done_cb(struct tunnel_ctx *tunnel, void *p) {
     return true;
 }
 
-void client_tunnel_initialize(uv_tcp_t *lx, unsigned int idle_timeout) {
+struct tunnel_ctx * client_tunnel_initialize(uv_tcp_t *lx, unsigned int idle_timeout) {
     uv_loop_t *loop = lx->loop;
     struct server_env_t *env = (struct server_env_t *)loop->data;
 
-    tunnel_initialize(loop, lx, idle_timeout, &init_done_cb, env);
+    return tunnel_initialize(loop, lx, idle_timeout, &init_done_cb, env);
 }
 
 static void client_tunnel_shutdown(struct tunnel_ctx *tunnel) {
@@ -1029,5 +1030,9 @@ static bool can_access(const struct tunnel_ctx *cx, const struct sockaddr *addr)
 }
 
 void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_universal *src_addr, const struct buffer_t *data) {
-    ASSERT(false);
+    uv_loop_t *loop = udp_relay_context_get_loop(udp_ctx);
+    struct server_env_t *env = (struct server_env_t *)loop->data;
+    struct server_config *config = env->config;
+    struct tunnel_ctx *tunnel = tunnel_initialize(loop, NULL, config->idle_timeout, &init_done_cb, env);
+    do_next(NULL, NULL);
 }

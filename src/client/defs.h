@@ -44,7 +44,7 @@
 struct server_env_t;
 
 /* client.c */
-void client_tunnel_initialize(uv_tcp_t *lx, unsigned int idle_timeout);
+struct tunnel_ctx * client_tunnel_initialize(uv_tcp_t *lx, unsigned int idle_timeout);
 void client_shutdown(struct server_env_t *env);
 
 /* getopt.c */
