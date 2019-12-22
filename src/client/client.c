@@ -152,7 +152,7 @@ void client_tunnel_initialize(uv_tcp_t *lx, unsigned int idle_timeout) {
     uv_loop_t *loop = lx->loop;
     struct server_env_t *env = (struct server_env_t *)loop->data;
 
-    tunnel_initialize(lx, idle_timeout, &init_done_cb, env);
+    tunnel_initialize(loop, lx, idle_timeout, &init_done_cb, env);
 }
 
 static void client_tunnel_shutdown(struct tunnel_ctx *tunnel) {

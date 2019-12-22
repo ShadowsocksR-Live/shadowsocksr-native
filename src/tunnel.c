@@ -147,18 +147,22 @@ void tunnel_release(struct tunnel_ctx *tunnel) {
 }
 
 /* |incoming| has been initialized by listener.c when this is called. */
-void tunnel_initialize(uv_tcp_t *listener, unsigned int idle_timeout, tunnel_init_done_cb init_done_cb, void *p) {
+void tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsigned int idle_timeout, tunnel_init_done_cb init_done_cb, void *p) {
     struct socket_ctx *incoming;
     struct socket_ctx *outgoing;
     struct tunnel_ctx *tunnel;
-    uv_loop_t *loop = listener->loop;
     bool success = false;
 
+    if (listener) {
+        VERIFY(loop == listener->loop);
+    }
 #ifdef SSR_DUMP_TUNNEL_COUNT
     pr_info("==== tunnel created     count %3d ====", ++tunnel_count);
 #endif // SSR_DUMP_TUNNEL_COUNT
 
     tunnel = (struct tunnel_ctx *) calloc(1, sizeof(*tunnel));
+
+    tunnel->is_udp_tunnel = (listener == NULL);
 
     tunnel->loop = loop;
     tunnel->ref_count = 0;
@@ -172,7 +176,9 @@ void tunnel_initialize(uv_tcp_t *listener, unsigned int idle_timeout, tunnel_ini
     incoming->idle_timeout = idle_timeout;
     VERIFY(0 == uv_timer_init(loop, &incoming->timer_handle));
     VERIFY(0 == uv_tcp_init(loop, &incoming->handle.tcp));
-    VERIFY(0 == uv_accept((uv_stream_t *)listener, &incoming->handle.stream));
+    if (listener) {
+        VERIFY(0 == uv_accept((uv_stream_t *)listener, &incoming->handle.stream));
+    }
     tunnel->incoming = incoming;
 
     outgoing = (struct socket_ctx *) calloc(1, sizeof(*outgoing));

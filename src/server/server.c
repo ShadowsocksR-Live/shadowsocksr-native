@@ -337,7 +337,7 @@ void server_tunnel_initialize(uv_tcp_t *listener, unsigned int idle_timeout) {
     uv_loop_t *loop = listener->loop;
     struct server_env_t *env = (struct server_env_t *)loop->data;
 
-    tunnel_initialize(listener, idle_timeout, &_init_done_cb, env);
+    tunnel_initialize(loop, listener, idle_timeout, &_init_done_cb, env);
 }
 
 static void _do_shutdown_tunnel(const void *obj, void *p) {
