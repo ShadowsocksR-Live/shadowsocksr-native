@@ -131,12 +131,22 @@ char * websocket_generate_sec_websocket_accept(const char *sec_websocket_key, vo
     "Content-Length: %d\r\n"                                                    \
     "\r\n"
 
+#define WEBSOCKET_REQUEST_FORMAT0                                               \
+    "GET %s HTTP/1.1\r\n"                                                       \
+    "Host: %s:%d\r\n"                                                           \
+    "Connection: Upgrade\r\n"                                                   \
+    "Upgrade: websocket\r\n"                                                    \
+    "Sec-WebSocket-Version: 13\r\n"                                             \
+    "Sec-WebSocket-Key: %s\r\n"                                                 \
+    "\r\n"
+
 uint8_t * websocket_connect_request(const char *domain, uint16_t port, const char *url,
     const char *key, const uint8_t *data, size_t data_len, void*(*allocator)(size_t),
     size_t *result_len)
 {
     uint8_t *buf = NULL;
-    const char *fmt = WEBSOCKET_REQUEST_FORMAT;
+    bool exist_content = (data_len && data_len);
+    const char *fmt = exist_content ? WEBSOCKET_REQUEST_FORMAT : WEBSOCKET_REQUEST_FORMAT0;
     size_t buf_len = 0;
     if (domain==NULL || port==0 || key==NULL || allocator==NULL) {
         return NULL;
@@ -152,12 +162,14 @@ uint8_t * websocket_connect_request(const char *domain, uint16_t port, const cha
     }
     memset(buf, 0, buf_len + 1);
 
-    sprintf((char *)buf, fmt, url, domain, (int)port, key, (int)data_len);
-    buf_len = strlen((char *)buf);
-
-    if (data && data_len) {
+    if (exist_content) {
+        sprintf((char *)buf, fmt, url, domain, (int)port, key, (int)data_len);
+        buf_len = strlen((char *)buf);
         memcpy(buf + buf_len, data, data_len);
         buf_len += data_len;
+    } else {
+        sprintf((char *)buf, fmt, url, domain, (int)port, key);
+        buf_len = strlen((char *)buf);
     }
 
     if (result_len) {
