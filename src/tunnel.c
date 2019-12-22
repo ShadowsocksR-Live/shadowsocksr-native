@@ -26,7 +26,6 @@
 #include "common.h"
 #include "tunnel.h"
 #include "dump_info.h"
-#include "ssrbuffer.h"
 
 #if !defined(ARRAY_SIZE)
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(*(arr)))
@@ -131,12 +130,10 @@ struct socket_ctx * socket_context_create(struct tunnel_ctx *tunnel, unsigned in
     ctx->idle_timeout = idle_timeout;
     VERIFY(0 == uv_timer_init(tunnel->loop, &ctx->timer_handle));
     VERIFY(0 == uv_tcp_init(tunnel->loop, &ctx->handle.tcp));
-    ctx->udp_data = buffer_create(SSR_BUFF_SIZE);
     return ctx;
 }
 
 void socket_context_release(struct socket_ctx *ctx) {
-    buffer_release(ctx->udp_data);
     free(ctx);
 }
 
@@ -181,8 +178,6 @@ struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsig
 
     tunnel = (struct tunnel_ctx *) calloc(1, sizeof(*tunnel));
 
-    tunnel->is_udp_tunnel = (listener == NULL);
-
     tunnel->loop = loop;
     tunnel->ref_count = 0;
     tunnel->desired_addr = (struct socks5_address *)calloc(1, sizeof(struct socks5_address));
@@ -205,7 +200,7 @@ struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsig
     tunnel_add_ref(tunnel);
 
     if (success) {
-        if (tunnel->is_udp_tunnel == false) {
+        if (listener) {
             /* Wait for the initial packet. */
             socket_read(incoming, true);
         }
