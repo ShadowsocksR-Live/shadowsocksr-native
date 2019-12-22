@@ -82,7 +82,7 @@ void buffer_add_ref(struct buffer_t *ptr) {
 }
 
 struct buffer_t * buffer_create_from(const uint8_t *data, size_t len) {
-    struct buffer_t *result = buffer_create(2048);
+    struct buffer_t *result = buffer_create(max(1, len) * 2);
     buffer_store(result, data, len);
     return result;
 }
