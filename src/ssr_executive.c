@@ -161,8 +161,8 @@ void config_add_user_id_with_auth_key(struct server_config *config, const char *
 
 bool config_is_user_exist(struct server_config *config, const char *user_id, const char **auth_key, bool *is_multi_user) {
     bool result = false;
-    assert(config);
-    assert(user_id);
+    ASSERT(config);
+    ASSERT(user_id);
     if (is_multi_user) {
         *is_multi_user = (config->user_id_auth_key != NULL);
     }
