@@ -327,7 +327,7 @@ void obj_map_traverse(struct cstl_map *map, void(*fn)(const void *key, const voi
 void init_obfs(struct server_env_t *env, const char *protocol, const char *obfs) {
     struct obfs_t *protocol_plugin;
     struct obfs_t *obfs_plugin;
-    protocol_plugin = obfs_instance_create(protocol);
+    protocol_plugin = protocol_instance_create(protocol);
     if (protocol_plugin) {
         env->protocol_global = protocol_plugin->generate_global_init_data();
         obfs_instance_destroy(protocol_plugin);
@@ -381,7 +381,7 @@ struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, size_t
         server_info.param = config->protocol_param;
         server_info.g_data = env->protocol_global;
 
-        tc->protocol = obfs_instance_create(config->protocol);
+        tc->protocol = protocol_instance_create(config->protocol);
         if (tc->protocol) {
             tc->protocol->set_server_info(tc->protocol, &server_info);
         }

@@ -81,6 +81,7 @@ size_t get_overhead(struct obfs_t *obfs);
 bool need_feedback_false(struct obfs_t *obfs);
 bool need_feedback_true(struct obfs_t *obfs);
 
+struct obfs_t * protocol_instance_create(const char *plugin_name);
 struct obfs_t * obfs_instance_create(const char *plugin_name);
 void obfs_instance_destroy(struct obfs_t *plugin);
 

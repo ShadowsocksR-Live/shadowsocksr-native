@@ -1398,7 +1398,7 @@ udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
 #ifdef MODULE_LOCAL
     server_ctx->remote_addr     = *remote_addr;
     //SSR beg
-    server_ctx->protocol_plugin = obfs_instance_create(protocol);
+    server_ctx->protocol_plugin = protocol_instance_create(protocol);
     if (server_ctx->protocol_plugin) {
         server_ctx->protocol_global = server_ctx->protocol_plugin->generate_global_init_data();
     }
