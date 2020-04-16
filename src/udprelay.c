@@ -317,7 +317,7 @@ udprelay_parse_header(const char *buf, size_t buf_len,
                 union sockaddr_universal addr_u = { 0 };
                 memcpy(tmp, buf + offset + 1, name_len);
 
-                if (convert_universal_address(tmp, 80, &addr_u) == 0) {
+                if (universal_address_from_string(tmp, 80, &addr_u) == 0) {
                     if (addr_u.addr4.sin_family == AF_INET) {
                         struct sockaddr_in *addr = (struct sockaddr_in *)storage;
                         addr->sin_addr = addr_u.addr4.sin_addr;
@@ -1094,7 +1094,7 @@ udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, cons
         port_num     = (uint16_t)atoi(port);
         port_net_num = htons(port_num);
         
-        if (convert_universal_address(host, port_num, &addr) == 0) {
+        if (universal_address_from_string(host, port_num, &addr) == 0) {
             if (addr.addr4.sin_family == AF_INET) {
                 // send as IPv4
                 struct in_addr host_addr = addr.addr4.sin_addr;

@@ -310,7 +310,7 @@ static void do_handshake(struct tunnel_ctx *tunnel) {
         return;
     }
 
-    methods = s5_auth_methods(parser);
+    methods = s5_get_auth_methods(parser);
     if ((methods & s5_auth_none) && can_auth_none(tunnel)) {
         s5_select_auth(parser, s5_auth_none);
         socket_write(incoming, "\5\0", 2);  /* No auth required. */
@@ -419,7 +419,7 @@ static void do_parse_s5_request(struct tunnel_ctx *tunnel) {
         universal_address_to_string(&sockname, addr, sizeof(addr));
         port = universal_address_get_port(&sockname);
 
-        buf = build_udp_assoc_package(config->udp, addr, port, &malloc, &len);
+        buf = s5_build_udp_assoc_package(config->udp, addr, port, &malloc, &len);
         socket_write(incoming, buf, len);
         free(buf);
         ctx->stage = tunnel_stage_s5_udp_accoc;
@@ -456,7 +456,7 @@ static void do_parse_s5_request(struct tunnel_ctx *tunnel) {
     }
     else {
         union sockaddr_universal remote_addr = { 0 };
-        if (convert_universal_address(config->remote_host, config->remote_port, &remote_addr) != 0) {
+        if (universal_address_from_string(config->remote_host, config->remote_port, &remote_addr) != 0) {
             socket_getaddrinfo(outgoing, config->remote_host);
             ctx->stage = tunnel_stage_resolve_ssr_server_host_done;
             return;

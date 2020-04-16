@@ -177,7 +177,33 @@ bool socks5_address_to_universal(const struct socks5_address *s5addr, union sock
     return result;
 }
 
-int convert_universal_address(const char *addr_str, unsigned short port, union sockaddr_universal *addr)
+bool universal_address_to_socks5(const union sockaddr_universal *addr, struct socks5_address *s5addr) {
+    bool result = false;
+    do {
+        if (addr==NULL || s5addr==NULL) {
+            break;
+        }
+        switch (addr->addr4.sin_family) {
+        case AF_INET:
+            result = true;
+            s5addr->addr_type = SOCKS5_ADDRTYPE_IPV4;
+            s5addr->port = ntohs(addr->addr4.sin_port);
+            s5addr->addr.ipv4 = addr->addr4.sin_addr;
+            break;
+        case AF_INET6:
+            result = true;
+            s5addr->addr_type = SOCKS5_ADDRTYPE_IPV6;
+            s5addr->port = ntohs(addr->addr6.sin6_port);
+            s5addr->addr.ipv6 = addr->addr6.sin6_addr;
+            break;
+        default:
+            break;
+        }
+    } while (0);
+    return result;
+}
+
+int universal_address_from_string(const char *addr_str, unsigned short port, union sockaddr_universal *addr)
 {
     struct addrinfo hints = { 0 }, *ai = NULL;
     int status;

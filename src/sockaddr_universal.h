@@ -31,8 +31,8 @@ struct socks5_address {
         struct in6_addr ipv6;
         char domainname[0x0100];
     } addr;
-    enum SOCKS5_ADDRTYPE addr_type;
     uint16_t port;
+    enum SOCKS5_ADDRTYPE addr_type;
 };
 
 bool socks5_address_parse(const uint8_t *data, size_t len, struct socks5_address *addr);
@@ -40,8 +40,9 @@ char * socks5_address_to_string(const struct socks5_address *addr, char *buffer,
 size_t socks5_address_size(const struct socks5_address *addr);
 uint8_t * socks5_address_binary(const struct socks5_address *addr, uint8_t *buffer, size_t size);
 bool socks5_address_to_universal(const struct socks5_address *s5addr, union sockaddr_universal *addr);
+bool universal_address_to_socks5(const union sockaddr_universal *addr, struct socks5_address *s5addr);
 
-int convert_universal_address(const char *addr_str, unsigned short port, union sockaddr_universal *addr);
+int universal_address_from_string(const char *addr_str, unsigned short port, union sockaddr_universal *addr);
 char * universal_address_to_string(const union sockaddr_universal *addr, char *addr_str, size_t size);
 uint16_t universal_address_get_port(const union sockaddr_universal *addr);
 

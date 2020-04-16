@@ -42,6 +42,12 @@ enum s5_result {
     s5_result_max,
 };
 
+enum s5_atyp {
+    s5_atyp_ipv4 = 1,
+    s5_atyp_host = 3,
+    s5_atyp_ipv6 = 4,
+};
+
 enum s5_auth_method {
     s5_auth_none = 1 << 0,
     s5_auth_gssapi = 1 << 1,
@@ -61,8 +67,12 @@ void s5_ctx_release(struct s5_ctx *cx);
 
 enum s5_result s5_parse(struct s5_ctx *cx, uint8_t **data, size_t *size);
 
+enum s5_atyp s5_get_address_type(const struct s5_ctx *cx);
+const char * s5_get_address(const struct s5_ctx *cx);
+uint16_t s5_get_dport(const struct s5_ctx *cx);
+
 /* Only call after s5_parse() has returned s5_want_auth_method. */
-enum s5_auth_method s5_auth_methods(const struct s5_ctx *cx);
+enum s5_auth_method s5_get_auth_methods(const struct s5_ctx *cx);
 
 enum s5_cmd s5_get_cmd(const struct s5_ctx *cx);
 
@@ -71,9 +81,12 @@ int s5_select_auth(struct s5_ctx *cx, enum s5_auth_method method);
 
 const char * str_s5_result(enum s5_result result);
 
-uint8_t * build_udp_assoc_package(bool allow, const char *addr_str, int port, void*(*allocator)(size_t size), size_t *size);
+uint8_t * s5_build_udp_assoc_package(bool allow, const char *addr_str, int port, void*(*allocator)(size_t size), size_t *size);
 uint8_t * s5_address_package_create(const struct s5_ctx *parser, void*(*allocator)(size_t size), size_t *size);
 uint8_t * s5_connect_response_package(const struct s5_ctx *parser, void*(*allocator)(size_t size), size_t *size);
 
+struct socks5_address;
+const uint8_t * s5_parse_upd_package(const uint8_t *pkg, size_t len, struct socks5_address *dst_addr, size_t *frag_number, size_t *payload_len);
+uint8_t * s5_build_udp_datagram(struct socks5_address *dst_addr, const uint8_t *payload, size_t payload_len, void*(*allocator)(size_t size), size_t *size);
 
 #endif  /* __S5_H__ */

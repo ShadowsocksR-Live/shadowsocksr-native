@@ -297,7 +297,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
 #if UDP_RELAY_ENABLE
         if (cf->udp) {
             union sockaddr_universal remote_addr = { 0 };
-            convert_universal_address(cf->remote_host, cf->remote_port, &remote_addr);
+            universal_address_from_string(cf->remote_host, cf->remote_port, &remote_addr);
 
             listener->udp_server = udprelay_begin(loop,
                 cf->listen_host, port,
