@@ -239,3 +239,38 @@ void buffer_release(struct buffer_t *ptr) {
     }
     free(ptr);
 }
+
+uint8_t * mem_insert(const uint8_t *src, size_t src_size, size_t pos, const uint8_t *chunk, size_t chunk_size, void*(*allocator)(size_t), size_t *total_size) {
+    uint8_t *result;
+    size_t total = 0;
+    if (allocator==NULL) {
+        return NULL;
+    }
+    if (src == NULL) {
+        src_size = 0;
+    }
+    if (pos > src_size) {
+        pos = src_size;
+    }
+    if (chunk == NULL) {
+        chunk_size = 0;
+    }
+    total = src_size + chunk_size;
+    if (total_size) {
+        *total_size = total;
+    }
+    if (total == 0) {
+        return NULL;
+    }
+    result = (uint8_t *) allocator(total + 1);
+    if (result == NULL) {
+        return NULL;
+    }
+    memset(result, 0, (total + 1));
+
+    memmove(result, src, pos);
+    memmove(result + pos + chunk_size, src + pos, src_size - pos);
+    memmove(result + pos, chunk, chunk_size);
+
+    return result;
+}
