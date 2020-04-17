@@ -116,7 +116,7 @@ e.g. Ubuntu, Debian or Linux Mint, you can build the binary like this:
 sudo apt-get update -y
 sudo apt-get upgrade -y
 sudo apt-get install --no-install-recommends build-essential autoconf libtool asciidoc xmlto -y
-sudo apt-get install git gcc g++ cmake automake -y
+sudo apt-get install git gcc g++ gdb cmake automake -y
 sudo apt-get -f install -y
 
 # cd /                          # switch to root directory
@@ -144,7 +144,7 @@ Before build `ssr-Native`, we must install `cmake` 3.x first. following [this](#
 ```bash
 # CentOS / Fedora / RHEL
 sudo su
-yum install wget git gcc gcc-c++ autoconf automake libtool make asciidoc xmlto -y
+yum install wget git gcc gcc-c++ gdb autoconf automake libtool make asciidoc xmlto -y
 curl https://cmake.org/files/v3.14/cmake-3.14.0-Linux-x86_64.sh -o a.sh
 sh a.sh --prefix=/usr/ --exclude-subdir && rm -rf a.sh
 cd /
