@@ -455,7 +455,7 @@ static void do_parse_s5_request(struct tunnel_ctx *tunnel) {
         return;
     }
     else {
-        union sockaddr_universal remote_addr = { 0 };
+        union sockaddr_universal remote_addr = { {0} };
         if (universal_address_from_string(config->remote_host, config->remote_port, &remote_addr) != 0) {
             socket_getaddrinfo(outgoing, config->remote_host);
             ctx->stage = tunnel_stage_resolve_ssr_server_host_done;

@@ -203,7 +203,7 @@ static int ssr_server_run_loop(struct server_config *config) {
     loop->data = state->env;
 
     {
-        union sockaddr_universal addr = { 0 };
+        union sockaddr_universal addr = { {0} };
         int error;
         uv_tcp_t *listener = (uv_tcp_t *) calloc(1, sizeof(uv_tcp_t));
 

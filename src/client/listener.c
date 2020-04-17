@@ -201,7 +201,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
     uv_loop_t *loop;
     unsigned int n;
     int err;
-    union sockaddr_universal s = { 0 };
+    union sockaddr_universal s = { {0} };
 
     loop = req->loop;
 
@@ -296,7 +296,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
 
 #if UDP_RELAY_ENABLE
         if (cf->udp) {
-            union sockaddr_universal remote_addr = { 0 };
+            union sockaddr_universal remote_addr = { {0} };
             universal_address_from_string(cf->remote_host, cf->remote_port, &remote_addr);
 
             listener->udp_server = udprelay_begin(loop,

@@ -255,7 +255,10 @@ enum s5_result s5_parse(struct s5_ctx *cx, uint8_t **data, size_t *size) {
 
         case s5_stage_req_dport1:
             port[1] = c;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
             cx->dport = (uint16_t) ntohs(*(uint16_t *)port);
+#pragma GCC diagnostic pop
             cx->stage = s5_stage_dead;
             result = s5_result_exec_cmd;
             goto out;
@@ -327,7 +330,7 @@ const char * str_s5_result(enum s5_result result) {
 uint8_t * s5_build_udp_assoc_package(bool allow, const char *addr_str, int port, void*(*allocator)(size_t size), size_t *size) {
     uint8_t *buf;
     size_t buf_len = 0;
-    union sockaddr_universal addr = { 0 };
+    union sockaddr_universal addr = { {0} };
     bool ipV6;
     size_t in6_addr_w;
     size_t in4_addr_w;

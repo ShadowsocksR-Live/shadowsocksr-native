@@ -315,7 +315,7 @@ udprelay_parse_header(const char *buf, size_t buf_len,
         if ((size_t)(name_len + 4) <= buf_len) {
             if (storage != NULL) {
                 char tmp[257] = { 0 };
-                union sockaddr_universal addr_u = { 0 };
+                union sockaddr_universal addr_u = { {0} };
                 memcpy(tmp, buf + offset + 1, name_len);
 
                 if (universal_address_from_string(tmp, 80, &addr_u) == 0) {
@@ -409,7 +409,7 @@ get_addr_str(const struct sockaddr *sa)
 
 int udp_create_remote_socket(bool ipv6, uv_loop_t *loop, uv_udp_t *udp) {
     int err = 0;
-    union sockaddr_universal addr = { 0 };
+    union sockaddr_universal addr = { {0} };
 
     uv_udp_init(loop, udp);
 
@@ -877,7 +877,7 @@ CLEAN_UP:
 
 void udp_tls_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, const struct sockaddr* addr, unsigned flags)
 {
-    union sockaddr_universal addr_u = { 0 };
+    union sockaddr_universal addr_u = { {0} };
     struct udp_listener_ctx_t *server_ctx;
     struct buffer_t *data = NULL;
 
@@ -1091,7 +1091,7 @@ udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, cons
     if (server_ctx->tunnel_addr.host && server_ctx->tunnel_addr.port) {
         uint16_t port_num;
         uint16_t port_net_num;
-        union sockaddr_universal addr = { 0 };
+        union sockaddr_universal addr = { {0} };
 
         strncpy(host, server_ctx->tunnel_addr.host, 256);
         strncpy(port, server_ctx->tunnel_addr.port, 64);
@@ -1374,7 +1374,7 @@ udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
 {
     struct udp_listener_ctx_t *server_ctx;
     int serverfd;
-    struct server_info_t server_info = { 0 };
+    struct server_info_t server_info = { {0}, 0, 0, 0, {0}, 0, {0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, };
 
     // Initialize MTU
     if (mtu > 0) {

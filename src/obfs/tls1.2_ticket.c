@@ -480,7 +480,10 @@ struct buffer_t * tls12_ticket_auth_server_encode(struct obfs_t *obfs, const str
         struct buffer_t *input = buffer_clone(buf);
         while (input->len > SSR_BUFF_SIZE) {
             rand_bytes(rand_buf, 2);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
             size = min((size_t)ntohs(*((uint16_t *)rand_buf)) % 4096 + 100, input->len);
+#pragma GCC diagnostic pop
             size2 = htons((uint16_t)size);
 
             buffer_concatenate(ret, (uint8_t *)"\x17", 1);
@@ -539,7 +542,10 @@ struct buffer_t * tls12_ticket_auth_server_encode(struct obfs_t *obfs, const str
 
         if ((rand_integer() % 8) < 1) {
             rand_bytes(rand_buf, 2);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
             size = (size_t)((ntohs(*((uint16_t *)rand_buf)) % 164) * 2 + 64);
+#pragma GCC diagnostic pop
             rand_bytes(rand_buf, (int)size);
             size2 = htons((uint16_t)(size + 4));
             size3 = htons((uint16_t)size);

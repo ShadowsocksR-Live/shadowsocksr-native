@@ -1510,7 +1510,10 @@ struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, stru
         }
 
         memcpy(local->uid, local->recv_buffer->buffer + 7, 4);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
         uid = (uint32_t) (*((uint32_t *)(local->uid))); // TODO: ntohl
+#pragma GCC diagnostic pop
         sprintf(uid_str, "%d", (int)uid);
 
         if (obfs->audit_incoming_user) {

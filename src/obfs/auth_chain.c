@@ -456,7 +456,10 @@ struct buffer_t * auth_chain_a_pack_server_data(struct obfs_t *obfs, const struc
     mac_key = buffer_clone(local->user_key);
     buffer_concatenate(mac_key, (uint8_t *)&pack_id, sizeof(uint32_t));
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
     length2 = *((uint16_t *)(local->last_server_hash + 14)); // TODO: ntohs
+#pragma GCC diagnostic pop
     length = ((uint16_t)in_buf->len) ^ length2;
 
     {
@@ -972,7 +975,10 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
         }
         local->client_over_head = (uint16_t) (*((uint16_t *)(head + 12))); // TODO: ntohs
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
         utc_time = (uint32_t) (*((uint32_t *)(head + 0))); // TODO: ntohl
+#pragma GCC diagnostic pop
         client_id = (uint32_t) (*((uint32_t *)(head + 4))); // TODO: ntohl
         connection_id = (uint32_t) (*((uint32_t *)(head + 8))); // TODO: ntohl
 
@@ -1014,7 +1020,10 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
         buffer_concatenate(mac_key2, (uint8_t *)&local->recv_id, 4); // TODO: htonl(local->recv_id);
 
         data_len = *((uint16_t *)local->recv_buffer->buffer); // TODO: ntohs
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
         data_len = data_len ^ (*((uint16_t *)(local->last_client_hash + 14))); // TODO: ntohs
+#pragma GCC diagnostic pop
 
         rand_len = local->get_tcp_rand_len(local, data_len, &local->random_client, local->last_client_hash);
         length = data_len + rand_len;

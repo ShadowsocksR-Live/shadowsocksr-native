@@ -84,7 +84,7 @@ char * websocket_generate_sec_websocket_key(void*(*allocator)(size_t)) {
 //    toBase64( sha1( Sec-WebSocket-Key + 258EAFA5-E914-47DA-95CA-C5AB0DC85B11 ) )
 //
 char * websocket_generate_sec_websocket_accept(const char *sec_websocket_key, void*(*allocator)(size_t)) {
-    mbedtls_sha1_context sha1_ctx = { 0 };
+    mbedtls_sha1_context sha1_ctx = { {0}, {0}, {0}, };
     unsigned char sha1_hash[SHA_DIGEST_LENGTH] = { 0 };
     size_t b64_str_len = 0;
     char *b64_str;
@@ -287,7 +287,10 @@ uint8_t * websocket_build_close_frame(bool masking, ws_close_reason reason, cons
     if (allocator == NULL) {
         return NULL;
     }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
     *((uint16_t *)(tmp + 0)) = ws_hton16((uint16_t)reason);
+#pragma GCC diagnostic pop
     memcpy(tmp + sizeof(uint16_t), text_info, ti_size);
 
     result = websocket_build_frame(&info, tmp, sizeof(uint16_t) + ti_size, allocator);

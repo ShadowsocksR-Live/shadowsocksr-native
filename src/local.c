@@ -188,7 +188,7 @@ static int uv_stream_fd(const uv_tcp_t *handle) {
 }
 
 static uint16_t get_socket_port(const uv_tcp_t *tcp) {
-    union sockaddr_universal tmp = { 0 };
+    union sockaddr_universal tmp = { {0} };
     int len = sizeof(tmp);
     if (uv_tcp_getsockname(tcp, &tmp.addr, &len) != 0) {
         return 0;
