@@ -34,6 +34,7 @@
 #endif
 
 void check_memory_content(struct buffer_t *buf) {
+    (void)buf;
 #if __MEM_CHECK__
     static const char data[] = "\xE7\x3C\x73\xA6\x66\x43\x28\x67\xAF\xD3\x5C\xE2\x70\x80\x0D\xD7";
     if (buf && buf->len >= strlen(data)) {
@@ -50,6 +51,7 @@ void check_memory_content(struct buffer_t *buf) {
 #include <malloc.h>
 #endif
 
+#if 0
 static size_t _memory_size_internal(void *ptr) {
     if (ptr == NULL) {
         return 0;
@@ -62,7 +64,7 @@ static size_t _memory_size_internal(void *ptr) {
     return malloc_usable_size(ptr); // Linux and __MINGW32__
 #endif
 }
-
+#endif
 
 struct buffer_t * buffer_create(size_t capacity) {
     struct buffer_t *ptr = (struct buffer_t *) calloc(1, sizeof(struct buffer_t));
@@ -181,7 +183,6 @@ void buffer_replace(struct buffer_t *dst, const struct buffer_t *src) {
 }
 
 void buffer_insert(struct buffer_t *ptr, size_t pos, const uint8_t *data, size_t size) {
-    size_t result;
     if (ptr==NULL || data==NULL || size==0) {
         return;
     }
