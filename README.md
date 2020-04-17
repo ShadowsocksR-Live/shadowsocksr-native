@@ -11,6 +11,8 @@ As I typed each line of code, I was full of fear. Cherish what you using.
 
 [新特性: GFW 终结者 SSRoT](https://github.com/ShadowsocksR-Live/shadowsocksr-native/wiki)
 
+[帮助开发者改善 SSRoT](https://github.com/ShadowsocksR-Live/shadowsocksr-native/wiki/%E5%B8%AE%E5%8A%A9%E4%BD%9C%E8%80%85%E6%94%B9%E5%96%84-SSRoT)
+
 [New feature: GFW terminator SSRoT English tutorial](https://palitechsociety.blogspot.com/2019/08/shadowsocksr-over-tls-ssrot-server.html)
 
 
