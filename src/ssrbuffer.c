@@ -189,7 +189,7 @@ void buffer_insert(struct buffer_t *ptr, size_t pos, const uint8_t *data, size_t
     if (pos > ptr->len) {
         pos = ptr->len;
     }
-    result = buffer_realloc(ptr, ptr->len + size);
+    buffer_realloc(ptr, ptr->len + size);
     memmove(ptr->buffer + pos + size, ptr->buffer + pos, ptr->len - pos);
     memmove(ptr->buffer + pos, data, size);
     ptr->len += size;
