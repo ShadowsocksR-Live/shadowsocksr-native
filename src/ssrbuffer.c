@@ -34,7 +34,6 @@
 #endif
 
 void check_memory_content(struct buffer_t *buf) {
-    (void)buf;
 #if __MEM_CHECK__
     static const char data[] = "\xE7\x3C\x73\xA6\x66\x43\x28\x67\xAF\xD3\x5C\xE2\x70\x80\x0D\xD7";
     if (buf && buf->len >= strlen(data)) {
@@ -43,6 +42,7 @@ void check_memory_content(struct buffer_t *buf) {
         }
     }
 #endif // __MEM_CHECK__
+    (void)buf;
 }
 
 #if defined(__APPLE__)
