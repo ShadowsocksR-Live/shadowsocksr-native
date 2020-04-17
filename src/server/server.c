@@ -94,7 +94,6 @@ static size_t _get_read_size(struct tunnel_ctx *tunnel, struct socket_ctx *socke
 static void do_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *incoming);
 static void do_prepare_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void do_client_feedback(struct tunnel_ctx *tunnel, struct socket_ctx *incoming);
-static void do_handshake(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void do_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void do_resolve_host_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void do_connect_host_start(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
@@ -398,6 +397,7 @@ static void do_next(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     struct server_ctx *ctx = (struct server_ctx *)tunnel->data;
     struct server_config *config = ctx->env->config;
     struct socket_ctx *incoming = tunnel->incoming;
+    (void)done;
     switch (ctx->stage) {
     case tunnel_stage_initial:
         ASSERT(incoming == socket);
@@ -541,6 +541,7 @@ static size_t tunnel_get_alloc_size(struct tunnel_ctx *tunnel, struct socket_ctx
 static bool is_incoming_ip_legal(struct tunnel_ctx *tunnel) {
     uv_tcp_t *tcp = &tunnel->incoming->handle.tcp;
     // TODO: check incoming ip.
+    (void)tcp;
     return true;
 }
 
@@ -722,10 +723,6 @@ static void do_client_feedback(struct tunnel_ctx *tunnel, struct socket_ctx *inc
     buffer_release(confirm);
 }
 
-static void do_handshake(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
-    UNREACHABLE();
-}
-
 static void do_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     /*
      * Shadowsocks TCP Relay Header, same as SOCKS5:
@@ -849,6 +846,7 @@ static void do_connect_host_start(struct tunnel_ctx *tunnel, struct socket_ctx *
     struct socket_ctx *outgoing;
     int err;
 
+    (void)socket;
     incoming = tunnel->incoming;
     outgoing = tunnel->outgoing;
     ASSERT(incoming->rdstate == socket_state_stop);
@@ -1055,6 +1053,7 @@ static uint8_t* tunnel_extract_data(struct socket_ctx *socket, void*(*allocator)
     struct buffer_t *buf = NULL;
     uint8_t *result = NULL;
 
+    (void)error;
     if (socket==NULL || allocator==NULL || size==NULL) {
         return result;
     }
@@ -1064,7 +1063,7 @@ static uint8_t* tunnel_extract_data(struct socket_ctx *socket, void*(*allocator)
         struct buffer_t *src = buffer_create_from((uint8_t *)socket->buf->base, (size_t)socket->result);
         if (socket == tunnel->outgoing) {
             if (config->over_tls_enable) {
-                ws_frame_info info = { WS_OPCODE_BINARY, false, false, };
+                ws_frame_info info = { WS_OPCODE_BINARY, false, false, 0, 0, 0 };
                 struct buffer_t *tmp = tunnel_tls_cipher_server_encrypt(cipher_ctx, src);
                 uint8_t *frame;
                 if (!ctx->ws_tls_beginning) {
@@ -1087,7 +1086,7 @@ static uint8_t* tunnel_extract_data(struct socket_ctx *socket, void*(*allocator)
                 buf = buffer_create(SOCKET_DATA_BUFFER_SIZE);
                 buffer_concatenate2(ctx->client_delivery_cache, src);
                 do {
-                    ws_frame_info info = { WS_OPCODE_BINARY, };
+                    ws_frame_info info = { WS_OPCODE_BINARY, 0, 0, 0, 0, 0 };
                     uint8_t *payload;
                     size_t buf_len = 0;
                     const uint8_t *buf_data;

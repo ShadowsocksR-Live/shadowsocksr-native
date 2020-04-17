@@ -208,6 +208,7 @@ struct obfs_t * auth_aes128_sha1_new_obfs(void) {
 size_t
 auth_aes128_sha1_get_overhead(struct obfs_t *obfs)
 {
+    (void)obfs;
     return 9;
 }
 
@@ -306,7 +307,7 @@ auth_simple_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, size_t da
         buffer += pack_len;
     }
     len = (int)(buffer - out_buffer);
-    if ((int)(*capacity) < len) {
+    if ((int)(*capacity) < (int)len) {
         *pplaindata = (char*)realloc(*pplaindata, *capacity = (size_t)(len * 2));
         plaindata = *pplaindata;
     }
@@ -438,7 +439,7 @@ auth_sha1_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, size_t data
         buffer += pack_len;
     }
     len = (int)(buffer - out_buffer);
-    if ((int)*capacity < len) {
+    if ((int)*capacity < (int)len) {
         *pplaindata = (char*)realloc(*pplaindata, *capacity = (size_t)(len * 2));
         plaindata = *pplaindata;
     }
@@ -586,7 +587,7 @@ auth_sha1_v2_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, size_t d
         buffer += pack_len;
     }
     len = (int)(buffer - out_buffer);
-    if ((int)*capacity < len) {
+    if ((int)*capacity < (int)len) {
         *pplaindata = (char*)realloc(*pplaindata, *capacity = (size_t)(len * 2));
         plaindata = *pplaindata;
     }
@@ -753,7 +754,7 @@ auth_sha1_v4_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, size_t d
         buffer += pack_len;
     }
     len = (int)(buffer - out_buffer);
-    if ((int)*capacity < len) {
+    if ((int)*capacity < (int)len) {
         *pplaindata = (char*)realloc(*pplaindata, *capacity = (size_t)(len * 2));
         plaindata = *pplaindata;
     }
@@ -1396,6 +1397,7 @@ auth_aes128_sha1_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaindata,
     auth_simple_local_data *local;
     uint8_t hash[SHA1_BYTES + 1] = { 0 };
 
+    (void)capacity;
     if (datalength <= 4) {
         return 0;
     }
@@ -1518,7 +1520,7 @@ struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, stru
             uint8_t hash[SHA1_BYTES + 1] = { 0 };
             assert(is_multi_user);
             assert(auth_key);
-            local->hash(hash, auth_key, strlen(auth_key));
+            local->hash(hash, (const uint8_t*)auth_key, strlen(auth_key));
             buffer_store(local->user_key, hash, local->hash_len);
         } else {
             if (is_multi_user == false) {
@@ -1535,6 +1537,8 @@ struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, stru
 
             size_t b64len = (size_t) std_base64_encode_len((int)local_key_len);
             struct buffer_t *key = buffer_create(b64len + 1);
+
+            (void)in_data;
             key->len = (size_t) std_base64_encode(local_key, (int)local_key_len, key->buffer);
             buffer_concatenate(key, (uint8_t *)local->salt, strlen(local->salt));
 

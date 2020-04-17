@@ -69,7 +69,6 @@ enum ss_cipher_type ss_cipher_type_of_name(const char *name);
     V(12, ssr_protocol_auth_chain_d,    "auth_chain_d")                        \
     V(13, ssr_protocol_auth_chain_e,    "auth_chain_e")                        \
     V(14, ssr_protocol_auth_chain_f,    "auth_chain_f")                        \
-//    V( 2, ssr_protocol_verify_sha1,     "verify_sha1")                         \
 
 typedef enum ssr_protocol {
 #define SSR_PROTOCOL_GEN(code, name, _) name = (code),
@@ -89,7 +88,6 @@ enum ssr_protocol ssr_protocol_type_of_name(const char *name);
     V(3, ssr_obfs_http_mix,                 "http_mix")                        \
     V(4, ssr_obfs_tls_1_2_ticket_auth,      "tls1.2_ticket_auth")              \
     V(5, ssr_obfs_tls_1_2_ticket_fastauth,  "tls1.2_ticket_fastauth")          \
-//    V(3, ssr_obfs_tls_1_0_session_auth,     "tls1.0_session_auth")             \
 
 typedef enum ssr_obfs {
 #define SSR_OBFS_GEN(code, name, _) name = (code),

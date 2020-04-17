@@ -1171,6 +1171,7 @@ void debug_verify_property_1(struct cstl_rb* pTree, struct cstl_rb_node* n) {
 }
 
 void debug_verify_property_2(struct cstl_rb* pTree, struct cstl_rb_node* root) {
+    (void)pTree; (void)root;
     assert(debug_node_color(pTree, root) == cstl_black);
 }
 

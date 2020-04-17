@@ -94,7 +94,7 @@ typedef struct _jconf_t {
     union {
         ss_server_legacy_t server_legacy;
         ss_server_new_1_t server_new_1;
-    };
+    } server_type;
     char *timeout;
     char *user;
     int fast_open;

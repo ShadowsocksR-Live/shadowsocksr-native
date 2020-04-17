@@ -436,11 +436,11 @@ set_nofile(int nofile)
 
     if (setrlimit(RLIMIT_NOFILE, &limit) < 0) {
         if (errno == EPERM) {
-            LOGE(
+            LOGE("%s",
                 "insufficient permission to change NOFILE, not starting as root?");
             return -1;
         } else if (errno == EINVAL) {
-            LOGE("invalid nofile, decrease nofile and try again");
+            LOGE("%s", "invalid nofile, decrease nofile and try again");
             return -1;
         } else {
             LOGE("setrlimit failed: %s", strerror(errno));

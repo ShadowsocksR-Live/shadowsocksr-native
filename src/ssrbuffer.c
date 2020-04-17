@@ -51,7 +51,6 @@ void check_memory_content(struct buffer_t *buf) {
 #include <malloc.h>
 #endif
 
-#if 0
 static size_t _memory_size_internal(void *ptr) {
     if (ptr == NULL) {
         return 0;
@@ -64,7 +63,6 @@ static size_t _memory_size_internal(void *ptr) {
     return malloc_usable_size(ptr); // Linux and __MINGW32__
 #endif
 }
-#endif
 
 struct buffer_t * buffer_create(size_t capacity) {
     struct buffer_t *ptr = (struct buffer_t *) calloc(1, sizeof(struct buffer_t));
@@ -73,7 +71,9 @@ struct buffer_t * buffer_create(size_t capacity) {
     assert(ptr->buffer);
     ptr->capacity = capacity;
     ptr->ref_count = 1;
-    assert(ptr->capacity <= _memory_size_internal(ptr->buffer));
+    if (ptr->capacity > _memory_size_internal(ptr->buffer)) {
+        assert(0);
+    }
     return ptr;
 }
 

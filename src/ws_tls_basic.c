@@ -279,7 +279,7 @@ uint8_t * websocket_build_frame(ws_frame_info *info, const uint8_t *payload, siz
 #endif
 
 uint8_t * websocket_build_close_frame(bool masking, ws_close_reason reason, const char *text_info, void*(*allocator)(size_t), size_t *frame_size) {
-    ws_frame_info info = { WS_OPCODE_CLOSE, true, masking, reason, };
+    ws_frame_info info = { WS_OPCODE_CLOSE, true, masking, reason, 0, 0 };
     // w3 spec on WebSockets API says reason shouldn't be over 123 bytes.
     size_t ti_size = min((text_info ? strlen(text_info) : 0), 123);
     uint8_t tmp[128] = { 0 };

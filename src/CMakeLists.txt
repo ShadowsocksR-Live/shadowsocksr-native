@@ -184,6 +184,7 @@ endif()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_definitions(-Wall -Werror -ggdb3 -std=c99 -Wextra -pedantic)
+    add_compile_options("-D_DEFAULT_SOURCE")
 endif()
 
 if (UNIX)

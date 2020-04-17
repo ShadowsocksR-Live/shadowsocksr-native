@@ -79,7 +79,7 @@
 struct method_select_request {
     uint8_t ver;
     uint8_t nmethods;
-    uint8_t methods[0];
+    uint8_t methods[1];
 };
 
 
@@ -99,7 +99,7 @@ struct method_select_response {
 struct socks5_authenticate {
     uint8_t ver;
     uint8_t ulen;
-    uint8_t uname_n_others[0];
+    uint8_t uname_n_others[1];
 };
 
 
@@ -115,7 +115,7 @@ struct socks5_request {
     uint8_t cmd;
     uint8_t rsv;
     uint8_t addr_type;
-    uint8_t addr_n_port[0];
+    uint8_t addr_n_port[1];
 };
 
 
@@ -131,7 +131,7 @@ struct socks5_response {
     uint8_t rep;
     uint8_t rsv;
     uint8_t addr_type;
-    uint8_t addr_n_port[0];
+    uint8_t addr_n_port[1];
 };
 
 #pragma pack(pop)

@@ -113,7 +113,7 @@ run_cmd(const char *cmd)
         fflush(shell_stdin);
     }
 
-    return ret == len;
+    return ret == (int)len;
 }
 
 static int
@@ -394,7 +394,7 @@ init_acl(const char *path)
 
     f = fopen(path, "r");
     if (f == NULL) {
-        LOGE("Invalid acl path.");
+        LOGE("%s", "Invalid acl path.");
         return -1;
     }
 

@@ -105,6 +105,7 @@ struct obfs_t * tls12_ticket_auth_new_obfs(void) {
 }
 
 size_t tls12_ticket_auth_get_overhead(struct obfs_t *obfs) {
+    (void)obfs;
     return 5;
 }
 
@@ -154,7 +155,7 @@ struct buffer_t * tls12_ticket_auth_sni(const char *url0) {
     *((uint16_t *)iter) = htons((uint16_t)url_len); iter += sizeof(uint16_t);
     memmove(iter, url, url_len); iter += url_len;
 
-    assert(iter - result->buffer == len);
+    assert((size_t)(iter - result->buffer) == len);
 
     result->len = len;
     return result;
@@ -470,6 +471,7 @@ struct buffer_t * tls12_ticket_auth_server_encode(struct obfs_t *obfs, const str
     size_t size = 0;
     uint16_t size2 = 0;
 
+    (void)global;
     if (local->handshake_status == -1) {
         return buffer_clone(buf);
     }
@@ -591,6 +593,7 @@ struct buffer_t * decode_error_return(struct obfs_t *obfs, const struct buffer_t
     struct tls12_ticket_auth_local_data *local = (struct tls12_ticket_auth_local_data*)obfs->l_data;
     struct tls12_ticket_auth_global_data *global = (struct tls12_ticket_auth_global_data*)obfs->server_info.g_data;
 
+    (void)global;
     local->handshake_status = -1;
     if (obfs->server_info.overhead > 0) {
         // self.server_info.overhead -= self.overhead
@@ -619,6 +622,7 @@ struct buffer_t * tls12_ticket_auth_server_decode(struct obfs_t *obfs, const str
     struct buffer_t *verifyid = NULL;
     struct buffer_t *sessionid = NULL;
 
+    (void)global;
     if (need_decrypt) { *need_decrypt = true; }
     if (need_feedback) { *need_feedback = false; }
     if (local->handshake_status == -1) {
@@ -736,6 +740,7 @@ struct buffer_t * tls12_ticket_auth_server_decode(struct obfs_t *obfs, const str
         uint32_t utc_time = 0;
         uint32_t time_dif = 0;
 
+        (void)time_dif;
         buffer_concatenate2(local->recv_buffer, buf);
         buf_copy = buffer_clone(local->recv_buffer);
         ogn_buf = buffer_clone(local->recv_buffer);
@@ -801,7 +806,7 @@ struct buffer_t * tls12_ticket_auth_server_decode(struct obfs_t *obfs, const str
         //    // self.max_time_dif = int(self.server_info.obfs_param)
         //    local->max_time_dif = obfs->server.param;
         //}
-        //if self.max_time_dif > 0 and (time_dif < -self.max_time_dif or time_dif > self.max_time_dif \
+        //if self.max_time_dif > 0 and (time_dif < -self.max_time_dif or time_dif > self.max_time_dif
         //        or common.int32(utc_time - self.server_info.data.startup_time) < -self.max_time_dif / 2):
         //    logging.info("tls_auth wrong time")
         //    return self.decode_error_return(ogn_buf)

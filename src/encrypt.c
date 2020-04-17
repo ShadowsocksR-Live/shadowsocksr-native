@@ -153,7 +153,7 @@ ss_mbedtls_cipher_name_by_type(enum ss_cipher_type index)
     default:;  // Silence ss_cipher_max -Wswitch warning.
     }
 #undef SS_CIPHER_MBEDTLS_GEN
-    LOGE("Invalid index");
+    LOGE("%s", "Invalid index");
     return NULL; // "Invalid index";
 }
 
@@ -496,7 +496,7 @@ const digest_type_t *
 get_digest_type(const char *digest)
 {
     if (digest == NULL) {
-        LOGE("get_digest_type(): Digest name is null");
+        LOGE("%s", "get_digest_type(): Digest name is null");
         return NULL;
     }
 
@@ -515,6 +515,7 @@ cipher_context_init(struct cipher_env_t *env, struct cipher_ctx_t *ctx, bool enc
     cipher_core_ctx_t *core_ctx;
     enum ss_cipher_type method = env->enc_method;
 
+    (void)encrypt;
     if (method >= ss_cipher_salsa20) {
 //        enc_iv_len = ss_cipher_iv_size(method);
         return;
@@ -571,7 +572,7 @@ cipher_context_set_iv(struct cipher_env_t *env, struct cipher_ctx_t *ctx, uint8_
     cipher_core_ctx_t *core_ctx;
 
     if (iv == NULL) {
-        LOGE("cipher_context_set_iv(): IV is null");
+        LOGE("%s", "cipher_context_set_iv(): IV is null");
         return;
     }
 
@@ -594,7 +595,7 @@ cipher_context_set_iv(struct cipher_env_t *env, struct cipher_ctx_t *ctx, uint8_
     }
     core_ctx = ctx->core_ctx;
     if (core_ctx == NULL) {
-        LOGE("cipher_context_set_iv(): Cipher context is null");
+        LOGE("%s", "cipher_context_set_iv(): Cipher context is null");
         return;
     }
 #if defined(USE_CRYPTO_OPENSSL)
@@ -1153,7 +1154,7 @@ enc_key_init(struct cipher_env_t *env, enum ss_cipher_type method, const char *p
     const digest_type_t *md;
 
     if (method < ss_cipher_none || method >= ss_cipher_max) {
-        LOGE("enc_key_init(): Illegal method");
+        LOGE("%s", "enc_key_init(): Illegal method");
         return;
     }
 

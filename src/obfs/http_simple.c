@@ -351,7 +351,7 @@ bool match_http_header(struct buffer_t *buf) {
     if (buf==NULL || buf->len==0) {
         return result;
     }
-    for(i=0; i< sizeof(header)/sizeof(header[0]); ++i) {
+    for (i=0; i< (int)(sizeof(header)/sizeof(header[0])); ++i) {
         if (memcmp(header[i], buf->buffer, strlen(header[i])) == 0) {
             result = true;
             break;

@@ -160,6 +160,7 @@ void do_dealloc_uv_buffer(uv_buf_t *buf) {
 }
 
 static void on_alloc(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf) {
+    (void)handle;
     do_alloc_uv_buffer(suggested_size, buf);
 }
 
@@ -242,7 +243,7 @@ create_and_bind(const char *addr, unsigned short port, uv_loop_t *loop, uv_tcp_t
     }
 
     if (rp == NULL) {
-        LOGE("Could not bind");
+        LOGE("%s", "Could not bind");
         return -1;
     }
 
@@ -429,7 +430,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             // insert shadowsocks header
             r = _tunnel_encrypt(local, remote->buf);
             if (r < 0) {
-                LOGE("local invalid password or cipher");
+                LOGE("%s", "local invalid password or cipher");
                 tunnel_close_and_free(remote, local);
                 return;
             }
@@ -520,7 +521,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 addr_len = sizeof(sock_addr);
                 getsockname(uv_stream_fd(&local->socket), (struct sockaddr *)&sock_addr, &addr_len);
                 if (verbose) {
-                    LOGI("udp assc request accepted");
+                    LOGI("%s", "udp assc request accepted");
                 }
             } else if (request->cmd != SOCKS5_COMMAND_CONNECT) {
                 struct buffer_t *buffer = buffer_create(SSR_BUFF_SIZE);
@@ -787,7 +788,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
             if (remote == NULL) {
                 buffer_release(abuf);
-                LOGE("invalid remote addr");
+                LOGE("%s", "invalid remote addr");
                 tunnel_close_and_free(remote, local);
                 return;
             }
@@ -941,7 +942,7 @@ remote_timeout_cb(uv_timer_t *handle)
     }
 
     if (verbose) {
-        LOGI("TCP connection timeout");
+        LOGI("%s", "TCP connection timeout");
     }
 
     tunnel_close_and_free(remote, local);
@@ -1399,6 +1400,7 @@ main(int argc, char **argv)
             { 0,           0,                 0, 0 },
     };
 
+    (void)use_new_listener; (void)hostnames; (void)iface;
     MEM_CHECK_BEGIN();
     MEM_CHECK_BREAK_ALLOC(63);
     MEM_CHECK_BREAK_ALLOC(64);
@@ -1422,14 +1424,14 @@ main(int argc, char **argv)
                 if (option_index == 0) {
                     fast_open = 1;
                 } else if (option_index == 1) {
-                    LOGI("initializing acl...");
+                    LOGI("%s", "initializing acl...");
                     acl = !init_acl(optarg);
                 } else if (option_index == 2) {
                     mtu = atoi(optarg);
                     LOGI("set MTU to %d", mtu);
                 } else if (option_index == 3) {
                     mptcp = 1;
-                    LOGI("enable multipath TCP");
+                    LOGI("%s", "enable multipath TCP");
                 } else if (option_index == 4) {
                     usage(VERSION, USING_CRYPTO);
                     exit(EXIT_SUCCESS);
@@ -1509,7 +1511,7 @@ main(int argc, char **argv)
                 usage(VERSION, USING_CRYPTO);
                 exit(EXIT_SUCCESS);
             case 'A':
-                LOGI("The 'A' argument is deprecate! Ignored.");
+                LOGI("%s", "The 'A' argument is deprecate! Ignored.");
                 break;
             case '6':
                 ipv6first = 1;
@@ -1550,42 +1552,42 @@ main(int argc, char **argv)
             use_new_listener = 1;
         } else {
             if (remote_num == 0) {
-                remote_num = conf->server_legacy.remote_num;
+                remote_num = conf->server_type.server_legacy.remote_num;
                 for (i = 0; i < remote_num; i++) {
-                    remote_addr[i] = conf->server_legacy.remote_addr[i];
+                    remote_addr[i] = conf->server_type.server_legacy.remote_addr[i];
                 }
             }
             if (remote_port == NULL) {
-                remote_port = conf->server_legacy.remote_port;
+                remote_port = conf->server_type.server_legacy.remote_port;
             }
             if (local_addr == NULL) {
-                local_addr = conf->server_legacy.local_addr;
+                local_addr = conf->server_type.server_legacy.local_addr;
             }
             if (local_port == NULL) {
-                local_port = conf->server_legacy.local_port;
+                local_port = conf->server_type.server_legacy.local_port;
             }
             if (password == NULL) {
-                password = conf->server_legacy.password;
+                password = conf->server_type.server_legacy.password;
             }
             // SSR beg
             if (protocol == NULL) {
-                protocol = conf->server_legacy.protocol;
+                protocol = conf->server_type.server_legacy.protocol;
                 LOGI("protocol %s", protocol);
             }
             if (protocol_param == NULL) {
-                protocol_param = conf->server_legacy.protocol_param;
+                protocol_param = conf->server_type.server_legacy.protocol_param;
                 LOGI("protocol_param %s", protocol_param);
             }
             if (method == NULL) {
-                method = conf->server_legacy.method;
+                method = conf->server_type.server_legacy.method;
                 LOGI("method %s", method);
             }
             if (obfs == NULL) {
-                obfs = conf->server_legacy.obfs;
+                obfs = conf->server_type.server_legacy.obfs;
                 LOGI("obfs %s", obfs);
             }
             if (obfs_param == NULL) {
-                obfs_param = conf->server_legacy.obfs_param;
+                obfs_param = conf->server_type.server_legacy.obfs_param;
                 LOGI("obfs_param %s", obfs_param);
             }
             // SSR end
@@ -1619,7 +1621,7 @@ main(int argc, char **argv)
 #endif
     }
     if (protocol && strcmp(protocol, "verify_sha1") == 0) {
-        LOGI("The verify_sha1 protocol is deprecate! Fallback to origin protocol.");
+        LOGI("%s", "The verify_sha1 protocol is deprecate! Fallback to origin protocol.");
         protocol = NULL;
     }
 
@@ -1665,7 +1667,7 @@ main(int argc, char **argv)
 
     if (fast_open == 1) {
 #ifdef TCP_FASTOPEN
-        LOGI("using tcp fast open");
+        LOGI("%s", "using tcp fast open");
 #else
         LOGE("tcp fast open is not supported by this environment");
         fast_open = 0;
@@ -1673,7 +1675,7 @@ main(int argc, char **argv)
     }
 
     if (ipv6first) {
-        LOGI("resolving hostname to IPv6 address first");
+        LOGI("%s", "resolving hostname to IPv6 address first");
     }
     srand((unsigned int)time(NULL));
 
@@ -1875,7 +1877,7 @@ int ssr_local_main_loop(const struct server_config *config, void(*feedback_state
     udp_server = NULL;
     // Setup UDP
     if (config->udp) {
-        LOGI("udprelay enabled");
+        LOGI("%s", "udprelay enabled");
         udp_server = udprelay_begin(loop, config->listen_host, port, (union sockaddr_universal *)listen_ctx->servers[0].addr_udp,
                       &tunnel_addr, 0, listen_ctx->timeout, listen_ctx->servers[0].cipher, listen_ctx->servers[0].protocol_name, listen_ctx->servers[0].protocol_param);
     }
@@ -1899,7 +1901,7 @@ int ssr_local_main_loop(const struct server_config *config, void(*feedback_state
 
 #ifndef __MINGW32__
     if (geteuid() == 0){
-        LOGI("running from root user");
+        LOGI("%s", "running from root user");
     }
 #endif
 
@@ -1914,7 +1916,7 @@ int ssr_local_main_loop(const struct server_config *config, void(*feedback_state
     uv_run(listener_socket->loop, UV_RUN_DEFAULT);
 
     if (verbose) {
-        LOGI("closed gracefully");
+        LOGI("%s", "closed gracefully");
     }
 
     // Clean up

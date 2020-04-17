@@ -514,6 +514,7 @@ static void do_connect_ssr_server(struct tunnel_ctx *tunnel) {
     struct socket_ctx *outgoing = tunnel->outgoing;
     int err;
 
+    (void)config;
     ASSERT(incoming->rdstate == socket_state_stop);
     ASSERT(incoming->wrstate == socket_state_stop);
     ASSERT(outgoing->rdstate == socket_state_stop);
@@ -749,6 +750,7 @@ static void tunnel_read_done(struct tunnel_ctx *tunnel, struct socket_ctx *socke
 }
 
 static void tunnel_arrive_end_of_file(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
+    (void)socket;
     tunnel->tunnel_shutdown(tunnel);
 }
 
@@ -819,7 +821,7 @@ void tunnel_tls_client_incoming_streaming(struct tunnel_ctx *tunnel, struct sock
             ASSERT(tunnel->tunnel_extract_data);
             buf = tunnel->tunnel_extract_data(socket, &malloc, &len);
             if (buf /* && size > 0 */) {
-                ws_frame_info info = { WS_OPCODE_BINARY, true, true, };
+                ws_frame_info info = { WS_OPCODE_BINARY, true, true, 0, 0, 0 };
                 uint8_t *frame;
                 ws_frame_binary_alone(true, &info);
                 frame = websocket_build_frame(&info, buf, len, &malloc);
@@ -918,13 +920,14 @@ static void tunnel_tls_on_data_received(struct tunnel_ctx *tunnel, const uint8_t
 
         buffer_concatenate(ctx->server_delivery_cache, data, size);
         do {
-            ws_frame_info info = { WS_OPCODE_BINARY, };
+            ws_frame_info info = { WS_OPCODE_BINARY, 0, 0, 0, 0, 0 };
             struct buffer_t *tmp;
             enum ssr_error e;
             struct buffer_t *feedback = NULL;
             size_t buf_len = 0;
             const uint8_t *buf_data = buffer_get_data(ctx->server_delivery_cache, &buf_len);
             uint8_t *payload =  websocket_retrieve_payload(buf_data, buf_len, &malloc, &info);
+            (void)e;
             if (payload == NULL) {
                 break;
             }
@@ -984,10 +987,12 @@ static void tunnel_tls_on_shutting_down(struct tunnel_ctx *tunnel) {
 }
 
 static bool can_auth_none(const struct tunnel_ctx *cx) {
+    (void)cx;
     return true;
 }
 
 static bool can_auth_passwd(const struct tunnel_ctx *cx) {
+    (void)cx;
     return false;
 }
 
@@ -997,6 +1002,7 @@ static bool can_access(const struct tunnel_ctx *cx, const struct sockaddr *addr)
     const uint32_t *p;
     uint32_t a, b, c, d;
 
+    (void)cx; (void)addr;
 #if !defined(NDEBUG)
     return true;
 #endif
@@ -1034,5 +1040,6 @@ void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_u
     struct server_env_t *env = (struct server_env_t *)loop->data;
     struct server_config *config = env->config;
     struct tunnel_ctx *tunnel = tunnel_initialize(loop, NULL, config->idle_timeout, &init_done_cb, env);
+    (void)src_addr; (void)data; (void)tunnel;
     do_next(NULL, NULL);
 }

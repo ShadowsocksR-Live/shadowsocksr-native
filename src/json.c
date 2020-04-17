@@ -94,12 +94,14 @@ typedef struct {
 static void *
 default_alloc(size_t size, int zero, void *user_data)
 {
+    (void)zero; (void)user_data;
     return /* zero ? calloc(1, size) : */ calloc(size, sizeof(char));
 }
 
 static void
 default_free(void *ptr, void *user_data)
 {
+    (void)user_data;
     safe_free(ptr);
 }
 
@@ -159,8 +161,11 @@ new_value(json_state *state, json_value **top, json_value **root,
                 return 0;
             }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
             value->_reserved.object_mem = (*(char **)&value->u.object.values) +
                                           values_size;
+#pragma GCC diagnostic pop
 
             value->u.object.length = 0;
             break;
@@ -211,7 +216,7 @@ new_value(json_state *state, json_value **top, json_value **root,
 
 #define whitespace                          \
 case '\n': \
-    ++cur_line; cur_line_begin = i; \
+    ++cur_line; cur_line_begin = i; /* fall through */ \
 case ' ': \
 case '\t': \
 case '\r'
@@ -411,8 +416,11 @@ json_parse_ex(json_settings *settings,
                     case json_object:
 
                         if (state.first_pass) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
                             (*(json_char **)&top->u.object.values) +=
                                 string_length + 1;
+#pragma GCC diagnostic pop
                         } else {
                             top->u.object.values[top->u.object.length].name
                                 = (json_char *)top->_reserved.object_mem;
@@ -718,7 +726,7 @@ whitespace:
                             flags &= ~flag_need_comma;
                             break;
                         }
-
+                        /* fall through */
                     default:
 
                         sprintf(error, "%d:%d: Unexpected `%c` in object",

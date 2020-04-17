@@ -266,6 +266,7 @@ struct obfs_t * auth_chain_a_new_obfs(void) {
 }
 
 size_t auth_chain_a_get_overhead(struct obfs_t *obfs) {
+    (void)obfs;
     return 4;
 }
 
@@ -293,6 +294,7 @@ void auth_chain_a_set_server_info(struct obfs_t * obfs, struct server_info_t * s
 }
 
 unsigned int auth_chain_a_get_rand_len(struct auth_chain_a_context *local, int datalength, struct shift128plus_ctx *random, const uint8_t last_hash[16]) {
+    (void)local;
     if (datalength > 1440) {
         return 0;
     }
@@ -319,6 +321,7 @@ struct buffer_t * auth_chain_a_rnd_data(struct obfs_t * obfs,
     struct buffer_t *rnd_data_buf = buffer_create(rand_len);
     struct buffer_t *ret = NULL;
 
+    (void)server_info;
     rand_bytes(rnd_data_buf->buffer, (int)rand_len);
     rnd_data_buf->len = rand_len;
 
@@ -392,6 +395,7 @@ size_t auth_chain_a_pack_client_data(struct obfs_t *obfs, char *data, size_t dat
     outdata[0] = (char)((uint8_t)datalength ^ local->last_client_hash[14]);
     outdata[1] = (char)((uint8_t)(datalength >> 8) ^ local->last_client_hash[15]);
 
+    (void)server_info;
     {
         uint8_t * rnd_data = (uint8_t *) malloc(rand_len * sizeof(uint8_t));
         rand_bytes(rnd_data, (int)rand_len);
@@ -435,6 +439,7 @@ struct buffer_t * auth_chain_a_pack_server_data(struct obfs_t *obfs, const struc
     uint16_t length = 0;
     uint16_t length2 = 0;
 
+    (void)server_info;
     {
         size_t out_len = 0;
         uint8_t *buffer = (uint8_t *)calloc(buf->len + 4, sizeof(uint8_t));
@@ -817,6 +822,7 @@ ssize_t auth_chain_a_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaind
     size_t outlength;
     char password[256] = {0};
 
+    (void)capacity;
     if (datalength <= 8) {
         return 0;
     }

@@ -162,7 +162,7 @@ read_jconf(const char *file)
     FILE *f;
     long pos;
     int nread;
-    json_settings settings = { 0UL, 0, NULL, NULL, NULL };
+    json_settings settings = { 0UL, 0, NULL, NULL, NULL, };
     char error_buf[512];
 
     memset(&conf, 0, sizeof(jconf_t));
@@ -221,14 +221,14 @@ read_jconf(const char *file)
                             }
                             v = value->u.array.values[j];
                             addr_str = to_string(v);
-                            parse_addr(addr_str, conf.server_legacy.remote_addr + j);
+                            parse_addr(addr_str, conf.server_type.server_legacy.remote_addr + j);
                             safe_free(addr_str);
-                            conf.server_legacy.remote_num = j + 1;
+                            conf.server_type.server_legacy.remote_num = j + 1;
                         }
                     } else if (value->type == json_string) {
-                        conf.server_legacy.remote_addr[0].host = to_string(value);
-                        conf.server_legacy.remote_addr[0].port = NULL;
-                        conf.server_legacy.remote_num = 1;
+                        conf.server_type.server_legacy.remote_addr[0].host = to_string(value);
+                        conf.server_type.server_legacy.remote_addr[0].port = NULL;
+                        conf.server_type.server_legacy.remote_num = 1;
                     }
                 } else if (strcmp(name, "port_password") == 0) {
                     if (value->type == json_object) {
@@ -239,33 +239,33 @@ read_jconf(const char *file)
                             }
                             v = value->u.object.values[j].value;
                             if (v->type == json_string) {
-                                conf.server_legacy.port_password[j].port = ss_strndup(value->u.object.values[j].name,
+                                conf.server_type.server_legacy.port_password[j].port = ss_strndup(value->u.object.values[j].name,
                                                                         value->u.object.values[j].name_length);
-                                conf.server_legacy.port_password[j].password = to_string(v);
-                                conf.server_legacy.port_password_num = j + 1;
+                                conf.server_type.server_legacy.port_password[j].password = to_string(v);
+                                conf.server_type.server_legacy.port_password_num = j + 1;
                             }
                         }
                     }
                 } else if (strcmp(name, "server_port") == 0) {
-                    conf.server_legacy.remote_port = to_string(value);
+                    conf.server_type.server_legacy.remote_port = to_string(value);
                 } else if (strcmp(name, "local_address") == 0) {
-                    conf.server_legacy.local_addr = to_string(value);
+                    conf.server_type.server_legacy.local_addr = to_string(value);
                 } else if (strcmp(name, "local_port") == 0) {
-                    conf.server_legacy.local_port = to_string(value);
+                    conf.server_type.server_legacy.local_port = to_string(value);
                 } else if (strcmp(name, "password") == 0) {
-                    conf.server_legacy.password = to_string(value);
+                    conf.server_type.server_legacy.password = to_string(value);
                 } else if (strcmp(name, "auth") == 0) {
-                    LOGI("auth is deprecated, ignored");
+                    LOGI("%s", "auth is deprecated, ignored");
                 } else if (strcmp(name, "protocol") == 0) { // SSR
-                    conf.server_legacy.protocol = to_string(value);
+                    conf.server_type.server_legacy.protocol = to_string(value);
                 } else if (strcmp(name, "protocol_param") == 0) { //SSR
-                    conf.server_legacy.protocol_param = to_string(value);
+                    conf.server_type.server_legacy.protocol_param = to_string(value);
                 } else if (strcmp(name, "method") == 0) {
-                    conf.server_legacy.method = to_string(value);
+                    conf.server_type.server_legacy.method = to_string(value);
                 } else if (strcmp(name, "obfs") == 0) { // SSR
-                    conf.server_legacy.obfs = to_string(value);
+                    conf.server_type.server_legacy.obfs = to_string(value);
                 } else if (strcmp(name, "obfs_param") == 0) { // SSR
-                    conf.server_legacy.obfs_param = to_string(value);
+                    conf.server_type.server_legacy.obfs_param = to_string(value);
                 } else if (strcmp(name, "udp") == 0) {
                     conf.mode = value->u.boolean ? TCP_AND_UDP : TCP_ONLY;
                 } else if (strcmp(name, "timeout") == 0) {
@@ -274,19 +274,19 @@ read_jconf(const char *file)
                     ;
                 } else if (strcmp(name, "client_settings") == 0) {
                     if (value->type == json_object) {
-                        conf.server_legacy.remote_num = 1;
+                        conf.server_type.server_legacy.remote_num = 1;
                         for (j = 0; j < value->u.object.length; j++) {
                             char *cs_n = value->u.object.values[j].name;
                             json_value *cs_v = value->u.object.values[j].value;
                             if (strcmp(cs_n, "server") == 0) {
-                                conf.server_legacy.remote_addr[0].host = to_string(cs_v);
-                                conf.server_legacy.remote_addr[0].port = NULL;
+                                conf.server_type.server_legacy.remote_addr[0].host = to_string(cs_v);
+                                conf.server_type.server_legacy.remote_addr[0].port = NULL;
                             } else if (strcmp(cs_n, "server_port") == 0) {
-                                conf.server_legacy.remote_port = to_string(cs_v);
+                                conf.server_type.server_legacy.remote_port = to_string(cs_v);
                             } else if (strcmp(cs_n, "listen_address") == 0) {
-                                conf.server_legacy.local_addr = to_string(cs_v);
+                                conf.server_type.server_legacy.local_addr = to_string(cs_v);
                             } else if (strcmp(cs_n, "listen_port") == 0) {
-                                conf.server_legacy.local_port = to_string(cs_v);
+                                conf.server_type.server_legacy.local_port = to_string(cs_v);
                             }
                         }
                     }
@@ -299,22 +299,22 @@ read_jconf(const char *file)
             if (!match) {
                 if(strcmp(name, "servers") == 0) {
                     if(conf.conf_ver == CONF_VER_LEGACY) {
-                        memset(&conf.server_new_1, 0, sizeof(conf.server_new_1));
+                        memset(&conf.server_type.server_new_1, 0, sizeof(conf.server_type.server_new_1));
                         conf.conf_ver = CONF_VER_1;
                     }
 
                     if (value->type == json_array) {
                         for (j = 0; j < value->u.array.length; j++) {
                             json_value *v;
-                            if (conf.server_new_1.server_num >= MAX_SERVER_NUM) {
-                                LOGI("Max servers exceed, ignore remain server defines.");
+                            if (conf.server_type.server_new_1.server_num >= MAX_SERVER_NUM) {
+                                LOGI("%s", "Max servers exceed, ignore remain server defines.");
                                 break;
                             }
                             v = value->u.array.values[j];
 
                             if(v->type == json_object) {
-                                parse_ss_server(&conf.server_new_1.servers[conf.server_new_1.server_num], v);
-                                conf.server_new_1.server_num++;
+                                parse_ss_server(&conf.server_type.server_new_1.servers[conf.server_type.server_new_1.server_num], v);
+                                conf.server_type.server_new_1.server_num++;
                             }
                         }
                     }
@@ -386,7 +386,7 @@ free_jconf(jconf_t *conf)
     safe_free(conf->tunnel_address);
 
     if(conf->conf_ver == CONF_VER_LEGACY){
-        ss_server_legacy_t *legacy = &conf->server_legacy;
+        ss_server_legacy_t *legacy = &conf->server_type.server_legacy;
         for(i = 0; i < legacy->remote_num; i++){
             free_addr(&legacy->remote_addr[i]);
         }
@@ -404,7 +404,7 @@ free_jconf(jconf_t *conf)
         safe_free(legacy->obfs);
         safe_free(legacy->obfs_param);
     } else {
-        ss_server_new_1_t *ss_server_new_1 = &conf->server_new_1;
+        ss_server_new_1_t *ss_server_new_1 = &conf->server_type.server_new_1;
         for(i = 0; i < (int)ss_server_new_1->server_num; i++){
             ss_server_t *serv = &ss_server_new_1->servers[i];
 

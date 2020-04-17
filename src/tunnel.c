@@ -507,6 +507,7 @@ void socket_write(struct socket_ctx *c, const void *data, size_t len) {
     char *write_buf = NULL;
     uv_write_t *req;
 
+    (void)tunnel;
     ASSERT(c->wrstate == socket_state_stop);
     c->wrstate = socket_state_busy;
 

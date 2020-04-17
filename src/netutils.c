@@ -195,7 +195,7 @@ get_sockaddr(char *host, char *port,
         }
 
         if (rp == NULL) {
-            LOGE("failed to resolve remote addr");
+            LOGE("%s", "failed to resolve remote addr");
             return -1;
         }
 

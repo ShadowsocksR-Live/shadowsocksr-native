@@ -341,7 +341,7 @@ void init_obfs(struct server_env_t *env, const char *protocol, const char *obfs)
 }
 
 struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, size_t tcp_mss) {
-    struct server_info_t server_info = { {0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    struct server_info_t server_info = { {0}, 0, 0, 0, {0}, 0, {0}, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
     struct server_config *config = env->config;
 
@@ -616,6 +616,7 @@ tunnel_cipher_server_decrypt(struct tunnel_cipher_ctx *tc,
 
 enum ssr_error tunnel_tls_cipher_client_encrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf) {
 #if USING_PLAINTEXT_CIPHER
+    (void)tc; (void)buf;
     return ssr_ok;
 #else
     int err;
@@ -631,6 +632,7 @@ enum ssr_error tunnel_tls_cipher_client_encrypt(struct tunnel_cipher_ctx *tc, st
 
 enum ssr_error tunnel_tls_cipher_client_decrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf, struct buffer_t **feedback) {
 #if USING_PLAINTEXT_CIPHER
+    (void)tc; (void)buf; (void)feedback;
     return ssr_ok;
 #else
     struct server_env_t *env = tc->env;
@@ -648,6 +650,7 @@ enum ssr_error tunnel_tls_cipher_client_decrypt(struct tunnel_cipher_ctx *tc, st
 
 struct buffer_t * tunnel_tls_cipher_server_encrypt(struct tunnel_cipher_ctx *tc, const struct buffer_t *buf) {
 #if USING_PLAINTEXT_CIPHER
+    (void)tc; (void)buf;
     return buffer_clone(buf);
 #else
     int err;
@@ -671,6 +674,7 @@ struct buffer_t * tunnel_tls_cipher_server_encrypt(struct tunnel_cipher_ctx *tc,
 
 struct buffer_t * tunnel_tls_cipher_server_decrypt(struct tunnel_cipher_ctx *tc, const struct buffer_t *buf, struct buffer_t **receipt, struct buffer_t **confirm) {
 #if USING_PLAINTEXT_CIPHER
+    (void)tc; (void)receipt; (void)confirm;
     return buffer_clone(buf);
 #else
     int err;
@@ -693,6 +697,7 @@ struct buffer_t * tunnel_tls_cipher_server_decrypt(struct tunnel_cipher_ctx *tc,
 
 bool pre_parse_header(struct buffer_t *data) {
     uint8_t datatype = 0;
+    uint8_t tmp;
     size_t rand_data_size = 0;
     size_t hdr_len = 0;
 
@@ -738,7 +743,8 @@ bool pre_parse_header(struct buffer_t *data) {
         data->len -= hdr_len;
         return true;
     }
-    if ((datatype == 0x88) || (~datatype == 0x88)) {
+    tmp = (~datatype);
+    if ((datatype == 0x88) || (tmp == 0x88)) {
         uint32_t crc = 0;
         size_t data_size = 0;
         size_t start_pos = 0;

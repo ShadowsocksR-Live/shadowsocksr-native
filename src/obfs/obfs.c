@@ -24,14 +24,17 @@ void * generate_global_init_data(void) {
 size_t
 get_overhead(struct obfs_t *obfs)
 {
+    (void)obfs;
     return 0;
 }
 
 bool need_feedback_false(struct obfs_t *obfs) {
+    (void)obfs;
     return false;
 }
 
 bool need_feedback_true(struct obfs_t *obfs) {
+    (void)obfs;
     return true;
 }
 
@@ -48,29 +51,35 @@ get_server_info(struct obfs_t *obfs)
 }
 
 struct buffer_t * generic_server_pre_encrypt(struct obfs_t *obfs, const struct buffer_t *buf) {
+    (void)obfs;
     return buffer_clone(buf);
 }
 
 struct buffer_t * generic_server_encode(struct obfs_t *obfs, const struct buffer_t *buf) {
+    (void)obfs;
     return buffer_clone(buf);
 }
 
 struct buffer_t * generic_server_decode(struct obfs_t *obfs, const struct buffer_t *buf, bool *need_decrypt, bool *need_feedback) {
+    (void)obfs;
     if (need_decrypt) { *need_decrypt = true; }
     if (need_feedback) { *need_feedback = false; }
     return buffer_clone(buf);
 }
 
 struct buffer_t * generic_server_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, bool *need_feedback) {
+    (void)obfs;
     if (need_feedback) { *need_feedback = false; }
     return buffer_clone(buf);
 }
 
 bool generic_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf) {
+    (void)obfs; (void)buf;
     return true;
 }
 
 bool generic_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *uid) {
+    (void)obfs; (void)buf;
     if (uid) { *uid = 0; }
     return true;
 }

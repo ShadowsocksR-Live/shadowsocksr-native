@@ -68,6 +68,7 @@ size_t verify_simple_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, 
     char * data = plaindata;
     int len = (int) datalength;
     int pack_len;
+    (void)obfs;
     while ( len > verify_simple_pack_unit_size ) {
         pack_len = verify_simple_pack_data(data, verify_simple_pack_unit_size, buffer);
         buffer += pack_len;

@@ -106,14 +106,14 @@ parse_tls_header(const char *data, size_t data_len, char **hostname)
      */
     if (data[0] & 0x80 && data[2] == 1) {
         if (verbose)
-            LOGI("Received SSL 2.0 Client Hello which can not support SNI.");
+            LOGI("%s", "Received SSL 2.0 Client Hello which can not support SNI.");
         return -2;
     }
 
     tls_content_type = data[0];
     if (tls_content_type != TLS_HANDSHAKE_CONTENT_TYPE) {
         if (verbose)
-            LOGI("Request did not begin with TLS handshake.");
+            LOGI("%s", "Request did not begin with TLS handshake.");
         return -5;
     }
 
@@ -144,7 +144,7 @@ parse_tls_header(const char *data, size_t data_len, char **hostname)
     }
     if (data[pos] != TLS_HANDSHAKE_TYPE_CLIENT_HELLO) {
         if (verbose)
-            LOGI("Not a client hello");
+            LOGI("%s", "Not a client hello");
 
         return -5;
     }
@@ -178,7 +178,7 @@ parse_tls_header(const char *data, size_t data_len, char **hostname)
 
     if (pos == data_len && tls_version_major == 3 && tls_version_minor == 0) {
         if (verbose)
-            LOGI("Received SSL 3.0 handshake without extensions");
+            LOGI("%s", "Received SSL 3.0 handshake without extensions");
         return -2;
     }
 

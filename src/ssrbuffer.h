@@ -38,7 +38,7 @@
 #else
 
 #define MEM_CHECK_BEGIN() do { ; } while(0)
-#define MEM_CHECK_BREAK_ALLOC(x) do { x; } while(0)
+#define MEM_CHECK_BREAK_ALLOC(x) do { (void)x; } while(0)
 #define MEM_CHECK_DUMP_LEAKS() do { ; } while(0)
 
 #endif // __MEM_CHECK__
