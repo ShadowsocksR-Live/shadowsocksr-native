@@ -150,7 +150,7 @@ extern int use_syslog;
             char timestr[20] = { 0 };                                            \
             strftime(timestr, 20, TIME_FORMAT, localtime(&now));                 \
             if (use_tty) {                                                       \
-                fprintf(stderr, " %s INFO: " format "\n", timestr, \
+                fprintf(stderr, "\033[01;32m %s INFO: \033[0m" format "\n", timestr, \
                         ## __VA_ARGS__);                                         \
             } else {                                                             \
                 fprintf(stderr, " %s INFO: " format "\n", timestr,               \
@@ -168,7 +168,7 @@ extern int use_syslog;
             char timestr[20] = { 0 };                                             \
             strftime(timestr, 20, TIME_FORMAT, localtime(&now));                  \
             if (use_tty) {                                                        \
-                fprintf(stderr, " %s ERROR: " format "\n", timestr, \
+                fprintf(stderr, "\033[01;35m %s ERROR: \033[0m" format "\n", timestr, \
                         ## __VA_ARGS__);                                          \
             } else {                                                              \
                 fprintf(stderr, " %s ERROR: " format "\n", timestr,               \

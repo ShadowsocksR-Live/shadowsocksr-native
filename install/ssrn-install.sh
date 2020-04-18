@@ -460,6 +460,10 @@ function write_service_description_file() {
     ExecReload=${svc_stub} restart
     ExecStop=${svc_stub} stop
     PrivateTmp=true
+    Restart=on-failure
+    RestartSec=5s
+    LimitNOFILE=1000000
+    LimitCORE=infinity
 [Install]
     WantedBy=multi-user.target
 EOF
