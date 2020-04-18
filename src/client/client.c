@@ -550,7 +550,7 @@ static void do_connect_ssr_server_done(struct tunnel_ctx *tunnel) {
 
     if (outgoing->result == 0) {
         const uint8_t *out_data = NULL; size_t out_data_len = 0;
-        struct buffer_t *tmp = buffer_clone(ctx->init_pkg);
+        struct buffer_t *tmp = buffer_create(SSR_BUFF_SIZE); buffer_replace(tmp, ctx->init_pkg);
         if (ssr_ok != tunnel_cipher_client_encrypt(ctx->cipher, tmp)) {
             buffer_release(tmp);
             tunnel->tunnel_shutdown(tunnel);
@@ -689,7 +689,7 @@ static uint8_t* tunnel_extract_data(struct socket_ctx *socket, void*(*allocator)
     }
     *size = 0;
 
-    buf = buffer_create_from((uint8_t *)socket->buf->base, (size_t)socket->result);
+    buf = buffer_create(SSR_BUFF_SIZE);  buffer_store(buf, (uint8_t *)socket->buf->base, (size_t)socket->result);
 
     if (socket == tunnel->incoming) {
         if (config->over_tls_enable) {
