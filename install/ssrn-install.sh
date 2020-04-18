@@ -461,7 +461,7 @@ function write_service_description_file() {
     ExecStop=${svc_stub} stop
     PrivateTmp=true
     Restart=on-failure
-    RestartSec=5s
+    RestartSec=35s
     LimitNOFILE=1000000
     LimitCORE=infinity
 [Install]
