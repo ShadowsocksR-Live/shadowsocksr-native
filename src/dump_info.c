@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "dump_info.h"
 #include "text_in_color.h"
@@ -51,8 +52,8 @@ void gmt_time_now(char *now_str, size_t size) {
 
     /* get the time in UTC */
     sprintf(now_str, "%04d/%02d/%02d %2d:%02d GMT",
-        gtime->tm_year + 1900, gtime->tm_mon, gtime->tm_mday,
-        gtime->tm_hour % 24, gtime->tm_min);
+        (uint16_t)(gtime->tm_year + 1900), (uint8_t)gtime->tm_mon, (uint8_t)gtime->tm_mday,
+        (uint8_t)(gtime->tm_hour % 24), (uint8_t)gtime->tm_min);
 }
 
 void localtime_now(char *now_str, size_t size) {
@@ -67,9 +68,9 @@ void localtime_now(char *now_str, size_t size) {
     gtime = localtime(&now); /* Convert the system time to local time */
 
     /* get the time in local time */
-    sprintf(now_str, "%04d/%02d/%02d %2d:%02d",
-        gtime->tm_year + 1900, gtime->tm_mon + 1, gtime->tm_mday,
-        gtime->tm_hour % 24, gtime->tm_min);
+    sprintf(now_str, "%04d/%02d/%02d %02d:%02d",
+        (uint16_t)(gtime->tm_year + 1900), (uint8_t)(gtime->tm_mon + 1), (uint8_t)gtime->tm_mday,
+        (uint8_t)(gtime->tm_hour % 24), (uint8_t)gtime->tm_min);
 }
 
 #define DUMP_LEVEL_MAP(V)                                   \

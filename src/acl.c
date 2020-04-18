@@ -78,24 +78,24 @@ static char *ip6tables_add_rule    = "ip6tables -A %s -d %s -j DROP";
 static char *ip6tables_remove_rule = "ip6tables -D %s -d %s -j DROP";
 
 static char *firewalld_init_chain =
-    "firewall-cmd --direct --add-chain ipv4 filter %s; \
-     firewall-cmd --direct --passthrough ipv4 -F %s; \
-     firewall-cmd --direct --passthrough ipv4 -A OUTPUT -p tcp --tcp-flags RST RST -j %s";
+    "firewall-cmd --direct --add-chain ipv4 filter %s; "
+    "firewall-cmd --direct --passthrough ipv4 -F %s; "
+    "firewall-cmd --direct --passthrough ipv4 -A OUTPUT -p tcp --tcp-flags RST RST -j %s";
 static char *firewalld_remove_chain =
-    "firewall-cmd --direct --passthrough ipv4 -D OUTPUT -p tcp --tcp-flags RST RST -j %s; \
-     firewall-cmd --direct --passthrough ipv4 -F %s; \
-     firewall-cmd --direct --remove-chain ipv4 filter %s";
+    "firewall-cmd --direct --passthrough ipv4 -D OUTPUT -p tcp --tcp-flags RST RST -j %s; "
+    "firewall-cmd --direct --passthrough ipv4 -F %s; "
+    "firewall-cmd --direct --remove-chain ipv4 filter %s";
 static char *firewalld_add_rule    = "firewall-cmd --direct --passthrough ipv4 -A %s -d %s -j DROP";
 static char *firewalld_remove_rule = "firewall-cmd --direct --passthrough ipv4 -D %s -d %s -j DROP";
 
 static char *firewalld6_init_chain =
-    "firewall-cmd --direct --add-chain ipv6 filter %s; \
-     firewall-cmd --direct --passthrough ipv6 -F %s; \
-     firewall-cmd --direct --passthrough ipv6 -A OUTPUT -p tcp --tcp-flags RST RST -j %s";
+    "firewall-cmd --direct --add-chain ipv6 filter %s; "
+    "firewall-cmd --direct --passthrough ipv6 -F %s; "
+    "firewall-cmd --direct --passthrough ipv6 -A OUTPUT -p tcp --tcp-flags RST RST -j %s";
 static char *firewalld6_remove_chain =
-    "firewall-cmd --direct --passthrough ipv6 -D OUTPUT -p tcp --tcp-flags RST RST -j %s; \
-     firewall-cmd --direct --passthrough ipv6 -F %s; \
-     firewall-cmd --direct --remove-chain ipv6 filter %s";
+    "firewall-cmd --direct --passthrough ipv6 -D OUTPUT -p tcp --tcp-flags RST RST -j %s; "
+    "firewall-cmd --direct --passthrough ipv6 -F %s; "
+    "firewall-cmd --direct --remove-chain ipv6 filter %s";
 static char *firewalld6_add_rule    = "firewall-cmd --direct --passthrough ipv6 -A %s -d %s -j DROP";
 static char *firewalld6_remove_rule = "firewall-cmd --direct --passthrough ipv6 -D %s -d %s -j DROP";
 
@@ -103,7 +103,7 @@ static int
 run_cmd(const char *cmd)
 {
     int ret = 0;
-    char cmdstring[256];
+    char cmdstring[256*10] = { 0 };
 
     sprintf(cmdstring, "%s\n", cmd);
     size_t len = strlen(cmdstring);
@@ -120,7 +120,7 @@ static int
 init_firewall()
 {
     int ret = 0;
-    char cli[256];
+    char cli[256 * 2] = { 0 };
     FILE *fp;
 
     if (getuid() != 0)
@@ -170,7 +170,7 @@ static int
 reset_firewall()
 {
     int ret = 0;
-    char cli[256];
+    char cli[256*8] = { 0 };
 
     if (getuid() != 0)
         return -1;
@@ -198,7 +198,7 @@ reset_firewall()
 static int
 set_firewall_rule(char *addr, int add)
 {
-    char cli[256];
+    char cli[256*8] = { 0 };
     struct cork_ip ip;
 
     if (getuid() != 0)

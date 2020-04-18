@@ -649,7 +649,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
                     safe_free(hostname);
                 } else {
-                    strncpy(host, ip, sizeof(ip));
+                    strncpy(host, ip, sizeof(host)-1);
                 }
             }
 

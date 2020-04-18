@@ -206,7 +206,7 @@ struct buffer_t * http_simple_client_encode(struct obfs_t *obfs, const struct bu
     if (obfs->server_info.param && strlen(obfs->server_info.param) == 0) {
         obfs->server_info.param = NULL;
     }
-    strncpy(hosts, obfs->server_info.param ? obfs->server_info.param : obfs->server_info.host, sizeof(hosts));
+    strncpy(hosts, obfs->server_info.param ? obfs->server_info.param : obfs->server_info.host, sizeof(hosts)-1);
     phost[host_num++] = hosts;
     for (pos = 0; hosts[pos]; ++pos) {
         if (hosts[pos] == ',') {
@@ -466,7 +466,7 @@ struct buffer_t * http_post_client_encode(struct obfs_t *obfs, const struct buff
     if (obfs->server_info.param && strlen(obfs->server_info.param) == 0) {
         obfs->server_info.param = NULL;
     }
-    strncpy(hosts, obfs->server_info.param ? obfs->server_info.param : obfs->server_info.host, sizeof(hosts));
+    strncpy(hosts, obfs->server_info.param ? obfs->server_info.param : obfs->server_info.host, sizeof(hosts)-1);
     phost[host_num++] = hosts;
     for (pos = 0; hosts[pos]; ++pos) {
         if (hosts[pos] == ',') {
