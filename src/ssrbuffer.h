@@ -27,11 +27,13 @@
 #include <stddef.h>
 
 #if defined(_MSC_VER)
-#define __MEM_CHECK__ 1
+//#define __MEM_CHECK__ 1
 #endif
 
 #if __MEM_CHECK__
+#if !defined(_CRTDBG_MAP_ALLOC)
 #define _CRTDBG_MAP_ALLOC
+#endif
 #include <stdlib.h>
 #include <crtdbg.h>
 
