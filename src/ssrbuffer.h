@@ -26,6 +26,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#if defined(_MSC_VER)
+#define __MEM_CHECK__ 1
+#endif
+
 #if __MEM_CHECK__
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
