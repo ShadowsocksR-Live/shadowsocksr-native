@@ -563,6 +563,7 @@ static void socket_close(struct socket_ctx *c) {
     c->handle.handle.data = c;
 
     uv_read_stop(&c->handle.stream);
+    socket_timer_stop(c);
 
     tunnel_add_ref(tunnel);
     uv_close(&c->handle.handle, socket_close_done_cb);
