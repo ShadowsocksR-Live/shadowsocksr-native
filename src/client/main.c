@@ -78,6 +78,8 @@ int main(int argc, char **argv) {
             break;
         }
 
+        config_ssrot_revision(config);
+
 #ifndef UDP_RELAY_ENABLE
         config->udp = false;
 #endif // UDP_RELAY_ENABLE

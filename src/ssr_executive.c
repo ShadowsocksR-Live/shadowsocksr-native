@@ -102,6 +102,15 @@ void config_release(struct server_config *cf) {
     object_safe_free((void **)&cf);
 }
 
+//
+// Since the obfuscation operation in SSRoT is redundant, we remove it.
+//
+void config_ssrot_revision(struct server_config* config) {
+    if (config && config->over_tls_enable) {
+        string_safe_assign(&config->obfs, ssr_obfs_name_of_type(ssr_obfs_plain));
+    }
+}
+
 static int uid_cmp(const void *left, const void *right) {
     char *l = *(char **)left;
     char *r = *(char **)right;
@@ -610,89 +619,6 @@ tunnel_cipher_server_decrypt(struct tunnel_cipher_ctx *tc,
         }
     }
     return ret;
-}
-
-#define USING_PLAINTEXT_CIPHER 1
-
-enum ssr_error tunnel_tls_cipher_client_encrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf) {
-#if USING_PLAINTEXT_CIPHER
-    (void)tc; (void)buf;
-    return ssr_ok;
-#else
-    int err;
-    struct server_env_t *env = tc->env;
-    ASSERT(buf->capacity >= SSR_BUFF_SIZE);
-    err = ss_encrypt(env->cipher, buf, tc->e_ctx, SSR_BUFF_SIZE);
-    if (err != 0) {
-        return ssr_error_invalid_password;
-    }
-    return ssr_ok;
-#endif
-}
-
-enum ssr_error tunnel_tls_cipher_client_decrypt(struct tunnel_cipher_ctx *tc, struct buffer_t *buf, struct buffer_t **feedback) {
-#if USING_PLAINTEXT_CIPHER
-    (void)tc; (void)buf; (void)feedback;
-    return ssr_ok;
-#else
-    struct server_env_t *env = tc->env;
-    // ASSERT(buf->len <= SSR_BUFF_SIZE);
-    if (feedback) { *feedback = NULL; }
-    if (buf->len > 0) {
-        int err = ss_decrypt(env->cipher, buf, tc->d_ctx, SSR_BUFF_SIZE);
-        if (err != 0) {
-            return ssr_error_invalid_password;
-        }
-    }
-    return ssr_ok;
-#endif
-}
-
-struct buffer_t * tunnel_tls_cipher_server_encrypt(struct tunnel_cipher_ctx *tc, const struct buffer_t *buf) {
-#if USING_PLAINTEXT_CIPHER
-    (void)tc; (void)buf;
-    return buffer_clone(buf);
-#else
-    int err;
-    struct server_env_t *env = tc->env;
-    struct buffer_t *ret = NULL;
-    do {
-        ret = buffer_clone(buf);
-        if (ret == NULL) {
-            break;
-        }
-        err = ss_encrypt(env->cipher, ret, tc->e_ctx, SSR_BUFF_SIZE);
-        if (err != 0) {
-            ASSERT(false);
-            buffer_release(ret); ret = NULL;
-            break;
-        }
-    } while (0);
-    return ret;
-#endif
-}
-
-struct buffer_t * tunnel_tls_cipher_server_decrypt(struct tunnel_cipher_ctx *tc, const struct buffer_t *buf, struct buffer_t **receipt, struct buffer_t **confirm) {
-#if USING_PLAINTEXT_CIPHER
-    (void)tc; (void)receipt; (void)confirm;
-    return buffer_clone(buf);
-#else
-    int err;
-    struct server_env_t *env = tc->env;
-    struct buffer_t *ret = NULL;
-
-    if (receipt) { *receipt = NULL; }
-    if (confirm) { *confirm = NULL; }
-
-    ret = buffer_clone(buf);
-
-    err = ss_decrypt(env->cipher, ret, tc->d_ctx, max(SSR_BUFF_SIZE, ret->capacity));
-    if (err != 0) {
-        buffer_release(ret); ret = NULL;
-    }
-
-    return ret;
-#endif
 }
 
 bool pre_parse_header(struct buffer_t *data) {

@@ -692,11 +692,7 @@ static uint8_t* tunnel_extract_data(struct socket_ctx *socket, void*(*allocator)
     buf = buffer_create(SSR_BUFF_SIZE);  buffer_store(buf, (uint8_t *)socket->buf->base, (size_t)socket->result);
 
     if (socket == tunnel->incoming) {
-        if (config->over_tls_enable) {
-            error = tunnel_tls_cipher_client_encrypt(cipher_ctx, buf);
-        } else {
             error = tunnel_cipher_client_encrypt(cipher_ctx, buf);
-        }
     } else if (socket == tunnel->outgoing) {
         struct buffer_t *feedback = NULL;
         ASSERT(config->over_tls_enable == false);
@@ -858,8 +854,8 @@ static void tunnel_tls_on_connection_established(struct tunnel_ctx *tunnel) {
     ASSERT(outgoing->wrstate == socket_state_stop);
 
     {
-        struct buffer_t *tmp = buffer_clone(ctx->init_pkg);
-        enum ssr_error e = tunnel_tls_cipher_client_encrypt(ctx->cipher, tmp);
+        struct buffer_t *tmp = buffer_create(SSR_BUFF_SIZE); buffer_replace(tmp, ctx->init_pkg);
+        enum ssr_error e = tunnel_cipher_client_encrypt(ctx->cipher, tmp);
         if (ssr_ok != e) {
             tunnel->tunnel_shutdown(tunnel);
         } else {
@@ -945,7 +941,7 @@ static void tunnel_tls_on_data_received(struct tunnel_ctx *tunnel, const uint8_t
             }
 
             tmp = buffer_create_from(payload, info.payload_size);
-            e = tunnel_tls_cipher_client_decrypt(ctx->cipher, tmp, &feedback);
+            e = tunnel_cipher_client_decrypt(ctx->cipher, tmp, &feedback);
             assert(!feedback);
 
             buffer_concatenate2(ctx->local_write_cache, tmp);
