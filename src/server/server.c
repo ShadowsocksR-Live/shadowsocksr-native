@@ -111,6 +111,10 @@ static void resolved_ips_destroy_object(void *obj);
 void print_server_info(const struct server_config *config);
 static void svr_usage(void);
 
+void on_atexit(void) {
+    MEM_CHECK_DUMP_LEAKS();
+}
+
 int main(int argc, char * const argv[]) {
     struct server_config *config = NULL;
     int err = -1;
@@ -119,6 +123,7 @@ int main(int argc, char * const argv[]) {
     MEM_CHECK_BEGIN();
     MEM_CHECK_BREAK_ALLOC(63);
     MEM_CHECK_BREAK_ALLOC(64);
+    atexit(on_atexit);
 
     do {
         set_app_name(argv[0]);
@@ -174,7 +179,6 @@ int main(int argc, char * const argv[]) {
     if (err != 0) {
         svr_usage();
     }
-    MEM_CHECK_DUMP_LEAKS();
     return 0;
 }
 
