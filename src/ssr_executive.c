@@ -108,6 +108,8 @@ void config_release(struct server_config *cf) {
 void config_ssrot_revision(struct server_config* config) {
     if (config && config->over_tls_enable) {
         string_safe_assign(&config->obfs, ssr_obfs_name_of_type(ssr_obfs_plain));
+        // don't support protocol recently.
+        string_safe_assign(&config->protocol, ssr_protocol_name_of_type(ssr_protocol_origin));
     }
 }
 
