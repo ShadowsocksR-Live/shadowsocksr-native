@@ -96,6 +96,7 @@ size_t socket_arrived_data_size(struct socket_ctx *socket, size_t suggested_size
     char *tmp = (char *)calloc(suggested_size + 1, sizeof(*tmp));
     data_size = (size_t) recv(fd, tmp, (int)suggested_size, MSG_PEEK);
     if (data_size == 0) { data_size = suggested_size; }
+    if (data_size == 65536) { data_size = 65536/2; }
     free(tmp);
 
     return data_size;
