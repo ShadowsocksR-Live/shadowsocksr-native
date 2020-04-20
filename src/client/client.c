@@ -855,8 +855,7 @@ static void tunnel_tls_on_connection_established(struct tunnel_ctx *tunnel) {
 
     {
         struct buffer_t *tmp = buffer_create(SSR_BUFF_SIZE); buffer_replace(tmp, ctx->init_pkg);
-        enum ssr_error e = tunnel_cipher_client_encrypt(ctx->cipher, tmp);
-        if (ssr_ok != e) {
+        if (ssr_ok != tunnel_cipher_client_encrypt(ctx->cipher, tmp)) {
             tunnel->tunnel_shutdown(tunnel);
         } else {
             const char *url_path = config->over_tls_path;
