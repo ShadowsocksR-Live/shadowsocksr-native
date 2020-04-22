@@ -13,6 +13,8 @@ set(PROJECT_NAME shadowsocksr-native)
 set(RELEASE_DATE 2015-09-03)
 project(${PROJECT_NAME} VERSION 0.6.0 LANGUAGES C)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(with_crypto_library "mbedtls" CACHE STRING "build with the given crypto library, TYPE=mbedtls")
 
 add_subdirectory(depends/mbedtls)
