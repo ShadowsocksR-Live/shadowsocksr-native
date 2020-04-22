@@ -971,11 +971,9 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
             strcpy(ctx->sec_websocket_key, key);
         }
         {
-            struct http_headers *hdrs = http_headers_parse(true, indata, len);
             size_t cb = http_headers_get_content_beginning(hdrs);
             struct buffer_t *buf = buffer_create_from(indata + cb, len - cb);
             result = tunnel_cipher_server_decrypt(ctx->cipher, buf, &obfs_receipt, &proto_confirm);
-            http_headers_destroy(hdrs);
             buffer_release(buf);
         }
         ASSERT(obfs_receipt == NULL);
