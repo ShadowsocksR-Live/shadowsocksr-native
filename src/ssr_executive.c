@@ -557,8 +557,8 @@ struct buffer_t * tunnel_cipher_server_encrypt(struct tunnel_cipher_ctx *tc, con
 struct buffer_t * 
 tunnel_cipher_server_decrypt(struct tunnel_cipher_ctx *tc, 
                              const struct buffer_t *buf, 
-                             struct buffer_t **receipt, 
-                             struct buffer_t **confirm)
+                             struct buffer_t **obfs_receipt, 
+                             struct buffer_t **proto_confirm)
 {
     bool need_decrypt = true;
     int err;
@@ -567,8 +567,8 @@ tunnel_cipher_server_decrypt(struct tunnel_cipher_ctx *tc,
     struct obfs_t *protocol = tc->protocol;
     struct buffer_t *ret = NULL;
 
-    if (receipt) { *receipt = NULL; }
-    if (confirm) { *confirm = NULL; }
+    if (obfs_receipt) { *obfs_receipt = NULL; }
+    if (proto_confirm) { *proto_confirm = NULL; }
 
     if (obfs && obfs->server_decode) {
         bool need_feedback = false;
@@ -577,9 +577,9 @@ tunnel_cipher_server_decrypt(struct tunnel_cipher_ctx *tc,
             return NULL;
         }
         if (need_feedback) {
-            if (receipt) {
+            if (obfs_receipt) {
                 struct buffer_t *empty = buffer_create_from((const uint8_t *)"", 0);
-                *receipt = obfs->server_encode(obfs, empty);
+                *obfs_receipt = obfs->server_encode(obfs, empty);
                 buffer_release(empty);
             }
             buffer_reset(ret);
@@ -613,9 +613,9 @@ tunnel_cipher_server_decrypt(struct tunnel_cipher_ctx *tc,
         struct buffer_t *tmp = protocol->server_post_decrypt(protocol, ret, &feedback);
         buffer_release(ret); ret = tmp;
         if (feedback) {
-            if (confirm) {
+            if (proto_confirm) {
                 struct buffer_t *empty = buffer_create_from((const uint8_t *)"", 0);
-                *confirm  = tunnel_cipher_server_encrypt(tc, empty);
+                *proto_confirm  = tunnel_cipher_server_encrypt(tc, empty);
                 buffer_release(empty);
             }
         }
