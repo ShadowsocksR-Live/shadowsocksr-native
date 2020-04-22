@@ -41,6 +41,7 @@ win32/minicli/minicli
 win32/ipch/
 sh.exe.stackdump
 *.opensdf
+*.udb
 
 build/
 .vscode/
