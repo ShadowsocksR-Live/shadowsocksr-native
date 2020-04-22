@@ -39,9 +39,9 @@ struct ssr_server_state {
 
 enum tunnel_stage {
     tunnel_stage_initial = 0,  /* Initial stage                    */
-    tunnel_stage_receipt_done,
-    tunnel_stage_client_feedback,
-    tunnel_stage_confirm_done,
+    tunnel_stage_obfs_receipt_done,
+    tunnel_stage_client_feedback_coming,
+    tunnel_stage_proto_confirm_done,
     tunnel_stage_resolve_host = 4,  /* Resolve the hostname             */
     tunnel_stage_connect_host,
     tunnel_stage_launch_streaming,
@@ -93,7 +93,7 @@ static bool is_header_complete(const struct buffer_t *buf);
 static size_t _get_read_size(struct tunnel_ctx *tunnel, struct socket_ctx *socket, size_t suggested_size);
 static void do_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *incoming);
 static void do_prepare_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
-static void do_client_feedback(struct tunnel_ctx *tunnel, struct socket_ctx *incoming);
+static void do_handle_client_feedback(struct tunnel_ctx *tunnel, struct socket_ctx *incoming);
 static void do_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void do_resolve_host_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void do_connect_host_start(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
@@ -416,22 +416,22 @@ static void do_next(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
         }
         do_init_package(tunnel, incoming);
         break;
-    case tunnel_stage_receipt_done:
+    case tunnel_stage_obfs_receipt_done:
         ASSERT(incoming == socket);
         ASSERT(incoming->rdstate == socket_state_stop);
         ASSERT(incoming->wrstate == socket_state_done);
         incoming->wrstate = socket_state_stop;
         socket_read(incoming, true);
-        ctx->stage = tunnel_stage_client_feedback;
+        ctx->stage = tunnel_stage_client_feedback_coming;
         break;
-    case tunnel_stage_client_feedback:
+    case tunnel_stage_client_feedback_coming:
         ASSERT(incoming == socket);
         ASSERT(incoming->rdstate == socket_state_done);
         ASSERT(incoming->wrstate == socket_state_stop);
         incoming->rdstate = socket_state_stop;
-        do_client_feedback(tunnel, incoming);
+        do_handle_client_feedback(tunnel, incoming);
         break;
-    case tunnel_stage_confirm_done:
+    case tunnel_stage_proto_confirm_done:
         ASSERT(incoming == socket);
         ASSERT(incoming->rdstate == socket_state_stop);
         ASSERT(incoming->wrstate == socket_state_done);
@@ -626,7 +626,7 @@ static void do_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *incomi
         if (obfs_receipt) {
             ASSERT(proto_confirm == NULL);
             socket_write(incoming, obfs_receipt->buffer, obfs_receipt->len);
-            ctx->stage = tunnel_stage_receipt_done;
+            ctx->stage = tunnel_stage_obfs_receipt_done;
             break;
         }
 
@@ -640,7 +640,7 @@ static void do_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *incomi
         if (proto_confirm) {
             ASSERT(obfs_receipt == NULL);
             socket_write(incoming, proto_confirm->buffer, proto_confirm->len);
-            ctx->stage = tunnel_stage_confirm_done;
+            ctx->stage = tunnel_stage_proto_confirm_done;
             break;
         }
 
@@ -690,7 +690,7 @@ static void do_prepare_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socke
     } while (0);
 }
 
-static void do_client_feedback(struct tunnel_ctx *tunnel, struct socket_ctx *incoming) {
+static void do_handle_client_feedback(struct tunnel_ctx *tunnel, struct socket_ctx *incoming) {
     struct server_ctx *ctx = (struct server_ctx *) tunnel->data;
     struct buffer_t *buf = buffer_create_from((uint8_t *)incoming->buf->base, incoming->result);
     struct buffer_t *result = NULL;
@@ -716,7 +716,7 @@ static void do_client_feedback(struct tunnel_ctx *tunnel, struct socket_ctx *inc
 
         if (proto_confirm) {
             socket_write(incoming, proto_confirm->buffer, proto_confirm->len);
-            ctx->stage = tunnel_stage_confirm_done;
+            ctx->stage = tunnel_stage_proto_confirm_done;
             break;
         }
 
