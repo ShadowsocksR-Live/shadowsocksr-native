@@ -1177,7 +1177,7 @@ void print_server_info(const struct server_config *config) {
 }
 
 static void svr_usage(void) {
-    printf("ShadowsocksR native server\n"
+    printf("\nShadowsocksR native server\n"
         "\n"
         "Usage:\n"
         "\n"
@@ -1188,6 +1188,6 @@ static void svr_usage(void) {
         "  -d                     Run in background as a daemon.\n"
         "  -c <config file>       Configure file path. Default: " DEFAULT_CONF_PATH "\n"
         "  -h                     Show this help message.\n"
-        "",
+        "\n",
         get_app_name());
 }
