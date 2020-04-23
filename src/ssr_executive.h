@@ -34,6 +34,7 @@ struct server_config {
     char *over_tls_root_cert_file;
     bool udp;
     unsigned int idle_timeout; /* Connection idle timeout in ms. */
+    uint64_t connect_timeout_ms;
     char *remarks;
 };
 
@@ -86,6 +87,7 @@ void string_safe_assign(char **target, const char *value);
 #define DEFAULT_BIND_HOST     "127.0.0.1"
 #define DEFAULT_BIND_PORT     1080
 #define DEFAULT_IDLE_TIMEOUT  (60 * MILLISECONDS_PER_SECOND)
+#define DEFAULT_CONNECT_TIMEOUT  (6 * MILLISECONDS_PER_SECOND)
 #define DEFAULT_METHOD        "rc4-md5"
 
 #if !defined(TCP_BUF_SIZE_MAX)

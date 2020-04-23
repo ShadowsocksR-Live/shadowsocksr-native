@@ -75,6 +75,7 @@ struct server_config * config_create(void) {
     string_safe_assign(&config->method, DEFAULT_METHOD);
     config->listen_port = DEFAULT_BIND_PORT;
     config->idle_timeout = DEFAULT_IDLE_TIMEOUT;
+    config->connect_timeout_ms = DEFAULT_CONNECT_TIMEOUT;
 
     return config;
 }

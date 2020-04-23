@@ -50,7 +50,7 @@ void tls_client_launch(struct tunnel_ctx *tunnel, struct server_config *config) 
     tunnel_add_ref(tunnel);
 
     uv_mbed_add_ref(ctx->mbed);
-    uv_mbed_connect(ctx->mbed, config->remote_host, config->remote_port, _mbed_connect_done_cb, ctx);
+    uv_mbed_connect(ctx->mbed, config->remote_host, config->remote_port, config->connect_timeout_ms, _mbed_connect_done_cb, ctx);
 }
 
 void tls_client_shutdown(struct tunnel_ctx *tunnel) {
