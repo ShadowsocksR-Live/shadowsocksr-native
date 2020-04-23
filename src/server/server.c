@@ -1186,8 +1186,7 @@ static void svr_usage(void) {
         "Options:\n"
         "\n"
         "  -d                     Run in background as a daemon.\n"
-        "  -c <config file>       Configure file path.\n"
-        "                         Default: " DEFAULT_CONF_PATH "\n"
+        "  -c <config file>       Configure file path. Default: " DEFAULT_CONF_PATH "\n"
         "  -h                     Show this help message.\n"
         "",
         get_app_name());
