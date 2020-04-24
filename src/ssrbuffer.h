@@ -60,6 +60,7 @@ struct buffer_t * buffer_create(size_t capacity);
 struct buffer_t * buffer_create_from(const uint8_t *data, size_t len);
 size_t buffer_get_length(const struct buffer_t *ptr);
 const uint8_t * buffer_get_data(const struct buffer_t *ptr, size_t *length);
+size_t buffer_get_capacity(const struct buffer_t *ptr);
 void buffer_add_ref(struct buffer_t *ptr);
 void buffer_release(struct buffer_t *ptr);
 int buffer_compare(const struct buffer_t *ptr1, const struct buffer_t *ptr2, size_t size);

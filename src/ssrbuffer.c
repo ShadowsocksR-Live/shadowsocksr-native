@@ -100,6 +100,10 @@ const uint8_t * buffer_get_data(const struct buffer_t *ptr, size_t *length) {
     return ptr ? ptr->buffer : NULL;
 }
 
+size_t buffer_get_capacity(const struct buffer_t *ptr) {
+    return ptr->capacity;
+}
+
 int buffer_compare(const struct buffer_t *ptr1, const struct buffer_t *ptr2, size_t size) {
     if (ptr1==NULL && ptr2==NULL) {
         return 0;

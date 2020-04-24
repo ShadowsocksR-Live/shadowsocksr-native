@@ -893,9 +893,10 @@ static void do_connect_host_done(struct tunnel_ctx *tunnel, struct socket_ctx *s
     }
 
     if (outgoing->result == 0) {
-        struct buffer_t *init_pkg = ctx->init_pkg;
-        if (init_pkg->len > 0) {
-            socket_write(outgoing, init_pkg->buffer, init_pkg->len);
+        size_t len = 0;
+        const uint8_t *data = buffer_get_data(ctx->init_pkg, &len);
+        if (len > 0) {
+            socket_write(outgoing, data, len);
             ctx->stage = tunnel_stage_launch_streaming;
         } else {
             outgoing->wrstate = socket_state_done;
