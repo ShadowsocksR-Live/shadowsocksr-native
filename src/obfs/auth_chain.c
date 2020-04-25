@@ -403,7 +403,7 @@ size_t auth_chain_a_pack_client_data(struct obfs_t *obfs, char *data, size_t dat
             unsigned int start_pos = get_rand_start_pos((int)rand_len, &local->random_client);
             size_t out_len;
             ss_encrypt_buffer(local->cipher, local->encrypt_ctx,
-                    data, (size_t)datalength, &outdata[2 + start_pos], &out_len);
+                    (uint8_t*)data, (size_t)datalength, (uint8_t*)&outdata[2 + start_pos], &out_len);
             memcpy(outdata + 2, rnd_data, start_pos);
             memcpy(outdata + 2 + start_pos + datalength, rnd_data + start_pos, rand_len - start_pos);
         } else {
@@ -444,8 +444,8 @@ struct buffer_t * auth_chain_a_pack_server_data(struct obfs_t *obfs, const struc
         size_t out_len = 0;
         uint8_t *buffer = (uint8_t *)calloc(buf->len + 4, sizeof(uint8_t));
         ss_encrypt_buffer(local->cipher, local->encrypt_ctx,
-            (char*)buf->buffer, (size_t)buf->len, 
-            (char *)buffer, &out_len);
+            (uint8_t*)buf->buffer, (size_t)buf->len, 
+            (uint8_t *)buffer, &out_len);
         in_buf = buffer_create_from(buffer, out_len);
         free(buffer);
     }
@@ -697,7 +697,7 @@ ssize_t auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata,
             pos = 2;
         }
         ss_decrypt_buffer(local->cipher, local->decrypt_ctx,
-                (char*)recv_buffer + pos, (size_t)data_len, (char *)buffer, &out_len);
+                (uint8_t*)recv_buffer + pos, (size_t)data_len, (uint8_t *)buffer, &out_len);
 
         if (local->recv_id == 1) {
             server_info->tcp_mss = (uint16_t)(buffer[0] | (buffer[1] << 8));
@@ -1068,8 +1068,8 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
             size_t out_len = 0;
             char *buffer = (char *)calloc(local->recv_buffer->len, sizeof(char));
             ss_decrypt_buffer(local->cipher, local->decrypt_ctx,
-                (char*)local->recv_buffer->buffer + pos, (size_t)data_len, 
-                (char *)buffer, &out_len);
+                (uint8_t*)local->recv_buffer->buffer + pos, (size_t)data_len, 
+                (uint8_t *)buffer, &out_len);
             buffer_concatenate(out_buf, (uint8_t *)buffer, out_len);
             free(buffer);
         }
