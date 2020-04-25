@@ -463,10 +463,17 @@ enum ssr_error tunnel_cipher_client_encrypt(struct tunnel_cipher_ctx *tc, struct
     struct server_env_t *env = tc->env;
     // SSR beg
     struct obfs_t *protocol_plugin = tc->protocol;
-    ASSERT(buf->capacity >= SSR_BUFF_SIZE);
+    size_t capacity = buffer_get_capacity(buf);
+    ASSERT(capacity >= SSR_BUFF_SIZE);
     if (protocol_plugin && protocol_plugin->client_pre_encrypt) {
-        buf->len = (size_t)protocol_plugin->client_pre_encrypt(
-            tc->protocol, (char **)&buf->buffer, (int)buf->len, &buf->capacity);
+        size_t len = 0;
+        const uint8_t *oldP = buffer_get_data(buf, &len);
+        uint8_t *p = (uint8_t *) calloc(capacity, sizeof(*p));
+        memcpy(p, oldP, len);
+        len = (size_t) protocol_plugin->client_pre_encrypt(
+            tc->protocol, (char **)&p, (int)len, &capacity);
+        buffer_store(buf, p, len);
+        free(p);
     }
     err = ss_encrypt(env->cipher, buf, tc->e_ctx, SSR_BUFF_SIZE);
     if (err != 0) {
@@ -490,7 +497,7 @@ enum ssr_error tunnel_cipher_client_decrypt(struct tunnel_cipher_ctx *tc, struct
     // SSR beg
     struct obfs_t *obfs_plugin = tc->obfs;
 
-    ASSERT(buf->len <= SSR_BUFF_SIZE);
+    ASSERT(buffer_get_length(buf) <= SSR_BUFF_SIZE);
 
     if (obfs_plugin && obfs_plugin->client_decode) {
         bool needsendback = 0;
@@ -507,7 +514,7 @@ enum ssr_error tunnel_cipher_client_decrypt(struct tunnel_cipher_ctx *tc, struct
             buffer_release(empty);
         }
     }
-    if (buf->len > 0) {
+    if (buffer_get_length(buf) > 0) {
         int err = ss_decrypt(env->cipher, buf, tc->d_ctx, SSR_BUFF_SIZE);
         if (err != 0) {
             return ssr_error_invalid_password;
@@ -515,12 +522,21 @@ enum ssr_error tunnel_cipher_client_decrypt(struct tunnel_cipher_ctx *tc, struct
     }
     protocol_plugin = tc->protocol;
     if (protocol_plugin && protocol_plugin->client_post_decrypt) {
-        ssize_t len = protocol_plugin->client_post_decrypt(
-            tc->protocol, (char **)&buf->buffer, (int)buf->len, &buf->capacity);
+        size_t len0 = 0;
+        const uint8_t *data = buffer_get_data(buf, &len0);
+        ssize_t len;
+        size_t capacity = buffer_get_capacity(buf);
+        uint8_t *p = (uint8_t *) calloc(capacity, sizeof(*p));
+        memcpy(p, data, len0);
+        len = protocol_plugin->client_post_decrypt(
+            tc->protocol, (char **)&p, (int)len0, &capacity);
+        if (len >= 0) {
+            buffer_store(buf, p, (size_t)len);
+        }
+        free(p);
         if (len < 0) {
             return ssr_error_client_post_decrypt;
         }
-        buf->len = (size_t)len;
     }
     // SSR end
     return ssr_ok;
@@ -589,7 +605,7 @@ tunnel_cipher_server_decrypt(struct tunnel_cipher_ctx *tc,
     } else {
         ret = buffer_clone(buf);
     }
-    if (need_decrypt && ret && ret->len) {
+    if (need_decrypt && ret && buffer_get_length(ret)) {
         /*
         // TODO: check IV
         if (is_completed_package(env, ret->buffer, ret->len) == false) {
@@ -599,11 +615,11 @@ tunnel_cipher_server_decrypt(struct tunnel_cipher_ctx *tc,
         */
         if (protocol && protocol->server_info.recv_iv[0] == 0) {
             size_t iv_len = protocol->server_info.iv_len;
-            memmove(protocol->server_info.recv_iv, ret->buffer, iv_len);
+            memmove(protocol->server_info.recv_iv, buffer_get_data(ret, NULL), iv_len);
             protocol->server_info.recv_iv_len = iv_len;
         }
 
-        err = ss_decrypt(env->cipher, ret, tc->d_ctx, max(SSR_BUFF_SIZE, ret->capacity));
+        err = ss_decrypt(env->cipher, ret, tc->d_ctx, max(SSR_BUFF_SIZE, buffer_get_capacity(ret)));
         if (err != 0) {
             buffer_release(ret); ret = NULL;
             return ret;
@@ -629,47 +645,45 @@ bool pre_parse_header(struct buffer_t *data) {
     uint8_t tmp;
     size_t rand_data_size = 0;
     size_t hdr_len = 0;
+    size_t len = 0;
+    const uint8_t *buffer = buffer_get_data(data, &len);
 
-    if (data==NULL || data->buffer==NULL || data->len==0) {
+    if (data==NULL || buffer==NULL || len==0) {
         return false;
     }
 
-    datatype = data->buffer[0];
+    datatype = buffer[0];
 
     if (datatype == 0x80) {
-        if (data->len <= 2) {
+        if (len <= 2) {
             return false;
         }
-        rand_data_size = (size_t) data->buffer[1];
+        rand_data_size = (size_t) buffer[1];
         hdr_len = rand_data_size + 2;
-        if (hdr_len >= data->len) {
+        if (hdr_len >= len) {
             // header too short, maybe wrong password or encryption method
             return false;
         }
 
-        memmove(data->buffer, data->buffer + hdr_len, data->len - hdr_len);
-        data->len -= hdr_len;
-
+        buffer_shortened_to(data, hdr_len, len - hdr_len);
         return true;
     }
     if (datatype == 0x81) {
         hdr_len = 1;
-        memmove(data->buffer, data->buffer + hdr_len, data->len - hdr_len);
-        data->len -= hdr_len;
+        buffer_shortened_to(data, hdr_len, len - hdr_len);
         return true;
     }
     if (datatype == 0x82) {
-        if (data->len <= 3) {
+        if (len <= 3) {
             return false;
         }
-        rand_data_size = (size_t) ntohs( *((uint16_t *)(data->buffer+1)) );
+        rand_data_size = (size_t) ntohs( *((uint16_t *)(buffer+1)) );
         hdr_len = rand_data_size + 3;
-        if (hdr_len >= data->len) {
+        if (hdr_len >= len) {
             // header too short, maybe wrong password or encryption method
             return false;
         }
-        memmove(data->buffer, data->buffer + hdr_len, data->len - hdr_len);
-        data->len -= hdr_len;
+        buffer_shortened_to(data, hdr_len, len - hdr_len);
         return true;
     }
     tmp = (~datatype);
@@ -677,25 +691,24 @@ bool pre_parse_header(struct buffer_t *data) {
         uint32_t crc = 0;
         size_t data_size = 0;
         size_t start_pos = 0;
-        size_t origin_len = data->len;
-        if (data->len <= (7 + 7)) {
+        size_t origin_len = len;
+        if (len <= (7 + 7)) {
             return false;
         }
-        data_size = (size_t) ntohs( *((uint16_t *)(data->buffer+1)) );
-        crc = crc32_imp(data->buffer, data_size);
+        data_size = (size_t) ntohs( *((uint16_t *)(buffer+1)) );
+        crc = crc32_imp(buffer, data_size);
         if (crc != 0xffffffff) {
             // uncorrect CRC32, maybe wrong password or encryption method
             return false;
         }
-        start_pos = (size_t)(3 + data->buffer[3]);
+        start_pos = (size_t)(3 + buffer[3]);
 
-        data->len = data_size - (4 + start_pos);
-        memmove(data->buffer, data->buffer + start_pos, data->len);
+        buffer_shortened_to(data, start_pos, data_size - (4 + start_pos));
 
         if (data_size < origin_len) {
             size_t len2 = origin_len - data_size;
-            memmove(data->buffer + data->len, data->buffer + data_size, len2);
-            data->len += len2;
+            buffer = buffer_get_data(data, &len);
+            buffer_concatenate(data, buffer + data_size, len2);
         }
         return true;
     }
