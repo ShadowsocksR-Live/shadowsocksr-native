@@ -156,6 +156,16 @@ struct tunnel_ctx * client_tunnel_initialize(uv_tcp_t *lx, unsigned int idle_tim
     return tunnel_initialize(loop, lx, idle_timeout, &init_done_cb, env);
 }
 
+static void client_tunnel_shutdown_print_info(struct tunnel_ctx *tunnel, bool success) {
+    char tmp[0x100] = { 0 };
+    socks5_address_to_string(tunnel->desired_addr, tmp, sizeof(tmp));
+    if (!success) {
+        pr_err("---- disconnected \"%s:%d\" with failed. ---", tmp, (int)tunnel->desired_addr->port);
+    } else {
+        pr_info("---- disconnected \"%s:%d\" ----", tmp, (int)tunnel->desired_addr->port);
+    }
+}
+
 static void client_tunnel_shutdown(struct tunnel_ctx *tunnel) {
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
     assert(ctx);
@@ -163,6 +173,7 @@ static void client_tunnel_shutdown(struct tunnel_ctx *tunnel) {
         tls_client_shutdown(tunnel);
     } else {
         assert(ctx->original_tunnel_shutdown);
+        client_tunnel_shutdown_print_info(tunnel, true);
         ctx->original_tunnel_shutdown(tunnel);
     }
 }
@@ -444,14 +455,14 @@ static void do_parse_s5_request(struct tunnel_ctx *tunnel) {
         }
     }
 
+    {
+        char tmp[0x100] = { 0 };
+        socks5_address_to_string(tunnel->desired_addr, tmp, sizeof(tmp));
+        pr_info("++++ connecting \"%s:%d\" ... ++++", tmp, (int)tunnel->desired_addr->port);
+    }
     if (config->over_tls_enable) {
         ctx->stage = tunnel_stage_tls_connecting;
         tls_client_launch(tunnel, config);
-        {
-            char tmp[0x100] = { 0 };
-            socks5_address_to_string(tunnel->desired_addr, tmp, sizeof(tmp));
-            pr_info("connecting %s:%d ...", tmp, (int)tunnel->desired_addr->port);
-        }
         return;
     }
     else {
@@ -973,11 +984,7 @@ static void tunnel_tls_on_shutting_down(struct tunnel_ctx *tunnel) {
     char tmp[0x100] = { 0 };
     socks5_address_to_string(tunnel->desired_addr, tmp, sizeof(tmp));
     assert(ctx->original_tunnel_shutdown);
-    if (tunnel->tls_ctx == NULL) {
-        pr_err("connecting \"%s:%d\" failed.", tmp, (int)tunnel->desired_addr->port);
-    } else {
-        pr_info("---- disconnected %s:%d ----", tmp, (int)tunnel->desired_addr->port);
-    }
+    client_tunnel_shutdown_print_info(tunnel, (tunnel->tls_ctx != NULL));
     ctx->original_tunnel_shutdown(tunnel);
 }
 
