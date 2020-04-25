@@ -49,6 +49,8 @@
 
 #endif // __MEM_CHECK__
 
+struct buffer_t;
+
 struct buffer_t {
     size_t len;
     size_t capacity;

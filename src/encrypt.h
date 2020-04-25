@@ -96,8 +96,8 @@ size_t ss_sha1_hmac_with_key(uint8_t auth[SHA1_BYTES], const struct buffer_t *ms
 size_t ss_sha1_hash_func(uint8_t *auth, const uint8_t *msg, size_t msg_len);
 size_t ss_aes_128_cbc_encrypt(size_t length, const uint8_t *plain_text, uint8_t *out_data, const uint8_t key[16]);
 size_t ss_aes_128_cbc_decrypt(size_t length, const uint8_t *cipher_text, uint8_t *out_data, const uint8_t key[16]);
-int ss_encrypt_buffer(struct cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t in_size, char *out, size_t *out_size);
-int ss_decrypt_buffer(struct cipher_env_t *env, struct enc_ctx *ctx, char *in, size_t in_size, char *out, size_t *out_size);
+int ss_encrypt_buffer(struct cipher_env_t *env, struct enc_ctx *ctx, const uint8_t *in, size_t in_size, uint8_t *out, size_t *out_size);
+int ss_decrypt_buffer(struct cipher_env_t *env, struct enc_ctx *ctx, const uint8_t *in, size_t in_size, uint8_t *out, size_t *out_size);
 
 struct buffer_t * cipher_simple_update_data(const char *key, const char *method, bool encrypt, const struct buffer_t *data);
 
