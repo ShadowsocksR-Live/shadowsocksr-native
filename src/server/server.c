@@ -558,7 +558,7 @@ static bool is_legal_header(const struct buffer_t *buf) {
         if (buf == NULL) {
             break;
         }
-        addr_type = (enum SOCKS5_ADDRTYPE) buf->buffer[0];
+        addr_type = (enum SOCKS5_ADDRTYPE) buffer_get_data(buf, NULL)[0];
         switch (addr_type) {
         case SOCKS5_ADDRTYPE_IPV4:
         case SOCKS5_ADDRTYPE_DOMAINNAME:
@@ -574,7 +574,7 @@ static bool is_legal_header(const struct buffer_t *buf) {
 
 static bool is_header_complete(const struct buffer_t *buf) {
     struct socks5_address addr;
-    return socks5_address_parse(buf->buffer, buf->len, &addr);
+    return socks5_address_parse(buffer_get_data(buf, NULL), buffer_get_length(buf), &addr);
 }
 
 static size_t _get_read_size(struct tunnel_ctx *tunnel, struct socket_ctx *socket, size_t suggested_size) {
@@ -625,7 +625,7 @@ static void do_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *incomi
 
         if (obfs_receipt) {
             ASSERT(proto_confirm == NULL);
-            socket_write(incoming, obfs_receipt->buffer, obfs_receipt->len);
+            socket_write(incoming, buffer_get_data(obfs_receipt, NULL), buffer_get_length(obfs_receipt));
             ctx->stage = tunnel_stage_obfs_receipt_done;
             break;
         }
@@ -639,7 +639,7 @@ static void do_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *incomi
 
         if (proto_confirm) {
             ASSERT(obfs_receipt == NULL);
-            socket_write(incoming, proto_confirm->buffer, proto_confirm->len);
+            socket_write(incoming, buffer_get_data(proto_confirm, NULL), buffer_get_length(proto_confirm));
             ctx->stage = tunnel_stage_proto_confirm_done;
             break;
         }
@@ -669,7 +669,7 @@ static void do_prepare_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socke
 
         info = protocol ? protocol->get_server_info(protocol) : (obfs ? obfs->get_server_info(obfs) : NULL);
         if (info) {
-            info->head_len = (int) get_s5_head_size(init_pkg->buffer, init_pkg->len, 30);
+            info->head_len = (int) get_s5_head_size(buffer_get_data(init_pkg, NULL), buffer_get_length(init_pkg), 30);
             ctx->_overhead = info->overhead;
             ctx->_recv_buffer_size = info->buffer_size;
         }
@@ -707,7 +707,7 @@ static void do_handle_client_feedback(struct tunnel_ctx *tunnel, struct socket_c
 
         result = tunnel_cipher_server_decrypt(ctx->cipher, buf, &obfs_receipt, &proto_confirm);
         ASSERT(obfs_receipt == NULL);
-        if (result==NULL || result->len==0) {
+        if (result==NULL || buffer_get_length(result)==0) {
             tunnel->tunnel_shutdown(tunnel);
             break;
         }
@@ -715,7 +715,7 @@ static void do_handle_client_feedback(struct tunnel_ctx *tunnel, struct socket_c
         buffer_concatenate2(ctx->init_pkg, result);
 
         if (proto_confirm) {
-            socket_write(incoming, proto_confirm->buffer, proto_confirm->len);
+            socket_write(incoming, buffer_get_data(proto_confirm, NULL), buffer_get_length(proto_confirm));
             ctx->stage = tunnel_stage_proto_confirm_done;
             break;
         }
@@ -764,14 +764,14 @@ static void do_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     // get remote addr and port
     s5addr = tunnel->desired_addr;
     memset(s5addr, 0, sizeof(*s5addr));
-    if (socks5_address_parse(init_pkg->buffer, init_pkg->len, s5addr) == false) {
+    if (socks5_address_parse(buffer_get_data(init_pkg, NULL), buffer_get_length(init_pkg), s5addr) == false) {
         // report_addr(server->fd, MALFORMED);
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
 
     offset = socks5_address_size(s5addr);
-    buffer_shortened_to(init_pkg, offset, init_pkg->len - offset);
+    buffer_shortened_to(init_pkg, offset, buffer_get_length(init_pkg) - offset);
 
     host = s5addr->addr.domainname;
 
@@ -887,7 +887,7 @@ static void do_connect_host_done(struct tunnel_ctx *tunnel, struct socket_ctx *s
     ASSERT(outgoing->wrstate == socket_state_stop);
 
     if (config->over_tls_enable) {
-        ASSERT(ctx->init_pkg->len == 0);
+        ASSERT(buffer_get_length(ctx->init_pkg) == 0);
         do_tls_client_feedback(tunnel);
         return;
     }
@@ -1077,7 +1077,7 @@ static uint8_t* tunnel_extract_data(struct socket_ctx *socket, void*(*allocator)
                 } else {
                     ws_frame_binary_continuous(false, &info);
                 }
-                frame = websocket_build_frame(&info, tmp->buffer, tmp->len, &malloc);
+                frame = websocket_build_frame(&info, buffer_get_data(tmp, NULL), buffer_get_length(tmp), &malloc);
                 buf = buffer_create_from(frame, info.frame_size);
                 free(frame);
                 buffer_release(tmp);

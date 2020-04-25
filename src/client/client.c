@@ -633,10 +633,10 @@ static bool do_ssr_receipt_for_feedback(struct tunnel_ctx *tunnel) {
     buf = buffer_create_from((uint8_t *)outgoing->buf->base, (size_t)outgoing->result);
     error = tunnel_cipher_client_decrypt(cipher_ctx, buf, &feedback);
     ASSERT(error == ssr_ok);
-    ASSERT(buf->len == 0);
+    ASSERT(buffer_get_length(buf) == 0);
 
     if (feedback) {
-        socket_write(outgoing, feedback->buffer, feedback->len);
+        socket_write(outgoing, buffer_get_data(feedback, NULL), buffer_get_length(feedback));
         ctx->stage = tunnel_stage_ssr_receipt_of_feedback_sent;
         buffer_release(feedback);
         done = true;
@@ -717,10 +717,10 @@ static uint8_t* tunnel_extract_data(struct socket_ctx *socket, void*(*allocator)
     }
 
     if (error == ssr_ok) {
-        size_t len = buf->len;
+        size_t len = buffer_get_length(buf);
         *size = len;
         result = (uint8_t *)allocator(len + 1);
-        memcpy(result, buf->buffer, len);
+        memcpy(result, buffer_get_data(buf, NULL), len);
         result[len] = 0;
     }
 
