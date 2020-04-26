@@ -124,9 +124,11 @@ int buffer_compare(const struct buffer_t *ptr1, const struct buffer_t *ptr2, siz
 }
 
 void buffer_reset(struct buffer_t *ptr) {
-    if (ptr && ptr->buffer) {
+    if (ptr) {
         ptr->len = 0;
-        memset(ptr->buffer, 0, ptr->capacity);
+        if (ptr->buffer) {
+            memset(ptr->buffer, 0, ptr->capacity);
+        }
     }
 }
 
