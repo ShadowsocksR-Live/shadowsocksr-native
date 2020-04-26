@@ -36,7 +36,7 @@ uint32_t crc32_imp(const unsigned char *buffer, size_t size) {
     return crc ^ 0xFFFFFFFF;
 }
 
-void fillcrc32to(unsigned char *buffer, size_t size, unsigned char *outbuffer) {
+void fillcrc32to(const unsigned char *buffer, size_t size, unsigned char *outbuffer) {
     uint32_t crc = 0xFFFFFFFF;
     size_t i;
     init_crc32_table();
@@ -65,7 +65,7 @@ void fillcrc32(unsigned char *buffer, size_t size) {
     buffer[3] = (unsigned char)(crc >> 24);
 }
 
-void adler32_short(unsigned char *buffer, size_t size, uint32_t *a, uint32_t *b) {
+void adler32_short(const unsigned char *buffer, size_t size, uint32_t *a, uint32_t *b) {
     size_t i = 0;
     for (i = 0; i < size; i++) {
         *a += buffer[i];
@@ -76,7 +76,7 @@ void adler32_short(unsigned char *buffer, size_t size, uint32_t *a, uint32_t *b)
 }
 
 #define NMAX 5552
-uint32_t adler32(unsigned char *buffer, size_t size) {
+uint32_t adler32(const unsigned char *buffer, size_t size) {
     uint32_t a = 1;
     uint32_t b = 0;
     while ( size >= NMAX ) {
@@ -100,7 +100,7 @@ void filladler32(unsigned char *buffer, size_t size) {
     buffer[3] = (unsigned char)(checksum >> 24);
 }
 
-bool checkadler32(unsigned char *buffer, size_t size) {
+bool checkadler32(const unsigned char *buffer, size_t size) {
     uint32_t checksum;
     size -= 4;
     checksum = adler32(buffer, size);
