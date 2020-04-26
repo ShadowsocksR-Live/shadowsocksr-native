@@ -68,7 +68,7 @@ build_socks5_response(int rep, int addr_type, struct sockaddr_in *addr, uint8_t 
 
     assert(addr_type == SOCKS5_ADDRTYPE__IPV4); // TODO: other types.
 
-    min_size = sizeof(struct socks5_response) - 1 + sizeof(addr->sin_addr) + sizeof(addr->sin_port);
+    min_size = (sizeof(struct socks5_response) - 1) + sizeof(addr->sin_addr) + sizeof(addr->sin_port);
     if (buffer==NULL || buffer_size<min_size) {
         return NULL;
     }

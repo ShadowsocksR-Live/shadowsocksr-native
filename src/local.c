@@ -361,12 +361,20 @@ int _tunnel_decrypt(struct local_t *local, struct buffer_t *buf, struct buffer_t
     }
     protocol_plugin = local->protocol;
     if (protocol_plugin && protocol_plugin->client_post_decrypt) {
-        ssize_t len = (size_t)protocol_plugin->client_post_decrypt(
-            local->protocol, (char **)&buf->buffer, (int)buf->len, &buf->capacity);
+        ssize_t len;
+        size_t capacity = buffer_get_capacity(buf);
+        size_t buf_len = 0;
+        const uint8_t *pbb = buffer_get_data(buf, &buf_len);
+        uint8_t *buf_buffer = (uint8_t *) calloc(capacity, sizeof(*buf_buffer));
+        memcpy(buf_buffer, pbb, buf_len);
+        len = (size_t)protocol_plugin->client_post_decrypt(
+            local->protocol, (char **)&buf_buffer, (int)buf_len, &capacity);
         if (len < 0) {
+            free(buf_buffer);
             return -1;
         }
-        buf->len = (size_t)len;
+        buffer_store(buf, buf_buffer, (size_t)len);
+        free(buf_buffer);
     }
     // SSR end
     return 0;
@@ -486,17 +494,17 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             int off;
             struct method_select_request *request = (struct method_select_request *)buf->buffer;
 
-            struct buffer_t *buffer = buffer_create(SSR_BUFF_SIZE);
+            uint8_t *buffer = (uint8_t *) calloc(SSR_BUFF_SIZE, sizeof(*buffer));
             struct method_select_response *response =
-                    build_socks5_method_select_response(SOCKS5_METHOD_NOAUTH, (char *)buffer->buffer, buffer->capacity);
+                    build_socks5_method_select_response(SOCKS5_METHOD_NOAUTH, (char *)buffer, SSR_BUFF_SIZE);
 
             local_send_data(local, (char *)response, sizeof(*response));
 
-            buffer_release(buffer);
+            free(buffer);
 
             local->stage = STAGE_HANDSHAKE;
 
-            off = (request->nmethods & 0xff) + sizeof(*request);
+            off = (request->nmethods & 0xff) + (sizeof(*request) - 1);
             if ((request->ver == SOCKS5_VERSION) && (off < (int)(buf->len))) {
                 memmove(buf->buffer, buf->buffer + off, buf->len - off);
                 buf->len -= off;
@@ -546,15 +554,15 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
             // Fake reply
             if (local->stage == STAGE_HANDSHAKE) {
-                struct buffer_t *buffer = buffer_create(SSR_BUFF_SIZE);
+                uint8_t *buffer = (uint8_t *) calloc(SSR_BUFF_SIZE, sizeof(*buffer));
                 size_t size = 0;
                 struct socks5_response *response =
                         build_socks5_response(SOCKS5_REPLY_SUCCESS, SOCKS5_ADDRTYPE__IPV4,
-                                              &sock_addr, buffer->buffer, buffer->capacity, &size);
+                                              &sock_addr, buffer,SSR_BUFF_SIZE, &size);
 
                 local_send_data(local, (char *)response, (unsigned int)size);
 
-                buffer_release(buffer);
+                free(buffer);
 
                 if (udp_assc) {
                     // Wait until client closes the connection
