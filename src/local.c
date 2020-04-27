@@ -846,7 +846,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 server_info.param = server_env->protocol_param;
                 server_info.g_data = server_env->protocol_global;
 
-                local->protocol = obfs_instance_create(server_env->protocol_name);
+                local->protocol = protocol_instance_create(server_env->protocol_name);
                 if (local->protocol) {
                     server_info.overhead = (uint16_t)(local->protocol->get_overhead(local->protocol)
                         + (local->obfs ? local->obfs->get_overhead(local->obfs) : 0));
@@ -1358,7 +1358,7 @@ init_obfs(struct server_env_t *env, const char *protocol, const char *protocol_p
         obfs_instance_destroy(obfs_plugin);
     }
 
-    protocol_plugin = obfs_instance_create(protocol);
+    protocol_plugin = protocol_instance_create(protocol);
     if (protocol_plugin) {
         env->protocol_global = protocol_plugin->generate_global_init_data();
         obfs_instance_destroy(protocol_plugin);
