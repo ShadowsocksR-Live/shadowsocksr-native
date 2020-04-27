@@ -51,13 +51,6 @@
 
 struct buffer_t;
 
-struct buffer_t {
-    size_t len;
-    size_t capacity;
-    uint8_t *buffer;
-    int ref_count;
-};
-
 struct buffer_t * buffer_create(size_t capacity);
 struct buffer_t * buffer_create_from(const uint8_t *data, size_t len);
 size_t buffer_get_length(const struct buffer_t *ptr);
@@ -68,6 +61,7 @@ void buffer_release(struct buffer_t *ptr);
 int buffer_compare(const struct buffer_t *ptr1, const struct buffer_t *ptr2, size_t size);
 void buffer_reset(struct buffer_t *ptr);
 struct buffer_t * buffer_clone(const struct buffer_t *ptr);
+uint8_t * buffer_raw_clone(const struct buffer_t *orig, void*(*allocator)(size_t), size_t *len, size_t *capacity);
 size_t buffer_realloc(struct buffer_t *ptr, size_t capacity);
 void buffer_insert(struct buffer_t *ptr, size_t pos, const uint8_t *data, size_t size);
 void buffer_insert2(struct buffer_t *ptr, size_t pos, const struct buffer_t *data);

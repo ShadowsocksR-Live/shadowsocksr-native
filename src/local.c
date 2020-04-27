@@ -304,9 +304,7 @@ int _tunnel_encrypt(struct local_t *local, struct buffer_t *buf) {
 
     if (protocol_plugin && protocol_plugin->client_pre_encrypt) {
         size_t buf_len = 0;
-        const uint8_t *pbb = buffer_get_data(buf, &buf_len);
-        uint8_t *buf_buffer = (uint8_t *) calloc(capacity, sizeof(*buf_buffer));
-        memmove(buf_buffer, pbb, buf_len);
+        uint8_t *buf_buffer = (uint8_t *) buffer_raw_clone(buf, &malloc, &buf_len, &capacity);
         buf_len = (size_t)protocol_plugin->client_pre_encrypt(
             local->protocol, (char **)&buf_buffer, (int)buf_len, &capacity);
         buffer_store(buf, buf_buffer, buf_len);
@@ -362,11 +360,8 @@ int _tunnel_decrypt(struct local_t *local, struct buffer_t *buf, struct buffer_t
     protocol_plugin = local->protocol;
     if (protocol_plugin && protocol_plugin->client_post_decrypt) {
         ssize_t len;
-        size_t capacity = buffer_get_capacity(buf);
-        size_t buf_len = 0;
-        const uint8_t *pbb = buffer_get_data(buf, &buf_len);
-        uint8_t *buf_buffer = (uint8_t *) calloc(capacity, sizeof(*buf_buffer));
-        memcpy(buf_buffer, pbb, buf_len);
+        size_t buf_len = 0, capacity;
+        uint8_t *buf_buffer = (uint8_t *) buffer_raw_clone(buf, &malloc, &buf_len, &capacity);
         len = (size_t)protocol_plugin->client_post_decrypt(
             local->protocol, (char **)&buf_buffer, (int)buf_len, &capacity);
         if (len < 0) {
@@ -492,7 +487,9 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             return;
         } else if (local->stage == STAGE_INIT) {
             int off;
-            struct method_select_request *request = (struct method_select_request *)buf->buffer;
+            size_t buf_len;
+            const uint8_t *buf_buffer = buffer_get_data(buf, &buf_len);
+            struct method_select_request *request = (struct method_select_request *)buf_buffer;
 
             uint8_t *buffer = (uint8_t *) calloc(SSR_BUFF_SIZE, sizeof(*buffer));
             struct method_select_response *response =
@@ -505,23 +502,22 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             local->stage = STAGE_HANDSHAKE;
 
             off = (request->nmethods & 0xff) + (sizeof(*request) - 1);
-            if ((request->ver == SOCKS5_VERSION) && (off < (int)(buf->len))) {
-                memmove(buf->buffer, buf->buffer + off, buf->len - off);
-                buf->len -= off;
+            if ((request->ver == SOCKS5_VERSION) && (off < (int)(buf_len))) {
+                buffer_shortened_to(buf, off, buf_len - off);
                 continue;
             }
 
-            buf->len = 0;
+            buffer_reset(buf);
 
             return;
         } else if (local->stage == STAGE_HANDSHAKE || local->stage == STAGE_PARSE) {
-            struct socks5_request *request = (struct socks5_request *)buf->buffer;
+            struct socks5_request *request = (struct socks5_request *) buffer_get_data(buf, NULL);
 
             struct sockaddr_in sock_addr = { 0 };
 
             int udp_assc = 0;
             char host[257], ip[INET6_ADDRSTRLEN], port[16];
-            struct buffer_t *abuf;
+            uint8_t *abuf_buffer;
             char addr_type;
             uint8_t *addr_n_port;
             size_t abuf_len;
@@ -536,17 +532,17 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                     LOGI("%s", "udp assc request accepted");
                 }
             } else if (request->cmd != SOCKS5_COMMAND_CONNECT) {
-                struct buffer_t *buffer = buffer_create(SSR_BUFF_SIZE);
+                uint8_t *buffer = (uint8_t *) calloc(SSR_BUFF_SIZE, sizeof(*buffer));
                 size_t size = 0;
                 struct socks5_response *response =
                         build_socks5_response(SOCKS5_REPLY_CMDUNSUPP, SOCKS5_ADDRTYPE__IPV4,
-                                              &sock_addr, buffer->buffer, buffer->capacity, &size);
+                                              &sock_addr, buffer, SSR_BUFF_SIZE, &size);
 
                 LOGE("unsupported cmd: 0x%02X", (uint8_t)request->cmd);
 
                 local_send_data(local, (char *)response, (unsigned int)size);
 
-                buffer_release(buffer);
+                free(buffer);
 
                 tunnel_close_and_free(remote, local);
                 return;
@@ -570,11 +566,12 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 }
             }
 
-            abuf = buffer_create(SSR_BUFF_SIZE);
+            abuf_buffer = (uint8_t *) calloc(SSR_BUFF_SIZE, sizeof(*abuf_buffer));
+            abuf_len = 0;
 
             addr_type = request->addr_type;
 
-            abuf->buffer[abuf->len++] = addr_type;
+            abuf_buffer[abuf_len++] = addr_type;
 
             addr_n_port = request->addr_n_port;
 
@@ -582,8 +579,8 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             if (addr_type == SOCKS5_ADDRTYPE__IPV4) {
                 // IP V4
                 size_t in_addr_len = sizeof(struct in_addr);
-                memcpy(abuf->buffer + abuf->len, addr_n_port, in_addr_len + 2);
-                abuf->len += in_addr_len + 2;
+                memcpy(abuf_buffer + abuf_len, addr_n_port, in_addr_len + 2);
+                abuf_len += in_addr_len + 2;
 
                 if (acl || verbose) {
                     uint16_t p = ntohs(*(uint16_t *)(addr_n_port + in_addr_len));
@@ -593,9 +590,9 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             } else if (addr_type == SOCKS5_ADDRTYPE__NAME) {
                 // Domain name
                 uint8_t name_len = *(uint8_t *)addr_n_port;
-                abuf->buffer[abuf->len++] = name_len;
-                memcpy(abuf->buffer + abuf->len, addr_n_port + 1, name_len + 2);
-                abuf->len += name_len + 2;
+                abuf_buffer[abuf_len++] = name_len;
+                memcpy(abuf_buffer + abuf_len, addr_n_port + 1, name_len + 2);
+                abuf_len += name_len + 2;
 
                 if (acl || verbose) {
                     uint16_t p = ntohs(*(uint16_t *)(addr_n_port + 1 + name_len));
@@ -606,8 +603,8 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             } else if (addr_type == SOCKS5_ADDRTYPE__IPV6) {
                 // IP V6
                 size_t in6_addr_len = sizeof(struct in6_addr);
-                memcpy(abuf->buffer + abuf->len, addr_n_port, in6_addr_len + 2);
-                abuf->len += in6_addr_len + 2;
+                memcpy(abuf_buffer + abuf_len, addr_n_port, in6_addr_len + 2);
+                abuf_len += in6_addr_len + 2;
 
                 if (acl || verbose) {
                     uint16_t p = ntohs(*(uint16_t *)(addr_n_port + in6_addr_len));
@@ -615,44 +612,44 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                     sprintf(port, "%d", p);
                 }
             } else {
-                buffer_release(abuf);
+                free(abuf_buffer);
                 LOGE("unsupported addrtype: 0x%02X", (uint8_t)addr_type);
                 tunnel_close_and_free(remote, local);
                 return;
             }
 
-            abuf_len  = abuf->len;
+            abuf_len  = abuf_len;
             sni_detected = 0;
 
             if (addr_type == SOCKS5_ADDRTYPE__IPV4 || addr_type == SOCKS5_ADDRTYPE__IPV6) {
                 char *hostname = NULL;
-                uint16_t p = ntohs(*(uint16_t *)(abuf->buffer + abuf->len - 2));
+                uint16_t p = ntohs(*(uint16_t *)(abuf_buffer + abuf_len - 2));
                 int ret    = 0;
                 if (p == http_protocol->default_port) {
-                    const char *data = (const char *)(buf->buffer + 3 + abuf->len);
-                    size_t data_len  = buf->len    - 3 - abuf->len;
+                    const char *data = (const char *)(buffer_get_data(buf, NULL) + 3 + abuf_len);
+                    size_t data_len  = buffer_get_length(buf)    - 3 - abuf_len;
                     ret = http_protocol->parse_packet(data, data_len, &hostname);
                 } else if (p == tls_protocol->default_port) {
-                    const char *data = (const char *)(buf->buffer + 3 + abuf->len);
-                    size_t data_len  = buf->len    - 3 - abuf->len;
+                    const char *data = (const char *)(buffer_get_data(buf, NULL) + 3 + abuf_len);
+                    size_t data_len  = buffer_get_length(buf)    - 3 - abuf_len;
                     ret = tls_protocol->parse_packet(data, data_len, &hostname);
                 }
-                if (ret == -1 && buf->len < SSR_BUFF_SIZE) {
+                if (ret == -1 && buffer_get_length(buf) < SSR_BUFF_SIZE) {
                     local->stage = STAGE_PARSE;
-                    buffer_release(abuf);
+                    free(abuf_buffer);
                     return;
                 } else if (ret > 0) {
                     sni_detected = 1;
 
                     // Reconstruct address buffer
-                    abuf->len                = 0;
-                    abuf->buffer[abuf->len++] = 3;
-                    abuf->buffer[abuf->len++] = ret;
-                    memcpy(abuf->buffer + abuf->len, hostname, ret);
-                    abuf->len += ret;
+                    abuf_len                = 0;
+                    abuf_buffer[abuf_len++] = 3;
+                    abuf_buffer[abuf_len++] = ret;
+                    memcpy(abuf_buffer + abuf_len, hostname, ret);
+                    abuf_len += ret;
                     p          = htons(p);
-                    memcpy(abuf->buffer + abuf->len, &p, 2);
-                    abuf->len += 2;
+                    memcpy(abuf_buffer + abuf_len, &p, 2);
+                    abuf_len += 2;
 
                     if (acl || verbose) {
                         memcpy(host, hostname, ret);
@@ -667,9 +664,10 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
             local->stage = STAGE_STREAM;
 
-            buf->len -= (3 + abuf_len);
-            if (buf->len > 0) {
-                memmove(buf->buffer, buf->buffer + 3 + abuf_len, buf->len);
+            if (buffer_get_length(buf) >= (3 + abuf_len)) {
+                buffer_shortened_to(buf, (3 + abuf_len), buffer_get_length(buf) - (3 + abuf_len));
+            } else {
+                buffer_reset(buf);
             }
 
             if (acl) {
@@ -799,7 +797,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             }
 
             if (remote == NULL) {
-                buffer_release(abuf);
+                free(abuf_buffer);
                 LOGE("%s", "invalid remote addr");
                 tunnel_close_and_free(remote, local);
                 return;
@@ -831,7 +829,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 server_info.port = server_env->port;
                 server_info.param = server_env->obfs_param;
                 server_info.g_data = server_env->obfs_global;
-                server_info.head_len = get_s5_head_size(abuf->buffer, 320, 30);
+                server_info.head_len = get_s5_head_size(abuf_buffer, 320, 30);
                 server_info.iv_len = enc_get_iv_len(server_env->cipher);
                 memcpy(server_info.iv, enc_ctx_get_iv(local->e_ctx), server_info.iv_len);
                 server_info.key = enc_get_key(server_env->cipher);
@@ -856,20 +854,17 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 }
                 // SSR end
 
-                total_len = abuf->len + buf->len;
+                total_len = abuf_len + buffer_get_length(buf);
                 buffer_realloc(remote->buf, total_len * 2);
-                remote->buf->len = total_len;
 
-                memcpy(remote->buf->buffer, abuf->buffer, abuf->len);
-                if (buf->len > 0) {
-                    memcpy(remote->buf->buffer + abuf->len, buf->buffer, buf->len);
-                }
+                buffer_store(remote->buf, abuf_buffer, abuf_len);
+                buffer_concatenate2(remote->buf, buf);
             }
 
             local->remote = remote;
             remote->local = local;
 
-            buffer_release(abuf);
+            free(abuf_buffer);
             continue; // return;
         }
     } // while (1)
@@ -1015,8 +1010,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         struct buffer_t *feedback;
         int r;
 
-        memcpy(local->buf->buffer, iter, (size_t)len);
-        local->buf->len = len;
+        buffer_store(local->buf, (const uint8_t*)iter, (size_t)len);
 
 #ifdef ANDROID
         if (log_tx_rx) {
@@ -1026,7 +1020,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
         feedback = NULL;
         r = _tunnel_decrypt(local, local->buf, &feedback);
         if (feedback != NULL) {
-            buffer_store(remote->buf, feedback->buffer, feedback->len);
+            buffer_replace(remote->buf, feedback);
             buffer_release(feedback);
 
             remote_send_data(remote);
@@ -1036,11 +1030,11 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             tunnel_close_and_free(remote, local);
             break;
         }
-        if (local->buf->len == 0) {
+        if (buffer_get_length(local->buf) == 0) {
             continue;
         }
 
-        local_send_data(local, (char *)local->buf->buffer, (unsigned int)local->buf->len);
+        local_send_data(local, (char *)buffer_get_data(local->buf, NULL), (unsigned int)buffer_get_length(local->buf));
     } // for loop
 
     do_dealloc_uv_buffer((uv_buf_t *)buf0);
@@ -1070,13 +1064,13 @@ remote_send_cb(uv_write_t* req, int status)
         return;
     }
 
-    buf->len = 0;
+    buffer_reset(buf);
 }
 
 static void
 remote_send_data(struct remote_t *remote)
 {
-    uv_buf_t tmp = uv_buf_init((char *)remote->buf->buffer, (unsigned int)remote->buf->len);
+    uv_buf_t tmp = uv_buf_init((char *)buffer_get_data(remote->buf, NULL), (unsigned int)buffer_get_length(remote->buf));
 
     uv_write_t *write_req = (uv_write_t *)calloc(1, sizeof(uv_write_t));
     write_req->data = remote;

@@ -317,31 +317,30 @@ struct buffer_t * auth_chain_a_rnd_data(struct obfs_t * obfs,
 {
     struct auth_chain_a_context *local = (struct auth_chain_a_context *) obfs->l_data;
     struct server_info_t *server_info = &obfs->server_info;
-    size_t rand_len = local->get_tcp_rand_len(local, (int) buf->len, random, last_hash);
-    struct buffer_t *rnd_data_buf = buffer_create(rand_len);
+    size_t rand_len = local->get_tcp_rand_len(local, (int) buffer_get_length(buf), random, last_hash);
+    uint8_t *rnd_data_buf = (uint8_t*) calloc(rand_len, sizeof(rnd_data_buf));
     struct buffer_t *ret = NULL;
 
     (void)server_info;
-    rand_bytes(rnd_data_buf->buffer, (int)rand_len);
-    rnd_data_buf->len = rand_len;
+    rand_bytes(rnd_data_buf, (int)rand_len);
 
     do {
-        if (buf->len == 0) {
-            ret = buffer_clone(rnd_data_buf);
+        if (buffer_get_length(buf) == 0) {
+            ret = buffer_create_from(rnd_data_buf, rand_len);
             break;
         } 
         if (rand_len > 0) {
             size_t start_pos = (size_t) get_rand_start_pos((int)rand_len, random);
-            ret = buffer_create_from(rnd_data_buf->buffer, start_pos);
+            ret = buffer_create_from(rnd_data_buf, start_pos);
             buffer_concatenate2(ret, buf);
-            buffer_concatenate(ret, rnd_data_buf->buffer + start_pos, rnd_data_buf->len - start_pos);
+            buffer_concatenate(ret, rnd_data_buf + start_pos, rand_len - start_pos);
             break;
         } else {
             ret = buffer_clone(buf);
             break;
         }
     } while(0);
-    buffer_release(rnd_data_buf);
+    free(rnd_data_buf);
     return ret;
 }
 
@@ -412,9 +411,9 @@ size_t auth_chain_a_pack_client_data(struct obfs_t *obfs, char *data, size_t dat
         free(rnd_data);
     }
 
-    key_len = (uint8_t)(local->user_key->len + 4);
+    key_len = (uint8_t)(buffer_get_length(local->user_key) + 4);
     key = (uint8_t *) malloc(key_len * sizeof(uint8_t));
-    memcpy(key, local->user_key->buffer, local->user_key->len);
+    memcpy(key, buffer_get_data(local->user_key, NULL), buffer_get_length(local->user_key));
     memintcopy_lt(key + key_len - 4, local->pack_id);
     ++local->pack_id;
     {
@@ -442,9 +441,9 @@ struct buffer_t * auth_chain_a_pack_server_data(struct obfs_t *obfs, const struc
     (void)server_info;
     {
         size_t out_len = 0;
-        uint8_t *buffer = (uint8_t *)calloc(buf->len + 4, sizeof(uint8_t));
+        uint8_t *buffer = (uint8_t *)calloc(buffer_get_length(buf) + 4, sizeof(uint8_t));
         ss_encrypt_buffer(local->cipher, local->encrypt_ctx,
-            (uint8_t*)buf->buffer, (size_t)buf->len, 
+            buffer_get_data(buf, NULL), (size_t) buffer_get_length(buf), 
             (uint8_t *)buffer, &out_len);
         in_buf = buffer_create_from(buffer, out_len);
         free(buffer);
@@ -460,7 +459,7 @@ struct buffer_t * auth_chain_a_pack_server_data(struct obfs_t *obfs, const struc
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
     length2 = *((uint16_t *)(local->last_server_hash + 14)); // TODO: ntohs
 #pragma GCC diagnostic pop
-    length = ((uint16_t)in_buf->len) ^ length2;
+    length = ((uint16_t)buffer_get_length(in_buf)) ^ length2;
 
     {
         uint16_t length3 = length; // TODO: htons
@@ -534,7 +533,7 @@ size_t auth_chain_a_pack_auth_data(struct obfs_t *obfs, char *data, size_t datal
         uint8_t encrypt_key_base64[256] = {0};
         int i = 0;
         uint8_t uid[4];
-        if (local->user_key->len == 0) {
+        if (buffer_get_length(local->user_key) == 0) {
             if(server_info->param != NULL && server_info->param[0] != 0) {
                 char *param = server_info->param;
                 char *delim = strchr(param, ':');
@@ -550,7 +549,7 @@ size_t auth_chain_a_pack_auth_data(struct obfs_t *obfs, char *data, size_t datal
                     buffer_store(local->user_key, (uint8_t *)key_str, strlen(key_str));
                 }
             }
-            if (local->user_key->len == 0) {
+            if (buffer_get_length(local->user_key) == 0) {
                 rand_bytes((uint8_t*)local->uid, 4);
                 buffer_store(local->user_key, server_info->key, server_info->key_len);
             }
@@ -559,9 +558,9 @@ size_t auth_chain_a_pack_auth_data(struct obfs_t *obfs, char *data, size_t datal
             uid[i] = (uint8_t)local->uid[i] ^ local->last_client_hash[8 + i];
         }
 
-        std_base64_encode(local->user_key->buffer, (int)local->user_key->len, encrypt_key_base64);
+        std_base64_encode(buffer_get_data(local->user_key, NULL), (int)buffer_get_length(local->user_key), encrypt_key_base64);
         salt_len = strlen(salt);
-        base64_len = (local->user_key->len + 2) / 3 * 4;
+        base64_len = (buffer_get_length(local->user_key) + 2) / 3 * 4;
         memcpy(encrypt_key_base64 + base64_len, salt, salt_len);
 
         enc_key_len = base64_len + salt_len;
@@ -579,7 +578,7 @@ size_t auth_chain_a_pack_auth_data(struct obfs_t *obfs, char *data, size_t datal
         buffer_release(_msg);
     }
 
-    std_base64_encode(local->user_key->buffer, (int)local->user_key->len, (unsigned char *)password);
+    std_base64_encode(buffer_get_data(local->user_key, NULL), (int)buffer_get_length(local->user_key), (unsigned char *)password);
     std_base64_encode(local->last_client_hash, 16, (unsigned char *)(password + strlen(password)));
     local->cipher = cipher_env_new_instance(password, "rc4");
     local->encrypt_ctx = enc_ctx_new_instance(local->cipher, true);
@@ -645,25 +644,25 @@ ssize_t auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata,
     uint8_t * buffer;
     char error = 0;
 
-    if (local->recv_buffer->len + datalength > 16384) {
+    if (buffer_get_length(local->recv_buffer) + datalength > 16384) {
         return -1;
     }
     buffer_concatenate(local->recv_buffer, (uint8_t *)plaindata, datalength);
 
-    key_len = local->user_key->len + 4;
+    key_len = buffer_get_length(local->user_key) + 4;
     key = (uint8_t*)malloc((size_t)key_len);
-    memcpy(key, local->user_key->buffer, local->user_key->len);
+    memcpy(key, buffer_get_data(local->user_key, NULL), buffer_get_length(local->user_key));
 
-    out_buffer = (uint8_t *)malloc((size_t)local->recv_buffer->len);
+    out_buffer = (uint8_t *)malloc((size_t)buffer_get_length(local->recv_buffer));
     buffer = out_buffer;
-    while (local->recv_buffer->len > 4) {
+    while (buffer_get_length(local->recv_buffer) > 4) {
         uint8_t hash[16];
         int data_len;
         int rand_len;
         size_t len;
         unsigned int pos;
         size_t out_len;
-        uint8_t *recv_buffer = local->recv_buffer->buffer;
+        const uint8_t *recv_buffer = buffer_get_data(local->recv_buffer, NULL);
 
         memintcopy_lt(key + key_len - 4, local->recv_id);
 
@@ -671,11 +670,11 @@ ssize_t auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata,
         rand_len = (int)get_server_rand_len(local, data_len);
         len = rand_len + data_len;
         if (len >= (SSR_BUFF_SIZE * 2)) {
-            local->recv_buffer->len = 0;
+            buffer_reset(local->recv_buffer);
             error = 1;
             break;
         }
-        if ((len += 4) > local->recv_buffer->len) {
+        if ((len += 4) > buffer_get_length(local->recv_buffer)) {
             break;
         }
         {
@@ -686,7 +685,7 @@ ssize_t auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata,
             buffer_release(_key);
         }
         if (memcmp(hash, recv_buffer + len - 2, 2)) {
-            local->recv_buffer->len = 0;
+            buffer_reset(local->recv_buffer);
             error = 1;
             break;
         }
@@ -706,7 +705,7 @@ ssize_t auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata,
         memcpy(local->last_server_hash, hash, 16);
         ++local->recv_id;
         buffer += out_len;
-        buffer_shortened_to(local->recv_buffer, len, local->recv_buffer->len - len);
+        buffer_shortened_to(local->recv_buffer, len, buffer_get_length(local->recv_buffer) - len);
     }
     if (error == 0) {
         len = (int)(buffer - out_buffer);
@@ -737,7 +736,7 @@ ssize_t auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplainda
     uint8_t uid[4];
     int i = 0;
 
-    if (local->user_key->len == 0) {
+    if (buffer_get_length(local->user_key) == 0) {
         if(obfs->server_info.param != NULL && obfs->server_info.param[0] != 0) {
             char *param = obfs->server_info.param;
             char *delim = strchr(param, ':');
@@ -754,7 +753,7 @@ ssize_t auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplainda
                 buffer_store(local->user_key, (uint8_t *)key_str, strlen(key_str));
             }
         }
-        if (local->user_key->len == 0) {
+        if (buffer_get_length(local->user_key) == 0) {
             rand_bytes((uint8_t *)local->uid, 4);
             buffer_store(local->user_key, obfs->server_info.key, obfs->server_info.key_len);
         }
@@ -771,14 +770,14 @@ ssize_t auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplainda
     rand_bytes(rnd_data, (int)rand_len);
     outlength = datalength + rand_len + 8;
 
-    std_base64_encode(local->user_key->buffer, (int)local->user_key->len, (unsigned char *)password);
+    std_base64_encode(buffer_get_data(local->user_key, NULL), (int)buffer_get_length(local->user_key), (unsigned char *)password);
     std_base64_encode(hash, 16, (unsigned char *)(password + strlen(password)));
 
     {
 #if 1
         struct buffer_t *in_obj = buffer_create_from((const uint8_t *)plaindata, datalength);
         struct buffer_t *ret = cipher_simple_update_data(password, "rc4", true, in_obj);
-        memcpy(out_buffer, ret->buffer, ret->len);
+        memcpy(out_buffer, buffer_get_data(ret, NULL), buffer_get_length(ret));
         buffer_release(ret);
         buffer_release(in_obj);
 #else
@@ -848,14 +847,14 @@ ssize_t auth_chain_a_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaind
     rand_len = (int)udp_get_rand_len(&local->random_server, hash);
     outlength = datalength - rand_len - 8;
 
-    std_base64_encode(local->user_key->buffer, (int)local->user_key->len, (unsigned char *)password);
+    std_base64_encode(buffer_get_data(local->user_key, NULL), (int)buffer_get_length(local->user_key), (unsigned char *)password);
     std_base64_encode(hash, 16, (unsigned char *)(password + strlen(password)));
 
     {
 #if 1
         struct buffer_t *in_obj = buffer_create_from((const uint8_t *)plaindata, outlength);
         struct buffer_t *ret = cipher_simple_update_data(password, "rc4", false, in_obj);
-        memcpy(plaindata, ret->buffer, ret->len);
+        memcpy(plaindata, buffer_get_data(ret, NULL), buffer_get_length(ret));
         buffer_release(ret);
         buffer_release(in_obj);
 #else
@@ -886,15 +885,15 @@ struct buffer_t * auth_chain_a_server_pre_encrypt(struct obfs_t *obfs, const str
     } else {
         tmp_buf = buffer_clone(buf);
     }
-    while (tmp_buf->len > local->unit_len) {
-        struct buffer_t *iter = buffer_create_from((const uint8_t *)tmp_buf->buffer, local->unit_len);
+    while (buffer_get_length(tmp_buf) > local->unit_len) {
+        struct buffer_t *iter = buffer_create_from(buffer_get_data(tmp_buf, NULL), local->unit_len);
 
         swap = auth_chain_a_pack_server_data(obfs, iter);
         buffer_release(iter);
         buffer_concatenate2(ret, swap);
         buffer_release(swap);
 
-        buffer_shortened_to(tmp_buf, local->unit_len, tmp_buf->len - local->unit_len);
+        buffer_shortened_to(tmp_buf, local->unit_len, buffer_get_length(tmp_buf) - local->unit_len);
     }
     swap = auth_chain_a_pack_server_data(obfs, tmp_buf);
     buffer_concatenate2(ret, swap);
@@ -917,7 +916,7 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
 
     if (local->has_recv_header == false) {
         uint8_t md5data[16 + 1] = { 0 };
-        size_t len = local->recv_buffer->len;
+        size_t len = buffer_get_length(local->recv_buffer);
         uint32_t uid = 0;
         uint8_t head[16 + 1] = { 0 };
         uint32_t utc_time = 0;
@@ -931,32 +930,32 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
             struct buffer_t *mac_key = buffer_create_from(server_info->recv_iv, server_info->recv_iv_len);
             buffer_concatenate(mac_key, server_info->key, server_info->key_len);
             {
-                struct buffer_t *_msg = buffer_create_from((const uint8_t *)local->recv_buffer->buffer, 4);
+                struct buffer_t *_msg = buffer_create_from(buffer_get_data(local->recv_buffer, NULL), 4);
                 ss_md5_hmac_with_key(md5data, _msg, mac_key);
                 buffer_release(_msg);
             }
             buffer_release(mac_key);
-            if (memcmp(md5data, local->recv_buffer->buffer+4, recv_len-4) != 0) {
+            if (memcmp(md5data, buffer_get_data(local->recv_buffer, NULL)+4, recv_len-4) != 0) {
                 return out_buf;
             }
         }
-        if (local->recv_buffer->len < (12 + 24)) {
+        if (buffer_get_length(local->recv_buffer) < (12 + 24)) {
             return out_buf;
         }
 
         memmove(local->last_client_hash, md5data, 16);
-        uid = *((uint32_t *)(local->recv_buffer->buffer + 12)); // TODO: ntohl
+        uid = *((uint32_t *)(buffer_get_data(local->recv_buffer, NULL) + 12)); // TODO: ntohl
         uid = uid ^ (*((uint32_t *)(md5data + 8))); // TODO: ntohl
         local->user_id_num = uid;
 
         buffer_store(local->user_key, server_info->key, server_info->key_len);
 
         {
-            struct buffer_t *_msg = buffer_create_from(local->recv_buffer->buffer + 12, 20);
+            struct buffer_t *_msg = buffer_create_from(buffer_get_data(local->recv_buffer, NULL) + 12, 20);
             ss_md5_hmac_with_key(md5data, _msg, local->user_key);
             buffer_release(_msg);
         }
-        if (memcmp(md5data, local->recv_buffer->buffer+32, 4) != 0) {
+        if (memcmp(md5data, buffer_get_data(local->recv_buffer, NULL)+32, 4) != 0) {
             // logging.error('%s data incorrect auth HMAC-MD5 from %s:%d, data %s' % (self.no_compatible_method, self.server_info.client, self.server_info.client_port, binascii.hexlify(self.recv_buf)))
             return out_buf;
         }
@@ -964,13 +963,13 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
         memcpy(local->last_server_hash, md5data, 16);
         {
             uint8_t enc_key[16 + 1] = { 0 };
-            size_t b64len = (size_t) std_base64_encode_len((int) local->user_key->len);
+            size_t b64len = (size_t) std_base64_encode_len((int) buffer_get_length(local->user_key));
             size_t salt_len = strlen(local->salt);
             uint8_t *key = (uint8_t *)calloc(b64len + salt_len, sizeof(uint8_t));
-            std_base64_encode(local->user_key->buffer, (int)local->user_key->len, key);
+            std_base64_encode(buffer_get_data(local->user_key, NULL), (int)buffer_get_length(local->user_key), key);
             strcat((char *)key, local->salt);
             bytes_to_key_with_size(key, strlen((char *)key), enc_key, 16);
-            ss_aes_128_cbc_decrypt(16, local->recv_buffer->buffer+16, head, enc_key);
+            ss_aes_128_cbc_decrypt(16, buffer_get_data(local->recv_buffer, NULL)+16, head, enc_key);
             free(key);
         }
         local->client_over_head = (uint16_t) (*((uint16_t *)(head + 12))); // TODO: ntohs
@@ -991,13 +990,13 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
         local->client_id = client_id;
         local->connection_id = connection_id;
         {
-            size_t b64len1 = (size_t) std_base64_encode_len((int) local->user_key->len);
+            size_t b64len1 = (size_t) std_base64_encode_len((int) buffer_get_length(local->user_key));
             size_t b64len2 = (size_t) std_base64_encode_len((int) sizeof(local->last_client_hash));
             password = (uint8_t *)calloc(b64len1 + b64len2, sizeof(uint8_t));
-            b64len1 = std_base64_encode(local->user_key->buffer, (int)local->user_key->len, password);
+            b64len1 = std_base64_encode(buffer_get_data(local->user_key, NULL), (int)buffer_get_length(local->user_key), password);
             b64len2 = std_base64_encode(local->last_client_hash, (int)sizeof(local->last_client_hash), password + b64len1);
         }
-        buffer_shortened_to(local->recv_buffer, 36, local->recv_buffer->len - 36);
+        buffer_shortened_to(local->recv_buffer, 36, buffer_get_length(local->recv_buffer) - 36);
         local->has_recv_header = true;
         if (need_feedback) { *need_feedback = true; }
 
@@ -1010,7 +1009,7 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
 
     mac_key2 = buffer_create(SSR_BUFF_SIZE);
 
-    while (local->recv_buffer->len) {
+    while (buffer_get_length(local->recv_buffer)) {
         uint16_t data_len = 0;
         size_t rand_len = 0;
         size_t length = 0;
@@ -1019,7 +1018,7 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
         buffer_replace(mac_key2, local->user_key);
         buffer_concatenate(mac_key2, (uint8_t *)&local->recv_id, 4); // TODO: htonl(local->recv_id);
 
-        data_len = *((uint16_t *)local->recv_buffer->buffer); // TODO: ntohs
+        data_len = *((uint16_t *)buffer_get_data(local->recv_buffer, NULL)); // TODO: ntohs
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
         data_len = data_len ^ (*((uint16_t *)(local->last_client_hash + 14))); // TODO: ntohs
@@ -1037,15 +1036,15 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
             }
             break;
         }
-        if (length + 4 > local->recv_buffer->len) {
+        if (length + 4 > buffer_get_length(local->recv_buffer)) {
             break;
         }
         {
-            struct buffer_t *_msg = buffer_create_from(local->recv_buffer->buffer, length + 2);
+            struct buffer_t *_msg = buffer_create_from(buffer_get_data(local->recv_buffer, NULL), length + 2);
             ss_md5_hmac_with_key(client_hash, _msg, mac_key2);
             buffer_release(_msg);
         }
-        if (memcmp(client_hash, local->recv_buffer->buffer+length+2, 2) != 0) {
+        if (memcmp(client_hash, buffer_get_data(local->recv_buffer, NULL)+length+2, 2) != 0) {
             // logging.info('%s: checksum error, data %s' % (self.no_compatible_method, binascii.hexlify(self.recv_buf[:length])))
             buffer_reset(local->recv_buffer);
             if (local->recv_id == 0) {
@@ -1066,15 +1065,15 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
 
         {
             size_t out_len = 0;
-            char *buffer = (char *)calloc(local->recv_buffer->len, sizeof(char));
+            char *buffer = (char *)calloc(buffer_get_length(local->recv_buffer), sizeof(char));
             ss_decrypt_buffer(local->cipher, local->decrypt_ctx,
-                (uint8_t*)local->recv_buffer->buffer + pos, (size_t)data_len, 
+                buffer_get_data(local->recv_buffer, NULL) + pos, (size_t)data_len, 
                 (uint8_t *)buffer, &out_len);
             buffer_concatenate(out_buf, (uint8_t *)buffer, out_len);
             free(buffer);
         }
         memcpy(local->last_client_hash, client_hash, 16);
-        buffer_shortened_to(local->recv_buffer, length + 4, local->recv_buffer->len - (length + 4));
+        buffer_shortened_to(local->recv_buffer, length + 4, buffer_get_length(local->recv_buffer) - (length + 4));
 
         if (data_len == 0) {
             if (need_feedback) { *need_feedback = true; }

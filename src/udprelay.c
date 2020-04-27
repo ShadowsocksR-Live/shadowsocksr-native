@@ -716,13 +716,9 @@ udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const 
     if (server_ctx->protocol_plugin) {
         struct obfs_t *protocol_plugin = server_ctx->protocol_plugin;
         if (protocol_plugin->client_udp_post_decrypt) {
-            ssize_t sslen;
-            size_t len0 = 0;
-            const uint8_t *pOld = buffer_get_data(buf, &len0);
-            size_t capacity = buffer_get_capacity(buf);
-            uint8_t *p = (uint8_t *) calloc(capacity, sizeof(*p));
-            memcpy(p, pOld, len0);
-            sslen = protocol_plugin->client_udp_post_decrypt(protocol_plugin, (char **)&p, len0, &capacity);
+            size_t len0 = 0, capacity = 0;
+            uint8_t *p = (uint8_t *) buffer_raw_clone(buf, &malloc, &len0, &capacity);
+            ssize_t sslen = protocol_plugin->client_udp_post_decrypt(protocol_plugin, (char **)&p, len0, &capacity);
             if (sslen >= 0) {
                 buffer_store(buf, p, (size_t)sslen);
             }
@@ -1226,11 +1222,8 @@ udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, cons
     if (server_ctx->protocol_plugin) {
         struct obfs_t *protocol_plugin = server_ctx->protocol_plugin;
         if (protocol_plugin->client_udp_pre_encrypt) {
-            size_t len = 0;
-            const uint8_t *pOld = buffer_get_data(buf, &len);
-            size_t capacity = buffer_get_capacity(buf);
-            uint8_t *buffer = (uint8_t *) calloc(capacity, sizeof(*buffer));
-            memcpy(buffer, pOld, len);
+            size_t len = 0, capacity = 0;
+            uint8_t *buffer = (uint8_t *) buffer_raw_clone(buf, &malloc, &len, &capacity);
             len = (size_t) protocol_plugin->client_udp_pre_encrypt(protocol_plugin, (char **)&buffer, len, &capacity);
             buffer_store(buf, buffer, len);
             free(buffer);

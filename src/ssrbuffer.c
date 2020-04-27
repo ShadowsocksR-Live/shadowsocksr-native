@@ -33,6 +33,13 @@
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
+struct buffer_t {
+    size_t len;
+    size_t capacity;
+    uint8_t *buffer;
+    int ref_count;
+};
+
 void check_memory_content(struct buffer_t *buf) {
 #if __MEM_CHECK__
     static const char data[] = "\xE7\x3C\x73\xA6\x66\x43\x28\x67\xAF\xD3\x5C\xE2\x70\x80\x0D\xD7";
@@ -142,6 +149,26 @@ struct buffer_t * buffer_clone(const struct buffer_t *ptr) {
     memmove(result->buffer, ptr->buffer, ptr->len);
     check_memory_content(result);
     return result;
+}
+
+uint8_t * buffer_raw_clone(const struct buffer_t *orig, void*(*allocator)(size_t), size_t *len, size_t *capacity) {
+    uint8_t *p = NULL;
+    if (orig == NULL || allocator == NULL) {
+        return NULL;
+    }
+    p = (uint8_t*) allocator(orig->capacity);
+    if (p == NULL) {
+        return NULL;
+    }
+    memset(p, 0, orig->capacity);
+    memmove(p, orig->buffer, orig->len);
+    if (len) {
+        *len = orig->len;
+    }
+    if (capacity) {
+        *capacity = orig->capacity;
+    }
+    return p;
 }
 
 size_t buffer_realloc(struct buffer_t *ptr, size_t capacity) {

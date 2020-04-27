@@ -19,7 +19,7 @@ build_socks5_request(const char *host, uint16_t port, uint8_t *buffer, size_t bu
     struct socks5_request *request;
     uint8_t *addr_n_port;
     size_t addr_len = strlen(host);
-    size_t header_len = addr_len + 3 + sizeof(struct socks5_request) - 1;
+    size_t header_len = addr_len + 3 + (sizeof(struct socks5_request) - 1);
 
     if(buffer==NULL || buffer_size<header_len) {
         return NULL;

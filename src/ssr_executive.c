@@ -467,9 +467,7 @@ enum ssr_error tunnel_cipher_client_encrypt(struct tunnel_cipher_ctx *tc, struct
     ASSERT(capacity >= SSR_BUFF_SIZE);
     if (protocol_plugin && protocol_plugin->client_pre_encrypt) {
         size_t len = 0;
-        const uint8_t *oldP = buffer_get_data(buf, &len);
-        uint8_t *p = (uint8_t *) calloc(capacity, sizeof(*p));
-        memcpy(p, oldP, len);
+        uint8_t *p = (uint8_t *) buffer_raw_clone(buf, &malloc, &len, &capacity);
         len = (size_t) protocol_plugin->client_pre_encrypt(
             tc->protocol, (char **)&p, (int)len, &capacity);
         buffer_store(buf, p, len);
@@ -522,13 +520,9 @@ enum ssr_error tunnel_cipher_client_decrypt(struct tunnel_cipher_ctx *tc, struct
     }
     protocol_plugin = tc->protocol;
     if (protocol_plugin && protocol_plugin->client_post_decrypt) {
-        size_t len0 = 0;
-        const uint8_t *data = buffer_get_data(buf, &len0);
-        ssize_t len;
-        size_t capacity = buffer_get_capacity(buf);
-        uint8_t *p = (uint8_t *) calloc(capacity, sizeof(*p));
-        memcpy(p, data, len0);
-        len = protocol_plugin->client_post_decrypt(
+        size_t len0 = 0, capacity = 0;
+        uint8_t *p = (uint8_t *) buffer_raw_clone(buf, &malloc, &len0, &capacity);
+        ssize_t len = protocol_plugin->client_post_decrypt(
             tc->protocol, (char **)&p, (int)len0, &capacity);
         if (len >= 0) {
             buffer_store(buf, p, (size_t)len);
