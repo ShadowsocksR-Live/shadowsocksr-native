@@ -225,7 +225,7 @@ create_and_bind(const char *addr, unsigned short port, uv_loop_t *loop, uv_tcp_t
     hints.ai_socktype = SOCK_STREAM; /* We want a TCP socket */
 
     sprintf(str_port, "%d", port);
-    
+
     s = getaddrinfo(addr, str_port, &hints, &result);
     if (s != 0) {
         LOGI("getaddrinfo: %s", gai_strerror(s));
@@ -248,7 +248,7 @@ create_and_bind(const char *addr, unsigned short port, uv_loop_t *loop, uv_tcp_t
     }
 
     freeaddrinfo(result);
-    
+
     return listen_sock;
 }
 
@@ -418,7 +418,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             uint8_t *buffer = (uint8_t *) calloc(SSR_BUFF_SIZE, sizeof(*buffer));
             size_t header_len = 0;
             struct socks5_request *hdr =
-                    build_socks5_request(host, (uint16_t)atoi(port), buffer, SSR_BUFF_SIZE, &header_len);
+                build_socks5_request(host, (uint16_t)atoi(port), buffer, SSR_BUFF_SIZE, &header_len);
 
             buffer_insert(buf, 0, (uint8_t*)hdr, header_len);
 
@@ -493,7 +493,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
             uint8_t *buffer = (uint8_t *) calloc(SSR_BUFF_SIZE, sizeof(*buffer));
             struct method_select_response *response =
-                    build_socks5_method_select_response(SOCKS5_METHOD_NOAUTH, (char *)buffer, SSR_BUFF_SIZE);
+                build_socks5_method_select_response(SOCKS5_METHOD_NOAUTH, (char *)buffer, SSR_BUFF_SIZE);
 
             local_send_data(local, (char *)response, sizeof(*response));
 
@@ -535,8 +535,8 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 uint8_t *buffer = (uint8_t *) calloc(SSR_BUFF_SIZE, sizeof(*buffer));
                 size_t size = 0;
                 struct socks5_response *response =
-                        build_socks5_response(SOCKS5_REPLY_CMDUNSUPP, SOCKS5_ADDRTYPE__IPV4,
-                                              &sock_addr, buffer, SSR_BUFF_SIZE, &size);
+                    build_socks5_response(SOCKS5_REPLY_CMDUNSUPP, SOCKS5_ADDRTYPE__IPV4,
+                    &sock_addr, buffer, SSR_BUFF_SIZE, &size);
 
                 LOGE("unsupported cmd: 0x%02X", (uint8_t)request->cmd);
 
@@ -553,8 +553,8 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 uint8_t *buffer = (uint8_t *) calloc(SSR_BUFF_SIZE, sizeof(*buffer));
                 size_t size = 0;
                 struct socks5_response *response =
-                        build_socks5_response(SOCKS5_REPLY_SUCCESS, SOCKS5_ADDRTYPE__IPV4,
-                                              &sock_addr, buffer,SSR_BUFF_SIZE, &size);
+                    build_socks5_response(SOCKS5_REPLY_SUCCESS, SOCKS5_ADDRTYPE__IPV4,
+                    &sock_addr, buffer,SSR_BUFF_SIZE, &size);
 
                 local_send_data(local, (char *)response, (unsigned int)size);
 
@@ -1397,13 +1397,13 @@ main(int argc, char **argv)
 
     int option_index                    = 0;
     static struct option long_options[] = {
-            { "fast-open", no_argument,       0, 0 },
-            { "acl",       required_argument, 0, 0 },
-            { "mtu",       required_argument, 0, 0 },
-            { "mptcp",     no_argument,       0, 0 },
-            { "help",      no_argument,       0, 0 },
-            { "host",      required_argument, 0, 0 },
-            { 0,           0,                 0, 0 },
+        { "fast-open", no_argument,       0, 0 },
+        { "acl",       required_argument, 0, 0 },
+        { "mtu",       required_argument, 0, 0 },
+        { "mptcp",     no_argument,       0, 0 },
+        { "help",      no_argument,       0, 0 },
+        { "host",      required_argument, 0, 0 },
+        { 0,           0,                 0, 0 },
     };
 
     (void)use_new_listener; (void)hostnames; (void)iface;
@@ -1417,12 +1417,12 @@ main(int argc, char **argv)
 
 #ifdef ANDROID
     while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:n:P:xhuUvVA6"
-                            "O:o:G:g:",
-                            long_options, &option_index)) != -1)
+        "O:o:G:g:",
+        long_options, &option_index)) != -1)
 #else
     while ((c = getopt_long(argc, argv, "f:s:p:l:k:t:m:i:c:b:L:a:n:huUvA6"
-                            "O:o:G:g:",
-                            long_options, &option_index)) != -1)
+        "O:o:G:g:",
+        long_options, &option_index)) != -1)
 #endif
     {
         switch (c) {
@@ -1632,9 +1632,9 @@ main(int argc, char **argv)
     }
 
     if (remote_num == 0 || remote_port == NULL || password == NULL
-        #ifndef HAVE_LAUNCHD
+#ifndef HAVE_LAUNCHD
         || local_port == NULL
-        #endif
+#endif
         )
     {
         usage(VERSION, USING_CRYPTO);
@@ -1690,22 +1690,22 @@ main(int argc, char **argv)
         ASSERT(!"Not support now!");
         parse_addr(tunnel_addr_str, &tunnel_addr);
     }
-    
+
     {
         struct server_config *local_config = config_create();
 
         local_config->idle_timeout = (unsigned int)atoi(timeout);
-        
+
         if (remote_num > 0) {
             string_safe_assign(&local_config->remote_host, remote_addr[0].host);
         }
         local_config->remote_port = (unsigned short)atoi(remote_port);
-        
+
         string_safe_assign(&local_config->listen_host, local_addr);
         local_config->listen_port = (unsigned short)atoi(local_port);
 
         local_config->udp = (mode==TCP_AND_UDP || mode==UDP_ONLY);
-        
+
         string_safe_assign(&local_config->method, method);
         string_safe_assign(&local_config->password, password);
         string_safe_assign(&local_config->protocol, protocol);
@@ -1714,13 +1714,13 @@ main(int argc, char **argv)
         string_safe_assign(&local_config->obfs_param, obfs_param);
 
         i = ssr_local_main_loop(local_config, NULL, NULL);
-    
+
         config_release(local_config);
     }
     free_jconf(conf);
 
     MEM_CHECK_DUMP_LEAKS();
-	
+
     return i;
 }
 
@@ -1820,7 +1820,7 @@ int ssr_local_main_loop(const struct server_config *config, void(*feedback_state
             char *host = config->remote_host;
             char *port;
             struct sockaddr_storage *storage;
-            
+
             sprintf(swap_buff, "%d", config->remote_port);
             port = swap_buff;
 
@@ -1877,7 +1877,7 @@ int ssr_local_main_loop(const struct server_config *config, void(*feedback_state
     }
 
     listenfd = uv_stream_fd(listener_socket);
-    
+
     port = get_socket_port(listener_socket);
 
     udp_server = NULL;
@@ -1885,7 +1885,7 @@ int ssr_local_main_loop(const struct server_config *config, void(*feedback_state
     if (config->udp) {
         LOGI("%s", "udprelay enabled");
         udp_server = udprelay_begin(loop, config->listen_host, port, (union sockaddr_universal *)listen_ctx->servers[0].addr_udp,
-                      &tunnel_addr, 0, listen_ctx->timeout, listen_ctx->servers[0].cipher, listen_ctx->servers[0].protocol_name, listen_ctx->servers[0].protocol_param);
+            &tunnel_addr, 0, listen_ctx->timeout, listen_ctx->servers[0].cipher, listen_ctx->servers[0].protocol_name, listen_ctx->servers[0].protocol_param);
     }
 
 #ifdef HAVE_LAUNCHD
