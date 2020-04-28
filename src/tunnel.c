@@ -598,7 +598,9 @@ void socket_dump_error_info(const char *title, struct socket_ctx *socket) {
         if ((strcmp(addr, "127.0.0.1") == 0) || (strlen(addr) == 0)) {
             free(addr);
             addr = socks5_address_to_string(tunnel->desired_addr, &malloc);
-            sprintf(addr + strlen(addr), ":%d", (int)tunnel->desired_addr->port);
+            if (addr) {
+                sprintf(addr + strlen(addr), ":%d", (int)tunnel->desired_addr->port);
+            }
         }
         from = "_client_";
     }

@@ -147,7 +147,7 @@ void state_set_force_quit(struct ssr_client_state *state, bool force_quit) {
     state->force_quit = force_quit;
 }
 
-void sigint_watcher_close_cb(uv_handle_t* handle) {
+void force_quit_timer_close_cb(uv_handle_t* handle) {
     // For some reason, uv_close may NOT always be work fine. 
     // sometimes uv_close_cb perhaps never called. 
     // so we have to call uv_stop to force exit the loop.
@@ -157,7 +157,7 @@ void sigint_watcher_close_cb(uv_handle_t* handle) {
 }
 
 void force_quit_timer_cb(uv_timer_t* handle) {
-    uv_close((uv_handle_t*)handle, sigint_watcher_close_cb);
+    uv_close((uv_handle_t*)handle, force_quit_timer_close_cb);
 }
 
 void ssr_run_loop_shutdown(struct ssr_client_state *state) {
