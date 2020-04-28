@@ -1538,7 +1538,7 @@ struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, stru
             const uint8_t *local_key = buffer_get_data(local->user_key, &local_key_len);
 
             size_t b64len = (size_t) std_base64_encode_len((int)local_key_len);
-            uint8_t *key = (uint8_t*) calloc(b64len + 1, sizeof(*key));
+            uint8_t *key = (uint8_t*) calloc(b64len + strlen(local->salt) + 1, sizeof(*key));
             size_t key_len;
 
             (void)in_data;
