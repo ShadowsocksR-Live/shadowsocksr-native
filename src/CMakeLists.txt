@@ -155,6 +155,9 @@ set(SOURCE_FILES_REDIR
 
 include_directories(obfs)
 include_directories(client)
+IF(MSVC)
+  include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../win32/include )
+ENDIF(MSVC)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})

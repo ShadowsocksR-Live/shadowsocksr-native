@@ -17,6 +17,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(with_crypto_library "mbedtls" CACHE STRING "build with the given crypto library, TYPE=mbedtls")
 
+IF(MSVC)
+  include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/win32/include )
+ENDIF(MSVC)
+
 add_subdirectory(depends/mbedtls)
 add_subdirectory(depends/zlib/staticbuild)
 add_subdirectory(depends/pcre/staticbuild)
