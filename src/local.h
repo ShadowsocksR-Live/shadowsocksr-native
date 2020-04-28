@@ -31,6 +31,7 @@
 #include "protocol.h"
 
 #include "common.h"
+#include "sockaddr_universal.h"
 
 #define MILLISECONDS_PER_SECOND 1000
 
@@ -71,7 +72,7 @@ struct remote_t {
     bool connected;
     struct local_t *local;  // __weak_ptr
 
-    struct sockaddr_storage addr;
+    union sockaddr_universal addr;
     size_t addr_len;
 
     int ref_count;

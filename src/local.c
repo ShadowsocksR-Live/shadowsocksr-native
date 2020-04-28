@@ -128,7 +128,7 @@ static int nofile = 0;
 
 static void local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0);
 static void local_send_cb(uv_write_t* req, int status);
-static void local_send_data(struct local_t *local, char *data, unsigned int size);
+static void local_send_data(struct local_t *local, const char *data, unsigned int size);
 static void remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0);
 static void remote_send_data(struct remote_t *remote);
 static void remote_connected_cb(uv_connect_t* req, int status);
@@ -149,7 +149,7 @@ static struct listener_t *current_listener;
 
 
 void do_alloc_uv_buffer(size_t suggested_size, uv_buf_t *buf) {
-    char *tmp = (char *) malloc(suggested_size * sizeof(char));
+    char *tmp = (char *) calloc(suggested_size, sizeof(char));
     *buf = uv_buf_init(tmp, (unsigned int)suggested_size);
 }
 
@@ -873,12 +873,14 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 static void
 local_send_cb(uv_write_t* req, int status)
 {
-    struct local_t *local = (struct local_t *) req->data;
+    struct local_t *local = cork_container_of(req->handle, struct local_t, socket);
+    uint8_t *tmp_data = (uint8_t *) req->data;
     struct remote_t *remote;
 
     assert(local);
     remote = local->remote;
 
+    free(tmp_data);
     free(req);
 
     if (local->dying || (remote && remote->dying) ) {
@@ -931,6 +933,10 @@ remote_connected_cb(uv_connect_t* req, int status)
         remote_send_data(remote);
         local_read_start(local);
     } else {
+        char addr[256] = { 0 };
+        int p = (int)ntohs(remote->addr.addr4.sin_port);
+        uv_ip4_name(&remote->addr.addr4, addr, sizeof(addr));
+        LOGE("connecting \"%s:%d\" failed because \"%s\"", addr, p, uv_strerror(status));
         tunnel_close_and_free(remote, local);
     }
 }
@@ -1043,14 +1049,17 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 static void
 remote_send_cb(uv_write_t* req, int status)
 {
-    struct remote_t *remote = (struct remote_t *)req->data;
+    struct remote_t *remote = cork_container_of(req->handle, struct remote_t, socket);
+    uint8_t *data = (uint8_t *)req->data;
     struct local_t *local;
     struct buffer_t *buf;
 
+    assert(data);
     assert(remote);
     local = remote->local;
     buf = remote->buf;
 
+    free(data);
     free(req);
 
     if (local==NULL || local->dying || remote->dying) {
@@ -1070,22 +1079,26 @@ remote_send_cb(uv_write_t* req, int status)
 static void
 remote_send_data(struct remote_t *remote)
 {
-    uv_buf_t tmp = uv_buf_init((char *)buffer_get_data(remote->buf, NULL), (unsigned int)buffer_get_length(remote->buf));
+    size_t len = 0, capacity = 0;
+    uint8_t *data = buffer_raw_clone(remote->buf, &malloc, &len, &capacity);
+    uv_buf_t tmp = uv_buf_init((char *)data, (unsigned int)len);
 
     uv_write_t *write_req = (uv_write_t *)calloc(1, sizeof(uv_write_t));
-    write_req->data = remote;
+    write_req->data = data;
 
     uv_write(write_req, (uv_stream_t *)&remote->socket, &tmp, 1, remote_send_cb);
     uv_timer_start(&remote->send_ctx->watcher, remote_timeout_cb, remote->send_ctx->watcher_interval, 0);
 }
 
 static void 
-local_send_data(struct local_t *local, char *data, unsigned int size)
+local_send_data(struct local_t *local, const char *data, unsigned int size)
 {
-    uv_buf_t buf = uv_buf_init(data, size);
-
     uv_write_t *write_req = (uv_write_t *)calloc(1, sizeof(uv_write_t));
-    write_req->data = local;
+    uint8_t *tmp_buf = (uint8_t *) calloc((size_t)size, sizeof(*tmp_buf));
+    uv_buf_t buf = uv_buf_init((char*)tmp_buf, size);
+
+    memmove(tmp_buf, data, (ssize_t)size);
+    write_req->data = tmp_buf;
 
     uv_write(write_req, (uv_stream_t*)&local->socket, &buf, 1, local_send_cb);
 }
