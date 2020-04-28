@@ -60,34 +60,42 @@ bool socks5_address_parse(const uint8_t *data, size_t len, struct socks5_address
     return true;
 }
 
-char * socks5_address_to_string(const struct socks5_address *addr, char *buffer, size_t size) {
+char * socks5_address_to_string(const struct socks5_address *addr, void*(*allocator)(size_t)) {
     const char *addr_ptr = NULL;
+    char *buffer = NULL;
+    static const size_t size = 0x100 + 1;
 
-    if (addr==NULL || buffer==NULL || size==0) {
+    if (addr==NULL || allocator==NULL) {
         return NULL;
     }
 
+    if (addr->addr_type == SOCKS5_ADDRTYPE_IPV4 ||
+        addr->addr_type == SOCKS5_ADDRTYPE_DOMAINNAME ||
+        addr->addr_type == SOCKS5_ADDRTYPE_IPV6 )
+    {
+        buffer = (char *) allocator(size);
+    }
+    if (buffer == NULL) {
+        return NULL;
+    }
+    memset(buffer, 0, size);
+
     switch (addr->addr_type) {
     case SOCKS5_ADDRTYPE_IPV4:
-        if (size < INET_ADDRSTRLEN) {
-            return NULL;
-        }
+        assert(size >= INET_ADDRSTRLEN);
         uv_inet_ntop(AF_INET, &addr->addr.ipv4, buffer, size);
         break;
     case SOCKS5_ADDRTYPE_IPV6:
-        if (size < INET6_ADDRSTRLEN) {
-            return NULL;
-        }
+        assert(size >= INET6_ADDRSTRLEN);
         uv_inet_ntop(AF_INET6, &addr->addr.ipv6, buffer, size);
         break;
     case SOCKS5_ADDRTYPE_DOMAINNAME:
         addr_ptr = addr->addr.domainname;
-        if (size < (strlen(addr_ptr) + 1)) {
-            return NULL;
-        }
+        assert(size >= (strlen(addr_ptr) + 1));
         strcpy(buffer, addr_ptr);
         break;
     default:
+        assert(0);
         return NULL;
         break;
     }
@@ -245,13 +253,23 @@ int universal_address_from_string(const char *addr_str, unsigned short port, uni
     return result;
 }
 
-char * universal_address_to_string(const union sockaddr_universal *addr, char *addr_str, size_t size) {
+char * universal_address_to_string(const union sockaddr_universal *addr, void*(*allocator)(size_t)) {
+    char *addr_str;
+    if (addr==NULL || allocator==NULL) {
+        return NULL;
+    }
+    addr_str = (char *) allocator(INET6_ADDRSTRLEN);
+    if (addr_str == NULL) {
+        return NULL;
+    }
+    memset(addr_str, 0, INET6_ADDRSTRLEN);
+
     switch (addr->addr4.sin_family) {
     case AF_INET:
-        uv_inet_ntop(AF_INET, &addr->addr4.sin_addr, addr_str, size);
+        uv_inet_ntop(AF_INET, &addr->addr4.sin_addr, addr_str, INET6_ADDRSTRLEN);
         break;
     case AF_INET6:
-        uv_inet_ntop(AF_INET6, &addr->addr6.sin6_addr, addr_str, size);
+        uv_inet_ntop(AF_INET6, &addr->addr6.sin6_addr, addr_str, INET6_ADDRSTRLEN);
         break;
     default:
         break;

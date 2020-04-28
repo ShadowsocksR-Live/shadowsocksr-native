@@ -67,9 +67,9 @@ static void _mbed_connect_done_cb(uv_mbed_t* mbed, int status, void *p) {
     assert(tunnel);
     if (status < 0) {
         int port = (int)tunnel->desired_addr->port;
-        char tmp[0x100] = { 0 };
-        socks5_address_to_string(tunnel->desired_addr, tmp, sizeof(tmp));
+        char *tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
         pr_err("connecting \"%s:%d\" failed: %d: %s", tmp, port, status, uv_strerror(status));
+        free(tmp);
         uv_mbed_close(mbed, _mbed_close_done_cb, p);
     }
     else {
@@ -103,13 +103,13 @@ static void _mbed_data_received_cb(uv_mbed_t *mbed, ssize_t nread, uv_buf_t* buf
         }
     } else if (nread < 0) {
         int port = (int)tunnel->desired_addr->port;
-        char tmp[0x100] = { 0 };
-        socks5_address_to_string(tunnel->desired_addr, tmp, sizeof(tmp));
+        char *tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
         if (nread == UV_EOF) {
             (void)tmp; // pr_warn("connection with %s:%d closed abnormally.", tmp, port);
         } else {
             pr_err("read on %s:%d error %ld: %s", tmp, port, nread, uv_strerror((int) nread));
         }
+        free(tmp);
         uv_mbed_close(mbed, _mbed_close_done_cb, p);
     }
     free(buf->base);
@@ -121,12 +121,13 @@ static void _mbed_write_done_cb(uv_mbed_t *mbed, int status, void *p) {
     assert(ctx->mbed == mbed);
     if (status < 0) {
         int port = (int)tunnel->desired_addr->port;
-        char tmp[0x100] = { 0 };
+        char *tmp;
         if (uv_mbed_is_closing(mbed)) {
             return;
         }
-        socks5_address_to_string(tunnel->desired_addr, tmp, sizeof(tmp));
+        tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
         pr_err("write \"%s:%d\" failed: %d: %s", tmp, port, status, uv_strerror(status));
+        free(tmp);
         uv_mbed_close(mbed, _mbed_close_done_cb, p);
     }
 }

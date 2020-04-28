@@ -157,13 +157,13 @@ struct tunnel_ctx * client_tunnel_initialize(uv_tcp_t *lx, unsigned int idle_tim
 }
 
 static void client_tunnel_shutdown_print_info(struct tunnel_ctx *tunnel, bool success) {
-    char tmp[0x100] = { 0 };
-    socks5_address_to_string(tunnel->desired_addr, tmp, sizeof(tmp));
+    char *tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
     if (!success) {
         pr_err("---- disconnected \"%s:%d\" with failed. ---", tmp, (int)tunnel->desired_addr->port);
     } else {
         pr_info("---- disconnected \"%s:%d\" ----", tmp, (int)tunnel->desired_addr->port);
     }
+    free(tmp);
 }
 
 static void client_tunnel_shutdown(struct tunnel_ctx *tunnel) {
@@ -422,15 +422,16 @@ static void do_parse_s5_request(struct tunnel_ctx *tunnel) {
 
         union sockaddr_universal sockname;
         int namelen = sizeof(sockname);
-        char addr[256] = { 0 };
+        char *addr;
         uint16_t port = 0;
 
         VERIFY(0 == uv_tcp_getsockname(&incoming->handle.tcp, (struct sockaddr *)&sockname, &namelen));
 
-        universal_address_to_string(&sockname, addr, sizeof(addr));
+        addr = universal_address_to_string(&sockname, &malloc);
         port = universal_address_get_port(&sockname);
 
         buf = s5_build_udp_assoc_package(config->udp, addr, port, &malloc, &len);
+        free(addr);
         socket_write(incoming, buf, len);
         free(buf);
         ctx->stage = tunnel_stage_s5_udp_accoc;
@@ -456,9 +457,9 @@ static void do_parse_s5_request(struct tunnel_ctx *tunnel) {
     }
 
     {
-        char tmp[0x100] = { 0 };
-        socks5_address_to_string(tunnel->desired_addr, tmp, sizeof(tmp));
+        char *tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
         pr_info("++++ connecting \"%s:%d\" ... ++++", tmp, (int)tunnel->desired_addr->port);
+        free(tmp);
     }
     if (config->over_tls_enable) {
         ctx->stage = tunnel_stage_tls_connecting;
@@ -981,8 +982,8 @@ static void tunnel_tls_on_data_received(struct tunnel_ctx *tunnel, const uint8_t
 
 static void tunnel_tls_on_shutting_down(struct tunnel_ctx *tunnel) {
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
-    char tmp[0x100] = { 0 };
-    socks5_address_to_string(tunnel->desired_addr, tmp, sizeof(tmp));
+    char *tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
+    free(tmp);
     assert(ctx->original_tunnel_shutdown);
     client_tunnel_shutdown_print_info(tunnel, (tunnel->tls_ctx != NULL));
     ctx->original_tunnel_shutdown(tunnel);

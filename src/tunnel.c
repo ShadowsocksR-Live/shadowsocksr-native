@@ -585,21 +585,23 @@ static void socket_close_done_cb(uv_handle_t *handle) {
 void socket_dump_error_info(const char *title, struct socket_ctx *socket) {
     struct tunnel_ctx *tunnel = socket->tunnel;
     int error = (int)socket->result;
-    char addr[256] = { 0 };
+    char *addr;
     const char *from = NULL;
     if (socket == tunnel->outgoing) {
-        socks5_address_to_string(tunnel->desired_addr, addr, sizeof(addr));
+        addr = socks5_address_to_string(tunnel->desired_addr, &malloc);
         from = "_server_";
     } else {
         union sockaddr_universal tmp = { {0} };
         int len = sizeof(tmp);
         uv_tcp_getpeername(&socket->handle.tcp, &tmp.addr, &len);
-        universal_address_to_string(&tmp, addr, sizeof(addr));
+        addr = universal_address_to_string(&tmp, &malloc);
         if ((strcmp(addr, "127.0.0.1") == 0) || (strlen(addr) == 0)) {
-            socks5_address_to_string(tunnel->desired_addr, addr, sizeof(addr));
+            free(addr);
+            addr = socks5_address_to_string(tunnel->desired_addr, &malloc);
             sprintf(addr + strlen(addr), ":%d", (int)tunnel->desired_addr->port);
         }
         from = "_client_";
     }
     pr_err("%s about %s \"%s\": %s", title, from, addr, uv_strerror(error));
+    free(addr);
 }
