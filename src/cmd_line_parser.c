@@ -13,13 +13,16 @@ struct cmd_line_info * cmd_line_info_create(int argc, char * const argv[]) {
 
     struct cmd_line_info *info = (struct cmd_line_info *)calloc(1, sizeof(*info));
 
-    while (-1 != (opt = getopt(argc, argv, "c:dh"))) {
+    while (-1 != (opt = getopt(argc, argv, "c:dfh"))) {
         switch (opt) {
         case 'c':
             string_safe_assign(&info->cfg_file, optarg);
             break;
         case 'd':
             info->daemon_flag = true;
+            break;
+        case 'f':
+            info->force_quit = true;
             break;
         case 'h':
         default:

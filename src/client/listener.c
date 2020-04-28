@@ -50,6 +50,7 @@ struct ssr_client_state {
     uv_signal_t *sigterm_watcher;
 
     bool shutting_down;
+    bool force_quit;
     
     int listener_count;
     struct listener_t *listeners;
@@ -116,7 +117,11 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
         pr_err("uv_run: %s", uv_strerror(err));
     }
 
-    VERIFY(uv_loop_close(loop) == 0);
+    if (uv_loop_close(loop) != 0) {
+        if (state->force_quit == false) {
+            ASSERT(false);
+        }
+    }
 
     ssr_cipher_env_release(state->env);
 
@@ -136,6 +141,23 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
 
 static void tcp_close_done_cb(uv_handle_t* handle) {
     free((void *)((uv_tcp_t *)handle));
+}
+
+void state_set_force_quit(struct ssr_client_state *state, bool force_quit) {
+    state->force_quit = force_quit;
+}
+
+void sigint_watcher_close_cb(uv_handle_t* handle) {
+    // For some reason, uv_close may NOT always be work fine. 
+    // sometimes uv_close_cb perhaps never called. 
+    // so we have to call uv_stop to force exit the loop.
+    // it can caused memory leaking. but who cares it?
+    uv_stop(handle->loop);
+    free(handle);
+}
+
+void force_quit_timer_cb(uv_timer_t* handle) {
+    uv_close((uv_handle_t*)handle, sigint_watcher_close_cb);
 }
 
 void ssr_run_loop_shutdown(struct ssr_client_state *state) {
@@ -177,6 +199,12 @@ void ssr_run_loop_shutdown(struct ssr_client_state *state) {
 
     pr_info(" ");
     pr_info("terminated.\n");
+
+    if (state->force_quit) {
+        uv_timer_t *t = (uv_timer_t*) calloc(1, sizeof(*t));
+        uv_timer_init(state->sigint_watcher->loop, t);
+        uv_timer_start(t, force_quit_timer_cb, 3000, 0); // wait 3 seconds.
+    }
 }
 
 int ssr_get_listen_socket_fd(struct ssr_client_state *state) {

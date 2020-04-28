@@ -40,16 +40,18 @@ static void usage(void);
 
 struct ssr_client_state *g_state = NULL;
 void feedback_state(struct ssr_client_state *state, void *p);
+void state_set_force_quit(struct ssr_client_state *state, bool force_quit);
 void print_remote_info(const struct server_config *config);
 
 void fn_onexit(void) {
     MEM_CHECK_DUMP_LEAKS();
 }
 
+struct cmd_line_info *cmds = NULL;
+
 int main(int argc, char **argv) {
     struct server_config *config = NULL;
     int err = -1;
-    struct cmd_line_info *cmds = NULL;
 
     MEM_CHECK_BEGIN();
     MEM_CHECK_BREAK_ALLOC(63);
@@ -160,6 +162,7 @@ void print_remote_info(const struct server_config *config) {
 void feedback_state(struct ssr_client_state *state, void *p) {
     g_state = state;
     (void)p;
+    state_set_force_quit(state, cmds->force_quit);
 }
 
 static void usage(void) {
@@ -173,8 +176,8 @@ static void usage(void) {
         "Options:\n"
         "\n"
         "  -d                     Run in background as a daemon.\n"
-        "  -c <config file>       Configure file path.\n"
-        "                         Default: " DEFAULT_CONF_PATH "\n"
+        "  -c <config file>       Configure file path. Default: " DEFAULT_CONF_PATH "\n"
+        "  -f                     Force quit the program.\n"
         "  -h                     Show this help message.\n"
         "",
         get_app_name());
