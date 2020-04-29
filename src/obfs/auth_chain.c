@@ -511,10 +511,10 @@ size_t auth_chain_a_pack_auth_data(struct obfs_t *obfs, char *data, size_t datal
     encrypt[15] = 0;
 
     // first 12 bytes
+    rand_bytes((uint8_t*)outdata, 4);
     {
         struct buffer_t *_msg = buffer_create_from((const uint8_t *)outdata, 4);
         struct buffer_t *_key = buffer_create_from((const uint8_t *)key, key_len);
-        rand_bytes((uint8_t*)outdata, 4);
         ss_md5_hmac_with_key(local->last_client_hash, _msg, _key);
         memcpy(outdata + 4, local->last_client_hash, 8);
         buffer_release(_msg);
