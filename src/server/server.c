@@ -31,6 +31,7 @@ struct ssr_server_state {
     uv_signal_t *sigterm_watcher;
 
     bool shutting_down;
+    bool force_quit;
 
     uv_tcp_t *tcp_listener;
     struct udp_listener_ctx_t *udp_listener;
@@ -69,7 +70,7 @@ struct address_timestamp {
     time_t timestamp;
 };
 
-static int ssr_server_run_loop(struct server_config *config);
+static int ssr_server_run_loop(struct server_config *config, bool force_quit);
 void ssr_server_shutdown(struct ssr_server_state *state);
 
 void server_tunnel_initialize(uv_tcp_t *listener, unsigned int idle_timeout);
@@ -167,7 +168,7 @@ int main(int argc, char * const argv[]) {
 
         print_server_info(config);
 
-        ssr_server_run_loop(config);
+        ssr_server_run_loop(config, cmds->force_quit);
 
         err = 0;
     } while (0);
@@ -182,21 +183,7 @@ int main(int argc, char * const argv[]) {
     return 0;
 }
 
-#if defined(__AUTO_EXIT__)
-uv_timer_t timer_4_unix_debug = { 0 };
-#ifndef __AUTO_EXIT_TIMEOUT__
-#define __AUTO_EXIT_TIMEOUT__ 5000
-#endif
-
-static void socket_timer_expire_cb(uv_timer_t *handle) {
-    struct server_env_t *env = (struct server_env_t *)handle->loop->data;
-    struct ssr_server_state *state = (struct ssr_server_state *)env->data;
-    ASSERT(state);
-    ssr_server_shutdown(state);
-}
-#endif // __AUTO_EXIT__
-
-static int ssr_server_run_loop(struct server_config *config) {
+static int ssr_server_run_loop(struct server_config *config, bool force_quit) {
     uv_loop_t *loop = NULL;
     struct ssr_server_state *state = NULL;
     int r = 0;
@@ -205,6 +192,7 @@ static int ssr_server_run_loop(struct server_config *config) {
     uv_loop_init(loop);
 
     state = (struct ssr_server_state *) calloc(1, sizeof(*state));
+    state->force_quit = force_quit;
     state->env = ssr_cipher_env_create(config, state);
     loop->data = state->env;
 
@@ -243,14 +231,16 @@ static int ssr_server_run_loop(struct server_config *config) {
         uv_signal_start(state->sigterm_watcher, signal_quit_cb, SIGTERM);
     }
 
-#if defined(__AUTO_EXIT__)
-    VERIFY(0 == uv_timer_init(loop, &timer_4_unix_debug));
-    VERIFY(0 == uv_timer_start(&timer_4_unix_debug, socket_timer_expire_cb, __AUTO_EXIT_TIMEOUT__, 0));
-#endif // __AUTO_EXIT__
-
     r = uv_run(loop, UV_RUN_DEFAULT);
+    if (r != 0) {
+        pr_err("uv_run: %s", uv_strerror(r));
+    }
 
-    VERIFY(uv_loop_close(loop) == 0);
+    if (uv_loop_close(loop) != 0) {
+        if (state->force_quit == false) {
+            ASSERT(false);
+        }
+    }
 
     {
         ssr_cipher_env_release(state->env);
@@ -270,6 +260,19 @@ static int ssr_server_run_loop(struct server_config *config) {
 
 static void listener_close_done_cb(uv_handle_t* handle) {
     free((void *)((uv_tcp_t *)handle));
+}
+
+void force_quit_timer_close_cb(uv_handle_t* handle) {
+    // For some reason, uv_close may NOT always be work fine. 
+    // sometimes uv_close_cb perhaps never called. 
+    // so we have to call uv_stop to force exit the loop.
+    // it can caused memory leaking. but who cares it?
+    uv_stop(handle->loop);
+    free(handle);
+}
+
+void force_quit_timer_cb(uv_timer_t* handle) {
+    uv_close((uv_handle_t*)handle, force_quit_timer_close_cb);
 }
 
 void ssr_server_shutdown(struct ssr_server_state *state) {
@@ -299,13 +302,14 @@ void ssr_server_shutdown(struct ssr_server_state *state) {
 
     server_shutdown(state->env);
 
-#if defined(__AUTO_EXIT__)
-    VERIFY(0 == uv_timer_stop(&timer_4_unix_debug));
-    uv_close((uv_handle_t *)&timer_4_unix_debug, NULL);
-#endif // __AUTO_EXIT__
-
     pr_info("\n");
     pr_info("terminated.\n");
+
+    if (state->force_quit) {
+        uv_timer_t *t = (uv_timer_t*) calloc(1, sizeof(*t));
+        uv_timer_init(state->sigint_watcher->loop, t);
+        uv_timer_start(t, force_quit_timer_cb, 3000, 0); // wait 3 seconds.
+    }
 }
 
 bool _init_done_cb(struct tunnel_ctx *tunnel, void *p) {
@@ -1188,6 +1192,7 @@ static void svr_usage(void) {
         "\n"
         "  -d                     Run in background as a daemon.\n"
         "  -c <config file>       Configure file path. Default: " DEFAULT_CONF_PATH "\n"
+        "  -f                     Force quit the program.\n"
         "  -h                     Show this help message.\n"
         "\n",
         get_app_name());
