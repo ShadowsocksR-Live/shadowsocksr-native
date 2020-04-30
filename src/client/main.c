@@ -29,6 +29,7 @@
 #include "ssr_executive.h"
 #include "ssr_client_api.h"
 #include "cmd_line_parser.h"
+#include "ssr_cipher_names.h"
 #include "daemon_wrapper.h"
 #include "ssrbuffer.h"
 
@@ -42,6 +43,7 @@ struct ssr_client_state *g_state = NULL;
 void feedback_state(struct ssr_client_state *state, void *p);
 void state_set_force_quit(struct ssr_client_state *state, bool force_quit);
 void print_remote_info(const struct server_config *config);
+static bool verify_config(struct server_config *config);
 
 void fn_onexit(void) {
     MEM_CHECK_DUMP_LEAKS();
@@ -77,6 +79,10 @@ int main(int argc, char **argv) {
 
         config = config_create();
         if (parse_config_file(false, cmds->cfg_file, config) == false) {
+            break;
+        }
+
+        if (verify_config(config) == false) {
             break;
         }
 
@@ -163,6 +169,27 @@ void feedback_state(struct ssr_client_state *state, void *p) {
     g_state = state;
     (void)p;
     state_set_force_quit(state, cmds->force_quit);
+}
+
+static bool verify_config(struct server_config *config) {
+    bool result = false;
+    do {
+        static const char *FMT_CONFIG_INFO = "Unknown SSR %s \"%s\", please review your config file\n";
+        if (ss_cipher_type_of_name(config->method) == ss_cipher_max) {
+            pr_err(FMT_CONFIG_INFO, "cipher method", config->method);
+            break;
+        }
+        if (ssr_protocol_type_of_name(config->protocol) == ssr_protocol_max) {
+            pr_err(FMT_CONFIG_INFO, "protocol", config->protocol);
+            break;
+        }
+        if (ssr_obfs_type_of_name(config->obfs) == ssr_obfs_max) {
+            pr_err(FMT_CONFIG_INFO, "obfs", config->obfs);
+            break;
+        }
+        result = true;
+    } while(false);
+    return result;
 }
 
 static void usage(void) {
