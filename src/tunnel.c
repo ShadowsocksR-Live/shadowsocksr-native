@@ -43,7 +43,7 @@ static void socket_write_done_cb(uv_write_t *req, int status);
 static void socket_close(struct socket_ctx *c);
 static void socket_close_done_cb(uv_handle_t *handle);
 
-socket_fd uv_stream_fd(const uv_tcp_t *handle) {
+uv_os_sock_t uv_stream_fd(const uv_tcp_t *handle) {
 #if defined(_WIN32)
     return handle->socket;
 #elif defined(__APPLE__)
@@ -65,7 +65,7 @@ uint16_t get_socket_port(const uv_tcp_t *tcp) {
 }
 
 size_t _update_tcp_mss(struct socket_ctx *socket) {
-    socket_fd fd = uv_stream_fd(&socket->handle.tcp);
+    uv_os_sock_t fd = uv_stream_fd(&socket->handle.tcp);
     return get_fd_tcp_mss(fd);
 }
 
@@ -73,7 +73,7 @@ size_t _update_tcp_mss(struct socket_ctx *socket) {
 // Maximum segment size
 // https://en.wikipedia.org/wiki/Maximum_segment_size
 //
-size_t get_fd_tcp_mss(socket_fd fd) {
+size_t get_fd_tcp_mss(uv_os_sock_t fd) {
 #define NETWORK_MTU 1500
 #define SS_TCP_MSS (NETWORK_MTU - 40)
 
@@ -90,7 +90,7 @@ size_t get_fd_tcp_mss(socket_fd fd) {
 }
 
 size_t socket_arrived_data_size(struct socket_ctx *socket, size_t suggested_size) {
-    socket_fd fd = uv_stream_fd(&socket->handle.tcp);
+    uv_os_sock_t fd = uv_stream_fd(&socket->handle.tcp);
     size_t data_size;
 
     char *tmp = (char *)calloc(suggested_size + 1, sizeof(*tmp));

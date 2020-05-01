@@ -58,16 +58,10 @@ struct tunnel_ctx {
     void(*tunnel_tls_on_shutting_down)(struct tunnel_ctx *tunnel);
 };
 
-#if defined(WIN32) || defined(_WIN32)
-typedef SOCKET socket_fd;
-#else
-typedef int socket_fd;
-#endif
-
-socket_fd uv_stream_fd(const uv_tcp_t *handle);
+uv_os_sock_t uv_stream_fd(const uv_tcp_t *handle);
 uint16_t get_socket_port(const uv_tcp_t *tcp);
 size_t _update_tcp_mss(struct socket_ctx *socket);
-size_t get_fd_tcp_mss(socket_fd fd);
+size_t get_fd_tcp_mss(uv_os_sock_t fd);
 size_t socket_arrived_data_size(struct socket_ctx *socket, size_t suggested_size);
 
 typedef bool(*tunnel_init_done_cb)(struct tunnel_ctx *tunnel, void *p);
