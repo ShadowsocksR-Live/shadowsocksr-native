@@ -38,17 +38,33 @@ struct ssr_server_state {
     struct cstl_map *resolved_ips;
 };
 
+#define TUNNEL_STAGE_MAP(V)                                                             \
+    V(0, tunnel_stage_initial,                  "tunnel_stage_initial")                 \
+    V(1, tunnel_stage_obfs_receipt_done,        "tunnel_stage_obfs_receipt_done")       \
+    V(2, tunnel_stage_client_feedback_coming,   "tunnel_stage_client_feedback_coming")  \
+    V(3, tunnel_stage_proto_confirm_done,       "tunnel_stage_proto_confirm_done")      \
+    V(4, tunnel_stage_resolve_host,             "tunnel_stage_resolve_host")            \
+    V(5, tunnel_stage_connect_host,             "tunnel_stage_connect_host")            \
+    V(6, tunnel_stage_launch_streaming,         "tunnel_stage_launch_streaming")        \
+    V(7, tunnel_stage_tls_client_feedback,      "tunnel_stage_tls_client_feedback")     \
+    V(8, tunnel_stage_streaming,                "tunnel_stage_streaming")               \
+
 enum tunnel_stage {
-    tunnel_stage_initial = 0,  /* Initial stage                    */
-    tunnel_stage_obfs_receipt_done,
-    tunnel_stage_client_feedback_coming,
-    tunnel_stage_proto_confirm_done,
-    tunnel_stage_resolve_host = 4,  /* Resolve the hostname             */
-    tunnel_stage_connect_host,
-    tunnel_stage_launch_streaming,
-    tunnel_stage_tls_client_feedback,
-    tunnel_stage_streaming,  /* Stream between client and server */
+#define TUNNEL_STAGE_GEN(code, name, _) name = code,
+    TUNNEL_STAGE_MAP(TUNNEL_STAGE_GEN)
+#undef TUNNEL_STAGE_GEN
+    tunnel_stage_max,
 };
+
+const char * tunnel_stage_string(enum tunnel_stage stage) {
+#define TUNNEL_STAGE_GEN(_, name, name_str) case name: return name_str;
+    switch (stage) {
+        TUNNEL_STAGE_MAP(TUNNEL_STAGE_GEN)
+    default:
+        return "Unknown stage.";
+    }
+#undef TUNNEL_STAGE_GEN
+}
 
 struct server_ctx {
     struct server_env_t *env; // __weak_ptr
@@ -408,6 +424,7 @@ static void do_next(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     struct server_config *config = ctx->env->config;
     struct socket_ctx *incoming = tunnel->incoming;
     (void)done;
+    pr_info("%s", tunnel_stage_string(ctx->stage));
     switch (ctx->stage) {
     case tunnel_stage_initial:
         ASSERT(incoming == socket);
