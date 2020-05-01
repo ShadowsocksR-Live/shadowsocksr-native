@@ -142,6 +142,26 @@ bool parse_config_file(bool is_server, const char *file, struct server_config *c
                 continue;
             }
 
+            // Backward compatibility with old client configure file format.
+            if (is_server == false) {
+                if (json_iter_extract_string("server", &iter, &obj_str)) {
+                    string_safe_assign(&config->remote_host, obj_str);
+                    continue;
+                }
+                if (json_iter_extract_int("server_port", &iter, &obj_int)) {
+                    config->remote_port = obj_int;
+                    continue;
+                }
+                if (json_iter_extract_string("local_address", &iter, &obj_str)) {
+                    string_safe_assign(&config->listen_host, obj_str);
+                    continue;
+                }
+                if (json_iter_extract_int("local_port", &iter, &obj_int)) {
+                    config->listen_port = obj_int;
+                    continue;
+                }
+            }
+
             if (json_iter_extract_object("server_settings", &iter, &obj_obj)) {
                 struct json_object_iter iter2 = { NULL };
                 if (is_server == false) {
