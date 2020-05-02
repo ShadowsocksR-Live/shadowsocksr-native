@@ -71,12 +71,12 @@ void tunnel_add_ref(struct tunnel_ctx *tunnel);
 void tunnel_release(struct tunnel_ctx *tunnel);
 bool tunnel_is_dead(struct tunnel_ctx *tunnel);
 void tunnel_traditional_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
-int socket_connect(struct socket_ctx *c);
-bool socket_is_readable(struct socket_ctx *sc);
-bool socket_is_writeable(struct socket_ctx *sc);
-void socket_read(struct socket_ctx *c, bool check_timeout);
-void socket_getaddrinfo(struct socket_ctx *c, const char *hostname);
-void socket_write(struct socket_ctx *c, const void *data, size_t len);
+int socket_connect(struct socket_ctx *socket);
+bool socket_is_readable(struct socket_ctx *socket);
+bool socket_is_writeable(struct socket_ctx *socket);
+void socket_read(struct socket_ctx *socket, bool check_timeout);
+void socket_getaddrinfo(struct socket_ctx *socket, const char *hostname);
+void socket_write(struct socket_ctx *socket, const void *data, size_t len);
 void socket_dump_error_info(const char *title, struct socket_ctx *socket);
 
 #endif // !defined(__tunnel_h__)
