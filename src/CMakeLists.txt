@@ -120,6 +120,8 @@ set(SOURCE_FILES_SERVER
         #udprelay.c
         cache.c
         #resolv.c
+        ip_addr_cache.c
+        ip_addr_cache.h
         netutils.c
         ssr_executive.c
         ssr_executive.h

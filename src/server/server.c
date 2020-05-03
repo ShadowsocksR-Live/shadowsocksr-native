@@ -19,6 +19,7 @@
 #include "ssrutils.h"
 #include "ws_tls_basic.h"
 #include "http_parser_wrapper.h"
+#include "ip_addr_cache.h"
 
 #ifndef SSR_MAX_CONN
 #define SSR_MAX_CONN 1024
@@ -35,7 +36,7 @@ struct ssr_server_state {
 
     uv_tcp_t *tcp_listener;
     struct udp_listener_ctx_t *udp_listener;
-    struct cstl_map *resolved_ips;
+    struct ip_addr_cache *resolved_ip_cache;
 };
 
 #define TUNNEL_STAGE_MAP(V)                                                             \
@@ -81,11 +82,6 @@ struct server_ctx {
     struct buffer_t *client_delivery_cache;
 };
 
-struct address_timestamp {
-    union sockaddr_universal address;
-    time_t timestamp;
-};
-
 static int ssr_server_run_loop(struct server_config *config, bool force_quit);
 void ssr_server_shutdown(struct ssr_server_state *state);
 
@@ -121,9 +117,6 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
 static size_t _tls_get_read_size(struct tunnel_ctx *tunnel, struct socket_ctx *socket, size_t suggested_size);
 static void do_tls_client_feedback(struct tunnel_ctx *tunnel);
 static void do_tls_launch_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
-
-static int resolved_ips_compare_key(const void *left, const void *right);
-static void resolved_ips_destroy_object(void *obj);
 
 void print_server_info(const struct server_config *config);
 static void svr_usage(void);
@@ -231,9 +224,7 @@ static int ssr_server_run_loop(struct server_config *config, bool force_quit) {
         }
         state->tcp_listener = listener;
 
-        state->resolved_ips = obj_map_create(resolved_ips_compare_key,
-                                             resolved_ips_destroy_object,
-                                             resolved_ips_destroy_object);
+        state->resolved_ip_cache = ip_addr_cache_create(IP_CACHE_EXPIRE_INTERVAL_MIN);
     }
 
     {
@@ -264,7 +255,7 @@ static int ssr_server_run_loop(struct server_config *config, bool force_quit) {
         free(state->sigint_watcher);
         free(state->sigterm_watcher);
 
-        obj_map_destroy(state->resolved_ips);
+        ip_addr_cache_destroy(state->resolved_ip_cache);
 
         free(state);
     }
@@ -808,11 +799,11 @@ static void do_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
 
     if (ipFound == false) {
         struct ssr_server_state *state = (struct ssr_server_state *)ctx->env->data;
-        struct address_timestamp **addr = NULL;
-        addr = (struct address_timestamp **)obj_map_find(state->resolved_ips, &host);
-        if (addr && *addr) {
-            target = (*addr)->address;
+        union sockaddr_universal *addr = ip_addr_cache_retrieve_address(state->resolved_ip_cache, host, &malloc);
+        if (addr) {
+            target = *addr;
             target.addr4.sin_port = htons(s5addr->port);
+            free(addr);
             ipFound = true;
         }
     }
@@ -854,13 +845,8 @@ static void do_resolve_host_done(struct tunnel_ctx *tunnel, struct socket_ctx *s
     {
         char *host = tunnel->desired_addr->addr.domainname;
         struct ssr_server_state *state = (struct ssr_server_state *)ctx->env->data;
-        if (obj_map_exists(state->resolved_ips, &host) == false) {
-            struct address_timestamp *addr = NULL;
-            addr = (struct address_timestamp *)calloc(1, sizeof(struct address_timestamp));
-            addr->address = outgoing->addr;
-            addr->timestamp = time(NULL);
-            host = strdup(host);
-            obj_map_add(state->resolved_ips, &host, sizeof(void *), &addr, sizeof(void *));
+        if (ip_addr_cache_is_address_exist(state->resolved_ip_cache, host) == false) {
+            ip_addr_cache_add_address(state->resolved_ip_cache, host, &outgoing->addr);
         }
     }
 
@@ -1089,7 +1075,7 @@ static uint8_t* tunnel_extract_data(struct socket_ctx *socket, void*(*allocator)
         struct buffer_t *src = buffer_create_from((uint8_t *)socket->buf->base, (size_t)socket->result);
         if (socket == tunnel->outgoing) {
             if (config->over_tls_enable) {
-                ws_frame_info info = { WS_OPCODE_BINARY, false, false, 0, 0, 0 };
+                ws_frame_info info = { WS_OPCODE_BINARY, false, false, WS_CLOSE_REASON_UNKNOWN, 0, 0 };
                 struct buffer_t *tmp = tunnel_cipher_server_encrypt(cipher_ctx, src);
                 uint8_t *frame;
                 if (!ctx->ws_tls_beginning) {
@@ -1158,21 +1144,6 @@ static uint8_t* tunnel_extract_data(struct socket_ctx *socket, void*(*allocator)
     }
 
     return result;
-}
-
-static int resolved_ips_compare_key(const void *left, const void *right) {
-    char *l = *(char **)left;
-    char *r = *(char **)right;
-    return strcmp(l, r);
-}
-
-static void resolved_ips_destroy_object(void *obj) {
-    if (obj) {
-        void *str = *((void **)obj);
-        if (str) {
-            free(str);
-        }
-    }
 }
 
 void print_server_info(const struct server_config *config) {

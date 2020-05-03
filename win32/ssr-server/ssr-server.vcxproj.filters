@@ -129,6 +129,9 @@
     <ClCompile Include="..\..\depends\http-parser\http_parser_wrapper.c">
       <Filter>http-parser</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ip_addr_cache.c">
+      <Filter>server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\encrypt.h">
@@ -244,6 +247,9 @@
     </ClInclude>
     <ClInclude Include="..\..\depends\http-parser\http_parser_wrapper.h">
       <Filter>http-parser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ip_addr_cache.h">
+      <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
