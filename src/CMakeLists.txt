@@ -1,5 +1,10 @@
 set(SSR_MAIN_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "SSR main directory" FORCE)
 
+option(ENABLE_DUMP_INFO "Out put the stage info." OFF)
+if (ENABLE_DUMP_INFO)
+    add_definitions("-D__PRINT_INFO__")
+endif()
+
 set(SOURCE_FILES_SNI
         shadowsocks.h
         socks5.h

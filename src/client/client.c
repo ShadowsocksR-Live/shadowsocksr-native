@@ -46,24 +46,40 @@
  */
 
  /* Session states. */
+#define TUNNEL_STAGE_MAP(V)                                                                                                                             \
+    V( 0, tunnel_stage_handshake,                   "tunnel_stage_handshake -- Wait for client handshake.")                                             \
+    V( 1, tunnel_stage_handshake_auth,              "tunnel_stage_handshake_auth - Wait for client authentication data.")                               \
+    V( 2, tunnel_stage_handshake_replied,           "tunnel_stage_handshake_replied -- Start waiting for request data.")                                \
+    V( 3, tunnel_stage_s5_request,                  "tunnel_stage_s5_request -- Wait for request data.")                                                \
+    V( 4, tunnel_stage_s5_udp_accoc,                "tunnel_stage_s5_udp_accoc")                                                                        \
+    V( 5, tunnel_stage_tls_connecting,              "tunnel_stage_tls_connecting")                                                                      \
+    V( 6, tunnel_stage_tls_websocket_upgrade,       "tunnel_stage_tls_websocket_upgrade")                                                               \
+    V( 7, tunnel_stage_tls_streaming,               "tunnel_stage_tls_streaming")                                                                       \
+    V( 8, tunnel_stage_resolve_ssr_server_host_done,"tunnel_stage_resolve_ssr_server_host_done -- Wait for upstream hostname DNS lookup to complete.")  \
+    V( 9, tunnel_stage_connecting_ssr_server,       "tunnel_stage_connecting_ssr_server -- Wait for uv_tcp_connect() to complete.")                     \
+    V(10, tunnel_stage_ssr_auth_sent,               "tunnel_stage_ssr_auth_sent")                                                                       \
+    V(11, tunnel_stage_ssr_waiting_feedback,        "tunnel_stage_ssr_waiting_feedback")                                                                \
+    V(12, tunnel_stage_ssr_receipt_of_feedback_sent,"tunnel_stage_ssr_receipt_of_feedback_sent")                                                        \
+    V(13, tunnel_stage_auth_completion_done,        "tunnel_stage_auth_completion_done -- Connected. Start piping data.")                               \
+    V(14, tunnel_stage_streaming,                   "tunnel_stage_streaming -- Connected. Pipe data back and forth.")                                   \
+    V(15, tunnel_stage_kill,                        "tunnel_stage_kill -- Tear down session.")                                                          \
+
 enum tunnel_stage {
-    tunnel_stage_handshake,        /* Wait for client handshake. */
-    tunnel_stage_handshake_auth,   /* Wait for client authentication data. */
-    tunnel_stage_handshake_replied,        /* Start waiting for request data. */
-    tunnel_stage_s5_request,        /* Wait for request data. */
-    tunnel_stage_s5_udp_accoc,
-    tunnel_stage_tls_connecting,
-    tunnel_stage_tls_websocket_upgrade,
-    tunnel_stage_tls_streaming,
-    tunnel_stage_resolve_ssr_server_host_done,       /* Wait for upstream hostname DNS lookup to complete. */
-    tunnel_stage_connecting_ssr_server,      /* Wait for uv_tcp_connect() to complete. */
-    tunnel_stage_ssr_auth_sent,
-    tunnel_stage_ssr_waiting_feedback,
-    tunnel_stage_ssr_receipt_of_feedback_sent,
-    tunnel_stage_auth_completion_done,      /* Connected. Start piping data. */
-    tunnel_stage_streaming,            /* Connected. Pipe data back and forth. */
-    tunnel_stage_kill,             /* Tear down session. */
+#define TUNNEL_STAGE_GEN(code, name, _) name = code,
+    TUNNEL_STAGE_MAP(TUNNEL_STAGE_GEN)
+#undef TUNNEL_STAGE_GEN
+    tunnel_stage_max,
 };
+
+static const char * tunnel_stage_string(enum tunnel_stage stage) {
+#define TUNNEL_STAGE_GEN(_, name, name_str) case name: return name_str;
+    switch (stage) {
+        TUNNEL_STAGE_MAP(TUNNEL_STAGE_GEN)
+        default:
+            return "Unknown stage.";
+    }
+#undef TUNNEL_STAGE_GEN
+}
 
 struct client_ctx {
     struct server_env_t *env; // __weak_ptr
@@ -207,7 +223,10 @@ static void do_next(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     struct server_config *config = env->config;
     struct socket_ctx *incoming = tunnel->incoming;
     struct socket_ctx *outgoing = tunnel->outgoing;
-
+    const char *info = tunnel_stage_string(ctx->stage); (void)info;
+#if defined(__PRINT_INFO__)
+    pr_info("%s", info);
+#endif
     switch (ctx->stage) {
     case tunnel_stage_handshake:
         ASSERT(incoming->rdstate == socket_state_done);

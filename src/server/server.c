@@ -57,7 +57,7 @@ enum tunnel_stage {
     tunnel_stage_max,
 };
 
-const char * tunnel_stage_string(enum tunnel_stage stage) {
+static const char * tunnel_stage_string(enum tunnel_stage stage) {
 #define TUNNEL_STAGE_GEN(_, name, name_str) case name: return name_str;
     switch (stage) {
         TUNNEL_STAGE_MAP(TUNNEL_STAGE_GEN)
@@ -414,8 +414,11 @@ static void do_next(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     struct server_ctx *ctx = (struct server_ctx *)tunnel->data;
     struct server_config *config = ctx->env->config;
     struct socket_ctx *incoming = tunnel->incoming;
+    const char *info = tunnel_stage_string(ctx->stage); (void)info;
     (void)done;
-    pr_info("%s", tunnel_stage_string(ctx->stage));
+#if defined(__PRINT_INFO__)
+    pr_info("%s", info);
+#endif
     switch (ctx->stage) {
     case tunnel_stage_initial:
         ASSERT(incoming == socket);
