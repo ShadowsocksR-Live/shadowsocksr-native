@@ -110,13 +110,9 @@ void tunnel_add_ref(struct tunnel_ctx *tunnel) {
     tunnel->ref_count++;
 }
 
-#if !defined(NDEBUG)
-#define SSR_DUMP_TUNNEL_COUNT
-#endif
-
-#ifdef SSR_DUMP_TUNNEL_COUNT
+#ifdef __PRINT_INFO__
 int tunnel_count = 0;
-#endif // SSR_DUMP_TUNNEL_COUNT
+#endif // __PRINT_INFO__
 
 struct socket_ctx * socket_context_create(struct tunnel_ctx *tunnel, unsigned int idle_timeout) {
     struct socket_ctx *socket = (struct socket_ctx *) calloc(1, sizeof(*socket));
@@ -145,9 +141,9 @@ void tunnel_release(struct tunnel_ctx *tunnel) {
         tunnel->tunnel_dying(tunnel);
     }
 
-#ifdef SSR_DUMP_TUNNEL_COUNT
+#ifdef __PRINT_INFO__
     pr_info("==== tunnel destroyed   count %3d ====", --tunnel_count);
-#endif // SSR_DUMP_TUNNEL_COUNT
+#endif // __PRINT_INFO__
 
     socket_context_release(tunnel->incoming);
 
@@ -169,9 +165,9 @@ struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsig
     if (listener) {
         VERIFY(loop == listener->loop);
     }
-#ifdef SSR_DUMP_TUNNEL_COUNT
+#ifdef __PRINT_INFO__
     pr_info("==== tunnel created     count %3d ====", ++tunnel_count);
-#endif // SSR_DUMP_TUNNEL_COUNT
+#endif // __PRINT_INFO__
 
     tunnel = (struct tunnel_ctx *) calloc(1, sizeof(*tunnel));
 
