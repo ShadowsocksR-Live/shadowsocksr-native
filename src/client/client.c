@@ -46,23 +46,23 @@
  */
 
  /* Session states. */
-#define TUNNEL_STAGE_MAP(V)                                                                                                                             \
-    V( 0, tunnel_stage_handshake,                   "tunnel_stage_handshake -- Wait for client handshake.")                                             \
-    V( 1, tunnel_stage_handshake_auth,              "tunnel_stage_handshake_auth - Wait for client authentication data.")                               \
-    V( 2, tunnel_stage_handshake_replied,           "tunnel_stage_handshake_replied -- Start waiting for request data.")                                \
-    V( 3, tunnel_stage_s5_request,                  "tunnel_stage_s5_request -- Wait for request data.")                                                \
-    V( 4, tunnel_stage_s5_udp_accoc,                "tunnel_stage_s5_udp_accoc")                                                                        \
-    V( 5, tunnel_stage_tls_connecting,              "tunnel_stage_tls_connecting")                                                                      \
-    V( 6, tunnel_stage_tls_websocket_upgrade,       "tunnel_stage_tls_websocket_upgrade")                                                               \
-    V( 7, tunnel_stage_tls_streaming,               "tunnel_stage_tls_streaming")                                                                       \
-    V( 8, tunnel_stage_resolve_ssr_server_host_done,"tunnel_stage_resolve_ssr_server_host_done -- Wait for upstream hostname DNS lookup to complete.")  \
-    V( 9, tunnel_stage_connecting_ssr_server,       "tunnel_stage_connecting_ssr_server -- Wait for uv_tcp_connect() to complete.")                     \
-    V(10, tunnel_stage_ssr_auth_sent,               "tunnel_stage_ssr_auth_sent")                                                                       \
-    V(11, tunnel_stage_ssr_waiting_feedback,        "tunnel_stage_ssr_waiting_feedback")                                                                \
-    V(12, tunnel_stage_ssr_receipt_of_feedback_sent,"tunnel_stage_ssr_receipt_of_feedback_sent")                                                        \
-    V(13, tunnel_stage_auth_completion_done,        "tunnel_stage_auth_completion_done -- Connected. Start piping data.")                               \
-    V(14, tunnel_stage_streaming,                   "tunnel_stage_streaming -- Connected. Pipe data back and forth.")                                   \
-    V(15, tunnel_stage_kill,                        "tunnel_stage_kill -- Tear down session.")                                                          \
+#define TUNNEL_STAGE_MAP(V)                                                                                                                     \
+    V( 0, tunnel_stage_handshake,                   "tunnel_stage_handshake -- Client App S5 handshake coming.")                                \
+    V( 1, tunnel_stage_handshake_auth,              "tunnel_stage_handshake_auth - Wait for client authentication data.")                       \
+    V( 2, tunnel_stage_handshake_replied,           "tunnel_stage_handshake_replied -- Start waiting for request data.")                        \
+    V( 3, tunnel_stage_s5_request,                  "tunnel_stage_s5_request -- Wait for request data.")                                        \
+    V( 4, tunnel_stage_s5_udp_accoc,                "tunnel_stage_s5_udp_accoc")                                                                \
+    V( 5, tunnel_stage_tls_connecting,              "tunnel_stage_tls_connecting")                                                              \
+    V( 6, tunnel_stage_tls_websocket_upgrade,       "tunnel_stage_tls_websocket_upgrade")                                                       \
+    V( 7, tunnel_stage_tls_streaming,               "tunnel_stage_tls_streaming")                                                               \
+    V( 8, tunnel_stage_resolve_ssr_server_host_done,"tunnel_stage_resolve_ssr_server_host_done -- Upstream hostname DNS lookup has completed.") \
+    V( 9, tunnel_stage_connect_ssr_server_done,     "tunnel_stage_connect_ssr_server_done -- Connect to server complete.")                      \
+    V(10, tunnel_stage_ssr_auth_sent,               "tunnel_stage_ssr_auth_sent")                                                               \
+    V(11, tunnel_stage_ssr_server_feedback_arrived, "tunnel_stage_ssr_server_feedback_arrived")                                                 \
+    V(12, tunnel_stage_ssr_receipt_to_server_sent,  "tunnel_stage_ssr_receipt_to_server_sent")                                                  \
+    V(13, tunnel_stage_auth_completion_done,        "tunnel_stage_auth_completion_done -- Auth succeeded. Can start piping data.")              \
+    V(14, tunnel_stage_streaming,                   "tunnel_stage_streaming -- Pipe data back and forth.")                                      \
+    V(15, tunnel_stage_kill,                        "tunnel_stage_kill -- Tear down session.")                                                  \
 
 enum tunnel_stage {
 #define TUNNEL_STAGE_GEN(code, name, _) name = code,
@@ -102,8 +102,8 @@ static void do_wait_s5_request(struct tunnel_ctx *tunnel);
 static void do_parse_s5_request(struct tunnel_ctx *tunnel);
 static void do_resolve_ssr_server_host_aftercare(struct tunnel_ctx *tunnel);
 static void do_connect_ssr_server(struct tunnel_ctx *tunnel);
-static void do_connect_ssr_server_done(struct tunnel_ctx *tunnel);
-static void do_ssr_auth_sent(struct tunnel_ctx *tunnel);
+static void do_ssr_send_auth_package_to_server(struct tunnel_ctx *tunnel);
+static void do_ssr_waiting_server_feedback(struct tunnel_ctx *tunnel);
 static bool do_ssr_receipt_for_feedback(struct tunnel_ctx *tunnel);
 static void do_socks5_reply_success(struct tunnel_ctx *tunnel);
 static void do_launch_streaming(struct tunnel_ctx *tunnel);
@@ -254,22 +254,22 @@ static void do_next(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     case tunnel_stage_resolve_ssr_server_host_done:
         do_resolve_ssr_server_host_aftercare(tunnel);
         break;
-    case tunnel_stage_connecting_ssr_server:
-        do_connect_ssr_server_done(tunnel);
+    case tunnel_stage_connect_ssr_server_done:
+        do_ssr_send_auth_package_to_server(tunnel);
         break;
     case tunnel_stage_ssr_auth_sent:
         ASSERT(outgoing->wrstate == socket_state_done);
         outgoing->wrstate = socket_state_stop;
-        do_ssr_auth_sent(tunnel);
+        do_ssr_waiting_server_feedback(tunnel);
         break;
-    case tunnel_stage_ssr_waiting_feedback:
+    case tunnel_stage_ssr_server_feedback_arrived:
         ASSERT(outgoing->rdstate == socket_state_done);
         outgoing->rdstate = socket_state_stop;
         if (do_ssr_receipt_for_feedback(tunnel) == false) {
             do_socks5_reply_success(tunnel);
         }
         break;
-    case tunnel_stage_ssr_receipt_of_feedback_sent:
+    case tunnel_stage_ssr_receipt_to_server_sent:
         ASSERT(outgoing->wrstate == socket_state_done);
         outgoing->wrstate = socket_state_stop;
         do_socks5_reply_success(tunnel);
@@ -566,10 +566,10 @@ static void do_connect_ssr_server(struct tunnel_ctx *tunnel) {
         return;
     }
 
-    ctx->stage = tunnel_stage_connecting_ssr_server;
+    ctx->stage = tunnel_stage_connect_ssr_server_done;
 }
 
-static void do_connect_ssr_server_done(struct tunnel_ctx *tunnel) {
+static void do_ssr_send_auth_package_to_server(struct tunnel_ctx *tunnel) {
     struct socket_ctx *incoming = tunnel->incoming;
     struct socket_ctx *outgoing = tunnel->outgoing;
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
@@ -605,7 +605,7 @@ static void do_connect_ssr_server_done(struct tunnel_ctx *tunnel) {
     tunnel->tunnel_shutdown(tunnel);
 }
 
-static void do_ssr_auth_sent(struct tunnel_ctx *tunnel) {
+static void do_ssr_waiting_server_feedback(struct tunnel_ctx *tunnel) {
     struct socket_ctx *incoming = tunnel->incoming;
     struct socket_ctx *outgoing = tunnel->outgoing;
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
@@ -623,7 +623,7 @@ static void do_ssr_auth_sent(struct tunnel_ctx *tunnel) {
 
     if (tunnel_cipher_client_need_feedback(ctx->cipher)) {
         socket_read(outgoing, true);
-        ctx->stage = tunnel_stage_ssr_waiting_feedback;
+        ctx->stage = tunnel_stage_ssr_server_feedback_arrived;
     } else {
         do_socks5_reply_success(tunnel);
     }
@@ -657,7 +657,7 @@ static bool do_ssr_receipt_for_feedback(struct tunnel_ctx *tunnel) {
 
     if (feedback) {
         socket_write(outgoing, buffer_get_data(feedback, NULL), buffer_get_length(feedback));
-        ctx->stage = tunnel_stage_ssr_receipt_of_feedback_sent;
+        ctx->stage = tunnel_stage_ssr_receipt_to_server_sent;
         buffer_release(feedback);
         done = true;
     }
