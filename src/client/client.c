@@ -50,7 +50,7 @@
     V( 0, tunnel_stage_handshake,                   "tunnel_stage_handshake -- Client App S5 handshake coming.")                                \
     V( 1, tunnel_stage_handshake_auth,              "tunnel_stage_handshake_auth - Wait for client authentication data.")                       \
     V( 2, tunnel_stage_handshake_replied,           "tunnel_stage_handshake_replied -- Start waiting for request data.")                        \
-    V( 3, tunnel_stage_s5_request,                  "tunnel_stage_s5_request -- Wait for request data.")                                        \
+    V( 3, tunnel_stage_s5_request_from_client_app,  "tunnel_stage_s5_request_from_client_app -- SOCKS5 Request data from client app.")          \
     V( 4, tunnel_stage_s5_udp_accoc,                "tunnel_stage_s5_udp_accoc")                                                                \
     V( 5, tunnel_stage_tls_connecting,              "tunnel_stage_tls_connecting")                                                              \
     V( 6, tunnel_stage_tls_websocket_upgrade,       "tunnel_stage_tls_websocket_upgrade")                                                       \
@@ -98,8 +98,8 @@ static struct buffer_t * initial_package_create(const struct s5_ctx *parser);
 static void do_next(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void do_handshake(struct tunnel_ctx *tunnel);
 static void do_handshake_auth(struct tunnel_ctx *tunnel);
-static void do_wait_s5_request(struct tunnel_ctx *tunnel);
-static void do_parse_s5_request(struct tunnel_ctx *tunnel);
+static void do_wait_client_app_s5_request(struct tunnel_ctx *tunnel);
+static void do_parse_s5_request_from_client_app(struct tunnel_ctx *tunnel);
 static void do_resolve_ssr_server_host_aftercare(struct tunnel_ctx *tunnel);
 static void do_connect_ssr_server(struct tunnel_ctx *tunnel);
 static void do_ssr_send_auth_package_to_server(struct tunnel_ctx *tunnel);
@@ -239,12 +239,12 @@ static void do_next(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     case tunnel_stage_handshake_replied:
         ASSERT(incoming->wrstate == socket_state_done);
         incoming->wrstate = socket_state_stop;
-        do_wait_s5_request(tunnel);
+        do_wait_client_app_s5_request(tunnel);
         break;
-    case tunnel_stage_s5_request:
+    case tunnel_stage_s5_request_from_client_app:
         ASSERT(incoming->rdstate == socket_state_done);
         incoming->rdstate = socket_state_stop;
-        do_parse_s5_request(tunnel);
+        do_parse_s5_request_from_client_app(tunnel);
         break;
     case tunnel_stage_s5_udp_accoc:
         ASSERT(incoming->wrstate == socket_state_done);
@@ -364,7 +364,7 @@ static void do_handshake_auth(struct tunnel_ctx *tunnel) {
     tunnel->tunnel_shutdown(tunnel);
 }
 
-static void do_wait_s5_request(struct tunnel_ctx *tunnel) {
+static void do_wait_client_app_s5_request(struct tunnel_ctx *tunnel) {
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
     struct socket_ctx *incoming = tunnel->incoming;
 
@@ -378,10 +378,10 @@ static void do_wait_s5_request(struct tunnel_ctx *tunnel) {
     }
 
     socket_read(incoming, true);
-    ctx->stage = tunnel_stage_s5_request;
+    ctx->stage = tunnel_stage_s5_request_from_client_app;
 }
 
-static void do_parse_s5_request(struct tunnel_ctx *tunnel) {
+static void do_parse_s5_request_from_client_app(struct tunnel_ctx *tunnel) {
     struct socket_ctx *incoming = tunnel->incoming;
     struct socket_ctx *outgoing = tunnel->outgoing;
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
@@ -410,8 +410,8 @@ static void do_parse_s5_request(struct tunnel_ctx *tunnel) {
 
     result = s5_parse(parser, &data, &size);
     if (result == s5_result_need_more) {
-        socket_read(incoming, true);
-        ctx->stage = tunnel_stage_s5_request;  /* Need more data. */
+        pr_err("%s", "More data is needed, but we are not going to continue.");
+        tunnel->tunnel_shutdown(tunnel);
         return;
     }
 
