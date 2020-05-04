@@ -145,7 +145,7 @@ uint8_t * websocket_connect_request(const char *domain, uint16_t port, const cha
     size_t *result_len)
 {
     uint8_t *buf = NULL;
-    bool exist_content = (data_len && data_len);
+    bool exist_content = (data && data_len);
     const char *fmt = exist_content ? WEBSOCKET_REQUEST_FORMAT : WEBSOCKET_REQUEST_FORMAT0;
     size_t buf_len = 0;
     if (domain==NULL || port==0 || key==NULL || allocator==NULL) {

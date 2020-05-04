@@ -1,21 +1,7 @@
-#include <mbedtls/config.h>
-#include <mbedtls/platform.h>
-
-#include <mbedtls/net_sockets.h>
-#include <mbedtls/ssl.h>
-#include <mbedtls/entropy.h>
-#include <mbedtls/ctr_drbg.h>
-#include <mbedtls/certs.h>
-#include <mbedtls/x509.h>
-#include <mbedtls/error.h>
-#include <mbedtls/debug.h>
-#include <mbedtls/timing.h>
-
 #include "dump_info.h"
 #include "ssr_executive.h"
 #include "tunnel.h"
 #include "tls_cli.h"
-#include "ssrbuffer.h"
 #include <uv.h>
 #include <uv-mbed/uv-mbed.h>
 
@@ -23,7 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "ssrutils.h"
 
 struct tls_cli_ctx {
     struct tunnel_ctx *tunnel; /* weak pointer */
