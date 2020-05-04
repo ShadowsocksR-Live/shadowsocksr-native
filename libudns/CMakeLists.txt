@@ -7,6 +7,14 @@
 project ( libudns )
 cmake_minimum_required ( VERSION 2.8 )
 
+if(MSVC)
+    add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
+    add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
+    add_definitions(-DHAVE_CONFIG_H)
+    add_definitions(-D__MINGW32__)
+    add_definitions(-DDNS_LIBRARY_BUILD)
+endif()
+
 include_directories( ${CMAKE_CURRENT_BINARY_DIR} )
 
 set ( UDNS_SRC
