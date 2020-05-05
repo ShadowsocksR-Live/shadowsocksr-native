@@ -212,8 +212,8 @@ static void
 merge(uint8_t *left, int llength, uint8_t *right,
       int rlength, uint32_t salt, uint64_t key)
 {
-    uint8_t *ltmp = (uint8_t *)malloc((size_t)llength * sizeof(uint8_t));
-    uint8_t *rtmp = (uint8_t *)malloc((size_t)rlength * sizeof(uint8_t));
+    uint8_t *ltmp = (uint8_t *) calloc((size_t)llength, sizeof(uint8_t));
+    uint8_t *rtmp = (uint8_t *) calloc((size_t)rlength, sizeof(uint8_t));
 
     uint8_t *ll = ltmp;
     uint8_t *rr = rtmp;

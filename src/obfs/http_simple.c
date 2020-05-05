@@ -79,7 +79,7 @@ struct obfs_t * http_simple_new_obfs(void) {
     obfs->server_encode = http_simple_server_encode;
     obfs->server_decode = http_simple_server_decode;
 
-    obfs->l_data = malloc(sizeof(struct http_simple_local_data));
+    obfs->l_data = calloc(1, sizeof(struct http_simple_local_data));
     http_simple_local_data_init((struct http_simple_local_data*)obfs->l_data);
 
     return obfs;
@@ -199,7 +199,7 @@ struct buffer_t * http_simple_client_encode(struct obfs_t *obfs, const struct bu
         return buffer_clone(buf);
     }
     head_size = (size_t)obfs->server_info.head_len + (xorshift128plus() & 0x3F);
-    out_buffer = (char*)malloc((size_t)(datalength + SSR_BUFF_SIZE));
+    out_buffer = (char*) calloc((size_t)(datalength + SSR_BUFF_SIZE), sizeof(*out_buffer));
     if ((size_t)head_size > datalength) {
         head_size = datalength;
     }
@@ -217,7 +217,7 @@ struct buffer_t * http_simple_client_encode(struct obfs_t *obfs, const struct bu
             char * body_pointer = &hosts[pos + 1];
             char * p;
             int trans_char = 0;
-            p = body_buffer = (char*)malloc(SSR_BUFF_SIZE);
+            p = body_buffer = (char*) calloc(SSR_BUFF_SIZE, sizeof(char));
             for ( ; *body_pointer; ++body_pointer) {
                 if (trans_char) {
                     if (*body_pointer == '\\' ) {
@@ -460,7 +460,7 @@ struct buffer_t * http_post_client_encode(struct obfs_t *obfs, const struct buff
         return buffer_clone(buf);
     }
     head_size = (size_t)obfs->server_info.head_len + (xorshift128plus() & 0x3F);
-    out_buffer = (char*)malloc((size_t)(datalength + (SSR_BUFF_SIZE * 2)));
+    out_buffer = (char*) calloc((size_t)(datalength + (SSR_BUFF_SIZE * 2)), sizeof(char));
     if ((size_t)head_size > datalength)
         head_size = datalength;
     http_simple_encode_head(local, encryptdata, head_size);
@@ -477,7 +477,7 @@ struct buffer_t * http_post_client_encode(struct obfs_t *obfs, const struct buff
             char * body_pointer = &hosts[pos + 1];
             char * p;
             int trans_char = 0;
-            p = body_buffer = (char*)malloc(SSR_BUFF_SIZE);
+            p = body_buffer = (char*) calloc(SSR_BUFF_SIZE, sizeof(char));
             for ( ; *body_pointer; ++body_pointer) {
                 if (trans_char) {
                     if (*body_pointer == '\\' ) {

@@ -128,7 +128,7 @@ static void tls12_sha1_hmac(struct obfs_t *obfs,
 {
     size_t id_size = buffer_get_length(client_id);
     size_t key_size = obfs->server_info.key_len;
-    uint8_t *key = (uint8_t*)malloc(key_size + id_size);
+    uint8_t *key = (uint8_t*) calloc(key_size + id_size, sizeof(*key));
     memcpy(key, obfs->server_info.key, key_size);
     memcpy(key + key_size, buffer_get_data(client_id, NULL), id_size);
     {

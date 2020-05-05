@@ -69,7 +69,7 @@ struct cache {
  *  @param capacity
  *  The maximum number of elements this cache object can hold
  *
- *  @return EINVAL if dst is NULL, ENOMEM if malloc fails, 0 otherwise
+ *  @return EINVAL if dst is NULL, ENOMEM if calloc fails, 0 otherwise
  */
 int
 cache_create(struct cache **dst, size_t capacity,
@@ -81,7 +81,7 @@ cache_create(struct cache **dst, size_t capacity,
         return EINVAL;
     }
 
-    if ((newObj = malloc(sizeof(*newObj))) == NULL) {
+    if ((newObj = (struct cache *) calloc(1, sizeof(*newObj))) == NULL) {
         return ENOMEM;
     }
 
@@ -290,7 +290,7 @@ cache_key_exist(struct cache *cache, char *key, size_t key_len)
  *  @param data
  *  Data associated with <key>
  *
- *  @return EINVAL if cache is NULL, ENOMEM if malloc fails, 0 otherwise
+ *  @return EINVAL if cache is NULL, ENOMEM if calloc fails, 0 otherwise
  */
 int
 cache_insert(struct cache *cache, char *key, size_t key_len, void *data)
@@ -302,7 +302,7 @@ cache_insert(struct cache *cache, char *key, size_t key_len, void *data)
         return EINVAL;
     }
 
-    if ((entry = malloc(sizeof(*entry))) == NULL) {
+    if ((entry = (struct cache_entry *) calloc(1, sizeof(*entry))) == NULL) {
         return ENOMEM;
     }
 

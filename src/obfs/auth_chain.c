@@ -229,7 +229,7 @@ int data_size_list_compare(const void *a, const void *b) {
 }
 
 static void * auth_chain_a_generate_global_init_data(void) {
-    struct auth_chain_global_data *global = (struct auth_chain_global_data*)malloc(sizeof(struct auth_chain_global_data));
+    struct auth_chain_global_data *global = (struct auth_chain_global_data*) calloc(1, sizeof(*global));
     rand_bytes(global->local_client_id, 4);
     rand_bytes((uint8_t*)(&global->connection_id), 4);
     global->connection_id &= 0xFFFFFF;
@@ -396,7 +396,7 @@ size_t auth_chain_a_pack_client_data(struct obfs_t *obfs, char *data, size_t dat
 
     (void)server_info;
     {
-        uint8_t * rnd_data = (uint8_t *) malloc(rand_len * sizeof(uint8_t));
+        uint8_t * rnd_data = (uint8_t *) calloc(rand_len, sizeof(uint8_t));
         rand_bytes(rnd_data, (int)rand_len);
         if (datalength > 0) {
             unsigned int start_pos = get_rand_start_pos((int)rand_len, &local->random_client);
@@ -412,7 +412,7 @@ size_t auth_chain_a_pack_client_data(struct obfs_t *obfs, char *data, size_t dat
     }
 
     key_len = (uint8_t)(buffer_get_length(local->user_key) + 4);
-    key = (uint8_t *) malloc(key_len * sizeof(uint8_t));
+    key = (uint8_t *) calloc(key_len, sizeof(uint8_t));
     memcpy(key, buffer_get_data(local->user_key, NULL), buffer_get_length(local->user_key));
     memintcopy_lt(key + key_len - 4, local->pack_id);
     ++local->pack_id;
@@ -497,7 +497,7 @@ size_t auth_chain_a_pack_auth_data(struct obfs_t *obfs, char *data, size_t datal
     }
 
     key_len = (uint8_t)(server_info->iv_len + server_info->key_len);
-    key = (uint8_t *) malloc(key_len * sizeof(uint8_t));
+    key = (uint8_t *) calloc(key_len, sizeof(uint8_t));
     memcpy(key, server_info->iv, server_info->iv_len);
     memcpy(key + server_info->iv_len, server_info->key, server_info->key_len);
 
@@ -593,7 +593,7 @@ size_t auth_chain_a_client_pre_encrypt(struct obfs_t *obfs, char **pplaindata, s
     char *plaindata = *pplaindata;
     struct server_info_t *server_info = (struct server_info_t *)&obfs->server_info;
     struct auth_chain_a_context *local = (struct auth_chain_a_context*)obfs->l_data;
-    char * out_buffer = (char*)malloc((size_t)(datalength * 2 + (SSR_BUFF_SIZE * 2)));
+    char * out_buffer = (char*) calloc((size_t)(datalength * 2 + (SSR_BUFF_SIZE * 2)), sizeof(*out_buffer));
     char * buffer = out_buffer;
     char * data = plaindata;
     size_t len = datalength;
@@ -650,10 +650,10 @@ ssize_t auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata,
     buffer_concatenate(local->recv_buffer, (uint8_t *)plaindata, datalength);
 
     key_len = buffer_get_length(local->user_key) + 4;
-    key = (uint8_t*)malloc((size_t)key_len);
+    key = (uint8_t*) calloc((size_t)key_len, sizeof(*key));
     memcpy(key, buffer_get_data(local->user_key, NULL), buffer_get_length(local->user_key));
 
-    out_buffer = (uint8_t *)malloc((size_t)buffer_get_length(local->recv_buffer));
+    out_buffer = (uint8_t *) calloc((size_t)buffer_get_length(local->recv_buffer), sizeof(*out_buffer));
     buffer = out_buffer;
     while (buffer_get_length(local->recv_buffer) > 4) {
         uint8_t hash[16];
@@ -726,7 +726,7 @@ ssize_t auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplainda
     char *plaindata = *pplaindata;
     struct server_info_t *server_info = (struct server_info_t *)&obfs->server_info;
     struct auth_chain_a_context *local = (struct auth_chain_a_context*)obfs->l_data;
-    uint8_t *out_buffer = (uint8_t *) malloc((datalength + (SSR_BUFF_SIZE / 2)) * sizeof(uint8_t));
+    uint8_t *out_buffer = (uint8_t *) calloc((datalength + (SSR_BUFF_SIZE / 2)), sizeof(uint8_t));
     uint8_t auth_data[3];
     uint8_t hash[16];
     int rand_len;
@@ -766,7 +766,7 @@ ssize_t auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplainda
         buffer_release(_key);
     }
     rand_len = (int) udp_get_rand_len(&local->random_client, hash);
-    rnd_data = (uint8_t *) malloc((size_t)rand_len * sizeof(uint8_t));
+    rnd_data = (uint8_t *) calloc((size_t)rand_len, sizeof(uint8_t));
     rand_bytes(rnd_data, (int)rand_len);
     outlength = datalength + rand_len + 8;
 
@@ -1254,7 +1254,7 @@ void auth_chain_c_init_data_size(struct obfs_t *obfs) {
 
     shift128plus_init_from_bin(random, server_info->key, 16);
     auth_chain_c->data_size_list0_length = shift128plus_next(random) % (8 + 16) + (4 + 8);
-    auth_chain_c->data_size_list0 = (int *)malloc(auth_chain_c->data_size_list0_length * sizeof(int));
+    auth_chain_c->data_size_list0 = (int *) calloc(auth_chain_c->data_size_list0_length, sizeof(int));
     for (i = 0; i < auth_chain_c->data_size_list0_length; i++) {
         auth_chain_c->data_size_list0[i] = shift128plus_next(random) % 2340 % 2040 % 1440;
     }
@@ -1346,7 +1346,7 @@ void auth_chain_d_init_data_size(struct obfs_t *obfs) {
 
     shift128plus_init_from_bin(random, server_info->key, 16);
     auth_chain_c->data_size_list0_length = shift128plus_next(random) % (8 + 16) + (4 + 8);
-    auth_chain_c->data_size_list0 = (int *)malloc(AUTH_CHAIN_D_MAX_DATA_SIZE_LIST_LIMIT_SIZE * sizeof(int));
+    auth_chain_c->data_size_list0 = (int *)calloc(AUTH_CHAIN_D_MAX_DATA_SIZE_LIST_LIMIT_SIZE, sizeof(int));
     for (i = 0; i < auth_chain_c->data_size_list0_length; i++) {
         auth_chain_c->data_size_list0[i] = shift128plus_next(random) % 2340 % 2040 % 1440;
     }
@@ -1455,8 +1455,8 @@ static void auth_chain_f_init_data_size(struct obfs_t *obfs, const uint8_t *key_
     struct server_info_t *server_info = &obfs->server_info;
     struct auth_chain_a_context *auth_chain_a = (struct auth_chain_a_context *)obfs->l_data;
     struct auth_chain_c_context *auth_chain_c = (struct auth_chain_c_context *)auth_chain_a->subclass_context;
-    struct shift128plus_ctx *random = (struct shift128plus_ctx *)malloc(sizeof(struct shift128plus_ctx));
-    uint8_t *newKey = (uint8_t *)malloc(sizeof(uint8_t) * server_info->key_len);
+    struct shift128plus_ctx *random = (struct shift128plus_ctx *) calloc(1, sizeof(*random));
+    uint8_t *newKey = (uint8_t *) calloc((uint8_t)server_info->key_len, sizeof(*newKey));
     size_t len;
     size_t old_len;
 
@@ -1524,7 +1524,7 @@ void auth_chain_f_set_server_info(struct obfs_t *obfs, struct server_info_t *ser
         }
     }
 
-    key_change_datetime_key_bytes = (uint8_t *)malloc(sizeof(uint8_t) * 8);
+    key_change_datetime_key_bytes = (uint8_t *) calloc(8, sizeof(uint8_t));
     key_change_datetime_key = (uint64_t)(time(NULL)) / key_change_interval;
     for (i = 7; i >= 0; --i) {
         key_change_datetime_key_bytes[7 - i] = (uint8_t)((key_change_datetime_key >> (8 * i)) & 0xFF);
