@@ -83,8 +83,8 @@ set(SOURCE_FILES_CLIENT
         client/client.c
         client/tls_cli.c
         client/tls_cli.h
-        ws_tls_basic.c
-        ws_tls_basic.h
+        websocket_basic.c
+        websocket_basic.h
         text_in_color.c
         text_in_color.h
         dump_info.c
@@ -111,8 +111,8 @@ set(SOURCE_FILES_SERVER
         ../depends/http-parser/http_parser.h
         ../depends/http-parser/http_parser_wrapper.c
         ../depends/http-parser/http_parser_wrapper.h
-        ws_tls_basic.c
-        ws_tls_basic.h
+        websocket_basic.c
+        websocket_basic.h
         text_in_color.c
         text_in_color.h
         dump_info.c

@@ -120,7 +120,7 @@
     <ClCompile Include="..\..\src\text_in_color.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ws_tls_basic.c">
+    <ClCompile Include="..\..\src\websocket_basic.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\depends\http-parser\http_parser.c">
@@ -239,7 +239,7 @@
     <ClInclude Include="..\..\src\text_in_color.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ws_tls_basic.h">
+    <ClInclude Include="..\..\src\websocket_basic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\depends\http-parser\http_parser.h">

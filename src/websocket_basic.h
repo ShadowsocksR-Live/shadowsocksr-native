@@ -1,5 +1,5 @@
-#ifndef __WS_TLS_BASIC_H__
-#define __WS_TLS_BASIC_H__
+#ifndef __WEBSOCKET_BASIC_H__
+#define __WEBSOCKET_BASIC_H__
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -117,4 +117,4 @@ uint64_t ws_hton64(uint64_t n);
 }
 #endif
 
-#endif /* __WS_TLS_BASIC_H__ */
+#endif /* __WEBSOCKET_BASIC_H__ */

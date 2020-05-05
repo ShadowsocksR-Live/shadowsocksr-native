@@ -51,7 +51,7 @@
     <ClCompile Include="..\..\src\ssrutils.c" />
     <ClCompile Include="..\..\src\ssr_cipher_names.c" />
     <ClCompile Include="..\..\src\udprelay.c" />
-    <ClCompile Include="..\..\src\ws_tls_basic.c" />
+    <ClCompile Include="..\..\src\websocket_basic.c" />
     <ClCompile Include="..\src\getopt.c" />
     <ClCompile Include="..\src\getopt_long.c" />
     <ClCompile Include="..\src\strncasecmp.c" />
@@ -89,7 +89,7 @@
     <ClInclude Include="..\..\src\ssrutils.h" />
     <ClInclude Include="..\..\src\ssr_cipher_names.h" />
     <ClInclude Include="..\..\src\udprelay.h" />
-    <ClInclude Include="..\..\src\ws_tls_basic.h" />
+    <ClInclude Include="..\..\src\websocket_basic.h" />
     <ClInclude Include="..\include\getopt.h" />
     <ClInclude Include="..\include\getopt_long.h" />
     <ClInclude Include="..\include\stdbool.h" />

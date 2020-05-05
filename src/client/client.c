@@ -9,7 +9,7 @@
 #include "tunnel.h"
 #include "obfsutil.h"
 #include "tls_cli.h"
-#include "ws_tls_basic.h"
+#include "websocket_basic.h"
 #include "http_parser_wrapper.h"
 #include "udprelay.h"
 
