@@ -38,6 +38,86 @@ https://github.com/abbshr/abbshr.github.io/issues/22
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/entropy.h>
 
+uint8_t* http_header_append_new_field(uint8_t*orig, size_t *len, void*(*re_alloc)(void*, size_t), const char*field) {
+    char *key_point = NULL;
+    size_t field_len;
+    if (orig==NULL || len==NULL || (*len)==0 || re_alloc==NULL || field==NULL) {
+        return NULL;
+    }
+    field_len = strlen(field);
+    if (field_len <= CRLF_LEN) {
+        return NULL;
+    }
+    // the new field must ended by CRLF.
+    if (strcmp(field+field_len-CRLF_LEN, CRLF) != 0) {
+        assert(!"Field string must ended with \\r\\n");
+        return NULL;
+    }
+    if ((key_point = strstr((char*)orig, CRLFCRLF)) == NULL) {
+        return NULL;
+    }
+    orig = (uint8_t*) re_alloc(orig, (*len) + field_len + 1);
+    if (orig == NULL) {
+        assert(!"WTF! Out of memory.");
+        return NULL;
+    }
+    orig[(*len) + field_len] = 0;
+
+    if ((key_point = strstr((char*)orig, CRLFCRLF)) == NULL) {
+        return NULL;
+    }
+    key_point += CRLF_LEN;
+
+    memmove(key_point + field_len, key_point, ((*len) - ((uint8_t*)key_point - orig)));
+    memmove(key_point, field, field_len);
+
+    (*len) += field_len;
+
+    return orig;
+}
+
+uint8_t* http_header_set_payload_data(uint8_t*orig, size_t *len, void*(*re_alloc)(void*, size_t), const uint8_t*data, size_t data_len) {
+    char *length_field = NULL;
+    uint8_t *key_point = NULL;
+#define CONTENT_FIELD_FMT \
+    "Content-Type: application/octet-stream\r\n"                                \
+    "Content-Length: %d\r\n"                                                    \
+
+    assert(strstr((char*)orig, "Content-Length") == NULL);
+
+    length_field = (char *) calloc(strlen(CONTENT_FIELD_FMT) + 10, sizeof(length_field));
+    if (length_field == NULL) {
+        return NULL;
+    }
+    sprintf(length_field, CONTENT_FIELD_FMT, (int)data_len);
+
+    orig = http_header_append_new_field(orig, len, re_alloc, length_field);
+    free(length_field);
+
+    if (orig == NULL) {
+        return NULL;
+    }
+
+    if ((key_point = (uint8_t*)strstr((char*)orig, CRLFCRLF)) == NULL) {
+        return NULL;
+    }
+    key_point += CRLFCRLF_LEN;
+
+    orig = (uint8_t*) re_alloc(orig, (key_point - orig) + data_len);
+    if (orig == NULL) {
+        assert(!"WTF! Out of memory.");
+        return NULL;
+    }
+
+    key_point = (uint8_t*)strstr((char*)orig, CRLFCRLF) + CRLFCRLF_LEN;
+
+    memmove(key_point, data, data_len);
+
+    (*len) = (key_point - orig) + data_len;
+
+    return orig;
+}
+
 void random_bytes_generator(const char *seed, uint8_t *output, size_t len) {
     mbedtls_ctr_drbg_context ctr_drbg;
     mbedtls_entropy_context entropy;
@@ -120,17 +200,6 @@ char * websocket_generate_sec_websocket_accept(const char *sec_websocket_key, vo
     return b64_str;
 }
 
-#define WEBSOCKET_REQUEST_FORMAT                                                \
-    "GET %s HTTP/1.1\r\n"                                                       \
-    "Host: %s:%d\r\n"                                                           \
-    "Connection: Upgrade\r\n"                                                   \
-    "Upgrade: websocket\r\n"                                                    \
-    "Sec-WebSocket-Version: 13\r\n"                                             \
-    "Sec-WebSocket-Key: %s\r\n"                                                 \
-    "Content-Type: application/octet-stream\r\n"                                \
-    "Content-Length: %d\r\n"                                                    \
-    "\r\n"
-
 #define WEBSOCKET_REQUEST_FORMAT0                                               \
     "GET %s HTTP/1.1\r\n"                                                       \
     "Host: %s:%d\r\n"                                                           \
@@ -141,12 +210,10 @@ char * websocket_generate_sec_websocket_accept(const char *sec_websocket_key, vo
     "\r\n"
 
 uint8_t * websocket_connect_request(const char *domain, uint16_t port, const char *url,
-    const char *key, const uint8_t *data, size_t data_len, void*(*allocator)(size_t),
-    size_t *result_len)
+    const char *key, void*(*allocator)(size_t), size_t *result_len)
 {
     uint8_t *buf = NULL;
-    bool exist_content = (data && data_len);
-    const char *fmt = exist_content ? WEBSOCKET_REQUEST_FORMAT : WEBSOCKET_REQUEST_FORMAT0;
+    const char *fmt = WEBSOCKET_REQUEST_FORMAT0;
     size_t buf_len = 0;
     if (domain==NULL || port==0 || key==NULL || allocator==NULL) {
         return NULL;
@@ -154,7 +221,7 @@ uint8_t * websocket_connect_request(const char *domain, uint16_t port, const cha
 
     url = url?url:"/";
 
-    buf_len = strlen(fmt) + strlen(domain) + 5 + strlen(url) + strlen(key) + data_len;
+    buf_len = strlen(fmt) + strlen(domain) + 5 + strlen(url) + strlen(key);
 
     buf = (uint8_t *) allocator(buf_len + 1);
     if (buf == NULL) {
@@ -162,15 +229,8 @@ uint8_t * websocket_connect_request(const char *domain, uint16_t port, const cha
     }
     memset(buf, 0, buf_len + 1);
 
-    if (exist_content) {
-        sprintf((char *)buf, fmt, url, domain, (int)port, key, (int)data_len);
-        buf_len = strlen((char *)buf);
-        memcpy(buf + buf_len, data, data_len);
-        buf_len += data_len;
-    } else {
-        sprintf((char *)buf, fmt, url, domain, (int)port, key);
-        buf_len = strlen((char *)buf);
-    }
+    sprintf((char *)buf, fmt, url, domain, (int)port, key);
+    buf_len = strlen((char *)buf);
 
     if (result_len) {
         *result_len = buf_len;

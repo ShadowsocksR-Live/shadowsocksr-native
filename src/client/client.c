@@ -899,8 +899,10 @@ static void tunnel_tls_on_connection_established(struct tunnel_ctx *tunnel) {
             char *key = websocket_generate_sec_websocket_key(&malloc);
             ctx->sec_websocket_key = key;
 
-            buf = websocket_connect_request(domain, domain_port, url_path, key,
-                typ, typ_len, &malloc, &len);
+            buf = websocket_connect_request(domain, domain_port, url_path, key, &malloc, &len);
+            buf = http_header_set_payload_data(buf, &len, &realloc, typ, typ_len);
+
+            // buf = http_header_append_new_field(buf, &len, &realloc, "UDP: true\r\n");
 
             ASSERT (tunnel->tunnel_tls_send_data);
             tunnel->tunnel_tls_send_data(tunnel, buf, len);
