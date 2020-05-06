@@ -82,6 +82,7 @@ static const char * tunnel_stage_string(enum tunnel_stage stage) {
 }
 
 struct client_ctx {
+    struct tunnel_ctx *tunnel; // __weak_ptr
     struct server_env_t *env; // __weak_ptr
     struct tunnel_cipher_ctx *cipher;
     struct buffer_t *init_pkg;
@@ -132,6 +133,7 @@ static bool init_done_cb(struct tunnel_ctx *tunnel, void *p) {
     struct server_env_t *env = (struct server_env_t *)p;
 
     struct client_ctx *ctx = (struct client_ctx *) calloc(1, sizeof(struct client_ctx));
+    ctx->tunnel = tunnel;
     ctx->env = env;
     tunnel->data = ctx;
 
