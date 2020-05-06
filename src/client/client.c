@@ -12,6 +12,7 @@
 #include "websocket_basic.h"
 #include "http_parser_wrapper.h"
 #include "udprelay.h"
+#include "s5.h"
 
 /* A connection is modeled as an abstraction on top of two simple state
  * machines, one for reading and one for writing.  Either state machine
@@ -81,6 +82,16 @@ static const char * tunnel_stage_string(enum tunnel_stage stage) {
 #undef TUNNEL_STAGE_GEN
 }
 
+struct client_ctx;
+
+struct udp_data_context {
+    union sockaddr_universal src_addr;
+    struct socks5_address target_addr;
+    struct buffer_t *data;
+
+    struct client_ctx *owner; // __weak_ptr
+};
+
 struct client_ctx {
     struct tunnel_ctx *tunnel; // __weak_ptr
     struct server_env_t *env; // __weak_ptr
@@ -93,6 +104,8 @@ struct client_ctx {
     struct buffer_t *server_delivery_cache;
     struct buffer_t *local_write_cache;
     bool tls_is_eof;
+
+    struct udp_data_context *udp_data;
 };
 
 static struct buffer_t * initial_package_create(const struct s5_ctx *parser);
@@ -762,6 +775,10 @@ static void tunnel_dying(struct tunnel_ctx *tunnel) {
     if (ctx->sec_websocket_key) { free(ctx->sec_websocket_key); }
     buffer_release(ctx->server_delivery_cache);
     buffer_release(ctx->local_write_cache);
+    if (ctx->udp_data) {
+        buffer_release(ctx->udp_data->data);
+        free(ctx->udp_data);
+    }
     free(ctx);
 }
 
@@ -888,6 +905,9 @@ static void tunnel_tls_on_connection_established(struct tunnel_ctx *tunnel) {
 
     {
         struct buffer_t *tmp = buffer_create(SSR_BUFF_SIZE); buffer_replace(tmp, ctx->init_pkg);
+        if (ctx->udp_data) {
+            buffer_replace(tmp, ctx->udp_data->data);
+        }
         if (ssr_ok != tunnel_cipher_client_encrypt(ctx->cipher, tmp)) {
             tunnel->tunnel_shutdown(tunnel);
         } else {
@@ -903,9 +923,9 @@ static void tunnel_tls_on_connection_established(struct tunnel_ctx *tunnel) {
 
             buf = websocket_connect_request(domain, domain_port, url_path, key, &malloc, &len);
             buf = http_header_set_payload_data(buf, &len, &realloc, typ, typ_len);
-
-            // buf = http_header_append_new_field(buf, &len, &realloc, "UDP: true\r\n");
-
+            if (ctx->udp_data) {
+                buf = http_header_append_new_field(buf, &len, &realloc, "UDP: true\r\n");
+            }
             ASSERT (tunnel->tunnel_tls_send_data);
             tunnel->tunnel_tls_send_data(tunnel, buf, len);
             ctx->stage = tunnel_stage_tls_websocket_upgrade;
@@ -1061,11 +1081,59 @@ static bool can_access(const struct tunnel_ctx *cx, const struct sockaddr *addr)
     return false;
 }
 
+static void _do_find_upd_tunnel(struct cstl_set *set, const void *obj, bool *stop, void *p) {
+    struct tunnel_ctx *tunnel = (struct tunnel_ctx *)obj;
+    struct client_ctx *ctx = (struct client_ctx *)tunnel->data;
+    struct udp_data_context *udp_data = (struct udp_data_context*)p;
+    if (ctx->udp_data) {
+        struct udp_data_context *iter = ctx->udp_data;
+        if ((memcmp(&iter->src_addr, &udp_data->src_addr, sizeof(union sockaddr_universal)) == 0) &&
+            (memcmp(&iter->target_addr, &udp_data->target_addr, sizeof(struct socks5_address)) == 0))
+        {
+            udp_data->owner = ctx;
+            if (stop) { *stop = true; }
+        }
+    }
+    (void)set;
+}
+
 void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_universal *src_addr, const struct buffer_t *data) {
     uv_loop_t *loop = udp_relay_context_get_loop(udp_ctx);
     struct server_env_t *env = (struct server_env_t *)loop->data;
     struct server_config *config = env->config;
-    struct tunnel_ctx *tunnel = tunnel_initialize(loop, NULL, config->idle_timeout, &init_done_cb, env);
-    (void)src_addr; (void)data; (void)tunnel;
-    do_next(NULL, NULL);
+    struct tunnel_ctx *tunnel = NULL;
+    struct client_ctx *ctx = NULL;
+    size_t data_len, frag_number;
+    const uint8_t *data_p = buffer_get_data(data, &data_len);
+    struct udp_data_context *udp_data;
+
+    udp_data = (struct udp_data_context *) calloc(1, sizeof(*udp_data));
+    if (src_addr) {
+        udp_data->src_addr = *src_addr;
+    }
+
+    s5_parse_upd_package(data_p, data_len, &udp_data->target_addr, &frag_number, NULL);
+    if (frag_number != 0) {
+        // We don't process fragmented UDP packages and just drop them.
+        free(udp_data);
+        return;
+    }
+
+    cstl_set_container_traverse(env->tunnel_set, &_do_find_upd_tunnel, udp_data);
+    if (udp_data->owner) {
+        ctx = udp_data->owner;
+        free(udp_data);
+        ASSERT(ctx->stage > tunnel_stage_tls_connecting);
+    } else {
+        tunnel = tunnel_initialize(loop, NULL, config->idle_timeout, &init_done_cb, env);
+        ctx = (struct client_ctx *)tunnel->data;
+        ctx->cipher = tunnel_cipher_create(ctx->env, 1452);
+        ctx->udp_data = udp_data;
+
+        ctx->stage = tunnel_stage_tls_connecting;
+        tls_client_launch(tunnel, config);
+    }
+    buffer_release(ctx->udp_data->data); ctx->udp_data->data = buffer_clone(data);
+
+    (void)src_addr; (void)data;
 }
