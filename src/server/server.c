@@ -356,10 +356,10 @@ void server_tunnel_initialize(uv_tcp_t *listener, unsigned int idle_timeout) {
     tunnel_initialize(loop, listener, idle_timeout, &_init_done_cb, env);
 }
 
-static void _do_shutdown_tunnel(const void *obj, bool *stop, void *p) {
+static void _do_shutdown_tunnel(struct cstl_set *set, const void *obj, bool *stop, void *p) {
     struct tunnel_ctx *tunnel = (struct tunnel_ctx *)obj;
     tunnel->tunnel_shutdown(tunnel);
-    (void)stop; (void)p;
+    (void)set; (void)stop; (void)p;
 }
 
 void server_shutdown(struct server_env_t *env) {

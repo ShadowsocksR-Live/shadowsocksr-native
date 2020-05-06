@@ -112,7 +112,7 @@ struct cstl_set * cstl_set_container_create(int(*compare_objs)(const void*,const
 void cstl_set_container_destroy(struct cstl_set *set);
 void cstl_set_container_add(struct cstl_set *set, void *obj);
 void cstl_set_container_remove(struct cstl_set *set, void *obj);
-void cstl_set_container_traverse(struct cstl_set *set, void(*fn)(const void *obj, bool *stop, void *p), void *p);
+void cstl_set_container_traverse(struct cstl_set *set, void(*fn)(struct cstl_set *set, const void *obj, bool *stop, void *p), void *p);
 
 struct cstl_list;
 struct cstl_list * obj_list_create(int(*compare_objs)(const void*,const void*), void(*destroy_obj)(void*));

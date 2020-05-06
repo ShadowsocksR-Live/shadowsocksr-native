@@ -194,10 +194,10 @@ static void client_tunnel_shutdown(struct tunnel_ctx *tunnel) {
     }
 }
 
-static void _do_shutdown_tunnel(const void *obj, bool *stop, void *p) {
+static void _do_shutdown_tunnel(struct cstl_set *set, const void *obj, bool *stop, void *p) {
     struct tunnel_ctx *tunnel = (struct tunnel_ctx *)obj;
     tunnel->tunnel_shutdown(tunnel);
-    (void)stop; (void)p;
+    (void)set; (void)stop; (void)p;
 }
 
 void client_shutdown(struct server_env_t *env) {
