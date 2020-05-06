@@ -724,6 +724,7 @@ cstl_map_delete_iterator(struct cstl_iterator* pItr) {
 void cstl_map_traverse(struct cstl_map *map, map_iter_callback cb, void *p) {
     struct cstl_iterator *iterator;
     const void *element;
+    cstl_bool stop = cstl_false;
     if (map==NULL || cb==NULL) {
         return;
     }
@@ -731,7 +732,8 @@ void cstl_map_traverse(struct cstl_map *map, map_iter_callback cb, void *p) {
     while( (element = iterator->next(iterator)) ) {
         const void *key = iterator->current_key(iterator);
         const void *value = iterator->current_value(iterator);
-        cb(map, key, value, p);
+        cb(map, key, value, &stop, p);
+        if (stop != cstl_false) { break; }
         if (map->map_changed) {
             cstl_map_delete_iterator(iterator);
             iterator = cstl_map_new_iterator(map);

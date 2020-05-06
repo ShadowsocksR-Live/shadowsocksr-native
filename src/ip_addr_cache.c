@@ -56,7 +56,7 @@ void ip_addr_cache_add_address(struct ip_addr_cache *addr_cache, const char *hos
     }
 }
 
-void expire_ip_remove_cb(struct cstl_map *map, const void *key, const void *value, void *p) {
+void expire_ip_remove_cb(struct cstl_map *map, const void *key, const void *value, cstl_bool *stop, void *p) {
     struct ip_addr_cache *addr_cache = (struct ip_addr_cache *)p;
     struct address_timestamp **addr = (struct address_timestamp **)value;
     if (addr && *addr) {

@@ -250,16 +250,18 @@ void cstl_set_container_remove(struct cstl_set *set, void *obj) {
     cstl_set_remove(set, &obj);
 }
 
-void cstl_set_container_traverse(struct cstl_set *set, void(*fn)(const void *obj, void *p), void *p) {
+void cstl_set_container_traverse(struct cstl_set *set, void(*fn)(const void *obj, bool *stop, void *p), void *p) {
     struct cstl_iterator *iterator;
     const void *element;
+    bool stop = false;
     if (set==NULL || fn==NULL) {
         return;
     }
     iterator = cstl_set_new_iterator(set);
     while( (element = iterator->next(iterator)) ) {
         const void *obj = *((const void **) iterator->current_value(iterator));
-        fn(obj, p);
+        fn(obj, &stop, p);
+        if (stop != false) { break; }
     }
     cstl_set_delete_iterator(iterator);
 }

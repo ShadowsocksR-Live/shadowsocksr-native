@@ -190,7 +190,7 @@ extern cstl_error   cstl_map_delete ( struct cstl_map* pMap);
 extern struct cstl_iterator* cstl_map_new_iterator(struct cstl_map* pMap);
 extern void cstl_map_delete_iterator ( struct cstl_iterator* pItr);
 
-typedef void(*map_iter_callback)(struct cstl_map *map, const void *key, const void *value, void *p);
+typedef void(*map_iter_callback)(struct cstl_map *map, const void *key, const void *value, cstl_bool *stop, void *p);
 extern void cstl_map_traverse(struct cstl_map *map, map_iter_callback cb, void *p);
 
 
