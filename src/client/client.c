@@ -92,6 +92,9 @@ struct udp_data_context {
     struct client_ctx *owner; // __weak_ptr
 };
 
+struct udp_data_context * udp_data_context_create(void);
+void udp_data_context_destroy(struct udp_data_context *ptr);
+
 struct client_ctx {
     struct tunnel_ctx *tunnel; // __weak_ptr
     struct server_env_t *env; // __weak_ptr
@@ -775,10 +778,7 @@ static void tunnel_dying(struct tunnel_ctx *tunnel) {
     if (ctx->sec_websocket_key) { free(ctx->sec_websocket_key); }
     buffer_release(ctx->server_delivery_cache);
     buffer_release(ctx->local_write_cache);
-    if (ctx->udp_data) {
-        buffer_release(ctx->udp_data->data);
-        free(ctx->udp_data);
-    }
+    udp_data_context_destroy(ctx->udp_data);
     free(ctx);
 }
 
@@ -1081,16 +1081,30 @@ static bool can_access(const struct tunnel_ctx *cx, const struct sockaddr *addr)
     return false;
 }
 
+struct udp_data_context * udp_data_context_create(void) {
+    struct udp_data_context *ptr;
+    ptr = (struct udp_data_context *) calloc(1, sizeof(*ptr));
+    ptr->data = buffer_create(SSR_BUFF_SIZE);
+    return ptr;
+}
+
+void udp_data_context_destroy(struct udp_data_context *ptr) {
+    if (ptr) {
+        buffer_release(ptr->data);
+        free(ptr);
+    }
+}
+
 static void _do_find_upd_tunnel(struct cstl_set *set, const void *obj, bool *stop, void *p) {
     struct tunnel_ctx *tunnel = (struct tunnel_ctx *)obj;
     struct client_ctx *ctx = (struct client_ctx *)tunnel->data;
-    struct udp_data_context *udp_data = (struct udp_data_context*)p;
+    struct udp_data_context *query_data = (struct udp_data_context*)p;
     if (ctx->udp_data) {
         struct udp_data_context *iter = ctx->udp_data;
-        if ((memcmp(&iter->src_addr, &udp_data->src_addr, sizeof(union sockaddr_universal)) == 0) &&
-            (memcmp(&iter->target_addr, &udp_data->target_addr, sizeof(struct socks5_address)) == 0))
+        if ((memcmp(&iter->src_addr, &query_data->src_addr, sizeof(union sockaddr_universal)) == 0) &&
+            (memcmp(&iter->target_addr, &query_data->target_addr, sizeof(struct socks5_address)) == 0))
         {
-            udp_data->owner = ctx;
+            query_data->owner = ctx;
             if (stop) { *stop = true; }
         }
     }
@@ -1105,35 +1119,34 @@ void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_u
     struct client_ctx *ctx = NULL;
     size_t data_len, frag_number;
     const uint8_t *data_p = buffer_get_data(data, &data_len);
-    struct udp_data_context *udp_data;
+    struct udp_data_context *query_data;
 
-    udp_data = (struct udp_data_context *) calloc(1, sizeof(*udp_data));
+    query_data = udp_data_context_create();
     if (src_addr) {
-        udp_data->src_addr = *src_addr;
+        query_data->src_addr = *src_addr;
     }
 
-    s5_parse_upd_package(data_p, data_len, &udp_data->target_addr, &frag_number, NULL);
+    s5_parse_upd_package(data_p, data_len, &query_data->target_addr, &frag_number, NULL);
     if (frag_number != 0) {
         // We don't process fragmented UDP packages and just drop them.
-        free(udp_data);
+        udp_data_context_destroy(query_data);
         return;
     }
 
-    cstl_set_container_traverse(env->tunnel_set, &_do_find_upd_tunnel, udp_data);
-    if (udp_data->owner) {
-        ctx = udp_data->owner;
-        free(udp_data);
+    cstl_set_container_traverse(env->tunnel_set, &_do_find_upd_tunnel, query_data);
+    if (query_data->owner) {
+        ctx = query_data->owner;
+        ASSERT(ctx->udp_data);
+        udp_data_context_destroy(query_data);
         ASSERT(ctx->stage > tunnel_stage_tls_connecting);
     } else {
         tunnel = tunnel_initialize(loop, NULL, config->idle_timeout, &init_done_cb, env);
         ctx = (struct client_ctx *)tunnel->data;
         ctx->cipher = tunnel_cipher_create(ctx->env, 1452);
-        ctx->udp_data = udp_data;
+        ctx->udp_data = query_data;
 
         ctx->stage = tunnel_stage_tls_connecting;
         tls_client_launch(tunnel, config);
     }
-    buffer_release(ctx->udp_data->data); ctx->udp_data->data = buffer_clone(data);
-
-    (void)src_addr; (void)data;
+    buffer_replace(ctx->udp_data->data, data);
 }
