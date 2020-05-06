@@ -457,7 +457,7 @@ const uint8_t * s5_parse_upd_package(const uint8_t *pkg, size_t len, struct sock
     const uint8_t *result = NULL;
     do {
         const uint8_t *rsv, *frag, *address;
-        struct socks5_address dummy_addr = { {0}, 0, SOCKS5_ADDRTYPE_INVALID };
+        struct socks5_address dummy_addr = { {{0}}, 0, SOCKS5_ADDRTYPE_INVALID };
         size_t offset;
         if (pkg==NULL || len<10) {
             break;

@@ -64,6 +64,7 @@ void expire_ip_remove_cb(struct cstl_map *map, const void *key, const void *valu
             cstl_map_remove(map, key);
         }
     }
+    (void)stop;
 }
 
 bool ip_addr_cache_is_address_exist(struct ip_addr_cache *addr_cache, const char *host) {
