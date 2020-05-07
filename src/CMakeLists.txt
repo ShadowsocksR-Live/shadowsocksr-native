@@ -122,7 +122,7 @@ set(SOURCE_FILES_SERVER
         ssrbuffer.c
         ssrbuffer.h
         encrypt.c
-        #udprelay.c
+        udprelay.c
         cache.c
         #resolv.c
         ip_addr_cache.c

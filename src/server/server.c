@@ -20,6 +20,7 @@
 #include "websocket_basic.h"
 #include "http_parser_wrapper.h"
 #include "ip_addr_cache.h"
+#include "s5.h"
 
 #ifndef SSR_MAX_CONN
 #define SSR_MAX_CONN 1024
@@ -989,6 +990,16 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
         }
         ASSERT(obfs_receipt == NULL);
         ASSERT(proto_confirm == NULL);
+
+        if (http_headers_get_field_val(hdrs, "UDP") != NULL) {
+            struct socks5_address *s5addr = tunnel->desired_addr;
+            size_t p_len = 0, data_len = 0;
+            const uint8_t *data_p = buffer_get_data(result, &data_len);
+            const uint8_t *p = s5_parse_upd_package(data_p, data_len, s5addr, NULL, &p_len);
+
+            buffer_store(ctx->init_pkg, p, p_len);
+            break;
+        }
 
         ASSERT(result /* && result->len!=0 */);
         if (is_legal_header(result) == false) {
