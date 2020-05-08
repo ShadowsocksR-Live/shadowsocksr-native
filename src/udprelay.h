@@ -24,12 +24,25 @@
 #define _UDPRELAY_H
 
 #include <uv.h>
+#include <stdbool.h>
 
 struct ss_host_port;
 struct udp_listener_ctx_t;
 struct cipher_env_t;
 union sockaddr_universal;
 struct buffer_t;
+struct udp_remote_ctx_t;
+
+typedef void(*udp_remote_data_arrived_callback)(struct udp_remote_ctx_t *remote_ctx, const uint8_t*data, size_t len, void*p);
+struct udp_remote_ctx_t * udp_remote_launch_begin(uv_loop_t* loop,
+    uint64_t timeout,
+    const struct socks5_address *dst_addr,
+    udp_remote_data_arrived_callback callback, void*p);
+void udp_remote_send_data(struct udp_remote_ctx_t *remote_ctx, const uint8_t*data, size_t len);
+bool udp_remote_is_alive(struct udp_remote_ctx_t *ctx);
+typedef void(*udp_remote_dying_callback)(struct udp_remote_ctx_t *ctx, void*p);
+void udp_remote_set_dying_callback(struct udp_remote_ctx_t *ctx, udp_remote_dying_callback callback, void*p);
+void udp_remote_destroy(struct udp_remote_ctx_t *ctx);
 
 struct udp_listener_ctx_t * udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
 #ifdef MODULE_LOCAL
