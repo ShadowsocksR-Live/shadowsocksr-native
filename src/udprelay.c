@@ -371,13 +371,17 @@ udp_create_local_listener(const char *host, uint16_t port, uv_loop_t *loop, uv_u
 }
 
 static void udp_remote_ctx_add_ref(struct udp_remote_ctx_t *ctx) {
-    ++ctx->ref_count;
+    if (ctx) {
+        ++ctx->ref_count;
+    }
 }
 
 static void udp_remote_ctx_release(struct udp_remote_ctx_t *ctx) {
-    --ctx->ref_count;
-    if (ctx->ref_count <= 0) {
-        free(ctx);
+    if (ctx) {
+        --ctx->ref_count;
+        if (ctx->ref_count <= 0) {
+            free(ctx);
+        }
     }
 }
 
@@ -420,8 +424,10 @@ bool udp_remote_is_alive(struct udp_remote_ctx_t *ctx) {
 }
 
 void udp_remote_set_dying_callback(struct udp_remote_ctx_t *ctx, udp_remote_dying_callback callback, void*p) {
-    ctx->dying_cb = callback;
-    ctx->dying_p = p;
+    if (ctx) {
+        ctx->dying_cb = callback;
+        ctx->dying_p = p;
+    }
 }
 
 void udp_remote_destroy(struct udp_remote_ctx_t *ctx) {
@@ -596,11 +602,7 @@ void udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, c
     (void)addr; (void)flags;
 }
 
-struct udp_remote_ctx_t * udp_remote_launch_begin(uv_loop_t* loop,
-    uint64_t timeout,
-    const struct socks5_address *dst_addr,
-    udp_remote_data_arrived_callback callback, void*p)
-{
+struct udp_remote_ctx_t * udp_remote_launch_begin(uv_loop_t* loop, uint64_t timeout, const struct socks5_address *dst_addr) {
     union sockaddr_universal u_dst_addr = { 0 };
     uv_udp_t *udp = NULL;
     uv_timer_t *timer;
@@ -608,8 +610,6 @@ struct udp_remote_ctx_t * udp_remote_launch_begin(uv_loop_t* loop,
     struct udp_remote_ctx_t *remote_ctx;
     remote_ctx = (struct udp_remote_ctx_t *) calloc(1, sizeof(*remote_ctx));
     remote_ctx->timeout = timeout;
-    remote_ctx->data_cb = callback;
-    remote_ctx->data_cb_p = p;
     remote_ctx->dst_addr = *dst_addr;
     udp_remote_ctx_add_ref(remote_ctx);
 
@@ -631,12 +631,25 @@ struct udp_remote_ctx_t * udp_remote_launch_begin(uv_loop_t* loop,
     return remote_ctx;
 }
 
+void udp_remote_set_data_arrived_callback(struct udp_remote_ctx_t *ctx, udp_remote_data_arrived_callback callback, void*p) {
+    if (ctx) {
+        ctx->data_cb = callback;
+        ctx->data_cb_p = p;
+    }
+}
+
 void udp_remote_send_data(struct udp_remote_ctx_t *remote_ctx, const uint8_t*data, size_t len) {
-    uv_udp_t *udp = &remote_ctx->rmt_udp;
+    uv_udp_t *udp = NULL;
     uv_buf_t sndbuf;
     uint8_t *dup_data;
     uv_udp_send_t *send_req;
     union sockaddr_universal u_dst_addr = { 0 };
+
+    if (remote_ctx==NULL || data==NULL || len==0) {
+        return;
+    }
+
+     udp = &remote_ctx->rmt_udp;
 
     socks5_address_to_universal(&remote_ctx->dst_addr, &u_dst_addr);
 
