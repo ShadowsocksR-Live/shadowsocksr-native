@@ -30,6 +30,7 @@ struct ss_host_port;
 struct udp_listener_ctx_t;
 struct cipher_env_t;
 union sockaddr_universal;
+struct socks5_address;
 struct buffer_t;
 struct udp_remote_ctx_t;
 

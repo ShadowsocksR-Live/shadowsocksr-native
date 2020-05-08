@@ -437,8 +437,8 @@ static void udp_remote_timeout_cb(uv_timer_t* handle) {
     udp_remote_shutdown(remote_ctx);
 }
 
-#ifdef MODULE_REMOTE
 /*
+#ifdef MODULE_REMOTE
 static void udp_remote_send_done_cb(uv_udp_send_t* req, int status) {
     struct udp_remote_ctx_t *remote_ctx = (struct udp_remote_ctx_t *)req->data;
     free(req);
@@ -549,7 +549,6 @@ static void query_resolve_cb(struct sockaddr *addr, void *data) {
     // clean up
     close_and_free_query(query_ctx);
 }
-*/
 #endif
 
 static void udp_send_done_cb(uv_udp_send_t* req, int status) {
@@ -559,6 +558,7 @@ static void udp_send_done_cb(uv_udp_send_t* req, int status) {
     buffer_release(buf);
     free(req);
 }
+*/
 
 void upd_remote_sent_cb(uv_udp_send_t* req, int status) {
     struct udp_remote_ctx_t *remote_ctx;
@@ -567,11 +567,11 @@ void upd_remote_sent_cb(uv_udp_send_t* req, int status) {
     udp_remote_reset_timer(remote_ctx);
     free(dup_data);
     free(req);
+    (void)status;
 }
 
 void udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const struct sockaddr* addr, unsigned flags) {
-    union sockaddr_universal src_addr = { 0 };
-    size_t len = 0;
+    union sockaddr_universal src_addr = { {0} };
     struct udp_remote_ctx_t *rmt_ctx;
 
     do {
