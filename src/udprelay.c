@@ -571,7 +571,6 @@ void upd_remote_sent_cb(uv_udp_send_t* req, int status) {
 }
 
 void udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const struct sockaddr* addr, unsigned flags) {
-    union sockaddr_universal src_addr = { {0} };
     struct udp_remote_ctx_t *rmt_ctx;
 
     do {
@@ -594,6 +593,7 @@ void udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, c
         udp_remote_reset_timer(rmt_ctx);
     } while (0);
     udp_uv_release_buffer((uv_buf_t *)buf0);
+    (void)addr; (void)flags;
 }
 
 struct udp_remote_ctx_t * udp_remote_launch_begin(uv_loop_t* loop,
@@ -712,7 +712,6 @@ udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, cons
     char host[257] = { 0 };
     char port[65]  = { 0 };
 
-    struct udp_remote_ctx_t *remote_ctx = NULL;
     const struct sockaddr *remote_addr;
     int err;
 
@@ -742,7 +741,7 @@ udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, cons
 
     src_addr_len = sizeof(src_addr);
     offset    = 0;
-    (void)src_addr_len;
+    (void)src_addr_len; (void)remote_addr;
 
 #ifdef MODULE_REDIR
     char control_buffer[64] = { 0 };
@@ -1245,7 +1244,7 @@ static void udp_local_listener_close_done_cb(uv_handle_t* handle) {
 }
 
 void connection_release(struct cstl_set *set, const void *obj, bool *stop, void *p) {
-    (void)set; (void)stop; (void)p;
+    (void)set; (void)obj; (void)stop; (void)p;
     //udp_remote_shutdown((struct udp_remote_ctx_t *)obj);
 }
 
