@@ -162,7 +162,7 @@ static void udp_uv_release_buffer(uv_buf_t *buf) {
     buf->len = 0;
 }
 
-static int
+int
 udprelay_parse_header(const char *buf, size_t buf_len,
                       char *host, char *port, struct sockaddr_storage *storage)
 {
@@ -723,6 +723,7 @@ udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, cons
     env = (struct server_env_t *) loop->data;
     config = env->config;
 
+    (void)port; (void)host; (void)frag; (void)addr_header_len; (void)addr_header; (void)offset;
     if (config->over_tls_enable) {
         udp_tls_listener_recv_cb(handle, nread, buf0, addr, flags);
         return;
@@ -1179,6 +1180,8 @@ udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
         packet_size = mtu - 1 - 28 - 2 - 64;
         buf_size    = packet_size * 2;
     }
+
+    (void)server_info; (void)protocol; (void)protocol_param;
 
     // ////////////////////////////////////////////////
     // Setup server context

@@ -117,7 +117,9 @@ set(SOURCE_FILES_SERVER
         text_in_color.h
         dump_info.c
         dump_info.h
-        ssrutils.h
+        client/s5.c
+        client/s5.h
+	ssrutils.h
         ssrutils.c
         ssrbuffer.c
         ssrbuffer.h
