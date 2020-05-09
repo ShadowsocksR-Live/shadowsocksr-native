@@ -81,6 +81,7 @@ struct server_ctx {
     bool ws_tls_beginning;
     bool ws_close_frame_sent;
     struct buffer_t *client_delivery_cache;
+    struct tunnel_ctx *tunnel; // __weak_ptr
 };
 
 static int ssr_server_run_loop(struct server_config *config, bool force_quit);
@@ -327,6 +328,7 @@ bool _init_done_cb(struct tunnel_ctx *tunnel, void *p) {
     ctx->env = env;
     ctx->init_pkg = buffer_create(SSR_BUFF_SIZE);
     ctx->_recv_buffer_size = TCP_BUF_SIZE_MAX;
+    ctx->tunnel = tunnel;
     tunnel->data = ctx;
 
     tunnel->tunnel_dying = &tunnel_dying;
@@ -992,12 +994,20 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
         ASSERT(proto_confirm == NULL);
 
         if (http_headers_get_field_val(hdrs, "UDP") != NULL) {
-            struct socks5_address *s5addr = tunnel->desired_addr;
-            size_t p_len = 0, data_len = 0;
+            uv_loop_t *loop = socket->handle.tcp.loop;
+            struct socks5_address target_addr = { {{0}}, 0, SOCKS5_ADDRTYPE_INVALID };
+            size_t data_len = 0, p_len = 0;
             const uint8_t *data_p = buffer_get_data(result, &data_len);
-            const uint8_t *p = s5_parse_upd_package(data_p, data_len, s5addr, NULL, &p_len);
+            const uint8_t *p = s5_parse_upd_package(data_p, data_len, &target_addr, NULL, &p_len);
+            struct udp_remote_ctx_t *udp_ctx;
 
             buffer_store(ctx->init_pkg, p, p_len);
+
+            udp_ctx = udp_remote_launch_begin(loop, config->connect_timeout_ms, &target_addr);
+
+            *tunnel->desired_addr = target_addr;
+
+            do_tls_client_feedback(tunnel);
             break;
         }
 
@@ -1070,6 +1080,62 @@ static void do_tls_launch_streaming(struct tunnel_ctx *tunnel, struct socket_ctx
     ctx->stage = tunnel_stage_streaming;
 }
 
+static struct buffer_t * build_websocket_frame_from_raw(struct server_ctx *ctx, struct buffer_t *src) {
+    struct tunnel_cipher_ctx *cipher_ctx = ctx->cipher;
+    ws_frame_info info = { WS_OPCODE_BINARY, false, false, WS_CLOSE_REASON_UNKNOWN, 0, 0 };
+    struct buffer_t *tmp = tunnel_cipher_server_encrypt(cipher_ctx, src);
+    uint8_t *frame;
+    struct buffer_t *buf;
+    if (!ctx->ws_tls_beginning) {
+        ctx->ws_tls_beginning = true;
+        ws_frame_binary_first(false, &info);
+    } else {
+        ws_frame_binary_continuous(false, &info);
+    }
+    frame = websocket_build_frame(&info, buffer_get_data(tmp, NULL), buffer_get_length(tmp), &malloc);
+    buf = buffer_create_from(frame, info.frame_size);
+    free(frame);
+    buffer_release(tmp);
+    return buf;
+}
+
+// Assemble the fragments into WebSocket frames.
+static struct buffer_t * extract_data_from_assembled_websocket_frame(struct server_ctx *ctx, struct buffer_t *src) {
+    struct tunnel_cipher_ctx *cipher_ctx = ctx->cipher;
+    struct buffer_t *buf = buffer_create(SOCKET_DATA_BUFFER_SIZE);
+    buffer_concatenate2(ctx->client_delivery_cache, src);
+    do {
+        ws_frame_info info = { WS_OPCODE_BINARY, 0, 0, WS_CLOSE_REASON_UNKNOWN, 0, 0 };
+        uint8_t *payload;
+        size_t buf_len = 0;
+        const uint8_t *buf_data;
+        struct buffer_t *pb, *tmp;
+        struct buffer_t *obfs_receipt = NULL;
+        struct buffer_t *proto_confirm = NULL;
+
+        buf_data = buffer_get_data(ctx->client_delivery_cache, &buf_len);
+
+        payload = websocket_retrieve_payload(buf_data, buf_len, &malloc, &info);
+        if (payload == NULL) {
+            break;
+        }
+        buffer_shortened_to(ctx->client_delivery_cache, info.frame_size, buf_len - info.frame_size);
+
+        pb = buffer_create_from(payload, info.payload_size);
+        tmp = tunnel_cipher_server_decrypt(cipher_ctx, pb, &obfs_receipt, &proto_confirm);
+        buffer_release(pb);
+
+        ASSERT(obfs_receipt == NULL);
+        ASSERT(proto_confirm == NULL);
+
+        buffer_concatenate2(buf, tmp);
+
+        buffer_release(tmp);
+        free(payload);
+    } while (true);
+    return buf;
+}
+
 static uint8_t* tunnel_extract_data(struct socket_ctx *socket, void*(*allocator)(size_t size), size_t *size) {
     struct tunnel_ctx *tunnel = socket->tunnel;
     struct server_ctx *ctx = (struct server_ctx *) tunnel->data;
@@ -1089,58 +1155,20 @@ static uint8_t* tunnel_extract_data(struct socket_ctx *socket, void*(*allocator)
         struct buffer_t *src = buffer_create_from((uint8_t *)socket->buf->base, (size_t)socket->result);
         if (socket == tunnel->outgoing) {
             if (config->over_tls_enable) {
-                ws_frame_info info = { WS_OPCODE_BINARY, false, false, WS_CLOSE_REASON_UNKNOWN, 0, 0 };
-                struct buffer_t *tmp = tunnel_cipher_server_encrypt(cipher_ctx, src);
-                uint8_t *frame;
-                if (!ctx->ws_tls_beginning) {
-                    ctx->ws_tls_beginning = true;
-                    ws_frame_binary_first(false, &info);
-                } else {
-                    ws_frame_binary_continuous(false, &info);
-                }
-                frame = websocket_build_frame(&info, buffer_get_data(tmp, NULL), buffer_get_length(tmp), &malloc);
-                buf = buffer_create_from(frame, info.frame_size);
-                free(frame);
-                buffer_release(tmp);
+                buf = build_websocket_frame_from_raw(ctx, src);
             } else {
                 buf = tunnel_cipher_server_encrypt(cipher_ctx, src);
             }
         } else if (socket == tunnel->incoming) {
-            struct buffer_t *obfs_receipt = NULL;
-            struct buffer_t *proto_confirm = NULL;
             if (config->over_tls_enable) {
-                buf = buffer_create(SOCKET_DATA_BUFFER_SIZE);
-                buffer_concatenate2(ctx->client_delivery_cache, src);
-                do {
-                    ws_frame_info info = { WS_OPCODE_BINARY, 0, 0, 0, 0, 0 };
-                    uint8_t *payload;
-                    size_t buf_len = 0;
-                    const uint8_t *buf_data;
-                    struct buffer_t *pb, *tmp;
-
-                    buf_data = buffer_get_data(ctx->client_delivery_cache, &buf_len);
-
-                    payload = websocket_retrieve_payload(buf_data, buf_len, &malloc, &info);
-                    if (payload == NULL) {
-                        break;
-                    }
-                    buffer_shortened_to(ctx->client_delivery_cache, info.frame_size, buf_len - info.frame_size);
-
-                    pb = buffer_create_from(payload, info.payload_size);
-                    tmp = tunnel_cipher_server_decrypt(cipher_ctx, pb, &obfs_receipt, &proto_confirm);
-                    buffer_release(pb);
-
-                    buffer_concatenate2(buf, tmp);
-
-                    buffer_release(tmp);
-                    free(payload);
-                } while (true);
-                (void)buf;
+                buf = extract_data_from_assembled_websocket_frame(ctx, src);
             } else {
+                struct buffer_t *obfs_receipt = NULL;
+                struct buffer_t *proto_confirm = NULL;
                 buf = tunnel_cipher_server_decrypt(cipher_ctx, src, &obfs_receipt, &proto_confirm);
+                ASSERT(obfs_receipt == NULL);
+                ASSERT(proto_confirm == NULL);
             }
-            ASSERT(obfs_receipt == NULL);
-            ASSERT(proto_confirm == NULL);
         } else {
             ASSERT(0);
         }
