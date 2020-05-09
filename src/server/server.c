@@ -50,6 +50,7 @@ struct ssr_server_state {
     V(6, tunnel_stage_launch_streaming,         "tunnel_stage_launch_streaming")        \
     V(7, tunnel_stage_tls_client_feedback,      "tunnel_stage_tls_client_feedback")     \
     V(8, tunnel_stage_streaming,                "tunnel_stage_streaming")               \
+    V(9, tunnel_stage_udp_streaming,            "tunnel_stage_udp_streaming")           \
 
 enum tunnel_stage {
 #define TUNNEL_STAGE_GEN(code, name, _) name = code,
@@ -82,6 +83,7 @@ struct server_ctx {
     bool ws_close_frame_sent;
     struct buffer_t *client_delivery_cache;
     struct tunnel_ctx *tunnel; // __weak_ptr
+    struct udp_remote_ctx_t *udp_relay;
 };
 
 static int ssr_server_run_loop(struct server_config *config, bool force_quit);
@@ -119,6 +121,10 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
 static size_t _tls_get_read_size(struct tunnel_ctx *tunnel, struct socket_ctx *socket, size_t suggested_size);
 static void do_tls_client_feedback(struct tunnel_ctx *tunnel);
 static void do_tls_launch_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
+static void do_udp_launch_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
+static void tunnel_udp_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
+static struct buffer_t * build_websocket_frame_from_raw(struct server_ctx *ctx, struct buffer_t *src);
+static struct buffer_t * extract_data_from_assembled_websocket_frame(struct server_ctx *ctx, struct buffer_t *src);
 
 void print_server_info(const struct server_config *config);
 static void svr_usage(void);
@@ -402,6 +408,9 @@ void tunnel_incoming_connection_established_cb(uv_stream_t *server, int status) 
 static void tunnel_dying(struct tunnel_ctx *tunnel) {
     struct server_ctx *ctx = (struct server_ctx *) tunnel->data;
 
+    udp_remote_set_dying_callback(ctx->udp_relay, NULL, NULL);
+    udp_remote_destroy(ctx->udp_relay);
+
     cstl_set_container_remove(ctx->env->tunnel_set, tunnel);
     if (ctx->cipher) {
         tunnel_cipher_release(ctx->cipher);
@@ -469,10 +478,17 @@ static void do_next(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
         ASSERT(incoming == socket);
         ASSERT(incoming->wrstate == socket_state_done);
         incoming->wrstate = socket_state_stop;
-        do_tls_launch_streaming(tunnel, socket);
+        if (ctx->udp_relay) {
+            do_udp_launch_streaming(tunnel, socket);
+        } else {
+            do_tls_launch_streaming(tunnel, socket);
+        }
         break;
     case tunnel_stage_streaming:
         tunnel_traditional_streaming(tunnel, socket);
+        break;
+    case tunnel_stage_udp_streaming:
+        tunnel_udp_streaming(tunnel, socket);
         break;
     default:
         UNREACHABLE();
@@ -591,7 +607,7 @@ static bool is_legal_header(const struct buffer_t *buf) {
 }
 
 static bool is_header_complete(const struct buffer_t *buf) {
-    struct socks5_address addr;
+    struct socks5_address addr = { {{0}}, 0, SOCKS5_ADDRTYPE_INVALID };
     return socks5_address_parse(buffer_get_data(buf, NULL), buffer_get_length(buf), &addr);
 }
 
@@ -773,7 +789,7 @@ static void do_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     size_t offset     = 0;
     const char *host = NULL;
     struct socks5_address *s5addr;
-    union sockaddr_universal target;
+    union sockaddr_universal target = { {0} };
     bool ipFound = true;
     struct buffer_t *init_pkg = ctx->init_pkg;
 
@@ -949,6 +965,23 @@ static void do_launch_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *so
     ctx->stage = tunnel_stage_streaming;
 }
 
+void udp_remote_on_data_arrived(struct udp_remote_ctx_t *remote_ctx, const uint8_t*data, size_t len, void*p) {
+    struct server_ctx *ctx = (struct server_ctx *) p;
+    struct tunnel_ctx *tunnel = ctx->tunnel;
+    struct socket_ctx *socket = tunnel->incoming;
+    struct buffer_t *src = buffer_create_from(data, len);
+    struct buffer_t *dst = build_websocket_frame_from_raw(ctx, src);
+    socket_write(socket, buffer_get_data(dst, NULL), buffer_get_length(dst));
+    buffer_release(src);
+    buffer_release(dst);
+}
+
+void udp_remote_on_dying(struct udp_remote_ctx_t *remote_ctx, void*p) {
+    struct server_ctx *ctx = (struct server_ctx *) p;
+    struct tunnel_ctx *tunnel = ctx->tunnel;
+    tunnel->tunnel_shutdown(tunnel);
+}
+
 static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     struct server_ctx *ctx = (struct server_ctx *) tunnel->data;
     struct server_config *config = ctx->env->config;
@@ -1004,6 +1037,10 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
             buffer_store(ctx->init_pkg, p, p_len);
 
             udp_ctx = udp_remote_launch_begin(loop, config->connect_timeout_ms, &target_addr);
+            udp_remote_set_data_arrived_callback(udp_ctx, udp_remote_on_data_arrived, ctx);
+            udp_remote_set_dying_callback(udp_ctx, udp_remote_on_dying, ctx);
+
+            ctx->udp_relay = udp_ctx;
 
             *tunnel->desired_addr = target_addr;
 
@@ -1078,6 +1115,76 @@ static void do_tls_launch_streaming(struct tunnel_ctx *tunnel, struct socket_ctx
     socket_read(incoming, false);
     socket_read(outgoing, true);
     ctx->stage = tunnel_stage_streaming;
+}
+
+static void do_udp_launch_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
+    struct server_ctx *ctx = (struct server_ctx *) tunnel->data;
+    struct server_config *config = ctx->env->config;
+    struct socket_ctx *incoming = tunnel->incoming;
+    struct socket_ctx *outgoing = tunnel->outgoing;
+
+    ASSERT(config->over_tls_enable); (void)config;
+
+    ASSERT(incoming == socket);
+    ASSERT(incoming->rdstate == socket_state_stop);
+    ASSERT(incoming->wrstate == socket_state_stop);
+    ASSERT(outgoing->rdstate == socket_state_stop);
+    ASSERT(outgoing->wrstate == socket_state_stop);
+
+    ASSERT(ctx->udp_relay);
+
+    if (incoming->result < 0) {
+        pr_err("write error: %s", uv_strerror((int)incoming->result));
+        tunnel->tunnel_shutdown(tunnel);
+        return;
+    }
+
+    {
+        size_t p_len = 0;
+        const uint8_t *p = buffer_get_data(ctx->init_pkg, &p_len);
+        udp_remote_send_data(ctx->udp_relay, p, p_len);
+    }
+
+    socket_read(incoming, false);
+    ctx->stage = tunnel_stage_udp_streaming;
+}
+
+static void tunnel_udp_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
+    struct server_ctx *ctx = (struct server_ctx *) tunnel->data;
+    struct server_config *config = ctx->env->config;
+    struct socket_ctx *incoming = tunnel->incoming;
+    struct socket_ctx *outgoing = tunnel->outgoing;
+
+    ASSERT(config->over_tls_enable); (void)config;
+
+    ASSERT(incoming == socket);
+    ASSERT(incoming->rdstate == socket_state_done || incoming->wrstate == socket_state_done);
+    ASSERT(outgoing->rdstate == socket_state_stop);
+    ASSERT(outgoing->wrstate == socket_state_stop);
+
+    ASSERT(ctx->udp_relay);
+
+    if (socket->rdstate == socket_state_done) {
+        struct buffer_t *src, *buf;
+        size_t p_len = 0;
+        const uint8_t *p;
+
+        socket->rdstate = socket_state_stop;
+
+        src = buffer_create_from((uint8_t *)socket->buf->base, (size_t)socket->result);
+        buf = extract_data_from_assembled_websocket_frame(ctx, src);
+        p = buffer_get_data(buf, &p_len);
+        udp_remote_send_data(ctx->udp_relay, p, p_len);
+
+        buffer_release(src);
+        buffer_release(buf);
+
+        socket_read(socket, true);
+    } else if (socket->wrstate == socket_state_done) {
+        socket->wrstate = socket_state_stop;
+    } else {
+        UNREACHABLE();
+    }
 }
 
 static struct buffer_t * build_websocket_frame_from_raw(struct server_ctx *ctx, struct buffer_t *src) {
