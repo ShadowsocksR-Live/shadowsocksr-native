@@ -87,7 +87,7 @@ int send_traffic_stat(uint64_t tx, uint64_t rx);
 * in release builds.
 */
 #if defined(NDEBUG)
-# define ASSERT(exp)
+# define ASSERT(exp) (void)(exp)
 # define VERIFY(exp)   do { if (!(exp)) { abort(); } } while (0)
 # define DEBUG_VERIFIES (0)
 #else

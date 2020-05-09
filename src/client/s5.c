@@ -343,7 +343,7 @@ uint8_t * s5_build_udp_assoc_package(bool allow, const char *addr_str, int port,
     buf = (uint8_t *) allocator(256);
     memset(buf, 0, 256);
 
-    if (universal_address_from_string(addr_str, port, &addr) != 0) {
+    if (universal_address_from_string(addr_str, port, true, &addr) != 0) {
         return NULL;
     }
     ipV6 = (addr.addr.sa_family == AF_INET6);

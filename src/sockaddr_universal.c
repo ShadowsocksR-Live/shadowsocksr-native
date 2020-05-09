@@ -178,6 +178,10 @@ bool socks5_address_to_universal(const struct socks5_address *s5addr, union sock
             addr->addr6.sin6_port = htons(s5addr->port);
             addr->addr6.sin6_addr = s5addr->addr.ipv6;
             break;
+        case SOCKS5_ADDRTYPE_DOMAINNAME:
+            result = true;
+            universal_address_from_string(s5addr->addr.domainname, s5addr->port, true, addr);
+            break;
         default:
             break;
         }
@@ -211,7 +215,7 @@ bool universal_address_to_socks5(const union sockaddr_universal *addr, struct so
     return result;
 }
 
-int universal_address_from_string(const char *addr_str, unsigned short port, union sockaddr_universal *addr)
+int universal_address_from_string(const char *addr_str, uint16_t port, bool tcp, union sockaddr_universal *addr)
 {
     struct addrinfo hints = { 0 }, *ai = NULL;
     int status;
@@ -225,7 +229,7 @@ int universal_address_from_string(const char *addr_str, unsigned short port, uni
     sprintf(port_buffer, "%hu", port);
 
     hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_socktype = tcp ? SOCK_STREAM : SOCK_DGRAM;
     hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV | AI_PASSIVE;
 
     if ((status = getaddrinfo(addr_str, port_buffer, &hints, &ai)) != 0) {
