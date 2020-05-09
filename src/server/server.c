@@ -974,12 +974,14 @@ void udp_remote_on_data_arrived(struct udp_remote_ctx_t *remote_ctx, const uint8
     socket_write(socket, buffer_get_data(dst, NULL), buffer_get_length(dst));
     buffer_release(src);
     buffer_release(dst);
+    (void)remote_ctx;
 }
 
 void udp_remote_on_dying(struct udp_remote_ctx_t *remote_ctx, void*p) {
     struct server_ctx *ctx = (struct server_ctx *) p;
     struct tunnel_ctx *tunnel = ctx->tunnel;
     tunnel->tunnel_shutdown(tunnel);
+    (void)remote_ctx;
 }
 
 static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
