@@ -491,6 +491,7 @@ uint8_t * s5_build_udp_datagram(struct socks5_address *dst_addr, const uint8_t *
     uint8_t *result = NULL;
     do {
         size_t total, addr_len;
+        uint8_t* addr = NULL;
         if (dst_addr==NULL || allocator==NULL) {
             break;
         }
@@ -505,7 +506,9 @@ uint8_t * s5_build_udp_datagram(struct socks5_address *dst_addr, const uint8_t *
         }
         memset(result, 0, total + 1);
 
-        socks5_address_binary(dst_addr, result + 2 + 1, addr_len);
+        addr = socks5_address_binary(dst_addr, &malloc, NULL);
+        memmove(result + 2 + 1, addr, addr_len);
+        free(addr);
 
         memcpy(result + 2 + 1 + addr_len, payload, payload_len);
 
