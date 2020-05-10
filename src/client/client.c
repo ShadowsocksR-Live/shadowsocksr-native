@@ -90,6 +90,7 @@ struct udp_data_context {
     struct buffer_t *data;
 
     struct client_ctx *owner; // __weak_ptr
+    struct udp_listener_ctx_t* udp_ctx; // __weak_ptr
 };
 
 struct udp_data_context * udp_data_context_create(void);
@@ -845,6 +846,16 @@ static void tunnel_tls_do_launch_streaming(struct tunnel_ctx *tunnel) {
     }
 }
 
+void tunnel_tls_send_websocket_data(struct tunnel_ctx* tunnel, const uint8_t* buf, size_t len) {
+    ws_frame_info info = { WS_OPCODE_BINARY, true, true, 0, 0, 0 };
+    uint8_t* frame;
+    ws_frame_binary_alone(true, &info);
+    frame = websocket_build_frame(&info, buf, len, &malloc);
+    ASSERT(tunnel->tunnel_tls_send_data);
+    tunnel->tunnel_tls_send_data(tunnel, frame, info.frame_size);
+    free(frame);
+}
+
 void tunnel_tls_client_incoming_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
     ASSERT(socket == tunnel->incoming);
@@ -878,13 +889,7 @@ void tunnel_tls_client_incoming_streaming(struct tunnel_ctx *tunnel, struct sock
             ASSERT(tunnel->tunnel_extract_data);
             buf = tunnel->tunnel_extract_data(socket, &malloc, &len);
             if (buf /* && size > 0 */) {
-                ws_frame_info info = { WS_OPCODE_BINARY, true, true, 0, 0, 0 };
-                uint8_t *frame;
-                ws_frame_binary_alone(true, &info);
-                frame = websocket_build_frame(&info, buf, len, &malloc);
-                ASSERT(tunnel->tunnel_tls_send_data);
-                tunnel->tunnel_tls_send_data(tunnel, frame, info.frame_size);
-                free(frame);
+                tunnel_tls_send_websocket_data(tunnel, buf, len);
             } else {
                 tunnel->tunnel_shutdown(tunnel);
             }
@@ -972,7 +977,11 @@ static void tunnel_tls_on_data_received(struct tunnel_ctx *tunnel, const uint8_t
             tunnel->tunnel_shutdown(tunnel);
         } else {
             if (ctx->udp_data_ctx) {
-                ASSERT(0);
+                // At this moment, the UDP over TLS connection have established.
+                // We needn't send the client incoming data, because we have sent
+                // it as payload of WebSocket authenticate package in function
+                // `tunnel_tls_on_connection_established`.
+                ctx->stage = tunnel_stage_tls_streaming;
             } else {
                 do_socks5_reply_success(tunnel);
             }
@@ -1021,6 +1030,16 @@ static void tunnel_tls_on_data_received(struct tunnel_ctx *tunnel, const uint8_t
 
         if ((buffer_get_length(ctx->local_write_cache) == 0) && ctx->tls_is_eof) {
             tunnel->tunnel_shutdown(tunnel);
+            return;
+        }
+
+        if (ctx->udp_data_ctx) {
+            // Write the received remote data back to the connected UDP client.
+            struct udp_data_context* udp_data_ctx = ctx->udp_data_ctx;
+            size_t s = 0;
+            const uint8_t* p = buffer_get_data(ctx->local_write_cache, &s);
+            udp_relay_send_data(udp_data_ctx->udp_ctx, &udp_data_ctx->src_addr, p, s);
+            buffer_reset(ctx->local_write_cache);
             return;
         }
 
@@ -1133,13 +1152,14 @@ void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_u
     size_t data_len, frag_number;
     const uint8_t *data_p = buffer_get_data(data, &data_len);
     struct udp_data_context *query_data;
+    const uint8_t *raw_p = NULL; size_t raw_len = 0;
 
     query_data = udp_data_context_create();
     if (src_addr) {
         query_data->src_addr = *src_addr;
     }
 
-    s5_parse_upd_package(data_p, data_len, &query_data->target_addr, &frag_number, NULL);
+    raw_p = s5_parse_upd_package(data_p, data_len, &query_data->target_addr, &frag_number, &raw_len);
     if (frag_number != 0) {
         // We don't process fragmented UDP packages and just drop them.
         udp_data_context_destroy(query_data);
@@ -1148,15 +1168,26 @@ void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_u
 
     cstl_set_container_traverse(env->tunnel_set, &_do_find_upd_tunnel, query_data);
     if (query_data->owner) {
+        struct buffer_t* out_ref;
         ctx = query_data->owner;
         ASSERT(ctx->udp_data_ctx);
         udp_data_context_destroy(query_data);
         ASSERT(ctx->stage > tunnel_stage_tls_connecting);
+        out_ref = ctx->udp_data_ctx->data;
+        buffer_store(out_ref, raw_p, raw_len);
+        tunnel = ctx->tunnel;
+        if (ssr_ok != tunnel_cipher_client_encrypt(ctx->cipher, out_ref)) {
+            tunnel->tunnel_shutdown(tunnel);
+        } else {
+            size_t len = 0; const uint8_t* p = buffer_get_data(out_ref, &len);
+            tunnel_tls_send_websocket_data(tunnel, p, len);
+        }
     } else {
         tunnel = tunnel_initialize(loop, NULL, config->idle_timeout, &init_done_cb, env);
         ctx = (struct client_ctx *)tunnel->data;
         ctx->cipher = tunnel_cipher_create(ctx->env, 1452);
         ctx->udp_data_ctx = query_data;
+        ctx->udp_data_ctx->udp_ctx = udp_ctx;
 
         *tunnel->desired_addr = query_data->target_addr;
 
@@ -1164,8 +1195,8 @@ void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_u
         tls_client_launch(tunnel, config);
 
         client_tunnel_connecting_print_info(tunnel);
-    }
-    buffer_replace(ctx->udp_data_ctx->data, data);
 
+        buffer_replace(ctx->udp_data_ctx->data, data);
+    }
     (void)p;
 }

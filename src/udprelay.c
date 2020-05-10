@@ -99,7 +99,7 @@
 #define MAX_UDP_PACKET_SIZE (65507)
 
 #define DEFAULT_PACKET_SIZE MAX_UDP_PACKET_SIZE // 1492 - 1 - 28 - 2 - 64 = 1397, the default MTU for UDP relay
-
+/*
 size_t
 get_sockaddr_len(struct sockaddr *addr)
 {
@@ -110,7 +110,7 @@ get_sockaddr_len(struct sockaddr *addr)
     }
     return 0;
 }
-
+*/
 struct udp_listener_ctx_t {
     uv_udp_t udp;
     int timeout;
@@ -1283,3 +1283,27 @@ void udp_relay_set_udp_on_recv_data_callback(struct udp_listener_ctx_t *udp_ctx,
 uv_loop_t * udp_relay_context_get_loop(struct udp_listener_ctx_t *udp_ctx) {
     return udp_ctx->udp.loop;
 }
+
+void udp_relay_sent_cb(uv_udp_send_t* req, int status) {
+    struct udp_listener_ctx_t* udp_ctx = CONTAINER_OF(req->handle, struct udp_listener_ctx_t, udp);
+    uint8_t *dup_data = (uint8_t*)req->data;
+    free(dup_data);
+    free(req);
+    (void)status;
+}
+
+void udp_relay_send_data(struct udp_listener_ctx_t *udp_ctx, union sockaddr_universal *addr, const uint8_t *data, size_t len) {
+    uv_udp_send_t* send_req;
+    uint8_t* dup_data;
+    uv_buf_t sndbuf;
+    struct socks5_address s5addr = { {{0}}, 0, SOCKS5_ADDRTYPE_INVALID };
+
+    universal_address_to_socks5(addr, &s5addr);
+    dup_data = s5_build_udp_datagram(&s5addr, data, len, &malloc, &len);
+    sndbuf = uv_buf_init((char*)dup_data, (unsigned int)len);
+
+    send_req = (uv_udp_send_t*)calloc(1, sizeof(*send_req));
+    send_req->data = dup_data;
+    uv_udp_send(send_req, &udp_ctx->udp, &sndbuf, 1, &addr->addr, udp_relay_sent_cb);
+}
+
