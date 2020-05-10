@@ -618,7 +618,7 @@ struct udp_remote_ctx_t * udp_remote_launch_begin(uv_loop_t* loop, uint64_t time
     uv_udp_init(loop, udp);
     udp->data = remote_ctx;
 
-    socks5_address_to_universal(dst_addr, &u_dst_addr);
+    socks5_address_to_universal(dst_addr, true, &u_dst_addr);
     uv_udp_bind(udp, &u_dst_addr.addr, 0);
     uv_udp_recv_start(udp, udp_uv_alloc_buffer, udp_remote_recv_cb);
 
@@ -651,7 +651,7 @@ void udp_remote_send_data(struct udp_remote_ctx_t *remote_ctx, const uint8_t*dat
 
      udp = &remote_ctx->rmt_udp;
 
-    socks5_address_to_universal(&remote_ctx->dst_addr, &u_dst_addr);
+    socks5_address_to_universal(&remote_ctx->dst_addr, true, &u_dst_addr);
 
     dup_data = (uint8_t *) calloc(len+1, sizeof(*dup_data));
     memcpy(dup_data, data, len);

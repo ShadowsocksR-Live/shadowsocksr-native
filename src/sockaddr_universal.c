@@ -159,7 +159,7 @@ uint8_t * socks5_address_binary(const struct socks5_address *addr, uint8_t *buff
     return buffer;
 }
 
-bool socks5_address_to_universal(const struct socks5_address *s5addr, union sockaddr_universal *addr) {
+bool socks5_address_to_universal(const struct socks5_address *s5addr, bool use_dns, union sockaddr_universal *addr) {
     bool result = false;
     do {
         if (s5addr==NULL || addr==NULL) {
@@ -179,6 +179,9 @@ bool socks5_address_to_universal(const struct socks5_address *s5addr, union sock
             addr->addr6.sin6_addr = s5addr->addr.ipv6;
             break;
         case SOCKS5_ADDRTYPE_DOMAINNAME:
+            if (use_dns == false) {
+                break;
+            }
             if (universal_address_from_string(s5addr->addr.domainname, s5addr->port, true, addr) == 0) {
                 result = true;
             }

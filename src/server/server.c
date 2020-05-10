@@ -36,7 +36,6 @@ struct ssr_server_state {
     bool force_quit;
 
     uv_tcp_t *tcp_listener;
-    struct udp_listener_ctx_t *udp_listener;
     struct ip_addr_cache *resolved_ip_cache;
 };
 
@@ -168,10 +167,6 @@ int main(int argc, char * const argv[]) {
         config_ssrot_revision(config);
 
         config_parse_protocol_param(config, config->protocol_param);
-
-#ifndef UDP_RELAY_ENABLE
-        config->udp = false;
-#endif // UDP_RELAY_ENABLE
 
         if (config->method == NULL || config->password == NULL) {
             break;
@@ -308,12 +303,6 @@ void ssr_server_shutdown(struct ssr_server_state *state) {
     if (state->tcp_listener) {
         uv_close((uv_handle_t *)state->tcp_listener, listener_close_done_cb);
     }
-
-#if UDP_RELAY_ENABLE
-    if (state->udp_listener) {
-        // udprelay_shutdown(state->udp_listener);
-    }
-#endif // UDP_RELAY_ENABLE
 
     server_shutdown(state->env);
 
@@ -809,7 +798,7 @@ static void do_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
 
     host = s5addr->addr.domainname;
 
-    if (socks5_address_to_universal(s5addr, &target) == false) {
+    if (socks5_address_to_universal(s5addr, false, &target) == false) {
         ASSERT(s5addr->addr_type == SOCKS5_ADDRTYPE_DOMAINNAME);
 
         if (uv_ip4_addr(host, s5addr->port, &target.addr4) != 0) {
