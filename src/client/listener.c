@@ -57,7 +57,7 @@ struct ssr_client_state {
     void *ptr;
 };
 
-extern void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_universal *src_addr, const struct buffer_t *data);
+extern void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_universal *src_addr, const struct buffer_t *data, void*p);
 
 static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrinfo *addrs);
 static void listen_incoming_connection_cb(uv_stream_t *server, int status);
@@ -329,7 +329,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
                 state->env->cipher,
                 cf->protocol, cf->protocol_param);
 
-            udp_relay_set_udp_on_recv_data_callback(listener->udp_server, &udp_on_recv_data);
+            udp_relay_set_udp_on_recv_data_callback(listener->udp_server, &udp_on_recv_data, NULL);
         }
 
         n += 1;

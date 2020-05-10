@@ -1112,8 +1112,8 @@ static void _do_find_upd_tunnel(struct cstl_set *set, const void *obj, bool *sto
     struct tunnel_ctx *tunnel = (struct tunnel_ctx *)obj;
     struct client_ctx *ctx = (struct client_ctx *)tunnel->data;
     struct udp_data_context *query_data = (struct udp_data_context*)p;
-    if (ctx->udp_data_ctx) {
-        struct udp_data_context *iter = ctx->udp_data_ctx;
+    struct udp_data_context* iter = ctx->udp_data_ctx;
+    if (iter) {
         if ((memcmp(&iter->src_addr, &query_data->src_addr, sizeof(union sockaddr_universal)) == 0) &&
             (memcmp(&iter->target_addr, &query_data->target_addr, sizeof(struct socks5_address)) == 0))
         {
@@ -1124,7 +1124,7 @@ static void _do_find_upd_tunnel(struct cstl_set *set, const void *obj, bool *sto
     (void)set;
 }
 
-void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_universal *src_addr, const struct buffer_t *data) {
+void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_universal *src_addr, const struct buffer_t *data, void*p) {
     uv_loop_t *loop = udp_relay_context_get_loop(udp_ctx);
     struct server_env_t *env = (struct server_env_t *)loop->data;
     struct server_config *config = env->config;
@@ -1166,4 +1166,6 @@ void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_u
         client_tunnel_connecting_print_info(tunnel);
     }
     buffer_replace(ctx->udp_data_ctx->data, data);
+
+    (void)p;
 }

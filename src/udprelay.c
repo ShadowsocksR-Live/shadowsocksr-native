@@ -125,6 +125,7 @@ struct udp_listener_ctx_t {
     void *protocol_global;
 
     udp_on_recv_data_callback udp_on_recv_data;
+    void* recv_p;
 };
 
 struct udp_remote_ctx_t {
@@ -705,7 +706,7 @@ __EXIT__:
     udp_uv_release_buffer((uv_buf_t *)buf);
 
     if (server_ctx->udp_on_recv_data) {
-        server_ctx->udp_on_recv_data(server_ctx, (addr ? &addr_u : NULL), data);
+        server_ctx->udp_on_recv_data(server_ctx, (addr ? &addr_u : NULL), data, server_ctx->recv_p);
     }
     buffer_release(data);
 }
@@ -1272,9 +1273,10 @@ void udprelay_shutdown(struct udp_listener_ctx_t *server_ctx) {
     uv_close((uv_handle_t *)&server_ctx->udp, udp_local_listener_close_done_cb);
 }
 
-void udp_relay_set_udp_on_recv_data_callback(struct udp_listener_ctx_t *udp_ctx, udp_on_recv_data_callback callback) {
+void udp_relay_set_udp_on_recv_data_callback(struct udp_listener_ctx_t *udp_ctx, udp_on_recv_data_callback callback, void*p) {
     if (udp_ctx) {
         udp_ctx->udp_on_recv_data = callback;
+        udp_ctx->recv_p = p;
     }
 }
 
