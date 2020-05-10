@@ -21,6 +21,7 @@
 #include "http_parser_wrapper.h"
 #include "ip_addr_cache.h"
 #include "s5.h"
+#include "base64.h"
 
 #ifndef SSR_MAX_CONN
 #define SSR_MAX_CONN 1024
@@ -984,6 +985,7 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
         uint8_t *indata = (uint8_t *)socket->buf->base;
         size_t len = (size_t)socket->result;
         size_t tcp_mss = _update_tcp_mss(socket);
+        const char* udp_field;
 
         ASSERT(socket == tunnel->incoming);
         ASSERT(config->over_tls_enable); (void)config;
@@ -1017,15 +1019,20 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
         ASSERT(obfs_receipt == NULL);
         ASSERT(proto_confirm == NULL);
 
-        if (http_headers_get_field_val(hdrs, "UDP") != NULL) {
+        udp_field = http_headers_get_field_val(hdrs, "UDP");
+        if (udp_field != NULL) {
             uv_loop_t *loop = socket->handle.tcp.loop;
             struct socks5_address target_addr = { {{0}}, 0, SOCKS5_ADDRTYPE_INVALID };
             size_t data_len = 0, p_len = 0;
             const uint8_t *data_p = buffer_get_data(result, &data_len);
-            const uint8_t *p = s5_parse_upd_package(data_p, data_len, &target_addr, NULL, &p_len);
             struct udp_remote_ctx_t *udp_ctx;
+            uint8_t* addr_p;
 
-            buffer_store(ctx->init_pkg, p, p_len);
+            buffer_store(ctx->init_pkg, data_p, data_len);
+
+            addr_p = url_safe_base64_decode_alloc(udp_field, &malloc, &p_len);
+            VERIFY(socks5_address_parse(addr_p, p_len, &target_addr));
+            free(addr_p);
 
             udp_ctx = udp_remote_launch_begin(loop, config->connect_timeout_ms, &target_addr);
             udp_remote_set_data_arrived_callback(udp_ctx, udp_remote_on_data_arrived, ctx);

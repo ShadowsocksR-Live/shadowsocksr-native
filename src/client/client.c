@@ -13,6 +13,7 @@
 #include "http_parser_wrapper.h"
 #include "udprelay.h"
 #include "s5.h"
+#include "base64.h"
 
 /* A connection is modeled as an abstraction on top of two simple state
  * machines, one for reading and one for writing.  Either state machine
@@ -940,7 +941,16 @@ static void tunnel_tls_on_connection_established(struct tunnel_ctx *tunnel) {
             buf = websocket_connect_request(domain, domain_port, url_path, key, &malloc, &len);
             buf = http_header_set_payload_data(buf, &len, &realloc, typ, typ_len);
             if (ctx->udp_data_ctx) {
-                buf = http_header_append_new_field(buf, &len, &realloc, "UDP: true\r\n");
+                size_t addr_len = 0, b64size = 0;
+                uint8_t* addr_p = socks5_address_binary(&ctx->udp_data_ctx->target_addr, &malloc, &addr_len);
+                char *b64str = url_safe_base64_encode_alloc(addr_p, (int)addr_len, &malloc);
+                static const char* udp_fmt = "UDP: %s\r\n";
+                char* udp_field = (char*)calloc(strlen(udp_fmt) + strlen(b64str) + 1, sizeof(*udp_field));
+                sprintf(udp_field, udp_fmt, b64str);
+                buf = http_header_append_new_field(buf, &len, &realloc, udp_field);
+                free(udp_field);
+                free(b64str);
+                free(addr_p);
             }
             ASSERT (tunnel->tunnel_tls_send_data);
             tunnel->tunnel_tls_send_data(tunnel, buf, len);
@@ -1196,7 +1206,7 @@ void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_u
 
         client_tunnel_connecting_print_info(tunnel);
 
-        buffer_replace(ctx->udp_data_ctx->data, data);
+        buffer_store(ctx->udp_data_ctx->data, raw_p, raw_len);
     }
     (void)p;
 }
