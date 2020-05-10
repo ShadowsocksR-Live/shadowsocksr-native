@@ -1290,6 +1290,15 @@ tunnel_close_and_free(struct remote_t *remote, struct local_t *local)
     local_close_and_free(local);
 }
 
+static size_t get_sockaddr_len(struct sockaddr* addr) {
+    if (addr->sa_family == AF_INET) {
+        return sizeof(struct sockaddr_in);
+    } else if (addr->sa_family == AF_INET6) {
+        return sizeof(struct sockaddr_in6);
+    }
+    return 0;
+}
+
 static struct remote_t *
 remote_object_with_addr(struct listener_t *listener, struct sockaddr *addr)
 {
@@ -1746,7 +1755,7 @@ int ssr_Local_listen_socket_fd(struct ssr_local_state *state) {
 }
 
 int ssr_local_main_loop(const struct server_config *config, void(*feedback_state)(struct ssr_local_state *state, void *p), void *p) {
-    struct ss_host_port tunnel_addr = { NULL, NULL };
+    //struct ss_host_port tunnel_addr = { NULL, NULL };
     struct listener_t *listener;
     uv_loop_t *loop;
     uv_signal_t sigint_watcher;
@@ -1755,7 +1764,7 @@ int ssr_local_main_loop(const struct server_config *config, void(*feedback_state
     uv_tcp_t *listener_socket;
     int listenfd;
     uint16_t port;
-    struct udp_listener_ctx_t *udp_server;
+    //struct udp_listener_ctx_t *udp_server;
 
 #ifdef __MINGW32__
     winsock_init();
@@ -1893,12 +1902,12 @@ int ssr_local_main_loop(const struct server_config *config, void(*feedback_state
 
     port = get_socket_port(listener_socket);
 
-    udp_server = NULL;
+    //udp_server = NULL;
     // Setup UDP
     if (config->udp) {
-        LOGI("%s", "udprelay enabled");
-        udp_server = udprelay_begin(loop, config->listen_host, port, (union sockaddr_universal *)listen_ctx->servers[0].addr_udp,
-            &tunnel_addr, 0, listen_ctx->timeout, listen_ctx->servers[0].cipher, listen_ctx->servers[0].protocol_name, listen_ctx->servers[0].protocol_param);
+        //LOGI("%s", "udprelay enabled");
+        //udp_server = udprelay_begin(loop, config->listen_host, port, (union sockaddr_universal *)listen_ctx->servers[0].addr_udp,
+        //    &tunnel_addr, 0, listen_ctx->timeout, listen_ctx->servers[0].cipher, listen_ctx->servers[0].protocol_name, listen_ctx->servers[0].protocol_param);
     }
 
 #ifdef HAVE_LAUNCHD
@@ -1940,7 +1949,7 @@ int ssr_local_main_loop(const struct server_config *config, void(*feedback_state
 
     // Clean up
     if (config->udp) {
-        udprelay_shutdown(udp_server); // udp relay use some data from listener, so we need to release udp first
+        //udprelay_shutdown(udp_server); // udp relay use some data from listener, so we need to release udp first
     }
 
     {

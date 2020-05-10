@@ -42,7 +42,6 @@ set(SOURCE_FILES_LOCAL
         cache.c
         acl.c
         netutils.c
-        udprelay.c
         local.c
         common.h
         includeobfs.h
@@ -117,12 +116,14 @@ set(SOURCE_FILES_SERVER
         text_in_color.h
         dump_info.c
         dump_info.h
+        client/s5.c
+        client/s5.h
         ssrutils.h
         ssrutils.c
         ssrbuffer.c
         ssrbuffer.h
         encrypt.c
-        #udprelay.c
+        udprelay.c
         cache.c
         #resolv.c
         ip_addr_cache.c

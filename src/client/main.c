@@ -88,10 +88,6 @@ int main(int argc, char **argv) {
 
         config_ssrot_revision(config);
 
-#ifndef UDP_RELAY_ENABLE
-        config->udp = false;
-#endif // UDP_RELAY_ENABLE
-
         if (config->method == NULL || config->password==NULL || config->remote_host==NULL) {
             break;
         }

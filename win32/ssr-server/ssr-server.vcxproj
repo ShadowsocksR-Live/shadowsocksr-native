@@ -54,12 +54,7 @@
     <ClCompile Include="..\..\src\ssrbuffer.c" />
     <ClCompile Include="..\..\src\ssrutils.c" />
     <ClCompile Include="..\..\src\ssr_cipher_names.c" />
-    <ClCompile Include="..\..\src\udprelay.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="..\..\src\udprelay.c" />
     <ClCompile Include="..\..\src\websocket_basic.c" />
     <ClCompile Include="..\src\getopt.c" />
     <ClCompile Include="..\src\getopt_long.c" />

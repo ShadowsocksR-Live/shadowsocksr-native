@@ -45,7 +45,6 @@
     <ClCompile Include="..\..\src\ssr_cipher_names.c" />
     <ClCompile Include="..\..\src\ssr_executive.c" />
     <ClCompile Include="..\..\src\tls.c" />
-    <ClCompile Include="..\..\src\udprelay.c" />
     <ClCompile Include="..\..\src\win32.c" />
     <ClCompile Include="..\src\getopt.c" />
     <ClCompile Include="..\src\getopt_long.c" />
@@ -81,7 +80,6 @@
     <ClInclude Include="..\..\src\ssr_cipher_names.h" />
     <ClInclude Include="..\..\src\ssr_executive.h" />
     <ClInclude Include="..\..\src\tls.h" />
-    <ClInclude Include="..\..\src\udprelay.h" />
     <ClInclude Include="..\..\src\win32.h" />
     <ClInclude Include="..\include\getopt.h" />
     <ClInclude Include="..\include\getopt_long.h" />
