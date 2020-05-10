@@ -941,7 +941,7 @@ static void tunnel_tls_on_connection_established(struct tunnel_ctx *tunnel) {
             buf = websocket_connect_request(domain, domain_port, url_path, key, &malloc, &len);
             buf = http_header_set_payload_data(buf, &len, &realloc, typ, typ_len);
             if (ctx->udp_data_ctx) {
-                size_t addr_len = 0, b64size = 0;
+                size_t addr_len = 0;
                 uint8_t* addr_p = socks5_address_binary(&ctx->udp_data_ctx->target_addr, &malloc, &addr_len);
                 char *b64str = url_safe_base64_encode_alloc(addr_p, (int)addr_len, &malloc);
                 static const char* udp_fmt = "UDP: %s\r\n";

@@ -1289,7 +1289,7 @@ void udp_relay_sent_cb(uv_udp_send_t* req, int status) {
     uint8_t *dup_data = (uint8_t*)req->data;
     free(dup_data);
     free(req);
-    (void)status;
+    (void)status; (void)udp_ctx;
 }
 
 void udp_relay_send_data(struct udp_listener_ctx_t *udp_ctx, union sockaddr_universal *addr, const uint8_t *data, size_t len) {

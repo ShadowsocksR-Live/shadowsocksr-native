@@ -60,7 +60,6 @@
 /** byte size of ip6 address */
 #define INET6_SIZE 16
 
-size_t get_sockaddr_len(struct sockaddr *addr);
 ssize_t get_sockaddr(char *host, char *port,
                      struct sockaddr_storage *storage, int block,
                      int ipv6first);

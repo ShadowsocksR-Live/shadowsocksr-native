@@ -1755,7 +1755,7 @@ int ssr_Local_listen_socket_fd(struct ssr_local_state *state) {
 }
 
 int ssr_local_main_loop(const struct server_config *config, void(*feedback_state)(struct ssr_local_state *state, void *p), void *p) {
-    struct ss_host_port tunnel_addr = { NULL, NULL };
+    //struct ss_host_port tunnel_addr = { NULL, NULL };
     struct listener_t *listener;
     uv_loop_t *loop;
     uv_signal_t sigint_watcher;
@@ -1764,7 +1764,7 @@ int ssr_local_main_loop(const struct server_config *config, void(*feedback_state
     uv_tcp_t *listener_socket;
     int listenfd;
     uint16_t port;
-    struct udp_listener_ctx_t *udp_server;
+    //struct udp_listener_ctx_t *udp_server;
 
 #ifdef __MINGW32__
     winsock_init();
@@ -1902,7 +1902,7 @@ int ssr_local_main_loop(const struct server_config *config, void(*feedback_state
 
     port = get_socket_port(listener_socket);
 
-    udp_server = NULL;
+    //udp_server = NULL;
     // Setup UDP
     if (config->udp) {
         //LOGI("%s", "udprelay enabled");
