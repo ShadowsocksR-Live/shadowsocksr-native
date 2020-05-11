@@ -67,10 +67,6 @@
 
 #include "obfs/obfs.h"
 
-#ifdef MODULE_REMOTE
-#include "resolv.h"
-#endif
-
 #include "common.h"
 #include "sockaddr_universal.h"
 #include "ssr_executive.h"

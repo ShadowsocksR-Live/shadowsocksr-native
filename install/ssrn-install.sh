@@ -421,7 +421,7 @@ function write_ssr_config() {
     "obfs": "${shadowsockobfs}",
     "obfs_param": "",
 
-    "udp": false,
+    "udp": ${ssr_ot_flag},
     "timeout": 300,
 
     "server_settings": {
