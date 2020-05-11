@@ -1305,14 +1305,6 @@ remote_object_with_addr(struct listener_t *listener, struct sockaddr *addr)
     uv_loop_t *loop = listener->socket.loop;
     struct remote_t *remote = remote_new_object(loop, listener->timeout);
 
-#ifdef SET_INTERFACE
-    if (listener->iface) {
-        if (setinterface(uv_stream_fd(&remote->socket), listener->iface) == -1) {
-            SS_ERROR("setinterface");
-        }
-    }
-#endif
-
     size_t addr_len = get_sockaddr_len(addr);
     remote->addr_len = addr_len;
     memcpy(&(remote->addr), addr, addr_len);

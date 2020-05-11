@@ -19,14 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\acl.c" />
     <ClCompile Include="..\..\src\cache.c" />
     <ClCompile Include="..\..\src\encrypt.c" />
     <ClCompile Include="..\..\src\http.c" />
     <ClCompile Include="..\..\src\jconf.c" />
     <ClCompile Include="..\..\src\json.c" />
     <ClCompile Include="..\..\src\local.c" />
-    <ClCompile Include="..\..\src\netutils.c" />
     <ClCompile Include="..\..\src\obfs\auth.c" />
     <ClCompile Include="..\..\src\obfs\auth_chain.c" />
     <ClCompile Include="..\..\src\obfs\base64.c" />
@@ -37,7 +35,6 @@
     <ClCompile Include="..\..\src\obfs\obfsutil.c" />
     <ClCompile Include="..\..\src\obfs\tls1.2_ticket.c" />
     <ClCompile Include="..\..\src\obfs\verify.c" />
-    <ClCompile Include="..\..\src\rule.c" />
     <ClCompile Include="..\..\src\sockaddr_universal.c" />
     <ClCompile Include="..\..\src\socks5.c" />
     <ClCompile Include="..\..\src\ssrbuffer.c" />
@@ -51,7 +48,6 @@
     <ClCompile Include="..\src\strncasecmp.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\acl.h" />
     <ClInclude Include="..\..\src\cache.h" />
     <ClInclude Include="..\..\src\common.h" />
     <ClInclude Include="..\..\src\encrypt.h" />
@@ -59,7 +55,6 @@
     <ClInclude Include="..\..\src\jconf.h" />
     <ClInclude Include="..\..\src\json.h" />
     <ClInclude Include="..\..\src\local.h" />
-    <ClInclude Include="..\..\src\netutils.h" />
     <ClInclude Include="..\..\src\obfs\auth.h" />
     <ClInclude Include="..\..\src\obfs\auth_chain.h" />
     <ClInclude Include="..\..\src\obfs\base64.h" />
@@ -71,7 +66,6 @@
     <ClInclude Include="..\..\src\obfs\tls1.2_ticket.h" />
     <ClInclude Include="..\..\src\obfs\verify.h" />
     <ClInclude Include="..\..\src\protocol.h" />
-    <ClInclude Include="..\..\src\rule.h" />
     <ClInclude Include="..\..\src\shadowsocks.h" />
     <ClInclude Include="..\..\src\sockaddr_universal.h" />
     <ClInclude Include="..\..\src\socks5.h" />
@@ -157,7 +151,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;libcork.lib;mbedtls.lib;libuv.lib;libipset.lib;libsodium.lib;libudns.lib;pcre.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;mbedtls.lib;libuv.lib;libsodium.lib;libudns.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -167,14 +161,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_WIN32;_DEBUG;_CONSOLE;__MEM_CHECK__;__MINGW32__;__MINGW64_VERSION_MAJOR;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;USE_CRYPTO_MBEDTLS;_WINSOCK_DEPRECATED_NO_WARNINGS;VERSION="3.0.1";HAVE_PCRE_H;MODULE_LOCAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../depends/mbedtls/include;$(ProjectDir)../../depends/libsodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include/sodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include;$(ProjectDir)../../depends/libsodium/ssrbuild/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../../libcork/include;$(ProjectDir)../../libipset/include;$(ProjectDir)../../libudns;$(ProjectDir)../../depends/pcre;$(ProjectDir)../include;$(ProjectDir)../../src;$(ProjectDir)../../src/obfs;$(ProjectDir)../../src/client;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../depends/mbedtls/include;$(ProjectDir)../../depends/libsodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include/sodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include;$(ProjectDir)../../depends/libsodium/ssrbuild/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../include;$(ProjectDir)../../src;$(ProjectDir)../../src/obfs;$(ProjectDir)../../src/client;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;libcork.lib;mbedtls.lib;libuv.lib;libipset.lib;libsodium.lib;libudns.lib;pcre.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;mbedtls.lib;libuv.lib;libsodium.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -186,7 +180,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>_WIN32;WIN32;NDEBUG;_CONSOLE;__MINGW32__;__MINGW64_VERSION_MAJOR;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;USE_CRYPTO_MBEDTLS;_WINSOCK_DEPRECATED_NO_WARNINGS;VERSION="3.0.1";HAVE_PCRE_H;MODULE_LOCAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../depends/mbedtls/include;$(ProjectDir)../../depends/libsodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include/sodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include;$(ProjectDir)../../depends/libsodium/ssrbuild/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../../libcork/include;$(ProjectDir)../../libipset/include;$(ProjectDir)../../libudns;$(ProjectDir)../../depends/pcre;$(ProjectDir)../include;$(ProjectDir)../../src;$(ProjectDir)../../src/obfs;$(ProjectDir)../../src/client;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../depends/mbedtls/include;$(ProjectDir)../../depends/libsodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include/sodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include;$(ProjectDir)../../depends/libsodium/ssrbuild/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../include;$(ProjectDir)../../src;$(ProjectDir)../../src/obfs;$(ProjectDir)../../src/client;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -195,7 +189,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;libcork.lib;mbedtls.lib;libuv.lib;libipset.lib;libsodium.lib;libudns.lib;pcre.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;mbedtls.lib;libuv.lib;libsodium.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -207,7 +201,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>_WIN32;NDEBUG;_CONSOLE;__MINGW32__;__MINGW64_VERSION_MAJOR;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;USE_CRYPTO_MBEDTLS;_WINSOCK_DEPRECATED_NO_WARNINGS;VERSION="3.0.1";HAVE_PCRE_H;MODULE_LOCAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../depends/mbedtls/include;$(ProjectDir)../../depends/libsodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include/sodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include;$(ProjectDir)../../depends/libsodium/ssrbuild/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../../libcork/include;$(ProjectDir)../../libipset/include;$(ProjectDir)../../libudns;$(ProjectDir)../../depends/pcre;$(ProjectDir)../include;$(ProjectDir)../../src;$(ProjectDir)../../src/obfs;$(ProjectDir)../../src/client;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../depends/mbedtls/include;$(ProjectDir)../../depends/libsodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include/sodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include;$(ProjectDir)../../depends/libsodium/ssrbuild/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../include;$(ProjectDir)../../src;$(ProjectDir)../../src/obfs;$(ProjectDir)../../src/client;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -216,7 +210,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;libcork.lib;mbedtls.lib;libuv.lib;libipset.lib;libsodium.lib;libudns.lib;pcre.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;mbedtls.lib;libuv.lib;libsodium.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

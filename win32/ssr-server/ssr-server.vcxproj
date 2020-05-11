@@ -33,7 +33,6 @@
     <ClCompile Include="..\..\src\text_in_color.c" />
     <ClCompile Include="..\..\src\tunnel.c" />
     <ClCompile Include="..\..\src\encrypt.c" />
-    <ClCompile Include="..\..\src\netutils.c" />
     <ClCompile Include="..\..\src\obfs\auth.c" />
     <ClCompile Include="..\..\src\obfs\auth_chain.c" />
     <ClCompile Include="..\..\src\obfs\base64.c" />
@@ -44,12 +43,6 @@
     <ClCompile Include="..\..\src\obfs\obfsutil.c" />
     <ClCompile Include="..\..\src\obfs\tls1.2_ticket.c" />
     <ClCompile Include="..\..\src\obfs\verify.c" />
-    <ClCompile Include="..\..\src\resolv.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\server\server.c" />
     <ClCompile Include="..\..\src\ssrbuffer.c" />
     <ClCompile Include="..\..\src\ssrutils.c" />
@@ -77,7 +70,6 @@
     <ClInclude Include="..\..\src\ssr_executive.h" />
     <ClInclude Include="..\..\src\common.h" />
     <ClInclude Include="..\..\src\encrypt.h" />
-    <ClInclude Include="..\..\src\netutils.h" />
     <ClInclude Include="..\..\src\obfs\auth.h" />
     <ClInclude Include="..\..\src\obfs\auth_chain.h" />
     <ClInclude Include="..\..\src\obfs\base64.h" />
@@ -89,7 +81,6 @@
     <ClInclude Include="..\..\src\obfs\tls1.2_ticket.h" />
     <ClInclude Include="..\..\src\obfs\verify.h" />
     <ClInclude Include="..\..\src\protocol.h" />
-    <ClInclude Include="..\..\src\resolv.h" />
     <ClInclude Include="..\..\src\ssrbuffer.h" />
     <ClInclude Include="..\..\src\ssrutils.h" />
     <ClInclude Include="..\..\src\ssr_cipher_names.h" />
@@ -174,7 +165,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;mbedTLS.lib;libuv.lib;libsodium.lib;json-c.lib;libcork.lib;libudns.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;mbedTLS.lib;libuv.lib;libsodium.lib;json-c.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -184,14 +175,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_WIN32;WIN32;_DEBUG;__MEM_CHECK__;_CONSOLE;__MINGW32__;__MINGW64_VERSION_MAJOR;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;USE_CRYPTO_MBEDTLS;_WINSOCK_DEPRECATED_NO_WARNINGS;VERSION="3.0.1";HAVE_PCRE_H;MODULE_REMOTE;UDP_RELAY_ENABLE;__PRINT_INFO__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../depends;$(ProjectDir)../../depends/json-c/win32;$(ProjectDir)../../depends/json-c;$(ProjectDir)../../depends/mbedtls/include;$(ProjectDir)../../depends/libsodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include/sodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include;$(ProjectDir)../../depends/libsodium/ssrbuild/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../../libcork/include;$(ProjectDir)../../libipset/include;$(ProjectDir)../../libudns;$(ProjectDir)../../depends/pcre4w/pcre;$(ProjectDir)../../depends/http-parser;$(ProjectDir)../include;$(ProjectDir)../../src;$(ProjectDir)../../src/obfs;$(ProjectDir)../../src/client;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../depends;$(ProjectDir)../../depends/json-c/win32;$(ProjectDir)../../depends/json-c;$(ProjectDir)../../depends/mbedtls/include;$(ProjectDir)../../depends/libsodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include/sodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include;$(ProjectDir)../../depends/libsodium/ssrbuild/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../../depends/http-parser;$(ProjectDir)../include;$(ProjectDir)../../src;$(ProjectDir)../../src/obfs;$(ProjectDir)../../src/client;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;mbedTLS.lib;libuv.lib;libsodium.lib;json-c.lib;libcork.lib;libudns.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;mbedTLS.lib;libuv.lib;libsodium.lib;json-c.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -203,7 +194,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>_WIN32;WIN32;NDEBUG;_CONSOLE;__MINGW32__;__MINGW64_VERSION_MAJOR;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;USE_CRYPTO_MBEDTLS;_WINSOCK_DEPRECATED_NO_WARNINGS;VERSION="3.0.1";HAVE_PCRE_H;MODULE_REMOTE;UDP_RELAY_ENABLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../depends;$(ProjectDir)../../depends/json-c/win32;$(ProjectDir)../../depends/json-c;$(ProjectDir)../../depends/mbedtls/include;$(ProjectDir)../../depends/libsodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include/sodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include;$(ProjectDir)../../depends/libsodium/ssrbuild/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../../libcork/include;$(ProjectDir)../../libipset/include;$(ProjectDir)../../libudns;$(ProjectDir)../../depends/pcre4w/pcre;$(ProjectDir)../../depends/http-parser;$(ProjectDir)../include;$(ProjectDir)../../src;$(ProjectDir)../../src/obfs;$(ProjectDir)../../src/client;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../depends;$(ProjectDir)../../depends/json-c/win32;$(ProjectDir)../../depends/json-c;$(ProjectDir)../../depends/mbedtls/include;$(ProjectDir)../../depends/libsodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include/sodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include;$(ProjectDir)../../depends/libsodium/ssrbuild/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../../depends/http-parser;$(ProjectDir)../include;$(ProjectDir)../../src;$(ProjectDir)../../src/obfs;$(ProjectDir)../../src/client;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -212,7 +203,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;mbedTLS.lib;libuv.lib;libsodium.lib;json-c.lib;libcork.lib;libudns.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;mbedTLS.lib;libuv.lib;libsodium.lib;json-c.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -224,7 +215,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>_WIN32;NDEBUG;_CONSOLE;__MINGW32__;__MINGW64_VERSION_MAJOR;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;USE_CRYPTO_MBEDTLS;_WINSOCK_DEPRECATED_NO_WARNINGS;VERSION="3.0.1";HAVE_PCRE_H;MODULE_REMOTE;UDP_RELAY_ENABLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../depends;$(ProjectDir)../../depends/json-c/win32;$(ProjectDir)../../depends/json-c;$(ProjectDir)../../depends/mbedtls/include;$(ProjectDir)../../depends/libsodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include/sodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include;$(ProjectDir)../../depends/libsodium/ssrbuild/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../../libcork/include;$(ProjectDir)../../libipset/include;$(ProjectDir)../../libudns;$(ProjectDir)../../depends/pcre4w/pcre;$(ProjectDir)../../depends/http-parser;$(ProjectDir)../include;$(ProjectDir)../../src;$(ProjectDir)../../src/obfs;$(ProjectDir)../../src/client;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../depends;$(ProjectDir)../../depends/json-c/win32;$(ProjectDir)../../depends/json-c;$(ProjectDir)../../depends/mbedtls/include;$(ProjectDir)../../depends/libsodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include/sodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include;$(ProjectDir)../../depends/libsodium/ssrbuild/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../../depends/http-parser;$(ProjectDir)../include;$(ProjectDir)../../src;$(ProjectDir)../../src/obfs;$(ProjectDir)../../src/client;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -233,7 +224,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;mbedTLS.lib;libuv.lib;libsodium.lib;json-c.lib;libcork.lib;libudns.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;mbedTLS.lib;libuv.lib;libsodium.lib;json-c.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
