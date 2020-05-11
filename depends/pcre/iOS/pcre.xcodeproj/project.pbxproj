@@ -1,0 +1,591 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 48;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		3A5B60242031D3BC0006CE34 /* pcre_xclass.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FD12031D3B20006CE34 /* pcre_xclass.c */; };
+		3A5B60252031D3BC0006CE34 /* pcre32_get.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FD22031D3B20006CE34 /* pcre32_get.c */; };
+		3A5B60262031D3BC0006CE34 /* pcre_globals.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FD32031D3B20006CE34 /* pcre_globals.c */; };
+		3A5B60272031D3BC0006CE34 /* pcre16_string_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FD42031D3B20006CE34 /* pcre16_string_utils.c */; };
+		3A5B60282031D3BC0006CE34 /* pcre32_ord2utf32.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FD52031D3B20006CE34 /* pcre32_ord2utf32.c */; };
+		3A5B60292031D3BC0006CE34 /* dftables.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FD62031D3B20006CE34 /* dftables.c */; };
+		3A5B602A2031D3BC0006CE34 /* pcre16_byte_order.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FD82031D3B20006CE34 /* pcre16_byte_order.c */; };
+		3A5B602B2031D3BC0006CE34 /* pcre16_config.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FD92031D3B20006CE34 /* pcre16_config.c */; };
+		3A5B602C2031D3BC0006CE34 /* pcre32_fullinfo.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FDA2031D3B20006CE34 /* pcre32_fullinfo.c */; };
+		3A5B602D2031D3BC0006CE34 /* pcre32_ucd.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FDB2031D3B20006CE34 /* pcre32_ucd.c */; };
+		3A5B602E2031D3BC0006CE34 /* pcre16_compile.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FDC2031D3B20006CE34 /* pcre16_compile.c */; };
+		3A5B602F2031D3BC0006CE34 /* pcregrep.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FDD2031D3B20006CE34 /* pcregrep.c */; };
+		3A5B60302031D3BC0006CE34 /* pcre32_refcount.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FDE2031D3B20006CE34 /* pcre32_refcount.c */; };
+		3A5B60312031D3BC0006CE34 /* pcre32_utf32_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FDF2031D3B20006CE34 /* pcre32_utf32_utils.c */; };
+		3A5B60322031D3BC0006CE34 /* pcre_chartables.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FE02031D3B30006CE34 /* pcre_chartables.c */; };
+		3A5B60332031D3BC0006CE34 /* pcre_string_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FE12031D3B30006CE34 /* pcre_string_utils.c */; };
+		3A5B60342031D3BC0006CE34 /* pcre_printint.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FE22031D3B30006CE34 /* pcre_printint.c */; };
+		3A5B60352031D3BC0006CE34 /* pcre16_xclass.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FE32031D3B30006CE34 /* pcre16_xclass.c */; };
+		3A5B60362031D3BC0006CE34 /* pcre16_dfa_exec.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FE72031D3B30006CE34 /* pcre16_dfa_exec.c */; };
+		3A5B60372031D3BC0006CE34 /* pcre16_jit_compile.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FE82031D3B30006CE34 /* pcre16_jit_compile.c */; };
+		3A5B60382031D3BC0006CE34 /* pcre32_compile.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FE92031D3B30006CE34 /* pcre32_compile.c */; };
+		3A5B60392031D3BC0006CE34 /* pcre32_string_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FEA2031D3B30006CE34 /* pcre32_string_utils.c */; };
+		3A5B603B2031D3BC0006CE34 /* pcre_tables.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FEC2031D3B40006CE34 /* pcre_tables.c */; };
+		3A5B603D2031D3BC0006CE34 /* pcre_dfa_exec.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FEE2031D3B40006CE34 /* pcre_dfa_exec.c */; };
+		3A5B603E2031D3BC0006CE34 /* pcre_jit_compile.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FEF2031D3B40006CE34 /* pcre_jit_compile.c */; };
+		3A5B603F2031D3BC0006CE34 /* pcre32_byte_order.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FF02031D3B40006CE34 /* pcre32_byte_order.c */; };
+		3A5B60402031D3BC0006CE34 /* pcre32_jit_compile.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FF12031D3B50006CE34 /* pcre32_jit_compile.c */; };
+		3A5B60412031D3BC0006CE34 /* pcre_valid_utf8.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FF22031D3B50006CE34 /* pcre_valid_utf8.c */; };
+		3A5B60422031D3BC0006CE34 /* pcre_fullinfo.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FF32031D3B50006CE34 /* pcre_fullinfo.c */; };
+		3A5B60432031D3BC0006CE34 /* pcre32_valid_utf32.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FF42031D3B50006CE34 /* pcre32_valid_utf32.c */; };
+		3A5B60442031D3BC0006CE34 /* pcre32_version.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FF52031D3B50006CE34 /* pcre32_version.c */; };
+		3A5B60452031D3BC0006CE34 /* pcre16_version.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FF62031D3B60006CE34 /* pcre16_version.c */; };
+		3A5B60462031D3BC0006CE34 /* pcre16_chartables.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FF72031D3B60006CE34 /* pcre16_chartables.c */; };
+		3A5B60472031D3BC0006CE34 /* pcre_compile.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FF82031D3B60006CE34 /* pcre_compile.c */; };
+		3A5B60482031D3BC0006CE34 /* pcre16_get.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FF92031D3B60006CE34 /* pcre16_get.c */; };
+		3A5B60492031D3BC0006CE34 /* pcre16_maketables.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FFB2031D3B60006CE34 /* pcre16_maketables.c */; };
+		3A5B604A2031D3BC0006CE34 /* pcre_ucd.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FFC2031D3B60006CE34 /* pcre_ucd.c */; };
+		3A5B604B2031D3BC0006CE34 /* pcre16_valid_utf16.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FFD2031D3B60006CE34 /* pcre16_valid_utf16.c */; };
+		3A5B604C2031D3BC0006CE34 /* pcre32_newline.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FFE2031D3B70006CE34 /* pcre32_newline.c */; };
+		3A5B604D2031D3BC0006CE34 /* pcre32_study.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B5FFF2031D3B70006CE34 /* pcre32_study.c */; };
+		3A5B604E2031D3BC0006CE34 /* pcre16_utf16_utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60002031D3B70006CE34 /* pcre16_utf16_utils.c */; };
+		3A5B604F2031D3BC0006CE34 /* pcre_jit_test.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60012031D3B70006CE34 /* pcre_jit_test.c */; };
+		3A5B60502031D3BC0006CE34 /* pcre32_globals.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60022031D3B70006CE34 /* pcre32_globals.c */; };
+		3A5B60512031D3BC0006CE34 /* pcre_newline.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60032031D3B70006CE34 /* pcre_newline.c */; };
+		3A5B60522031D3BC0006CE34 /* pcre32_xclass.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60052031D3B70006CE34 /* pcre32_xclass.c */; };
+		3A5B60532031D3BC0006CE34 /* pcre32_dfa_exec.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60072031D3B80006CE34 /* pcre32_dfa_exec.c */; };
+		3A5B60542031D3BC0006CE34 /* pcre_version.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60082031D3B80006CE34 /* pcre_version.c */; };
+		3A5B60552031D3BC0006CE34 /* pcre32_config.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60092031D3B80006CE34 /* pcre32_config.c */; };
+		3A5B60562031D3BC0006CE34 /* pcre_refcount.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B600A2031D3B80006CE34 /* pcre_refcount.c */; };
+		3A5B60572031D3BC0006CE34 /* pcre_study.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B600B2031D3B80006CE34 /* pcre_study.c */; };
+		3A5B60582031D3BC0006CE34 /* pcre16_study.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B600C2031D3B80006CE34 /* pcre16_study.c */; };
+		3A5B60592031D3BC0006CE34 /* pcre32_maketables.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B600D2031D3B80006CE34 /* pcre32_maketables.c */; };
+		3A5B605A2031D3BC0006CE34 /* pcre32_printint.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B600E2031D3B80006CE34 /* pcre32_printint.c */; };
+		3A5B605B2031D3BC0006CE34 /* pcre32_exec.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B600F2031D3B90006CE34 /* pcre32_exec.c */; };
+		3A5B605C2031D3BC0006CE34 /* pcre_exec.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60102031D3B90006CE34 /* pcre_exec.c */; };
+		3A5B605D2031D3BC0006CE34 /* pcre16_ord2utf16.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60112031D3B90006CE34 /* pcre16_ord2utf16.c */; };
+		3A5B605E2031D3BC0006CE34 /* pcre16_printint.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60122031D3B90006CE34 /* pcre16_printint.c */; };
+		3A5B605F2031D3BC0006CE34 /* pcre32_tables.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60132031D3B90006CE34 /* pcre32_tables.c */; };
+		3A5B60602031D3BC0006CE34 /* pcre_ord2utf8.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60142031D3B90006CE34 /* pcre_ord2utf8.c */; };
+		3A5B60612031D3BC0006CE34 /* pcre16_refcount.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60152031D3B90006CE34 /* pcre16_refcount.c */; };
+		3A5B60622031D3BC0006CE34 /* pcre_maketables.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60162031D3BA0006CE34 /* pcre_maketables.c */; };
+		3A5B60632031D3BC0006CE34 /* pcre32_chartables.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60172031D3BA0006CE34 /* pcre32_chartables.c */; };
+		3A5B60652031D3BC0006CE34 /* pcre_get.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60192031D3BA0006CE34 /* pcre_get.c */; };
+		3A5B60662031D3BC0006CE34 /* pcre_byte_order.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B601A2031D3BA0006CE34 /* pcre_byte_order.c */; };
+		3A5B60672031D3BC0006CE34 /* pcre16_exec.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B601B2031D3BA0006CE34 /* pcre16_exec.c */; };
+		3A5B60682031D3BC0006CE34 /* pcre16_newline.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B601C2031D3BB0006CE34 /* pcre16_newline.c */; };
+		3A5B60692031D3BC0006CE34 /* pcre_config.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B601D2031D3BB0006CE34 /* pcre_config.c */; };
+		3A5B606A2031D3BC0006CE34 /* pcre16_tables.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B601E2031D3BB0006CE34 /* pcre16_tables.c */; };
+		3A5B606B2031D3BC0006CE34 /* pcre16_ucd.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B601F2031D3BB0006CE34 /* pcre16_ucd.c */; };
+		3A5B606C2031D3BC0006CE34 /* pcre16_fullinfo.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60222031D3BB0006CE34 /* pcre16_fullinfo.c */; };
+		3A5B606D2031D3BC0006CE34 /* pcre16_globals.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A5B60232031D3BC0006CE34 /* pcre16_globals.c */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		3A5B5FC22031D1D30006CE34 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		3A5B5FC42031D1D30006CE34 /* libpcre.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libpcre.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		3A5B5FD12031D3B20006CE34 /* pcre_xclass.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_xclass.c; path = ../pcre_xclass.c; sourceTree = "<group>"; };
+		3A5B5FD22031D3B20006CE34 /* pcre32_get.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_get.c; path = ../pcre32_get.c; sourceTree = "<group>"; };
+		3A5B5FD32031D3B20006CE34 /* pcre_globals.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_globals.c; path = ../pcre_globals.c; sourceTree = "<group>"; };
+		3A5B5FD42031D3B20006CE34 /* pcre16_string_utils.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_string_utils.c; path = ../pcre16_string_utils.c; sourceTree = "<group>"; };
+		3A5B5FD52031D3B20006CE34 /* pcre32_ord2utf32.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_ord2utf32.c; path = ../pcre32_ord2utf32.c; sourceTree = "<group>"; };
+		3A5B5FD62031D3B20006CE34 /* dftables.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = dftables.c; path = ../dftables.c; sourceTree = "<group>"; };
+		3A5B5FD72031D3B20006CE34 /* pcre_stringpiece.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = pcre_stringpiece.h; path = ../pcre_stringpiece.h; sourceTree = "<group>"; };
+		3A5B5FD82031D3B20006CE34 /* pcre16_byte_order.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_byte_order.c; path = ../pcre16_byte_order.c; sourceTree = "<group>"; };
+		3A5B5FD92031D3B20006CE34 /* pcre16_config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_config.c; path = ../pcre16_config.c; sourceTree = "<group>"; };
+		3A5B5FDA2031D3B20006CE34 /* pcre32_fullinfo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_fullinfo.c; path = ../pcre32_fullinfo.c; sourceTree = "<group>"; };
+		3A5B5FDB2031D3B20006CE34 /* pcre32_ucd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_ucd.c; path = ../pcre32_ucd.c; sourceTree = "<group>"; };
+		3A5B5FDC2031D3B20006CE34 /* pcre16_compile.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_compile.c; path = ../pcre16_compile.c; sourceTree = "<group>"; };
+		3A5B5FDD2031D3B20006CE34 /* pcregrep.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcregrep.c; path = ../pcregrep.c; sourceTree = "<group>"; };
+		3A5B5FDE2031D3B20006CE34 /* pcre32_refcount.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_refcount.c; path = ../pcre32_refcount.c; sourceTree = "<group>"; };
+		3A5B5FDF2031D3B20006CE34 /* pcre32_utf32_utils.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_utf32_utils.c; path = ../pcre32_utf32_utils.c; sourceTree = "<group>"; };
+		3A5B5FE02031D3B30006CE34 /* pcre_chartables.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_chartables.c; path = ../pcre_chartables.c; sourceTree = "<group>"; };
+		3A5B5FE12031D3B30006CE34 /* pcre_string_utils.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_string_utils.c; path = ../pcre_string_utils.c; sourceTree = "<group>"; };
+		3A5B5FE22031D3B30006CE34 /* pcre_printint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_printint.c; path = ../pcre_printint.c; sourceTree = "<group>"; };
+		3A5B5FE32031D3B30006CE34 /* pcre16_xclass.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_xclass.c; path = ../pcre16_xclass.c; sourceTree = "<group>"; };
+		3A5B5FE42031D3B30006CE34 /* pcrecpparg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = pcrecpparg.h; path = ../pcrecpparg.h; sourceTree = "<group>"; };
+		3A5B5FE52031D3B30006CE34 /* pcre_internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = pcre_internal.h; path = ../pcre_internal.h; sourceTree = "<group>"; };
+		3A5B5FE62031D3B30006CE34 /* pcre.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = pcre.h; path = ../pcre.h; sourceTree = "<group>"; };
+		3A5B5FE72031D3B30006CE34 /* pcre16_dfa_exec.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_dfa_exec.c; path = ../pcre16_dfa_exec.c; sourceTree = "<group>"; };
+		3A5B5FE82031D3B30006CE34 /* pcre16_jit_compile.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_jit_compile.c; path = ../pcre16_jit_compile.c; sourceTree = "<group>"; };
+		3A5B5FE92031D3B30006CE34 /* pcre32_compile.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_compile.c; path = ../pcre32_compile.c; sourceTree = "<group>"; };
+		3A5B5FEA2031D3B30006CE34 /* pcre32_string_utils.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_string_utils.c; path = ../pcre32_string_utils.c; sourceTree = "<group>"; };
+		3A5B5FEC2031D3B40006CE34 /* pcre_tables.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_tables.c; path = ../pcre_tables.c; sourceTree = "<group>"; };
+		3A5B5FEE2031D3B40006CE34 /* pcre_dfa_exec.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_dfa_exec.c; path = ../pcre_dfa_exec.c; sourceTree = "<group>"; };
+		3A5B5FEF2031D3B40006CE34 /* pcre_jit_compile.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_jit_compile.c; path = ../pcre_jit_compile.c; sourceTree = "<group>"; };
+		3A5B5FF02031D3B40006CE34 /* pcre32_byte_order.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_byte_order.c; path = ../pcre32_byte_order.c; sourceTree = "<group>"; };
+		3A5B5FF12031D3B50006CE34 /* pcre32_jit_compile.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_jit_compile.c; path = ../pcre32_jit_compile.c; sourceTree = "<group>"; };
+		3A5B5FF22031D3B50006CE34 /* pcre_valid_utf8.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_valid_utf8.c; path = ../pcre_valid_utf8.c; sourceTree = "<group>"; };
+		3A5B5FF32031D3B50006CE34 /* pcre_fullinfo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_fullinfo.c; path = ../pcre_fullinfo.c; sourceTree = "<group>"; };
+		3A5B5FF42031D3B50006CE34 /* pcre32_valid_utf32.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_valid_utf32.c; path = ../pcre32_valid_utf32.c; sourceTree = "<group>"; };
+		3A5B5FF52031D3B50006CE34 /* pcre32_version.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_version.c; path = ../pcre32_version.c; sourceTree = "<group>"; };
+		3A5B5FF62031D3B60006CE34 /* pcre16_version.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_version.c; path = ../pcre16_version.c; sourceTree = "<group>"; };
+		3A5B5FF72031D3B60006CE34 /* pcre16_chartables.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_chartables.c; path = ../pcre16_chartables.c; sourceTree = "<group>"; };
+		3A5B5FF82031D3B60006CE34 /* pcre_compile.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_compile.c; path = ../pcre_compile.c; sourceTree = "<group>"; };
+		3A5B5FF92031D3B60006CE34 /* pcre16_get.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_get.c; path = ../pcre16_get.c; sourceTree = "<group>"; };
+		3A5B5FFA2031D3B60006CE34 /* pcrecpp_internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = pcrecpp_internal.h; path = ../pcrecpp_internal.h; sourceTree = "<group>"; };
+		3A5B5FFB2031D3B60006CE34 /* pcre16_maketables.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_maketables.c; path = ../pcre16_maketables.c; sourceTree = "<group>"; };
+		3A5B5FFC2031D3B60006CE34 /* pcre_ucd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_ucd.c; path = ../pcre_ucd.c; sourceTree = "<group>"; };
+		3A5B5FFD2031D3B60006CE34 /* pcre16_valid_utf16.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_valid_utf16.c; path = ../pcre16_valid_utf16.c; sourceTree = "<group>"; };
+		3A5B5FFE2031D3B70006CE34 /* pcre32_newline.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_newline.c; path = ../pcre32_newline.c; sourceTree = "<group>"; };
+		3A5B5FFF2031D3B70006CE34 /* pcre32_study.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_study.c; path = ../pcre32_study.c; sourceTree = "<group>"; };
+		3A5B60002031D3B70006CE34 /* pcre16_utf16_utils.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_utf16_utils.c; path = ../pcre16_utf16_utils.c; sourceTree = "<group>"; };
+		3A5B60012031D3B70006CE34 /* pcre_jit_test.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_jit_test.c; path = ../pcre_jit_test.c; sourceTree = "<group>"; };
+		3A5B60022031D3B70006CE34 /* pcre32_globals.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_globals.c; path = ../pcre32_globals.c; sourceTree = "<group>"; };
+		3A5B60032031D3B70006CE34 /* pcre_newline.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_newline.c; path = ../pcre_newline.c; sourceTree = "<group>"; };
+		3A5B60042031D3B70006CE34 /* pcre_scanner.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = pcre_scanner.h; path = ../pcre_scanner.h; sourceTree = "<group>"; };
+		3A5B60052031D3B70006CE34 /* pcre32_xclass.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_xclass.c; path = ../pcre32_xclass.c; sourceTree = "<group>"; };
+		3A5B60062031D3B80006CE34 /* ucp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ucp.h; path = ../ucp.h; sourceTree = "<group>"; };
+		3A5B60072031D3B80006CE34 /* pcre32_dfa_exec.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_dfa_exec.c; path = ../pcre32_dfa_exec.c; sourceTree = "<group>"; };
+		3A5B60082031D3B80006CE34 /* pcre_version.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_version.c; path = ../pcre_version.c; sourceTree = "<group>"; };
+		3A5B60092031D3B80006CE34 /* pcre32_config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_config.c; path = ../pcre32_config.c; sourceTree = "<group>"; };
+		3A5B600A2031D3B80006CE34 /* pcre_refcount.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_refcount.c; path = ../pcre_refcount.c; sourceTree = "<group>"; };
+		3A5B600B2031D3B80006CE34 /* pcre_study.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_study.c; path = ../pcre_study.c; sourceTree = "<group>"; };
+		3A5B600C2031D3B80006CE34 /* pcre16_study.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_study.c; path = ../pcre16_study.c; sourceTree = "<group>"; };
+		3A5B600D2031D3B80006CE34 /* pcre32_maketables.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_maketables.c; path = ../pcre32_maketables.c; sourceTree = "<group>"; };
+		3A5B600E2031D3B80006CE34 /* pcre32_printint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_printint.c; path = ../pcre32_printint.c; sourceTree = "<group>"; };
+		3A5B600F2031D3B90006CE34 /* pcre32_exec.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_exec.c; path = ../pcre32_exec.c; sourceTree = "<group>"; };
+		3A5B60102031D3B90006CE34 /* pcre_exec.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_exec.c; path = ../pcre_exec.c; sourceTree = "<group>"; };
+		3A5B60112031D3B90006CE34 /* pcre16_ord2utf16.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_ord2utf16.c; path = ../pcre16_ord2utf16.c; sourceTree = "<group>"; };
+		3A5B60122031D3B90006CE34 /* pcre16_printint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_printint.c; path = ../pcre16_printint.c; sourceTree = "<group>"; };
+		3A5B60132031D3B90006CE34 /* pcre32_tables.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_tables.c; path = ../pcre32_tables.c; sourceTree = "<group>"; };
+		3A5B60142031D3B90006CE34 /* pcre_ord2utf8.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_ord2utf8.c; path = ../pcre_ord2utf8.c; sourceTree = "<group>"; };
+		3A5B60152031D3B90006CE34 /* pcre16_refcount.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_refcount.c; path = ../pcre16_refcount.c; sourceTree = "<group>"; };
+		3A5B60162031D3BA0006CE34 /* pcre_maketables.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_maketables.c; path = ../pcre_maketables.c; sourceTree = "<group>"; };
+		3A5B60172031D3BA0006CE34 /* pcre32_chartables.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre32_chartables.c; path = ../pcre32_chartables.c; sourceTree = "<group>"; };
+		3A5B60192031D3BA0006CE34 /* pcre_get.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_get.c; path = ../pcre_get.c; sourceTree = "<group>"; };
+		3A5B601A2031D3BA0006CE34 /* pcre_byte_order.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_byte_order.c; path = ../pcre_byte_order.c; sourceTree = "<group>"; };
+		3A5B601B2031D3BA0006CE34 /* pcre16_exec.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_exec.c; path = ../pcre16_exec.c; sourceTree = "<group>"; };
+		3A5B601C2031D3BB0006CE34 /* pcre16_newline.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_newline.c; path = ../pcre16_newline.c; sourceTree = "<group>"; };
+		3A5B601D2031D3BB0006CE34 /* pcre_config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre_config.c; path = ../pcre_config.c; sourceTree = "<group>"; };
+		3A5B601E2031D3BB0006CE34 /* pcre16_tables.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_tables.c; path = ../pcre16_tables.c; sourceTree = "<group>"; };
+		3A5B601F2031D3BB0006CE34 /* pcre16_ucd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_ucd.c; path = ../pcre16_ucd.c; sourceTree = "<group>"; };
+		3A5B60202031D3BB0006CE34 /* pcrecpp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = pcrecpp.h; path = ../pcrecpp.h; sourceTree = "<group>"; };
+		3A5B60222031D3BB0006CE34 /* pcre16_fullinfo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_fullinfo.c; path = ../pcre16_fullinfo.c; sourceTree = "<group>"; };
+		3A5B60232031D3BC0006CE34 /* pcre16_globals.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pcre16_globals.c; path = ../pcre16_globals.c; sourceTree = "<group>"; };
+		3A5B606E2031D4B90006CE34 /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3A5B5FC12031D1D30006CE34 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		3A5B5FBB2031D1D30006CE34 = {
+			isa = PBXGroup;
+			children = (
+				3A5B5FD02031D2650006CE34 /* src */,
+				3A5B5FC52031D1D30006CE34 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		3A5B5FC52031D1D30006CE34 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3A5B5FC42031D1D30006CE34 /* libpcre.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		3A5B5FD02031D2650006CE34 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				3A5B606E2031D4B90006CE34 /* config.h */,
+				3A5B5FD62031D3B20006CE34 /* dftables.c */,
+				3A5B601A2031D3BA0006CE34 /* pcre_byte_order.c */,
+				3A5B5FE02031D3B30006CE34 /* pcre_chartables.c */,
+				3A5B5FF82031D3B60006CE34 /* pcre_compile.c */,
+				3A5B601D2031D3BB0006CE34 /* pcre_config.c */,
+				3A5B5FEE2031D3B40006CE34 /* pcre_dfa_exec.c */,
+				3A5B60102031D3B90006CE34 /* pcre_exec.c */,
+				3A5B5FF32031D3B50006CE34 /* pcre_fullinfo.c */,
+				3A5B60192031D3BA0006CE34 /* pcre_get.c */,
+				3A5B5FD32031D3B20006CE34 /* pcre_globals.c */,
+				3A5B5FE52031D3B30006CE34 /* pcre_internal.h */,
+				3A5B5FEF2031D3B40006CE34 /* pcre_jit_compile.c */,
+				3A5B60012031D3B70006CE34 /* pcre_jit_test.c */,
+				3A5B60162031D3BA0006CE34 /* pcre_maketables.c */,
+				3A5B60032031D3B70006CE34 /* pcre_newline.c */,
+				3A5B60142031D3B90006CE34 /* pcre_ord2utf8.c */,
+				3A5B5FE22031D3B30006CE34 /* pcre_printint.c */,
+				3A5B600A2031D3B80006CE34 /* pcre_refcount.c */,
+				3A5B60042031D3B70006CE34 /* pcre_scanner.h */,
+				3A5B5FE12031D3B30006CE34 /* pcre_string_utils.c */,
+				3A5B5FD72031D3B20006CE34 /* pcre_stringpiece.h */,
+				3A5B600B2031D3B80006CE34 /* pcre_study.c */,
+				3A5B5FEC2031D3B40006CE34 /* pcre_tables.c */,
+				3A5B5FFC2031D3B60006CE34 /* pcre_ucd.c */,
+				3A5B5FF22031D3B50006CE34 /* pcre_valid_utf8.c */,
+				3A5B60082031D3B80006CE34 /* pcre_version.c */,
+				3A5B5FD12031D3B20006CE34 /* pcre_xclass.c */,
+				3A5B5FE62031D3B30006CE34 /* pcre.h */,
+				3A5B5FD82031D3B20006CE34 /* pcre16_byte_order.c */,
+				3A5B5FF72031D3B60006CE34 /* pcre16_chartables.c */,
+				3A5B5FDC2031D3B20006CE34 /* pcre16_compile.c */,
+				3A5B5FD92031D3B20006CE34 /* pcre16_config.c */,
+				3A5B5FE72031D3B30006CE34 /* pcre16_dfa_exec.c */,
+				3A5B601B2031D3BA0006CE34 /* pcre16_exec.c */,
+				3A5B60222031D3BB0006CE34 /* pcre16_fullinfo.c */,
+				3A5B5FF92031D3B60006CE34 /* pcre16_get.c */,
+				3A5B60232031D3BC0006CE34 /* pcre16_globals.c */,
+				3A5B5FE82031D3B30006CE34 /* pcre16_jit_compile.c */,
+				3A5B5FFB2031D3B60006CE34 /* pcre16_maketables.c */,
+				3A5B601C2031D3BB0006CE34 /* pcre16_newline.c */,
+				3A5B60112031D3B90006CE34 /* pcre16_ord2utf16.c */,
+				3A5B60122031D3B90006CE34 /* pcre16_printint.c */,
+				3A5B60152031D3B90006CE34 /* pcre16_refcount.c */,
+				3A5B5FD42031D3B20006CE34 /* pcre16_string_utils.c */,
+				3A5B600C2031D3B80006CE34 /* pcre16_study.c */,
+				3A5B601E2031D3BB0006CE34 /* pcre16_tables.c */,
+				3A5B601F2031D3BB0006CE34 /* pcre16_ucd.c */,
+				3A5B60002031D3B70006CE34 /* pcre16_utf16_utils.c */,
+				3A5B5FFD2031D3B60006CE34 /* pcre16_valid_utf16.c */,
+				3A5B5FF62031D3B60006CE34 /* pcre16_version.c */,
+				3A5B5FE32031D3B30006CE34 /* pcre16_xclass.c */,
+				3A5B5FF02031D3B40006CE34 /* pcre32_byte_order.c */,
+				3A5B60172031D3BA0006CE34 /* pcre32_chartables.c */,
+				3A5B5FE92031D3B30006CE34 /* pcre32_compile.c */,
+				3A5B60092031D3B80006CE34 /* pcre32_config.c */,
+				3A5B60072031D3B80006CE34 /* pcre32_dfa_exec.c */,
+				3A5B600F2031D3B90006CE34 /* pcre32_exec.c */,
+				3A5B5FDA2031D3B20006CE34 /* pcre32_fullinfo.c */,
+				3A5B5FD22031D3B20006CE34 /* pcre32_get.c */,
+				3A5B60022031D3B70006CE34 /* pcre32_globals.c */,
+				3A5B5FF12031D3B50006CE34 /* pcre32_jit_compile.c */,
+				3A5B600D2031D3B80006CE34 /* pcre32_maketables.c */,
+				3A5B5FFE2031D3B70006CE34 /* pcre32_newline.c */,
+				3A5B5FD52031D3B20006CE34 /* pcre32_ord2utf32.c */,
+				3A5B600E2031D3B80006CE34 /* pcre32_printint.c */,
+				3A5B5FDE2031D3B20006CE34 /* pcre32_refcount.c */,
+				3A5B5FEA2031D3B30006CE34 /* pcre32_string_utils.c */,
+				3A5B5FFF2031D3B70006CE34 /* pcre32_study.c */,
+				3A5B60132031D3B90006CE34 /* pcre32_tables.c */,
+				3A5B5FDB2031D3B20006CE34 /* pcre32_ucd.c */,
+				3A5B5FDF2031D3B20006CE34 /* pcre32_utf32_utils.c */,
+				3A5B5FF42031D3B50006CE34 /* pcre32_valid_utf32.c */,
+				3A5B5FF52031D3B50006CE34 /* pcre32_version.c */,
+				3A5B60052031D3B70006CE34 /* pcre32_xclass.c */,
+				3A5B5FFA2031D3B60006CE34 /* pcrecpp_internal.h */,
+				3A5B60202031D3BB0006CE34 /* pcrecpp.h */,
+				3A5B5FE42031D3B30006CE34 /* pcrecpparg.h */,
+				3A5B5FDD2031D3B20006CE34 /* pcregrep.c */,
+				3A5B60062031D3B80006CE34 /* ucp.h */,
+			);
+			name = src;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3A5B5FC32031D1D30006CE34 /* pcre */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3A5B5FCD2031D1D30006CE34 /* Build configuration list for PBXNativeTarget "pcre" */;
+			buildPhases = (
+				3A5B5FC02031D1D30006CE34 /* Sources */,
+				3A5B5FC12031D1D30006CE34 /* Frameworks */,
+				3A5B5FC22031D1D30006CE34 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = pcre;
+			productName = pcre;
+			productReference = 3A5B5FC42031D1D30006CE34 /* libpcre.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		3A5B5FBC2031D1D30006CE34 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0930;
+				ORGANIZATIONNAME = ssrLive;
+				TargetAttributes = {
+					3A5B5FC32031D1D30006CE34 = {
+						CreatedOnToolsVersion = 9.2;
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = 3A5B5FBF2031D1D30006CE34 /* Build configuration list for PBXProject "pcre" */;
+			compatibilityVersion = "Xcode 8.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 3A5B5FBB2031D1D30006CE34;
+			productRefGroup = 3A5B5FC52031D1D30006CE34 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3A5B5FC32031D1D30006CE34 /* pcre */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3A5B5FC02031D1D30006CE34 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3A5B60652031D3BC0006CE34 /* pcre_get.c in Sources */,
+				3A5B60502031D3BC0006CE34 /* pcre32_globals.c in Sources */,
+				3A5B605F2031D3BC0006CE34 /* pcre32_tables.c in Sources */,
+				3A5B60692031D3BC0006CE34 /* pcre_config.c in Sources */,
+				3A5B602A2031D3BC0006CE34 /* pcre16_byte_order.c in Sources */,
+				3A5B60302031D3BC0006CE34 /* pcre32_refcount.c in Sources */,
+				3A5B606C2031D3BC0006CE34 /* pcre16_fullinfo.c in Sources */,
+				3A5B604B2031D3BC0006CE34 /* pcre16_valid_utf16.c in Sources */,
+				3A5B604F2031D3BC0006CE34 /* pcre_jit_test.c in Sources */,
+				3A5B603B2031D3BC0006CE34 /* pcre_tables.c in Sources */,
+				3A5B60342031D3BC0006CE34 /* pcre_printint.c in Sources */,
+				3A5B60572031D3BC0006CE34 /* pcre_study.c in Sources */,
+				3A5B60282031D3BC0006CE34 /* pcre32_ord2utf32.c in Sources */,
+				3A5B604E2031D3BC0006CE34 /* pcre16_utf16_utils.c in Sources */,
+				3A5B603E2031D3BC0006CE34 /* pcre_jit_compile.c in Sources */,
+				3A5B60562031D3BC0006CE34 /* pcre_refcount.c in Sources */,
+				3A5B60352031D3BC0006CE34 /* pcre16_xclass.c in Sources */,
+				3A5B60492031D3BC0006CE34 /* pcre16_maketables.c in Sources */,
+				3A5B606B2031D3BC0006CE34 /* pcre16_ucd.c in Sources */,
+				3A5B60422031D3BC0006CE34 /* pcre_fullinfo.c in Sources */,
+				3A5B605D2031D3BC0006CE34 /* pcre16_ord2utf16.c in Sources */,
+				3A5B60242031D3BC0006CE34 /* pcre_xclass.c in Sources */,
+				3A5B604D2031D3BC0006CE34 /* pcre32_study.c in Sources */,
+				3A5B605C2031D3BC0006CE34 /* pcre_exec.c in Sources */,
+				3A5B60332031D3BC0006CE34 /* pcre_string_utils.c in Sources */,
+				3A5B606A2031D3BC0006CE34 /* pcre16_tables.c in Sources */,
+				3A5B60392031D3BC0006CE34 /* pcre32_string_utils.c in Sources */,
+				3A5B60272031D3BC0006CE34 /* pcre16_string_utils.c in Sources */,
+				3A5B60372031D3BC0006CE34 /* pcre16_jit_compile.c in Sources */,
+				3A5B60512031D3BC0006CE34 /* pcre_newline.c in Sources */,
+				3A5B604A2031D3BC0006CE34 /* pcre_ucd.c in Sources */,
+				3A5B60522031D3BC0006CE34 /* pcre32_xclass.c in Sources */,
+				3A5B60312031D3BC0006CE34 /* pcre32_utf32_utils.c in Sources */,
+				3A5B60252031D3BC0006CE34 /* pcre32_get.c in Sources */,
+				3A5B605A2031D3BC0006CE34 /* pcre32_printint.c in Sources */,
+				3A5B603D2031D3BC0006CE34 /* pcre_dfa_exec.c in Sources */,
+				3A5B60582031D3BC0006CE34 /* pcre16_study.c in Sources */,
+				3A5B602D2031D3BC0006CE34 /* pcre32_ucd.c in Sources */,
+				3A5B60622031D3BC0006CE34 /* pcre_maketables.c in Sources */,
+				3A5B60412031D3BC0006CE34 /* pcre_valid_utf8.c in Sources */,
+				3A5B60402031D3BC0006CE34 /* pcre32_jit_compile.c in Sources */,
+				3A5B605B2031D3BC0006CE34 /* pcre32_exec.c in Sources */,
+				3A5B60542031D3BC0006CE34 /* pcre_version.c in Sources */,
+				3A5B603F2031D3BC0006CE34 /* pcre32_byte_order.c in Sources */,
+				3A5B60472031D3BC0006CE34 /* pcre_compile.c in Sources */,
+				3A5B60612031D3BC0006CE34 /* pcre16_refcount.c in Sources */,
+				3A5B60532031D3BC0006CE34 /* pcre32_dfa_exec.c in Sources */,
+				3A5B60632031D3BC0006CE34 /* pcre32_chartables.c in Sources */,
+				3A5B602C2031D3BC0006CE34 /* pcre32_fullinfo.c in Sources */,
+				3A5B60442031D3BC0006CE34 /* pcre32_version.c in Sources */,
+				3A5B60432031D3BC0006CE34 /* pcre32_valid_utf32.c in Sources */,
+				3A5B605E2031D3BC0006CE34 /* pcre16_printint.c in Sources */,
+				3A5B60552031D3BC0006CE34 /* pcre32_config.c in Sources */,
+				3A5B604C2031D3BC0006CE34 /* pcre32_newline.c in Sources */,
+				3A5B60672031D3BC0006CE34 /* pcre16_exec.c in Sources */,
+				3A5B60462031D3BC0006CE34 /* pcre16_chartables.c in Sources */,
+				3A5B60382031D3BC0006CE34 /* pcre32_compile.c in Sources */,
+				3A5B60602031D3BC0006CE34 /* pcre_ord2utf8.c in Sources */,
+				3A5B606D2031D3BC0006CE34 /* pcre16_globals.c in Sources */,
+				3A5B602F2031D3BC0006CE34 /* pcregrep.c in Sources */,
+				3A5B60292031D3BC0006CE34 /* dftables.c in Sources */,
+				3A5B60592031D3BC0006CE34 /* pcre32_maketables.c in Sources */,
+				3A5B60482031D3BC0006CE34 /* pcre16_get.c in Sources */,
+				3A5B60682031D3BC0006CE34 /* pcre16_newline.c in Sources */,
+				3A5B60362031D3BC0006CE34 /* pcre16_dfa_exec.c in Sources */,
+				3A5B602E2031D3BC0006CE34 /* pcre16_compile.c in Sources */,
+				3A5B602B2031D3BC0006CE34 /* pcre16_config.c in Sources */,
+				3A5B60452031D3BC0006CE34 /* pcre16_version.c in Sources */,
+				3A5B60662031D3BC0006CE34 /* pcre_byte_order.c in Sources */,
+				3A5B60262031D3BC0006CE34 /* pcre_globals.c in Sources */,
+				3A5B60322031D3BC0006CE34 /* pcre_chartables.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		3A5B5FCB2031D1D30006CE34 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		3A5B5FCC2031D1D30006CE34 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		3A5B5FCE2031D1D30006CE34 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Manual;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					HAVE_CONFIG_H,
+					"$(inherited)",
+				);
+				HEADER_SEARCH_PATHS = .;
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		3A5B5FCF2031D1D30006CE34 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Manual;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					HAVE_CONFIG_H,
+					"$(inherited)",
+				);
+				HEADER_SEARCH_PATHS = .;
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3A5B5FBF2031D1D30006CE34 /* Build configuration list for PBXProject "pcre" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3A5B5FCB2031D1D30006CE34 /* Debug */,
+				3A5B5FCC2031D1D30006CE34 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3A5B5FCD2031D1D30006CE34 /* Build configuration list for PBXNativeTarget "pcre" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3A5B5FCE2031D1D30006CE34 /* Debug */,
+				3A5B5FCF2031D1D30006CE34 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 3A5B5FBC2031D1D30006CE34 /* Project object */;
+}

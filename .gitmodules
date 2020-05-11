@@ -2,10 +2,6 @@
 	path = depends/json-c
 	url = https://github.com/ShadowsocksR-Live/json-c.git
 	branch = master
-[submodule "depends/pthreads4w"]
-	path = depends/pthreads4w
-	url = https://github.com/ShadowsocksR-Live/pthreads4w.git
-	branch = master
 [submodule "depends/libsodium"]
 	path = depends/libsodium
 	url = https://github.com/ShadowsocksR-Live/libsodium.git
@@ -14,14 +10,6 @@
 	path = depends/libuv
 	url = https://github.com/ShadowsocksR-Live/libuv.git
 	branch = v1.x
-[submodule "depends/pcre"]
-	path = depends/pcre
-	url = https://github.com/ShadowsocksR-Live/pcre.git
-	branch = master
-[submodule "depends/zlib"]
-	path = depends/zlib
-	url = https://github.com/ShadowsocksR-Live/zlib.git
-	branch = master
 [submodule "depends/mbedtls"]
 	path = depends/mbedtls
 	url = https://github.com/ShadowsocksR-Live/mbedtls.git
