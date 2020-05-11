@@ -6,7 +6,6 @@
 
 #include "common.h"
 #include "dump_info.h"
-#include "netutils.h"
 #include "obfsutil.h"
 #include "ssrbuffer.h"
 #include "ssr_executive.h"
@@ -752,6 +751,47 @@ static void do_handle_client_feedback(struct tunnel_ctx *tunnel, struct socket_c
     buffer_release(obfs_receipt);
     buffer_release(proto_confirm);
 }
+
+static int validate_hostname(const char *hostname, size_t hostname_len) {
+    static const char valid_label_bytes[] =
+        "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+
+    const char *label;
+    if (hostname == NULL)
+        return 0;
+
+    if (hostname_len < 1 || hostname_len > 255)
+        return 0;
+
+    if (hostname[0] == '.')
+        return 0;
+
+    label = hostname;
+    while (label < hostname + hostname_len) {
+        const char *next_dot;
+        size_t label_len = hostname_len - (label - hostname);
+        next_dot = strchr(label, '.');
+        if (next_dot != NULL) {
+            label_len = next_dot - label;
+        }
+        if (label + label_len > hostname + hostname_len) {
+            return 0;
+        }
+        if (label_len > 63 || label_len < 1) {
+            return 0;
+        }
+        if (label[0] == '-' || label[label_len - 1] == '-') {
+            return 0;
+        }
+        if (strspn(label, valid_label_bytes) < label_len) {
+            return 0;
+        }
+        label += label_len + 1;
+    }
+
+    return 1;
+}
+
 
 static void do_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     /*

@@ -30,8 +30,6 @@
 #include "json.h"
 #include "string.h"
 
-#include <libcork/core.h>
-
 #define check_json_value_type(value, expected_type, message) \
     do { \
         if ((value)->type != (expected_type)) \
@@ -66,14 +64,14 @@ parse_addr(const char *str, struct ss_host_port *addr)
 {
     int ipv6 = 0, ret = -1, n = 0;
     const char *pch;
-
+    /*
     struct cork_ip ip;
     if (cork_ip_init(&ip, str) != -1) {
         addr->host = strdup(str);
         addr->port = NULL;
         return;
     }
-
+    */
     pch = strchr(str, ':');
     while (pch != NULL) {
         n++;

@@ -58,7 +58,6 @@
 //#include <udns.h>
 
 #include "ssrutils.h"
-#include "netutils.h"
 #include "cache.h"
 #include "udprelay.h"
 #include "encrypt.h"

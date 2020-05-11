@@ -24,7 +24,6 @@
 #define _LOCAL_H
 
 #include <uv.h>
-#include <libcork/ds.h>
 
 #include "encrypt.h"
 #include "jconf.h"
