@@ -220,6 +220,24 @@ int url_safe_base64_encode(const unsigned char *plain_src, int len_plain_src, un
     return (int) strlen((const char *)coded_dst);
 }
 
+char* url_safe_base64_encode_alloc(const unsigned char* plain_src, int len_plain_src, void* (*allocator)(size_t)) {
+    char* result = NULL;
+    size_t len = (size_t) url_safe_base64_encode_len(len_plain_src);
+    if (plain_src==NULL || len_plain_src==0 || allocator==NULL) {
+        return NULL;
+    }
+    result = (char*)allocator(len + 1);
+    if (result == NULL) {
+        return NULL;
+    }
+    memset(result, 0, len + 1);
+
+    url_safe_base64_encode(plain_src, len_plain_src, (unsigned char*)result);
+
+    return result;
+}
+
+
 int url_safe_base64_decode_len(const unsigned char *coded_src) {
     int result;
     size_t len = strlen((const char *)coded_src);
@@ -241,6 +259,24 @@ int url_safe_base64_decode(const unsigned char *coded_src, unsigned char *plain_
     str_url_safe_base64_to_std_base64(new_buf);
     result = std_base64_decode(new_buf, plain_dst);
     free(new_buf);
+    return result;
+}
+
+uint8_t* url_safe_base64_decode_alloc(const char* coded_src, void* (*allocator)(size_t), size_t* size) {
+    size_t len; uint8_t* result = NULL;
+    if (coded_src==NULL || allocator==NULL || size==NULL) {
+        return NULL;
+    }
+    len = url_safe_base64_decode_len((const unsigned char *)coded_src);
+    result = (uint8_t*)allocator(len + 1);
+    if (result == NULL) {
+        return NULL;
+    }
+    memset(result, 0, len + 1);
+    url_safe_base64_decode((const unsigned char *)coded_src, (unsigned char*)result);
+    if (size) {
+        *size = len;
+    }
     return result;
 }
 

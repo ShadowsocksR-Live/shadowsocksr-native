@@ -75,9 +75,6 @@
     <ClCompile Include="..\..\src\udprelay.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\netutils.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ssr_cipher_names.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -98,9 +95,6 @@
     </ClCompile>
     <ClCompile Include="..\src\getopt.c">
       <Filter>getopt</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\resolv.c">
-      <Filter>server</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\sockaddr_universal.c">
       <Filter>server</Filter>
@@ -185,9 +179,6 @@
     <ClInclude Include="..\..\src\udprelay.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\netutils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ssr_cipher_names.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -214,9 +205,6 @@
     </ClInclude>
     <ClInclude Include="..\include\getopt_long.h">
       <Filter>getopt</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\resolv.h">
-      <Filter>server</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\sockaddr_universal.h">
       <Filter>server</Filter>

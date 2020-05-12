@@ -421,8 +421,10 @@ function write_ssr_config() {
     "obfs": "${shadowsockobfs}",
     "obfs_param": "",
 
-    "udp": false,
-    "timeout": 300,
+    "udp": ${ssr_ot_flag},
+    "idle_timeout": 300,
+    "connect_timeout": 6,
+    "udp_timeout": 6,
 
     "server_settings": {
         "listen_address": "0.0.0.0",

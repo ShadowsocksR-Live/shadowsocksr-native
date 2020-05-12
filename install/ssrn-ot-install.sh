@@ -16,9 +16,9 @@ RedBG="\033[41;37m"
 Font="\033[0m"
 
 #notification information
-Info="${Green}[信息]${Font}"
+Info="${Green}[Info]${Font}"
 OK="${Green}[OK]${Font}"
-Error="${Red}[错误]${Font}"
+Error="${Red}[Error]${Font}"
 
 ssr_n_install_sh="ssrn-install.sh"
 ssr_n_install_sh_url="https://raw.githubusercontent.com/ShadowsocksR-Live/shadowsocksr-native/master/install/ssrn-install.sh"
@@ -51,32 +51,32 @@ function random_string_gen() {
     echo ${PASS}
 }
 
-# 反向代理入口点.
+# Reverse proxy entry point.
 export reverse_proxy_location=$(random_string_gen 20)
 
 function is_root() {
     if [ `id -u` == 0 ]; then
-        echo -e "${OK} ${GreenBG} 当前用户是root用户，进入安装流程 ${Font} "
+        echo -e "${OK} ${GreenBG} The current account is the root user, enter the installation process ${Font} "
         sleep 3
     else
-        echo -e "${Error} ${RedBG} 当前用户不是root用户，请切换到root用户后重新执行脚本 ${Font}" 
+        echo -e "${Error} ${RedBG} The current account is not the root user, please switch to the root user and re-execute this script ${Font}" 
         exit 1
     fi
 }
 
 source /etc/os-release
 
-#从 VERSION 中提取发行版系统的英文名称，为了在 debian/ubuntu 下添加相对应的 nginx apt 源
+# Extract the English name of the distribution system from VERSION, in order to add the corresponding nginx apt source under debian / ubuntu
 VERSION=`echo ${VERSION} | awk -F "[()]" '{print $2}'`
 
 function check_system() {
     if [[ "${ID}" == "centos" && ${VERSION_ID} -ge 7 ]]; then
-        echo -e "${OK} ${GreenBG} 当前系统为 Centos ${VERSION_ID} ${VERSION} ${Font} "
+        echo -e "${OK} ${GreenBG} Current system is Centos ${VERSION_ID} ${VERSION} ${Font} "
         INS="yum"
-        echo -e "${OK} ${GreenBG} SElinux 设置中，请耐心等待，不要进行其他操作${Font} "
+        echo -e "${OK} ${GreenBG} Please wait patiently during SElinux settings, do not perform other operations ${Font} "
         setsebool -P httpd_can_network_connect 1
-        echo -e "${OK} ${GreenBG} SElinux 设置完成 ${Font} "
-        ## Centos 也可以通过添加 epel 仓库来安装，目前不做改动
+        echo -e "${OK} ${GreenBG} SElinux setup complete ${Font} "
+        ## Centos can also be installed by adding epel repositories, no changes are made currently
         cat>/etc/yum.repos.d/nginx.repo<<EOF
 [nginx]
 name=nginx repo
@@ -84,11 +84,11 @@ baseurl=http://nginx.org/packages/mainline/centos/7/\$basearch/
 gpgcheck=0
 enabled=1
 EOF
-        echo -e "${OK} ${GreenBG} nginx 源 安装完成 ${Font}" 
+        echo -e "${OK} ${GreenBG} nginx source installation complete ${Font}" 
     elif [[ "${ID}" == "debian" && ${VERSION_ID} -ge 8 ]]; then
-        echo -e "${OK} ${GreenBG} 当前系统为 Debian ${VERSION_ID} ${VERSION} ${Font} "
+        echo -e "${OK} ${GreenBG} Current system is Debian ${VERSION_ID} ${VERSION} ${Font} "
         INS="apt"
-        ## 添加 nginx apt 源
+        ## Add nginx apt source
         if [ ! -f nginx_signing.key ]; then
             echo "deb http://nginx.org/packages/mainline/debian/ ${VERSION} nginx" >> /etc/apt/sources.list
             echo "deb-src http://nginx.org/packages/mainline/debian/ ${VERSION} nginx" >> /etc/apt/sources.list
@@ -96,9 +96,9 @@ EOF
             apt-key add nginx_signing.key
         fi
     elif [[ "${ID}" == "ubuntu" && `echo "${VERSION_ID}" | cut -d '.' -f1` -ge 16 ]]; then
-        echo -e "${OK} ${GreenBG} 当前系统为 Ubuntu ${VERSION_ID} ${VERSION_CODENAME} ${Font} "
+        echo -e "${OK} ${GreenBG} Current system is Ubuntu ${VERSION_ID} ${VERSION_CODENAME} ${Font} "
         INS="apt"
-        ## 添加 nginx apt 源
+        ## Add nginx apt source
         if [ ! -f nginx_signing.key ]; then
             echo "deb http://nginx.org/packages/mainline/ubuntu/ ${VERSION_CODENAME} nginx" >> /etc/apt/sources.list
             echo "deb-src http://nginx.org/packages/mainline/ubuntu/ ${VERSION_CODENAME} nginx" >> /etc/apt/sources.list
@@ -106,17 +106,17 @@ EOF
             apt-key add nginx_signing.key
         fi
     else
-        echo -e "${Error} ${RedBG} 当前系统为 ${ID} ${VERSION_ID} 不在支持的系统列表内，安装中断 ${Font} "
+        echo -e "${Error} ${RedBG} Current system is ${ID} ${VERSION_ID} is not in the list of supported systems, installation is interrupted ${Font} "
         exit 1
     fi
 }
 
 function judge() {
     if [[ $? -eq 0 ]]; then
-        echo -e "${OK} ${GreenBG} $1 完成 ${Font}"
+        echo -e "${OK} ${GreenBG} $1 Completed ${Font}"
         sleep 1
     else
-        echo -e "${Error} ${RedBG} $1 失败 ${Font}"
+        echo -e "${Error} ${RedBG} $1 Failed ${Font}"
         exit 1
     fi
 }
@@ -133,17 +133,17 @@ function dependency_install() {
         ${INS} install make zlib1g zlib1g-dev build-essential autoconf libtool openssl libssl-dev -y
         ${INS} install python3 python python-minimal cmake git -y
     fi
-    judge "安装 crontab"
+    judge "Installing crontab"
 
-    # 新版的 IP 判定不需要使用 net-tools
+    # New system does not require net-tools for IP determination.
     # ${INS} install net-tools -y
-    # judge "安装 net-tools"
+    # judge "Installing net-tools"
 
     ${INS} install bc -y
-    judge "安装 bc"
+    judge "Installing bc"
 
     ${INS} install unzip -y
-    judge "安装 unzip"
+    judge "Installing unzip"
 }
 
 function random_listen_port() {
@@ -162,25 +162,25 @@ function random_listen_port() {
 
 function domain_check() {
     local install=""
-    stty erase '^H' && read -p "请输入你的域名信息 (eg:mygoodsite.com): " web_svr_domain
+    stty erase '^H' && read -p "Please enter your domain name (for example: mygoodsite.com): " web_svr_domain
     local web_svr_ip_addr=`ping ${web_svr_domain} -c 1 | sed '1{s/[^(]*(//;s/).*//;q}'`
-    echo -e "${OK} ${GreenBG} 正在获取 公网 IP 信息, 请耐心等待 ${Font}"
+    echo -e "${OK} ${GreenBG} Obtaining public IP information, please wait patiently ${Font}"
     web_svr_local_ip_addr=`curl -4 ip.sb`
-    echo -e "域名 DNS 解析 IP: ${web_svr_ip_addr}"
-    echo -e "本机 IP: ${web_svr_local_ip_addr}"
+    echo -e "DNS resolution IP: ${web_svr_ip_addr}"
+    echo -e "Local IP: ${web_svr_local_ip_addr}"
     sleep 2
     if [[ $(echo ${web_svr_local_ip_addr}|tr '.' '+'|bc) -eq $(echo ${web_svr_ip_addr}|tr '.' '+'|bc) ]]; then
-        echo -e "${OK} ${GreenBG} 域名 DNS 解析 IP 与 本机 IP 匹配 ${Font}"
+        echo -e "${OK} ${GreenBG} The DNS resolution IP matches local IP ${Font}"
         sleep 2
     else
-        echo -e "${Error} ${RedBG} 域名 DNS 解析 IP 与 本机 IP 不匹配, 是否继续安装? (y/n) ${Font}" && read install
+        echo -e "${Error} ${RedBG} The DNS resolution IP does not match the local IP. Do you want to continue the installation? (y/n) ${Font}" && read install
         case $install in
         [yY][eE][sS]|[yY])
-            echo -e "${GreenBG} 继续安装 ${Font}" 
+            echo -e "${GreenBG} Continue to install ${Font}" 
             sleep 2
             ;;
         *)
-            echo -e "${RedBG} 安装终止 ${Font}" 
+            echo -e "${RedBG} Installation terminated ${Font}" 
             exit 2
             ;;
         esac
@@ -189,30 +189,30 @@ function domain_check() {
 
 function input_web_listen_port() {
     local port="443"
-    stty erase '^H' && read -p "请输入连接端口（default: 443）:" port
+    stty erase '^H' && read -p "Please enter the access port number (default: 443):" port
     [[ -z ${port} ]] && port="443"
     echo ${port}
 }
 
 function nginx_install() {
     if [[ -x /usr/sbin/nginx ]] && [[ -d /etc/nginx ]]; then
-        echo -e "${OK} ${GreenBG} nginx 此前已经安装 ${Font}"
+        echo -e "${OK} ${GreenBG} nginx has been installed before this moment ${Font}"
         return 0
     fi
 
     ${INS} install nginx -y
 
     if [[ -d /etc/nginx ]]; then
-        echo -e "${OK} ${GreenBG} nginx 安装完成 ${Font}"
+        echo -e "${OK} ${GreenBG} nginx installation is complete ${Font}"
         sleep 2
     else
-        echo -e "${Error} ${RedBG} nginx 安装失败 ${Font}"
+        echo -e "${Error} ${RedBG} nginx installation failed ${Font}"
         exit 5
     fi
 
     if [[ ! -f /etc/nginx/nginx.conf.bak ]]; then
         cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
-        echo -e "${OK} ${GreenBG} nginx 初始配置备份完成 ${Font}"
+        echo -e "${OK} ${GreenBG} nginx initial configuration backup completed ${Font}"
         sleep 1
     fi
 }
@@ -224,7 +224,7 @@ function nginx_web_server_config_begin() {
     mkdir -p ${site_dir}/.well-known/acme-challenge/
     wget https://raw.githubusercontent.com/nginx/nginx/master/docs/html/index.html -O ${site_dir}/index.html
     wget https://raw.githubusercontent.com/nginx/nginx/master/docs/html/50x.html -O ${site_dir}/50x.html
-    judge "[nginx] 复制文件"
+    judge "[nginx] copy files"
 
     rm -rf ${nginx_conf_dir}/*
     cat > ${nginx_conf} <<EOF
@@ -248,7 +248,7 @@ function do_lets_encrypt_certificate_authority() {
     rm -rf *
 
     openssl genrsa 4096 > account.key
-    judge "[CA] 创建帐号 key"
+    judge "[CA] Create account key"
 
 
     local openssl_cnf="/etc/ssl/openssl.cnf"
@@ -258,23 +258,23 @@ function do_lets_encrypt_certificate_authority() {
 
     openssl genrsa 4096 > domain.key
     openssl req -new -sha256 -key domain.key -subj "/" -reqexts SAN -config <(cat ${openssl_cnf} <(printf "[SAN]\nsubjectAltName=DNS:${web_svr_domain},DNS:www.${web_svr_domain}")) > domain.csr
-    judge "[CA] 创建 CSR 文件"
+    judge "[CA] Create CSR file"
 
     wget https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py
     python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir ${site_dir}/.well-known/acme-challenge/ > ./signed.crt
-    judge "[CA] 获取 网站证书"
+    judge "[CA] Obtain website certificate"
 
     wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > intermediate.pem
     cat signed.crt intermediate.pem > chained.pem
-    judge "[CA] 中间证书 和 网站证书 合并"
+    judge "[CA] Merger of intermediate certificate and website certificate"
 
     wget -O - https://letsencrypt.org/certs/isrgrootx1.pem > root.pem
     cat intermediate.pem root.pem > full_chained.pem
-    judge "[CA] 根证书 和 中间证书 合并"
+    judge "[CA] Root certificate and intermediate certificate merge"
 
     cd ${org_pwd}
 
-    judge "[CA] 证书配置"
+    judge "[CA] Certificate configuration"
 }
 
 function acme_cron_update(){
@@ -301,7 +301,7 @@ EOF
     echo "0 0 1 * * ${site_cert_dir}/renew_cert.sh >/dev/null 2>&1" >> tmp_info && crontab tmp_info && rm -rf tmp_info
     systemctl start ${cron_name}
 
-    judge "cron 计划任务更新"
+    judge "cron scheduled task update"
 }
 
 function nginx_web_server_config_end() {
@@ -357,9 +357,9 @@ ssr_n_install() {
     if [[ -f ${ssr_n_install_sh} ]]; then
         chmod +x ${ssr_n_install_sh}
         bash ${ssr_n_install_sh} install
-        judge "安装 ShadowsocksR Native"
+        judge "Installing ShadowsocksR Native"
     else
-        echo -e "${Error} ${RedBG} ShadowsocksR Native 安装文件下载失败, 请检查下载地址是否可用 ${Font}"
+        echo -e "${Error} ${RedBG} ShadowsocksR Native installation file download failed, please check the download address is available ${Font}"
         exit 4
     fi
 }
@@ -370,24 +370,26 @@ ssr_n_install() {
 #
 port_exist_check() {
     if [[ 0 -eq `lsof -i:"$1" | wc -l` ]];then
-        echo -e "${OK} ${GreenBG} $1 端口未被占用 ${Font}"
+        echo -e "${OK} ${GreenBG} $1 port is not occupied ${Font}"
         sleep 1
     else
-        echo -e "${Error} ${RedBG} 检测到 $1 端口被占用，以下为 $1 端口占用信息 ${Font}"
+        echo -e "${Error} ${RedBG} Detected that port $1 is occupied, the following is details ${Font}"
         lsof -i:"$1"
-        echo -e "${OK} ${GreenBG} 5s 后将尝试自动 kill 占用进程 ${Font}"
+        echo -e "${OK} ${GreenBG} Try to kill the occupied process after 5s... ${Font}"
         sleep 5
         lsof -i:"$1" | awk '{print $2}'| grep -v "PID" | xargs kill -9
-        echo -e "${OK} ${GreenBG} kill 完成 ${Font}"
+        echo -e "${OK} ${GreenBG} kill completed ${Font}"
         sleep 1
     fi
 }
 
 function web_camouflage(){
-    # ## 请注意 这里和LNMP脚本的默认路径冲突，千万不要在安装了LNMP的环境下使用本脚本，否则后果自负
+    # ## Caution: Here conflicts with the default path of the LNMP script. 
+    # ## Do not use this script in an environment where LNMP is installed,
+    # ## otherwise you will be at your own risk.
     # rm -rf /home/wwwroot && mkdir -p /home/wwwroot && cd /home/wwwroot
     # git clone https://github.com/wulabing/sCalc.git
-    judge "web 站点伪装"   
+    judge "web camouflage"
 }
 
 function main() {

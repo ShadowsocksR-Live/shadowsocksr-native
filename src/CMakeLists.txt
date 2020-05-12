@@ -11,7 +11,7 @@ set(SOURCE_FILES_SNI
         socks5.c
         http.c
         tls.c
-        rule.c)
+        )
 
 set(SOURCE_FILES_OBFS
         ssr_cipher_names.c
@@ -40,9 +40,6 @@ set(SOURCE_FILES_LOCAL
         json.c
         encrypt.c
         cache.c
-        acl.c
-        netutils.c
-        udprelay.c
         local.c
         common.h
         includeobfs.h
@@ -63,8 +60,6 @@ set(SOURCE_FILES_CLIENT
         ssrbuffer.h
         ssrutils.c
         ssrutils.h
-        netutils.c
-        netutils.h
         udprelay.c
         udprelay.h
         client/defs.h
@@ -117,17 +112,17 @@ set(SOURCE_FILES_SERVER
         text_in_color.h
         dump_info.c
         dump_info.h
+        client/s5.c
+        client/s5.h
         ssrutils.h
         ssrutils.c
         ssrbuffer.c
         ssrbuffer.h
         encrypt.c
-        #udprelay.c
+        udprelay.c
         cache.c
-        #resolv.c
         ip_addr_cache.c
         ip_addr_cache.h
-        netutils.c
         ssr_executive.c
         ssr_executive.h
         cmd_line_parser.c
@@ -169,12 +164,8 @@ ENDIF(MSVC)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${LIBUVDIR}/include)
-include_directories(${libcork_include_dirs})
-include_directories(${libipset_include_dirs})
-include_directories(${libudns_include_dirs})
 include_directories(${libsodium_include_dirs})
 include_directories(${LIB_JSON_C_DIR}/..)
-include_directories(${PCRE_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../depends/http-parser)
 
 if(USE_CRYPTO_MBEDTLS)
@@ -228,14 +219,11 @@ set (ss_lib_common
         json-c
         uv_a
         m
-        libcork)
+        )
 
 set (ss_lib_net
         ${ss_lib_common}
         mbedtls # /usr/local/lib/libcrypto.a # libcrypto.a # ${LIBCRYPTO} #
-        libipset
-        pcre #${PCRE_LIBRARIES}
-        udns
         sodium
         )
 

@@ -81,9 +81,6 @@
     <ClCompile Include="..\..\src\udprelay.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\netutils.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ssr_cipher_names.c">
       <Filter>Source Files</Filter>
     </ClCompile>

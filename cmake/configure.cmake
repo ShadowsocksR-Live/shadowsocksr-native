@@ -20,9 +20,9 @@ elseif(${with_crypto_library} STREQUAL "mbedtls")
     set(USE_CRYPTO_MBEDTLS 1)
 endif()
 
-find_package(PCRE REQUIRED)
-include_directories(${PCRE_INCLUDE_DIR})
-list ( APPEND CMAKE_REQUIRED_INCLUDES ${PCRE_INCLUDE_DIR})
+#find_package(PCRE REQUIRED)
+#include_directories(${PCRE_INCLUDE_DIR})
+#list ( APPEND CMAKE_REQUIRED_INCLUDES ${PCRE_INCLUDE_DIR})
 
 
 # Platform checks

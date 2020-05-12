@@ -76,6 +76,7 @@ struct server_config * config_create(void) {
     config->listen_port = DEFAULT_BIND_PORT;
     config->idle_timeout = DEFAULT_IDLE_TIMEOUT;
     config->connect_timeout_ms = DEFAULT_CONNECT_TIMEOUT;
+    config->udp_timeout = DEFAULT_UDP_TIMEOUT;
 
     return config;
 }
@@ -107,10 +108,16 @@ void config_release(struct server_config *cf) {
 // Since the obfuscation operation in SSRoT is redundant, we remove it.
 //
 void config_ssrot_revision(struct server_config* config) {
-    if (config && config->over_tls_enable) {
+    if (config == NULL) {
+        return;
+    }
+    if (config->over_tls_enable) {
         string_safe_assign(&config->obfs, ssr_obfs_name_of_type(ssr_obfs_plain));
         // don't support protocol recently.
         string_safe_assign(&config->protocol, ssr_protocol_name_of_type(ssr_protocol_origin));
+    } else {
+        // support UDP in SSRoT only.
+        config->udp = false;
     }
 }
 

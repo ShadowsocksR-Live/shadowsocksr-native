@@ -125,15 +125,22 @@ size_t socks5_address_size(const struct socks5_address *addr) {
     return size;
 }
 
-uint8_t * socks5_address_binary(const struct socks5_address *addr, uint8_t *buffer, size_t size) {
+uint8_t* socks5_address_binary(const struct socks5_address* addr, void* (*allocator)(size_t), size_t* size) {
+    uint8_t* buffer = NULL;
     size_t offset     = 0;
     size_t addr_size = 0;
-    if (addr==NULL || buffer==NULL || size==0) {
+    if (addr==NULL || allocator==NULL) {
         return NULL;
     }
-    if (size < socks5_address_size(addr)) {
+    addr_size = socks5_address_size(addr);
+    if (size) {
+        *size = addr_size;
+    }
+    buffer = allocator(addr_size + 1);
+    if (buffer == NULL) {
         return NULL;
     }
+    memset(buffer, 0, addr_size + 1);
 
     buffer[offset++] = (uint8_t)addr->addr_type;
 
@@ -159,7 +166,7 @@ uint8_t * socks5_address_binary(const struct socks5_address *addr, uint8_t *buff
     return buffer;
 }
 
-bool socks5_address_to_universal(const struct socks5_address *s5addr, union sockaddr_universal *addr) {
+bool socks5_address_to_universal(const struct socks5_address *s5addr, bool use_dns, union sockaddr_universal *addr) {
     bool result = false;
     do {
         if (s5addr==NULL || addr==NULL) {
@@ -177,6 +184,14 @@ bool socks5_address_to_universal(const struct socks5_address *s5addr, union sock
             addr->addr6.sin6_family = AF_INET6;
             addr->addr6.sin6_port = htons(s5addr->port);
             addr->addr6.sin6_addr = s5addr->addr.ipv6;
+            break;
+        case SOCKS5_ADDRTYPE_DOMAINNAME:
+            if (use_dns == false) {
+                break;
+            }
+            if (universal_address_from_string(s5addr->addr.domainname, s5addr->port, true, addr) == 0) {
+                result = true;
+            }
             break;
         default:
             break;
@@ -211,7 +226,7 @@ bool universal_address_to_socks5(const union sockaddr_universal *addr, struct so
     return result;
 }
 
-int universal_address_from_string(const char *addr_str, unsigned short port, union sockaddr_universal *addr)
+int universal_address_from_string(const char *addr_str, uint16_t port, bool tcp, union sockaddr_universal *addr)
 {
     struct addrinfo hints = { 0 }, *ai = NULL;
     int status;
@@ -225,8 +240,9 @@ int universal_address_from_string(const char *addr_str, unsigned short port, uni
     sprintf(port_buffer, "%hu", port);
 
     hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV | AI_PASSIVE;
+    hints.ai_socktype = tcp ? SOCK_STREAM : SOCK_DGRAM;
+    // hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV | AI_PASSIVE;
+    hints.ai_protocol = tcp ? IPPROTO_TCP : IPPROTO_UDP;
 
     if ((status = getaddrinfo(addr_str, port_buffer, &hints, &ai)) != 0) {
         return result;

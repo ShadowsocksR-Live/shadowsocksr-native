@@ -223,8 +223,10 @@ config.json
     "obfs": "tls1.2_ticket_auth",
     "obfs_param": "",
 
-    "udp": false,
-    "timeout": 300,
+    "udp": true,
+    "idle_timeout": 300,
+    "connect_timeout": 6,
+    "udp_timeout": 6,
 
     "server_settings": {
         "listen_address": "0.0.0.0",
