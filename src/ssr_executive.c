@@ -76,6 +76,7 @@ struct server_config * config_create(void) {
     config->listen_port = DEFAULT_BIND_PORT;
     config->idle_timeout = DEFAULT_IDLE_TIMEOUT;
     config->connect_timeout_ms = DEFAULT_CONNECT_TIMEOUT;
+    config->udp_timeout = DEFAULT_UDP_TIMEOUT;
 
     return config;
 }

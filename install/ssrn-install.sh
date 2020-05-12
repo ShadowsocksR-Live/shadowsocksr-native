@@ -422,7 +422,9 @@ function write_ssr_config() {
     "obfs_param": "",
 
     "udp": ${ssr_ot_flag},
-    "timeout": 300,
+    "idle_timeout": 300,
+    "connect_timeout": 6,
+    "udp_timeout": 6,
 
     "server_settings": {
         "listen_address": "0.0.0.0",

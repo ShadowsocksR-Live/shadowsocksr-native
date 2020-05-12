@@ -137,12 +137,16 @@ bool parse_config_file(bool is_server, const char *file, struct server_config *c
                 config->udp = obj_bool;
                 continue;
             }
-            if (json_iter_extract_int("timeout", &iter, &obj_int)) {
+            if (json_iter_extract_int("idle_timeout", &iter, &obj_int)) {
                 config->idle_timeout = obj_int * MILLISECONDS_PER_SECOND;
                 continue;
             }
             if (json_iter_extract_int("connect_timeout", &iter, &obj_int)) {
-                config->connect_timeout_ms = (uint64_t)(obj_int * MILLISECONDS_PER_SECOND);
+                config->connect_timeout_ms = ((uint64_t)obj_int) * MILLISECONDS_PER_SECOND;
+                continue;
+            }
+            if (json_iter_extract_int("udp_timeout", &iter, &obj_int)) {
+                config->udp_timeout = ((uint64_t)obj_int) * MILLISECONDS_PER_SECOND;
                 continue;
             }
 

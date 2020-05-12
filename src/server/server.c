@@ -1074,7 +1074,7 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
             VERIFY(socks5_address_parse(addr_p, p_len, &target_addr));
             free(addr_p);
 
-            udp_ctx = udp_remote_launch_begin(loop, config->connect_timeout_ms, &target_addr);
+            udp_ctx = udp_remote_launch_begin(loop, config->udp_timeout, &target_addr);
             udp_remote_set_data_arrived_callback(udp_ctx, udp_remote_on_data_arrived, ctx);
             udp_remote_set_dying_callback(udp_ctx, udp_remote_on_dying, ctx);
 

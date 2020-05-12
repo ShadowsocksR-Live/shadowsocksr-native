@@ -224,7 +224,9 @@ config.json
     "obfs_param": "",
 
     "udp": true,
-    "timeout": 300,
+    "idle_timeout": 300,
+    "connect_timeout": 6,
+    "udp_timeout": 6,
 
     "server_settings": {
         "listen_address": "0.0.0.0",
