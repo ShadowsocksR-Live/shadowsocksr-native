@@ -322,12 +322,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
             union sockaddr_universal remote_addr = { {0} };
             universal_address_from_string(cf->remote_host, cf->remote_port, true, &remote_addr);
 
-            listener->udp_server = udprelay_begin(loop,
-                cf->listen_host, port,
-                &remote_addr,
-                NULL, 0, cf->idle_timeout,
-                state->env->cipher,
-                cf->protocol, cf->protocol_param);
+            listener->udp_server = udprelay_begin(loop, cf->listen_host, port, &remote_addr, state->env->cipher);
 
             udp_relay_set_udp_on_recv_data_callback(listener->udp_server, &udp_on_recv_data, NULL);
         }

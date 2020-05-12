@@ -44,12 +44,7 @@ void udp_remote_set_dying_callback(struct udp_remote_ctx_t *ctx, udp_remote_dyin
 void udp_remote_destroy(struct udp_remote_ctx_t *ctx);
 
 struct udp_listener_ctx_t * udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
-#ifdef MODULE_LOCAL
-    const union sockaddr_universal *remote_addr,
-    const struct ss_host_port *tunnel_addr,
-#endif
-    int mtu, int timeout, struct cipher_env_t *cipher_env,
-    const char *protocol, const char *protocol_param);
+    const union sockaddr_universal *remote_addr, struct cipher_env_t *cipher_env);
 
 void udprelay_shutdown(struct udp_listener_ctx_t *server_ctx);
 
