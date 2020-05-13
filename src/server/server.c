@@ -574,6 +574,7 @@ static size_t tunnel_get_alloc_size(struct tunnel_ctx *tunnel, struct socket_ctx
 static bool tunnel_is_in_streaming(struct tunnel_ctx* tunnel) {
     // struct server_ctx *ctx = (struct server_ctx *) tunnel->data;
     // return (ctx->stage == tunnel_stage_streaming);
+    (void)tunnel;
     return false;
 }
 
