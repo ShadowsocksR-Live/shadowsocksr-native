@@ -114,7 +114,7 @@ struct client_ctx {
 };
 
 static struct buffer_t * initial_package_create(const struct s5_ctx *parser);
-static void do_next(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
+static void dispatch_center(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void do_handshake(struct tunnel_ctx *tunnel);
 static void do_handshake_auth(struct tunnel_ctx *tunnel);
 static void do_wait_client_app_s5_request(struct tunnel_ctx *tunnel);
@@ -173,6 +173,7 @@ static bool init_done_cb(struct tunnel_ctx *tunnel, void *p) {
     tunnel->tunnel_tls_on_connection_established = &tunnel_tls_on_connection_established;
     tunnel->tunnel_tls_on_data_received = &tunnel_tls_on_data_received;
     tunnel->tunnel_tls_on_shutting_down = &tunnel_tls_on_shutting_down;
+    tunnel->dispatch_center = &dispatch_center;
 
     cstl_set_container_add(ctx->env->tunnel_set, tunnel);
 
@@ -253,7 +254,7 @@ static struct buffer_t * initial_package_create(const struct s5_ctx *parser) {
 * end up (if all goes well) in the proxy state where we're just proxying
 * data between the client and upstream.
 */
-static void do_next(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
+static void dispatch_center(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
     struct server_env_t *env = ctx->env;
     struct server_config *config = env->config;
@@ -803,11 +804,11 @@ static void tunnel_timeout_expire_done(struct tunnel_ctx *tunnel, struct socket_
 }
 
 static void tunnel_outgoing_connected_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
-    do_next(tunnel, socket);
+    tunnel->dispatch_center(tunnel, socket);
 }
 
 static void tunnel_read_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
-    do_next(tunnel, socket);
+    tunnel->dispatch_center(tunnel, socket);
 }
 
 static void tunnel_arrive_end_of_file(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
@@ -816,11 +817,11 @@ static void tunnel_arrive_end_of_file(struct tunnel_ctx *tunnel, struct socket_c
 }
 
 static void tunnel_getaddrinfo_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
-    do_next(tunnel, socket);
+    tunnel->dispatch_center(tunnel, socket);
 }
 
 static void tunnel_write_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
-    do_next(tunnel, socket);
+    tunnel->dispatch_center(tunnel, socket);
 }
 
 static size_t tunnel_get_alloc_size(struct tunnel_ctx *tunnel, struct socket_ctx *socket, size_t suggested_size) {

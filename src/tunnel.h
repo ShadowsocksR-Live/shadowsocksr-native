@@ -42,6 +42,7 @@ struct tunnel_ctx {
 
     void(*tunnel_dying)(struct tunnel_ctx *tunnel);
 
+    void(*dispatch_center)(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
     void(*tunnel_timeout_expire_done)(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
     void(*tunnel_outgoing_connected_done)(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
     void(*tunnel_read_done)(struct tunnel_ctx *tunnel, struct socket_ctx *socket);

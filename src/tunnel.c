@@ -156,6 +156,10 @@ void tunnel_release(struct tunnel_ctx *tunnel) {
     free(tunnel);
 }
 
+static void dispatch_center(struct tunnel_ctx* tunnel, struct socket_ctx* socket) {
+    (void)tunnel; (void)socket;
+}
+
 /* |incoming| has been initialized by listener.c when this is called. */
 struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsigned int idle_timeout, tunnel_init_done_cb init_done_cb, void *p) {
     struct socket_ctx *incoming;
@@ -187,6 +191,7 @@ struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsig
 
     tunnel->tunnel_shutdown = &tunnel_shutdown;
     tunnel->tunnel_is_in_streaming = &tunnel_is_in_streaming;
+    tunnel->dispatch_center = &dispatch_center;
 
     if (init_done_cb) {
         success = init_done_cb(tunnel, p);
