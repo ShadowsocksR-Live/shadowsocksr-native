@@ -304,7 +304,6 @@ static void dispatch_tls_center(struct tunnel_ctx* tunnel, struct socket_ctx* so
     struct server_env_t* env = ctx->env;
     struct server_config* config = env->config;
     struct socket_ctx* incoming = tunnel->incoming;
-    struct socket_ctx* outgoing = tunnel->outgoing;
     const char* info = tunnel_stage_string(ctx->stage); (void)info;
 #if defined(__PRINT_INFO__)
     pr_info("%s", info);
