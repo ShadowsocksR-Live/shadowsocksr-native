@@ -212,6 +212,7 @@ struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsig
 }
 
 static bool tunnel_is_in_streaming(struct tunnel_ctx* tunnel) {
+    (void)tunnel;
     return false;
 }
 
