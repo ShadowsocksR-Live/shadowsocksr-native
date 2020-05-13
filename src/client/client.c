@@ -825,6 +825,11 @@ static void tunnel_getaddrinfo_done(struct tunnel_ctx *tunnel, struct socket_ctx
 }
 
 static void tunnel_write_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
+    if (tunnel->tunnel_is_in_streaming(tunnel) == true) {
+        // in streaming stage, do nothing and return.
+        socket->wrstate = socket_state_stop;
+        return;
+    }
     tunnel->dispatch_center(tunnel, socket);
 }
 

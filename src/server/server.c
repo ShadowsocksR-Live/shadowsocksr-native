@@ -550,7 +550,12 @@ static void tunnel_write_done(struct tunnel_ctx *tunnel, struct socket_ctx *sock
         incoming->wrstate = socket_state_stop;
         tunnel->tunnel_shutdown(tunnel);
     } else {
-        tunnel->dispatch_center(tunnel, socket);
+        if (tunnel->tunnel_is_in_streaming(tunnel) == true) {
+            // in streaming stage, do nothing and return.
+            socket->wrstate = socket_state_stop;
+        } else {
+            tunnel->dispatch_center(tunnel, socket);
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-/* Copyright StrongLoop, Inc. All rights reserved.
+/* Copyright @ssrlive. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -423,7 +423,9 @@ static void socket_read_done_cb(uv_stream_t *handle, ssize_t nread, const uv_buf
         socket->rdstate = socket_state_done;
 
         ASSERT(tunnel->tunnel_read_done);
-        tunnel->tunnel_read_done(tunnel, socket);
+        if (tunnel->tunnel_read_done) {
+            tunnel->tunnel_read_done(tunnel, socket);
+        }
     } while (0);
 
     if (buf->base) {
@@ -495,7 +497,7 @@ static void socket_getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct
     }
 
     if (status == 0) {
-        /* FIXME(bnoordhuis) Should try all addresses. */
+        /* FIXME Should try all addresses. */
         uint16_t port = socket->addr.addr4.sin_port;
         if (ai->ai_family == AF_INET) {
             socket->addr.addr4 = *(const struct sockaddr_in *) ai->ai_addr;
@@ -510,7 +512,9 @@ static void socket_getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct
     uv_freeaddrinfo(ai);
 
     ASSERT(tunnel->tunnel_getaddrinfo_done);
-    tunnel->tunnel_getaddrinfo_done(tunnel, socket);
+    if (tunnel->tunnel_getaddrinfo_done) {
+        tunnel->tunnel_getaddrinfo_done(tunnel, socket);
+    }
 }
 
 void socket_write(struct socket_ctx *socket, const void *data, size_t len) {
@@ -568,15 +572,11 @@ static void socket_write_done_cb(uv_write_t *req, int status) {
         ASSERT(socket->wrstate == socket_state_busy);
     }
     socket->wrstate = socket_state_done;
-    /*
-    if (tunnel->tunnel_is_in_streaming(tunnel) == true) {
-        // in streaming stage, do nothing and return.
-        socket->wrstate = socket_state_stop;
-        return;
-    }
-    */
+
     ASSERT(tunnel->tunnel_write_done);
-    tunnel->tunnel_write_done(tunnel, socket);
+    if (tunnel->tunnel_write_done) {
+        tunnel->tunnel_write_done(tunnel, socket);
+    }
 }
 
 static void socket_close(struct socket_ctx *socket) {
