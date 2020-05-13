@@ -135,6 +135,7 @@ static void tunnel_arrive_end_of_file(struct tunnel_ctx *tunnel, struct socket_c
 static void tunnel_getaddrinfo_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void tunnel_write_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static size_t tunnel_get_alloc_size(struct tunnel_ctx *tunnel, struct socket_ctx *socket, size_t suggested_size);
+static bool tunnel_is_in_streaming(struct tunnel_ctx* tunnel);
 static void tunnel_tls_do_launch_streaming(struct tunnel_ctx *tunnel);
 static void tunnel_tls_client_incoming_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void tunnel_tls_on_connection_established(struct tunnel_ctx *tunnel);
@@ -167,6 +168,7 @@ static bool init_done_cb(struct tunnel_ctx *tunnel, void *p) {
     tunnel->tunnel_getaddrinfo_done = &tunnel_getaddrinfo_done;
     tunnel->tunnel_write_done = &tunnel_write_done;
     tunnel->tunnel_get_alloc_size = &tunnel_get_alloc_size;
+    tunnel->tunnel_is_in_streaming = &tunnel_is_in_streaming;
     tunnel->tunnel_extract_data = &tunnel_extract_data;
     tunnel->tunnel_tls_on_connection_established = &tunnel_tls_on_connection_established;
     tunnel->tunnel_tls_on_data_received = &tunnel_tls_on_data_received;
@@ -826,6 +828,12 @@ static size_t tunnel_get_alloc_size(struct tunnel_ctx *tunnel, struct socket_ctx
     (void)socket;
     (void)suggested_size;
     return SSR_BUFF_SIZE;
+}
+
+static bool tunnel_is_in_streaming(struct tunnel_ctx* tunnel) {
+    // struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
+    // return (ctx->stage == tunnel_stage_streaming);
+    return false;
 }
 
 static void tunnel_tls_do_launch_streaming(struct tunnel_ctx *tunnel) {

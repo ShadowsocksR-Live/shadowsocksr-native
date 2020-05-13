@@ -102,6 +102,7 @@ static void tunnel_arrive_end_of_file(struct tunnel_ctx *tunnel, struct socket_c
 static void tunnel_getaddrinfo_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void tunnel_write_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static size_t tunnel_get_alloc_size(struct tunnel_ctx *tunnel, struct socket_ctx *socket, size_t suggested_size);
+static bool tunnel_is_in_streaming(struct tunnel_ctx* tunnel);
 static uint8_t* tunnel_extract_data(struct socket_ctx *socket, void*(*allocator)(size_t size), size_t *size);
 
 static bool is_incoming_ip_legal(struct tunnel_ctx *tunnel);
@@ -334,6 +335,7 @@ bool _init_done_cb(struct tunnel_ctx *tunnel, void *p) {
     tunnel->tunnel_getaddrinfo_done = &tunnel_getaddrinfo_done;
     tunnel->tunnel_write_done = &tunnel_write_done;
     tunnel->tunnel_get_alloc_size = &tunnel_get_alloc_size;
+    tunnel->tunnel_is_in_streaming = &tunnel_is_in_streaming;
     tunnel->tunnel_extract_data = &tunnel_extract_data;
 
     cstl_set_container_add(ctx->env->tunnel_set, tunnel);
@@ -565,6 +567,12 @@ static size_t tunnel_get_alloc_size(struct tunnel_ctx *tunnel, struct socket_ctx
         ASSERT(false);
     }
     return suggested_size;
+}
+
+static bool tunnel_is_in_streaming(struct tunnel_ctx* tunnel) {
+    // struct server_ctx *ctx = (struct server_ctx *) tunnel->data;
+    // return (ctx->stage == tunnel_stage_streaming);
+    return false;
 }
 
 static bool is_incoming_ip_legal(struct tunnel_ctx *tunnel) {
