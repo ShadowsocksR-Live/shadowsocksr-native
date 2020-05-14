@@ -1,4 +1,4 @@
-/* Copyright StrongLoop, Inc. All rights reserved.
+/* Copyright @ssrlive. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -31,6 +31,7 @@
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(*(arr)))
 #endif
 
+static bool tunnel_is_in_streaming(struct tunnel_ctx* tunnel);
 static void tunnel_shutdown(struct tunnel_ctx *tunnel);
 static void socket_timer_expire_cb(uv_timer_t *handle);
 static void socket_timer_start(struct socket_ctx *socket);
@@ -155,6 +156,10 @@ void tunnel_release(struct tunnel_ctx *tunnel) {
     free(tunnel);
 }
 
+static void dispatch_center(struct tunnel_ctx* tunnel, struct socket_ctx* socket) {
+    (void)tunnel; (void)socket;
+}
+
 /* |incoming| has been initialized by listener.c when this is called. */
 struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsigned int idle_timeout, tunnel_init_done_cb init_done_cb, void *p) {
     struct socket_ctx *incoming;
@@ -185,6 +190,8 @@ struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsig
     tunnel->outgoing = outgoing;
 
     tunnel->tunnel_shutdown = &tunnel_shutdown;
+    tunnel->tunnel_is_in_streaming = &tunnel_is_in_streaming;
+    tunnel->dispatch_center = &dispatch_center;
 
     if (init_done_cb) {
         success = init_done_cb(tunnel, p);
@@ -202,6 +209,11 @@ struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsig
         tunnel = NULL;
     }
     return tunnel;
+}
+
+static bool tunnel_is_in_streaming(struct tunnel_ctx* tunnel) {
+    (void)tunnel;
+    return false;
 }
 
 static void tunnel_shutdown(struct tunnel_ctx *tunnel) {
@@ -382,7 +394,10 @@ static void socket_read_done_cb(uv_stream_t *handle, ssize_t nread, const uv_buf
             break;
         }
 
-        uv_read_stop(&socket->handle.stream);
+        if (tunnel->tunnel_is_in_streaming(tunnel) == false) {
+            uv_read_stop(&socket->handle.stream);
+        }
+
         socket_timer_stop(socket);
 
         if (nread < 0) {
@@ -402,11 +417,15 @@ static void socket_read_done_cb(uv_stream_t *handle, ssize_t nread, const uv_buf
         }
 
         socket->buf = buf;
-        ASSERT(socket->rdstate == socket_state_busy);
+        if (tunnel->tunnel_is_in_streaming(tunnel) == false) {
+           ASSERT(socket->rdstate == socket_state_busy);
+        }
         socket->rdstate = socket_state_done;
 
         ASSERT(tunnel->tunnel_read_done);
-        tunnel->tunnel_read_done(tunnel, socket);
+        if (tunnel->tunnel_read_done) {
+            tunnel->tunnel_read_done(tunnel, socket);
+        }
     } while (0);
 
     if (buf->base) {
@@ -422,7 +441,9 @@ static void socket_alloc_cb(uv_handle_t *handle, size_t size, uv_buf_t *buf) {
     socket = CONTAINER_OF(handle, struct socket_ctx, handle);
     tunnel = socket->tunnel;
 
-    ASSERT(socket->rdstate == socket_state_busy);
+    if (tunnel->tunnel_is_in_streaming(tunnel) == false) {
+        ASSERT(socket->rdstate == socket_state_busy);
+    }
 
     if (tunnel->tunnel_get_alloc_size) {
         size = tunnel->tunnel_get_alloc_size(tunnel, socket, size);
@@ -476,7 +497,7 @@ static void socket_getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct
     }
 
     if (status == 0) {
-        /* FIXME(bnoordhuis) Should try all addresses. */
+        /* FIXME Should try all addresses. */
         uint16_t port = socket->addr.addr4.sin_port;
         if (ai->ai_family == AF_INET) {
             socket->addr.addr4 = *(const struct sockaddr_in *) ai->ai_addr;
@@ -491,7 +512,9 @@ static void socket_getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct
     uv_freeaddrinfo(ai);
 
     ASSERT(tunnel->tunnel_getaddrinfo_done);
-    tunnel->tunnel_getaddrinfo_done(tunnel, socket);
+    if (tunnel->tunnel_getaddrinfo_done) {
+        tunnel->tunnel_getaddrinfo_done(tunnel, socket);
+    }
 }
 
 void socket_write(struct socket_ctx *socket, const void *data, size_t len) {
@@ -501,7 +524,9 @@ void socket_write(struct socket_ctx *socket, const void *data, size_t len) {
     uv_write_t *req;
 
     (void)tunnel;
-    ASSERT(socket->wrstate == socket_state_stop);
+    if (tunnel->tunnel_is_in_streaming(tunnel) == false) {
+        ASSERT(socket->wrstate == socket_state_stop);
+    }
     socket->wrstate = socket_state_busy;
 
     // It's okay to cast away constness here, uv_write() won't modify the memory.
@@ -543,11 +568,15 @@ static void socket_write_done_cb(uv_write_t *req, int status) {
         return;  /* Handle has been closed. */
     }
 
-    ASSERT(socket->wrstate == socket_state_busy);
+    if (tunnel->tunnel_is_in_streaming(tunnel) == false) {
+        ASSERT(socket->wrstate == socket_state_busy);
+    }
     socket->wrstate = socket_state_done;
 
     ASSERT(tunnel->tunnel_write_done);
-    tunnel->tunnel_write_done(tunnel, socket);
+    if (tunnel->tunnel_write_done) {
+        tunnel->tunnel_write_done(tunnel, socket);
+    }
 }
 
 static void socket_close(struct socket_ctx *socket) {

@@ -102,7 +102,9 @@ static void tunnel_arrive_end_of_file(struct tunnel_ctx *tunnel, struct socket_c
 static void tunnel_getaddrinfo_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void tunnel_write_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static size_t tunnel_get_alloc_size(struct tunnel_ctx *tunnel, struct socket_ctx *socket, size_t suggested_size);
+static bool tunnel_is_in_streaming(struct tunnel_ctx* tunnel);
 static uint8_t* tunnel_extract_data(struct socket_ctx *socket, void*(*allocator)(size_t size), size_t *size);
+static void dispatch_center(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
 
 static bool is_incoming_ip_legal(struct tunnel_ctx *tunnel);
 static bool is_header_complete(const struct buffer_t *buf);
@@ -334,7 +336,9 @@ bool _init_done_cb(struct tunnel_ctx *tunnel, void *p) {
     tunnel->tunnel_getaddrinfo_done = &tunnel_getaddrinfo_done;
     tunnel->tunnel_write_done = &tunnel_write_done;
     tunnel->tunnel_get_alloc_size = &tunnel_get_alloc_size;
+    tunnel->tunnel_is_in_streaming = &tunnel_is_in_streaming;
     tunnel->tunnel_extract_data = &tunnel_extract_data;
+    tunnel->dispatch_center = &dispatch_center;
 
     cstl_set_container_add(ctx->env->tunnel_set, tunnel);
 
@@ -410,7 +414,7 @@ static void tunnel_dying(struct tunnel_ctx *tunnel) {
     free(ctx);
 }
 
-static void do_next(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
+static void dispatch_center(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     bool done = false;
     struct server_ctx *ctx = (struct server_ctx *)tunnel->data;
     struct server_config *config = ctx->env->config;
@@ -496,11 +500,11 @@ static void tunnel_timeout_expire_done(struct tunnel_ctx *tunnel, struct socket_
 }
 
 static void tunnel_outgoing_connected_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
-    do_next(tunnel, socket);
+    tunnel->dispatch_center(tunnel, socket);
 }
 
 static void tunnel_read_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
-    do_next(tunnel, socket);
+    tunnel->dispatch_center(tunnel, socket);
 }
 
 static void tunnel_arrive_end_of_file(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
@@ -534,7 +538,7 @@ static void tunnel_arrive_end_of_file(struct tunnel_ctx *tunnel, struct socket_c
 }
 
 static void tunnel_getaddrinfo_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
-    do_next(tunnel, socket);
+    tunnel->dispatch_center(tunnel, socket);
 }
 
 static void tunnel_write_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
@@ -546,7 +550,12 @@ static void tunnel_write_done(struct tunnel_ctx *tunnel, struct socket_ctx *sock
         incoming->wrstate = socket_state_stop;
         tunnel->tunnel_shutdown(tunnel);
     } else {
-        do_next(tunnel, socket);
+        if (tunnel->tunnel_is_in_streaming(tunnel) == true) {
+            // in streaming stage, do nothing and return.
+            socket->wrstate = socket_state_stop;
+        } else {
+            tunnel->dispatch_center(tunnel, socket);
+        }
     }
 }
 
@@ -565,6 +574,13 @@ static size_t tunnel_get_alloc_size(struct tunnel_ctx *tunnel, struct socket_ctx
         ASSERT(false);
     }
     return suggested_size;
+}
+
+static bool tunnel_is_in_streaming(struct tunnel_ctx* tunnel) {
+    // struct server_ctx *ctx = (struct server_ctx *) tunnel->data;
+    // return (ctx->stage == tunnel_stage_streaming);
+    (void)tunnel;
+    return false;
 }
 
 static bool is_incoming_ip_legal(struct tunnel_ctx *tunnel) {

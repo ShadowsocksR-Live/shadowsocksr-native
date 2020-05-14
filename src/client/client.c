@@ -15,42 +15,9 @@
 #include "s5.h"
 #include "base64.h"
 
-/* A connection is modeled as an abstraction on top of two simple state
- * machines, one for reading and one for writing.  Either state machine
- * is, when active, in one of three states: busy, done or stop; the fourth
- * and final state, dead, is an end state and only relevant when shutting
- * down the connection.  A short overview:
- *
- *                          busy                  done           stop
- *  ----------|---------------------------|--------------------|------|
- *  readable  | waiting for incoming data | have incoming data | idle |
- *  writable  | busy writing out data     | completed write    | idle |
- *
- * We could remove the done state from the writable state machine. For our
- * purposes, it's functionally equivalent to the stop state.
- *
- * When the connection with upstream has been established, the struct tunnel_ctx
- * moves into a state where incoming data from the client is sent upstream
- * and vice versa, incoming data from upstream is sent to the client.  In
- * other words, we're just piping data back and forth.  See do_proxy()
- * for details.
- *
- * An interesting deviation from libuv's I/O model is that reads are discrete
- * rather than continuous events.  In layman's terms, when a read operation
- * completes, the connection stops reading until further notice.
- *
- * The rationale for this approach is that we have to wait until the data
- * has been sent out again before we can reuse the read buffer.
- *
- * It also pleasingly unifies with the request model that libuv uses for
- * writes and everything else; libuv may switch to a request model for
- * reads in the future.
- */
-
- /* Session states. */
+/* Session states. */
 #define TUNNEL_STAGE_MAP(V)                                                                                                                     \
     V( 0, tunnel_stage_handshake,                   "tunnel_stage_handshake -- Client App S5 handshake coming.")                                \
-    V( 1, tunnel_stage_handshake_auth,              "tunnel_stage_handshake_auth - Wait for client authentication data.")                       \
     V( 2, tunnel_stage_handshake_replied,           "tunnel_stage_handshake_replied -- Start waiting for request data.")                        \
     V( 3, tunnel_stage_s5_request_from_client_app,  "tunnel_stage_s5_request_from_client_app -- SOCKS5 Request data from client app.")          \
     V( 4, tunnel_stage_s5_udp_accoc,                "tunnel_stage_s5_udp_accoc")                                                                \
@@ -114,9 +81,9 @@ struct client_ctx {
 };
 
 static struct buffer_t * initial_package_create(const struct s5_ctx *parser);
-static void do_next(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
+static void dispatch_ssr_center(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
+static void dispatch_tls_center(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
 static void do_handshake(struct tunnel_ctx *tunnel);
-static void do_handshake_auth(struct tunnel_ctx *tunnel);
 static void do_wait_client_app_s5_request(struct tunnel_ctx *tunnel);
 static void do_parse_s5_request_from_client_app(struct tunnel_ctx *tunnel);
 static void do_resolve_ssr_server_host_aftercare(struct tunnel_ctx *tunnel);
@@ -135,6 +102,7 @@ static void tunnel_arrive_end_of_file(struct tunnel_ctx *tunnel, struct socket_c
 static void tunnel_getaddrinfo_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void tunnel_write_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static size_t tunnel_get_alloc_size(struct tunnel_ctx *tunnel, struct socket_ctx *socket, size_t suggested_size);
+static bool tunnel_is_in_streaming(struct tunnel_ctx* tunnel);
 static void tunnel_tls_do_launch_streaming(struct tunnel_ctx *tunnel);
 static void tunnel_tls_client_incoming_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void tunnel_tls_on_connection_established(struct tunnel_ctx *tunnel);
@@ -149,6 +117,7 @@ static void client_tunnel_shutdown(struct tunnel_ctx *tunnel);
 
 static bool init_done_cb(struct tunnel_ctx *tunnel, void *p) {
     struct server_env_t *env = (struct server_env_t *)p;
+    struct server_config* config = env->config;
 
     struct client_ctx *ctx = (struct client_ctx *) calloc(1, sizeof(struct client_ctx));
     ctx->tunnel = tunnel;
@@ -167,10 +136,16 @@ static bool init_done_cb(struct tunnel_ctx *tunnel, void *p) {
     tunnel->tunnel_getaddrinfo_done = &tunnel_getaddrinfo_done;
     tunnel->tunnel_write_done = &tunnel_write_done;
     tunnel->tunnel_get_alloc_size = &tunnel_get_alloc_size;
+    tunnel->tunnel_is_in_streaming = &tunnel_is_in_streaming;
     tunnel->tunnel_extract_data = &tunnel_extract_data;
     tunnel->tunnel_tls_on_connection_established = &tunnel_tls_on_connection_established;
     tunnel->tunnel_tls_on_data_received = &tunnel_tls_on_data_received;
     tunnel->tunnel_tls_on_shutting_down = &tunnel_tls_on_shutting_down;
+    if (config->over_tls_enable) {
+        tunnel->dispatch_center = &dispatch_tls_center;
+    } else {
+        tunnel->dispatch_center = &dispatch_ssr_center;
+    }
 
     cstl_set_container_add(ctx->env->tunnel_set, tunnel);
 
@@ -222,9 +197,11 @@ static void client_tunnel_shutdown(struct tunnel_ctx *tunnel) {
     if (tunnel->tls_ctx) {
         tls_client_shutdown(tunnel);
     } else {
-        assert(ctx->original_tunnel_shutdown);
         client_tunnel_shutdown_print_info(tunnel, true);
-        ctx->original_tunnel_shutdown(tunnel);
+        assert(ctx && ctx->original_tunnel_shutdown);
+        if (ctx && ctx->original_tunnel_shutdown) {
+            ctx->original_tunnel_shutdown(tunnel);
+        }
     }
 }
 
@@ -251,7 +228,7 @@ static struct buffer_t * initial_package_create(const struct s5_ctx *parser) {
 * end up (if all goes well) in the proxy state where we're just proxying
 * data between the client and upstream.
 */
-static void do_next(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
+static void dispatch_ssr_center(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
     struct server_env_t *env = ctx->env;
     struct server_config *config = env->config;
@@ -261,14 +238,12 @@ static void do_next(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
 #if defined(__PRINT_INFO__)
     pr_info("%s", info);
 #endif
+    ASSERT(config->over_tls_enable == false);
     switch (ctx->stage) {
     case tunnel_stage_handshake:
         ASSERT(incoming->rdstate == socket_state_done);
         incoming->rdstate = socket_state_stop;
         do_handshake(tunnel);
-        break;
-    case tunnel_stage_handshake_auth:
-        do_handshake_auth(tunnel);
         break;
     case tunnel_stage_handshake_replied:
         ASSERT(incoming->wrstate == socket_state_done);
@@ -311,17 +286,57 @@ static void do_next(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     case tunnel_stage_auth_completion_done:
         ASSERT(incoming->wrstate == socket_state_done);
         incoming->wrstate = socket_state_stop;
-        if (config->over_tls_enable) {
-            tunnel_tls_do_launch_streaming(tunnel);
-        } else {
-            do_launch_streaming(tunnel);
-        }
-        break;
-    case tunnel_stage_tls_streaming:
-        tunnel_tls_client_incoming_streaming(tunnel, socket);
+        do_launch_streaming(tunnel);
         break;
     case tunnel_stage_streaming:
         tunnel_traditional_streaming(tunnel, socket);
+        break;
+    case tunnel_stage_kill:
+        tunnel->tunnel_shutdown(tunnel);
+        break;
+    default:
+        UNREACHABLE();
+    }
+}
+
+static void dispatch_tls_center(struct tunnel_ctx* tunnel, struct socket_ctx* socket) {
+    struct client_ctx* ctx = (struct client_ctx*) tunnel->data;
+    struct server_env_t* env = ctx->env;
+    struct server_config* config = env->config;
+    struct socket_ctx* incoming = tunnel->incoming;
+    const char* info = tunnel_stage_string(ctx->stage); (void)info;
+#if defined(__PRINT_INFO__)
+    pr_info("%s", info);
+#endif
+    ASSERT(config->over_tls_enable);
+    switch (ctx->stage) {
+    case tunnel_stage_handshake:
+        ASSERT(incoming->rdstate == socket_state_done);
+        incoming->rdstate = socket_state_stop;
+        do_handshake(tunnel);
+        break;
+    case tunnel_stage_handshake_replied:
+        ASSERT(incoming->wrstate == socket_state_done);
+        incoming->wrstate = socket_state_stop;
+        do_wait_client_app_s5_request(tunnel);
+        break;
+    case tunnel_stage_s5_request_from_client_app:
+        ASSERT(incoming->rdstate == socket_state_done);
+        incoming->rdstate = socket_state_stop;
+        do_parse_s5_request_from_client_app(tunnel);
+        break;
+    case tunnel_stage_s5_udp_accoc:
+        ASSERT(incoming->wrstate == socket_state_done);
+        incoming->wrstate = socket_state_stop;
+        tunnel->tunnel_shutdown(tunnel);
+        break;
+    case tunnel_stage_auth_completion_done:
+        ASSERT(incoming->wrstate == socket_state_done);
+        incoming->wrstate = socket_state_stop;
+        tunnel_tls_do_launch_streaming(tunnel);
+        break;
+    case tunnel_stage_tls_streaming:
+        tunnel_tls_client_incoming_streaming(tunnel, socket);
         break;
     case tunnel_stage_kill:
         tunnel->tunnel_shutdown(tunnel);
@@ -353,8 +368,8 @@ static void do_handshake(struct tunnel_ctx *tunnel) {
     size = (size_t)incoming->result;
     result = s5_parse(parser, &data, &size);
     if (result == s5_result_need_more) {
-        socket_read(incoming, true);
-        ctx->stage = tunnel_stage_handshake;  /* Need more data. */
+        /* Need more data. but we do NOT handle this situation */
+        tunnel->tunnel_shutdown(tunnel);
         return;
     }
 
@@ -383,19 +398,12 @@ static void do_handshake(struct tunnel_ctx *tunnel) {
     }
 
     if ((methods & s5_auth_passwd) && can_auth_passwd(tunnel)) {
-        /* TODO(bnoordhuis) Implement username/password auth. */
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
 
     socket_write(incoming, "\5\377", 2);  /* No acceptable auth. */
     ctx->stage = tunnel_stage_kill;
-}
-
-/* TODO(bnoordhuis) Implement username/password auth. */
-static void do_handshake_auth(struct tunnel_ctx *tunnel) {
-    UNREACHABLE();
-    tunnel->tunnel_shutdown(tunnel);
 }
 
 static void do_wait_client_app_s5_request(struct tunnel_ctx *tunnel) {
@@ -543,9 +551,8 @@ static void do_resolve_ssr_server_host_aftercare(struct tunnel_ctx *tunnel) {
     ASSERT(outgoing->wrstate == socket_state_stop);
 
     if (outgoing->result < 0) {
-        /* TODO(bnoordhuis) Escape control characters in parser->daddr. */
-        pr_err("lookup error for \"%s\": %s",
-            config->remote_host,
+        /* TODO Escape control characters in parser->daddr. */
+        pr_err("lookup error for \"%s\": %s", config->remote_host,
             uv_strerror((int)outgoing->result));
         /* Send back a 'Host unreachable' reply. */
         socket_write(incoming, "\5\4\0\1\0\0\0\0\0\0", 10);
@@ -801,11 +808,11 @@ static void tunnel_timeout_expire_done(struct tunnel_ctx *tunnel, struct socket_
 }
 
 static void tunnel_outgoing_connected_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
-    do_next(tunnel, socket);
+    tunnel->dispatch_center(tunnel, socket);
 }
 
 static void tunnel_read_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
-    do_next(tunnel, socket);
+    tunnel->dispatch_center(tunnel, socket);
 }
 
 static void tunnel_arrive_end_of_file(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
@@ -814,11 +821,16 @@ static void tunnel_arrive_end_of_file(struct tunnel_ctx *tunnel, struct socket_c
 }
 
 static void tunnel_getaddrinfo_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
-    do_next(tunnel, socket);
+    tunnel->dispatch_center(tunnel, socket);
 }
 
 static void tunnel_write_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
-    do_next(tunnel, socket);
+    if (tunnel->tunnel_is_in_streaming(tunnel) == true) {
+        // in streaming stage, do nothing and return.
+        socket->wrstate = socket_state_stop;
+        return;
+    }
+    tunnel->dispatch_center(tunnel, socket);
 }
 
 static size_t tunnel_get_alloc_size(struct tunnel_ctx *tunnel, struct socket_ctx *socket, size_t suggested_size) {
@@ -826,6 +838,13 @@ static size_t tunnel_get_alloc_size(struct tunnel_ctx *tunnel, struct socket_ctx
     (void)socket;
     (void)suggested_size;
     return SSR_BUFF_SIZE;
+}
+
+static bool tunnel_is_in_streaming(struct tunnel_ctx* tunnel) {
+    // struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
+    // return (ctx->stage == tunnel_stage_streaming);
+    (void)tunnel;
+    return false;
 }
 
 static void tunnel_tls_do_launch_streaming(struct tunnel_ctx *tunnel) {
@@ -853,7 +872,9 @@ void tunnel_tls_send_websocket_data(struct tunnel_ctx* tunnel, const uint8_t* bu
     ws_frame_binary_alone(true, &info);
     frame = websocket_build_frame(&info, buf, len, &malloc);
     ASSERT(tunnel->tunnel_tls_send_data);
-    tunnel->tunnel_tls_send_data(tunnel, frame, info.frame_size);
+    if (tunnel->tunnel_tls_send_data) {
+        tunnel->tunnel_tls_send_data(tunnel, frame, info.frame_size);
+    }
     free(frame);
 }
 
@@ -909,7 +930,7 @@ static void tunnel_tls_on_connection_established(struct tunnel_ctx *tunnel) {
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
     struct server_config *config = ctx->env->config;
     
-    if (tunnel_is_dead(tunnel)) {
+    if (tunnel_is_dead(tunnel) || ctx == NULL) {
         /* dirty code, insure calling to client_tunnel_shutdown -> tls_client_shutdown */
         tunnel->tunnel_shutdown(tunnel);
         return;
@@ -953,7 +974,9 @@ static void tunnel_tls_on_connection_established(struct tunnel_ctx *tunnel) {
                 free(addr_p);
             }
             ASSERT (tunnel->tunnel_tls_send_data);
-            tunnel->tunnel_tls_send_data(tunnel, buf, len);
+            if (tunnel->tunnel_tls_send_data) {
+                tunnel->tunnel_tls_send_data(tunnel, buf, len);
+            }
             ctx->stage = tunnel_stage_tls_websocket_upgrade;
 
             free(buf);
@@ -1095,7 +1118,7 @@ static bool can_access(const struct tunnel_ctx *cx, const struct sockaddr *addr)
     return true;
 #endif
 
-    /* TODO(bnoordhuis) Implement proper access checks.  For now, just reject
+    /* TODO Implement proper access checks.  For now, just reject
     * traffic to localhost.
     */
     if (addr->sa_family == AF_INET) {

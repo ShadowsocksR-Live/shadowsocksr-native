@@ -42,6 +42,7 @@ struct tunnel_ctx {
 
     void(*tunnel_dying)(struct tunnel_ctx *tunnel);
 
+    void(*dispatch_center)(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
     void(*tunnel_timeout_expire_done)(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
     void(*tunnel_outgoing_connected_done)(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
     void(*tunnel_read_done)(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
@@ -50,6 +51,7 @@ struct tunnel_ctx {
     void(*tunnel_write_done)(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
     size_t(*tunnel_get_alloc_size)(struct tunnel_ctx *tunnel, struct socket_ctx *socket, size_t suggested_size);
     uint8_t*(*tunnel_extract_data)(struct socket_ctx *socket, void*(*allocator)(size_t size), size_t *size);
+    bool(*tunnel_is_in_streaming)(struct tunnel_ctx* tunnel);
     void (*tunnel_shutdown)(struct tunnel_ctx *tunnel);
     struct tls_cli_ctx *tls_ctx;
     void(*tunnel_tls_on_connection_established)(struct tunnel_ctx *tunnel);
