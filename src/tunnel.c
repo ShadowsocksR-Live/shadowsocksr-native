@@ -575,6 +575,6 @@ void socket_dump_error_info(const char *title, struct socket_ctx *socket) {
         }
         from = "_client_";
     }
-    pr_err("%s about %s \"%s\": %s", title, from, addr, uv_strerror(error));
+    pr_err("%s about %s \"%s\": %s - %s", title, from, addr, uv_strerror(error), tunnel->extra_info);
     free(addr);
 }

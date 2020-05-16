@@ -1,3 +1,4 @@
+#include <string.h>
 #include "defs.h"
 #include "common.h"
 #include "s5.h"
@@ -248,6 +249,7 @@ static void tunnel_ssr_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* 
 #if defined(__PRINT_INFO__)
     pr_info("%s", info);
 #endif
+    strncpy(tunnel->extra_info, info, 0x100-1);
     ASSERT(config->over_tls_enable == false);
     switch (ctx->stage) {
     case tunnel_stage_handshake:
@@ -318,6 +320,7 @@ static void tunnel_tls_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* 
 #if defined(__PRINT_INFO__)
     pr_info("%s", info);
 #endif
+    strncpy(tunnel->extra_info, info, 0x100 - 1);
     ASSERT(config->over_tls_enable);
     switch (ctx->stage) {
     case tunnel_stage_handshake:

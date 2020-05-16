@@ -39,6 +39,7 @@ struct tunnel_ctx {
     struct socket_ctx *incoming;  /* Connection with the SOCKS client. */
     struct socket_ctx *outgoing;  /* Connection with upstream. */
     struct socks5_address *desired_addr;
+    char extra_info[0x100];
     int ref_count;
 
     void(*tunnel_dying)(struct tunnel_ctx *tunnel);

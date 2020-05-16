@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <time.h>
+#include <string.h>
 
 #include "common.h"
 #include "dump_info.h"
@@ -425,6 +426,7 @@ static void tunnel_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* sock
 #if defined(__PRINT_INFO__)
     pr_info("%s", info);
 #endif
+    strncpy(tunnel->extra_info, info, 0x100 - 1);
     switch (ctx->stage) {
     case tunnel_stage_initial:
         ASSERT(incoming == socket);
