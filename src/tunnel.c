@@ -156,7 +156,7 @@ void tunnel_release(struct tunnel_ctx *tunnel) {
     free(tunnel);
 }
 
-static void dispatch_center(struct tunnel_ctx* tunnel, struct socket_ctx* socket) {
+static void tunnel_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* socket) {
     ASSERT(!"You must override this function!");
     (void)tunnel; (void)socket;
 }
@@ -192,7 +192,7 @@ struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsig
 
     tunnel->tunnel_shutdown = &tunnel_shutdown;
     tunnel->tunnel_is_in_streaming = &tunnel_is_in_streaming;
-    tunnel->dispatch_center = &dispatch_center;
+    tunnel->tunnel_dispatcher = &tunnel_dispatcher;
 
     if (init_done_cb) {
         success = init_done_cb(tunnel, p);

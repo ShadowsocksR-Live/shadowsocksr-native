@@ -81,8 +81,8 @@ struct client_ctx {
 };
 
 static struct buffer_t * initial_package_create(const struct s5_ctx *parser);
-static void dispatch_ssr_center(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
-static void dispatch_tls_center(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
+static void tunnel_ssr_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
+static void tunnel_tls_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
 static void do_handshake(struct tunnel_ctx *tunnel);
 static void do_wait_client_app_s5_request(struct tunnel_ctx *tunnel);
 static void do_parse_s5_request_from_client_app(struct tunnel_ctx *tunnel);
@@ -143,10 +143,10 @@ static bool init_done_cb(struct tunnel_ctx *tunnel, void *p) {
     tunnel->tunnel_tls_on_data_received = &tunnel_tls_on_data_received;
     tunnel->tunnel_tls_on_shutting_down = &tunnel_tls_on_shutting_down;
     if (config->over_tls_enable) {
-        tunnel->dispatch_center = &dispatch_tls_center;
+        tunnel->tunnel_dispatcher = &tunnel_tls_dispatcher;
         tunnel->tunnel_is_in_streaming = &tunnel_tls_is_in_streaming;
     } else {
-        tunnel->dispatch_center = &dispatch_ssr_center;
+        tunnel->tunnel_dispatcher = &tunnel_ssr_dispatcher;
         tunnel->tunnel_is_in_streaming = &tunnel_ssr_is_in_streaming;
     }
 
@@ -238,7 +238,7 @@ static struct buffer_t * initial_package_create(const struct s5_ctx *parser) {
 * end up (if all goes well) in the proxy state where we're just proxying
 * data between the client and upstream.
 */
-static void dispatch_ssr_center(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
+static void tunnel_ssr_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* socket) {
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
     struct server_env_t *env = ctx->env;
     struct server_config *config = env->config;
@@ -309,7 +309,7 @@ static void dispatch_ssr_center(struct tunnel_ctx *tunnel, struct socket_ctx *so
     }
 }
 
-static void dispatch_tls_center(struct tunnel_ctx* tunnel, struct socket_ctx* socket) {
+static void tunnel_tls_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* socket) {
     struct client_ctx* ctx = (struct client_ctx*) tunnel->data;
     struct server_env_t* env = ctx->env;
     struct server_config* config = env->config;
@@ -849,11 +849,11 @@ static void tunnel_timeout_expire_done(struct tunnel_ctx *tunnel, struct socket_
 }
 
 static void tunnel_outgoing_connected_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
-    tunnel->dispatch_center(tunnel, socket);
+    tunnel->tunnel_dispatcher(tunnel, socket);
 }
 
 static void tunnel_read_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
-    tunnel->dispatch_center(tunnel, socket);
+    tunnel->tunnel_dispatcher(tunnel, socket);
 }
 
 static void tunnel_arrive_end_of_file(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
@@ -862,11 +862,11 @@ static void tunnel_arrive_end_of_file(struct tunnel_ctx *tunnel, struct socket_c
 }
 
 static void tunnel_getaddrinfo_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
-    tunnel->dispatch_center(tunnel, socket);
+    tunnel->tunnel_dispatcher(tunnel, socket);
 }
 
 static void tunnel_write_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
-    tunnel->dispatch_center(tunnel, socket);
+    tunnel->tunnel_dispatcher(tunnel, socket);
 }
 
 static size_t tunnel_get_alloc_size(struct tunnel_ctx *tunnel, struct socket_ctx *socket, size_t suggested_size) {
@@ -924,7 +924,7 @@ void tunnel_tls_send_websocket_data(struct tunnel_ctx* tunnel, const uint8_t* bu
 
 void tunnel_tls_client_incoming_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
-    ASSERT(socket == tunnel->incoming);
+    ASSERT(socket == tunnel->incoming); (void)ctx;
 
     ASSERT(socket->wrstate == socket_state_done || socket->rdstate == socket_state_done);
 
