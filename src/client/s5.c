@@ -382,6 +382,9 @@ uint8_t * s5_address_package_create(const struct s5_ctx *parser, void*(*allocato
 
     assert(parser);
     assert(allocator);
+    if (parser==NULL || allocator==NULL) {
+        return NULL;
+    }
 
     buffer = (uint8_t *) allocator(0x100);
     memset(buffer, 0, 0x100);
