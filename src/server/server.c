@@ -44,7 +44,7 @@ struct ssr_server_state {
     V(0, tunnel_stage_initial,                  "tunnel_stage_initial")                 \
     V(1, tunnel_stage_obfs_receipt_done,        "tunnel_stage_obfs_receipt_done")       \
     V(2, tunnel_stage_client_feedback_coming,   "tunnel_stage_client_feedback_coming")  \
-    V(3, tunnel_stage_proto_confirm_done,       "tunnel_stage_proto_confirm_done")      \
+    V(3, tunnel_stage_protocol_confirm_done,    "tunnel_stage_protocol_confirm_done")   \
     V(4, tunnel_stage_resolve_host,             "tunnel_stage_resolve_host")            \
     V(5, tunnel_stage_connect_host,             "tunnel_stage_connect_host")            \
     V(6, tunnel_stage_launch_streaming,         "tunnel_stage_launch_streaming")        \
@@ -454,7 +454,7 @@ static void tunnel_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* sock
         incoming->rdstate = socket_state_stop;
         do_handle_client_feedback(tunnel, incoming);
         break;
-    case tunnel_stage_proto_confirm_done:
+    case tunnel_stage_protocol_confirm_done:
         ASSERT(incoming == socket);
         ASSERT(incoming->rdstate == socket_state_stop);
         ASSERT(incoming->wrstate == socket_state_done);
@@ -684,7 +684,7 @@ static void do_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *incomi
         if (proto_confirm) {
             ASSERT(obfs_receipt == NULL);
             socket_write(incoming, buffer_get_data(proto_confirm, NULL), buffer_get_length(proto_confirm));
-            ctx->stage = tunnel_stage_proto_confirm_done;
+            ctx->stage = tunnel_stage_protocol_confirm_done;
             break;
         }
 
@@ -760,7 +760,7 @@ static void do_handle_client_feedback(struct tunnel_ctx *tunnel, struct socket_c
 
         if (proto_confirm) {
             socket_write(incoming, buffer_get_data(proto_confirm, NULL), buffer_get_length(proto_confirm));
-            ctx->stage = tunnel_stage_proto_confirm_done;
+            ctx->stage = tunnel_stage_protocol_confirm_done;
             break;
         }
 
