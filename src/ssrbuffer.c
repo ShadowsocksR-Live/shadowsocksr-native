@@ -74,6 +74,9 @@ static size_t _memory_size_internal(void *ptr) {
 struct buffer_t * buffer_create(size_t capacity) {
     struct buffer_t *ptr = (struct buffer_t *) calloc(1, sizeof(struct buffer_t));
     assert(ptr);
+    if (ptr == NULL) {
+        return NULL;
+    }
     ptr->buffer = (uint8_t *) calloc(capacity, sizeof(uint8_t));
     assert(ptr->buffer);
     ptr->capacity = capacity;
