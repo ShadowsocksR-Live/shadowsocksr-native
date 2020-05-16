@@ -21,6 +21,7 @@ struct socket_ctx {
     struct tunnel_ctx *tunnel;  /* Backlink to owning tunnel context. */
     ssize_t result;
     union uv_any_handle handle;
+    bool check_timeout;
     uv_timer_t timer_handle;  /* For detecting timeouts. */
                               /* We only need one of these at a time so make them share memory. */
     union uv_any_req req;
@@ -72,7 +73,6 @@ struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsig
 void tunnel_add_ref(struct tunnel_ctx *tunnel);
 void tunnel_release(struct tunnel_ctx *tunnel);
 bool tunnel_is_dead(struct tunnel_ctx *tunnel);
-void tunnel_traditional_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 int socket_connect(struct socket_ctx *socket);
 bool socket_is_readable(struct socket_ctx *socket);
 bool socket_is_writeable(struct socket_ctx *socket);

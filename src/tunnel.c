@@ -157,6 +157,7 @@ void tunnel_release(struct tunnel_ctx *tunnel) {
 }
 
 static void dispatch_center(struct tunnel_ctx* tunnel, struct socket_ctx* socket) {
+    ASSERT(!"You must override this function!");
     (void)tunnel; (void)socket;
 }
 
@@ -212,6 +213,7 @@ struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsig
 }
 
 static bool tunnel_is_in_streaming(struct tunnel_ctx* tunnel) {
+    ASSERT(!"You must override this function!");
     (void)tunnel;
     return false;
 }
@@ -233,63 +235,6 @@ static void tunnel_shutdown(struct tunnel_ctx *tunnel) {
     socket_close(tunnel->outgoing);
 
     tunnel_release(tunnel);
-}
-
-//
-// The logic is as follows: read when we don't write and write when we don't read.
-// That gives us back-pressure handling for free because if the peer
-// sends data faster than we consume it, TCP congestion control kicks in.
-//
-void tunnel_traditional_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
-    struct socket_ctx *current_socket = socket;
-    struct socket_ctx *target_socket = NULL;
-
-    // 当前 网口 肯定是 入网口 或者 出网口 .
-    ASSERT(current_socket == tunnel->incoming || current_socket == tunnel->outgoing);
-
-    // 目标 网口 肯定是 当前 网口 的对立面，非此即彼 .
-    target_socket = ((current_socket == tunnel->incoming) ? tunnel->outgoing : tunnel->incoming);
-
-    // 当前 网口 的状态肯定是 写妥了 或者 读妥了，二者必居其一，但不可能同时既是读妥又是写妥 .
-    ASSERT((current_socket->wrstate == socket_state_done && current_socket->rdstate != socket_state_done) ||
-           (current_socket->wrstate != socket_state_done && current_socket->rdstate == socket_state_done));
-
-    // 目标 网口 的读状态肯定不是读妥，写状态肯定不是写妥，而只可能是忙碌或者已停止 .
-    ASSERT(target_socket->wrstate != socket_state_done && target_socket->rdstate != socket_state_done);
-
-    if (current_socket->wrstate == socket_state_done) {
-        // 如果 当前 网口 的写状态是 写妥 :
-        current_socket->wrstate = socket_state_stop;
-        if (target_socket->rdstate == socket_state_stop) {
-            // 目标网口 的读状态如果是已停止，则开始读目标网口 .
-            // 只对读取 出网口 做超时断开处理, 而对读取 入网口 不处理超时 .
-            // 这很重要, 否则可能数据传输不完整即被断开 .
-            socket_read(target_socket, (target_socket == tunnel->outgoing));
-        }
-    }
-    else if (current_socket->rdstate == socket_state_done) {
-        // 当前 网口 的读状态是 读妥 :
-        current_socket->rdstate = socket_state_stop;
-
-        // 目标 网口 的写状态 肯定 是 已停止, 可以再次写入了 .
-        ASSERT(target_socket->wrstate == socket_state_stop);
-        {
-            size_t len = 0;
-            uint8_t *buf = NULL;
-            ASSERT(tunnel->tunnel_extract_data);
-            buf = tunnel->tunnel_extract_data(current_socket, &malloc, &len);
-            if (buf /* && len > 0 */) {
-                // 从当前 网口 提取数据然后写入 目标 网口 .
-                socket_write(target_socket, buf, len);
-            } else {
-                tunnel->tunnel_shutdown(tunnel);
-            }
-            free(buf);
-        }
-    }
-    else {
-        ASSERT(false);
-    }
 }
 
 static void socket_timer_start(struct socket_ctx *socket) {
@@ -370,6 +315,7 @@ void socket_read(struct socket_ctx *socket, bool check_timeout) {
     ASSERT(socket->rdstate == socket_state_stop);
     VERIFY(0 == uv_read_start(&socket->handle.stream, socket_alloc_cb, socket_read_done_cb));
     socket->rdstate = socket_state_busy;
+    socket->check_timeout = check_timeout;
     if (check_timeout) {
         socket_timer_start(socket);
     }
@@ -401,7 +347,9 @@ static void socket_read_done_cb(uv_stream_t *handle, ssize_t nread, const uv_buf
         socket_timer_stop(socket);
 
         if (nread < 0) {
-            ASSERT(socket->rdstate == socket_state_busy);
+            if (tunnel->tunnel_is_in_streaming(tunnel) == false) {
+                ASSERT(socket->rdstate == socket_state_busy);
+            }
             socket->rdstate = socket_state_stop;
 
             // http://docs.libuv.org/en/v1.x/stream.html
@@ -425,6 +373,10 @@ static void socket_read_done_cb(uv_stream_t *handle, ssize_t nread, const uv_buf
         ASSERT(tunnel->tunnel_read_done);
         if (tunnel->tunnel_read_done) {
             tunnel->tunnel_read_done(tunnel, socket);
+        }
+
+        if (tunnel->tunnel_is_in_streaming(tunnel) && socket->check_timeout) {
+            socket_timer_start(socket);
         }
     } while (0);
 
@@ -538,7 +490,6 @@ void socket_write(struct socket_ctx *socket, const void *data, size_t len) {
     req->data = write_buf;
 
     VERIFY(0 == uv_write(req, &socket->handle.stream, &buf, 1, socket_write_done_cb));
-    socket_timer_start(socket);
 }
 
 static void socket_write_done_cb(uv_write_t *req, int status) {
@@ -558,8 +509,6 @@ static void socket_write_done_cb(uv_write_t *req, int status) {
     if (tunnel_is_dead(tunnel)) {
         return;
     }
-
-    socket_timer_stop(socket);
 
     if (status < 0 /*status == UV_ECANCELED*/) {
         socket->wrstate = socket_state_stop;

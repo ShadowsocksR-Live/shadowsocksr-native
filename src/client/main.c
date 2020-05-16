@@ -189,7 +189,7 @@ static bool verify_config(struct server_config *config) {
 }
 
 static void usage(void) {
-    printf(""
+    printf("\n"
         "ShadowsocksR native client\n"
         "\n"
         "Usage:\n"
@@ -202,6 +202,6 @@ static void usage(void) {
         "  -c <config file>       Configure file path. Default: " DEFAULT_CONF_PATH "\n"
         "  -f                     Force quit the program.\n"
         "  -h                     Show this help message.\n"
-        "",
+        "\n",
         get_app_name());
 }
