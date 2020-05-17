@@ -181,6 +181,9 @@ void config_add_user_id_with_auth_key(struct server_config *config, const char *
 bool config_is_user_exist(struct server_config *config, const char *user_id, const char **auth_key, bool *is_multi_user) {
     bool result = false;
     ASSERT(config);
+    if (config == NULL) {
+        return false;
+    }
     ASSERT(user_id);
     if (is_multi_user) {
         *is_multi_user = (config->user_id_auth_key != NULL);
@@ -472,8 +475,9 @@ enum ssr_error tunnel_cipher_client_encrypt(struct tunnel_cipher_ctx *tc, struct
     struct server_env_t *env = tc->env;
     // SSR beg
     struct obfs_t *protocol_plugin = tc->protocol;
-    size_t capacity = buffer_get_capacity(buf);
-    ASSERT(capacity >= SSR_BUFF_SIZE);
+    size_t capacity;
+    buffer_realloc(buf, SSR_BUFF_SIZE);
+    capacity = buffer_get_capacity(buf);
     if (protocol_plugin && protocol_plugin->client_pre_encrypt) {
         size_t len = 0;
         uint8_t *p = (uint8_t *) buffer_raw_clone(buf, &malloc, &len, &capacity);
@@ -504,7 +508,7 @@ enum ssr_error tunnel_cipher_client_decrypt(struct tunnel_cipher_ctx *tc, struct
     // SSR beg
     struct obfs_t *obfs_plugin = tc->obfs;
 
-    ASSERT(buffer_get_length(buf) <= SSR_BUFF_SIZE);
+    buffer_realloc(buf, SSR_BUFF_SIZE);
 
     if (obfs_plugin && obfs_plugin->client_decode) {
         bool needsendback = 0;
@@ -517,7 +521,9 @@ enum ssr_error tunnel_cipher_client_decrypt(struct tunnel_cipher_ctx *tc, struct
             struct buffer_t *empty = buffer_create_from((const uint8_t *)"", 0);
             struct buffer_t *sendback = obfs_plugin->client_encode(tc->obfs, empty);
             ASSERT(feedback);
-            *feedback = sendback;
+            if (feedback) {
+                *feedback = sendback;
+            }
             buffer_release(empty);
         }
     }
@@ -701,10 +707,10 @@ bool pre_parse_header(struct buffer_t *data) {
         data_size = (size_t) ntohs( *((uint16_t *)(buffer+1)) );
         crc = crc32_imp(buffer, data_size);
         if (crc != 0xffffffff) {
-            // uncorrect CRC32, maybe wrong password or encryption method
+            // incorrect CRC32, maybe wrong password or encryption method
             return false;
         }
-        start_pos = (size_t)(3 + buffer[3]);
+        start_pos = (size_t)(3 + (size_t)buffer[3]);
 
         buffer_shortened_to(data, start_pos, data_size - (4 + start_pos));
 
