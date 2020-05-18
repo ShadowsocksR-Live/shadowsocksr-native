@@ -15,10 +15,6 @@
 		3A27FF72229974FD00CFAD25 /* tls_cli.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A27FF6F229974FD00CFAD25 /* tls_cli.h */; };
 		3A27FF73229974FD00CFAD25 /* tls_cli.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A27FF70229974FD00CFAD25 /* tls_cli.c */; };
 		3A27FF74229974FD00CFAD25 /* tls_cli.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A27FF70229974FD00CFAD25 /* tls_cli.c */; };
-		3A27FF93229979F300CFAD25 /* dump_info.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A27FF91229979F200CFAD25 /* dump_info.c */; };
-		3A27FF94229979F300CFAD25 /* dump_info.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A27FF91229979F200CFAD25 /* dump_info.c */; };
-		3A27FF95229979F300CFAD25 /* dump_info.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A27FF92229979F300CFAD25 /* dump_info.h */; };
-		3A27FF96229979F300CFAD25 /* dump_info.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A27FF92229979F300CFAD25 /* dump_info.h */; };
 		3A300B11206FF45500ABE7C2 /* libsodium.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3A300B02206FF41B00ABE7C2 /* libsodium.framework */; };
 		3A300B12206FF45500ABE7C2 /* libuv.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3A300B09206FF42E00ABE7C2 /* libuv.framework */; };
 		3A300B13206FF45500ABE7C2 /* mbedtls.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3A26B218206FB2EB0084360E /* mbedtls.framework */; };
@@ -66,10 +62,6 @@
 		3A300B72206FF9A400ABE7C2 /* cache.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A300B70206FF9A400ABE7C2 /* cache.c */; };
 		3A300B75206FFA0A00ABE7C2 /* ssrutils.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A300B73206FFA0900ABE7C2 /* ssrutils.c */; };
 		3A300B76206FFA0A00ABE7C2 /* ssrutils.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A300B74206FFA0A00ABE7C2 /* ssrutils.h */; };
-		3A31838C22F8691400E7D266 /* ws_tls_basic.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A31838A22F8691400E7D266 /* ws_tls_basic.c */; };
-		3A31838D22F8691400E7D266 /* ws_tls_basic.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A31838A22F8691400E7D266 /* ws_tls_basic.c */; };
-		3A31838E22F8691400E7D266 /* ws_tls_basic.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A31838B22F8691400E7D266 /* ws_tls_basic.h */; };
-		3A31838F22F8691400E7D266 /* ws_tls_basic.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A31838B22F8691400E7D266 /* ws_tls_basic.h */; };
 		3A31839822F869EE00E7D266 /* http_parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A31839422F869EE00E7D266 /* http_parser.c */; };
 		3A31839922F869EE00E7D266 /* http_parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A31839422F869EE00E7D266 /* http_parser.c */; };
 		3A31839A22F869EE00E7D266 /* http_parser_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A31839522F869EE00E7D266 /* http_parser_wrapper.h */; };
@@ -89,6 +81,10 @@
 		3A6C0C072304109700FFF1D9 /* uv-mbed.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A6C0C052304109700FFF1D9 /* uv-mbed.h */; };
 		3A7D2CB320771D6A00D5766F /* ssr_client_api.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A7D2CB220771D6A00D5766F /* ssr_client_api.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3A7D2CB420771D6A00D5766F /* ssr_client_api.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A7D2CB220771D6A00D5766F /* ssr_client_api.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		3A929D162472ED250070E466 /* websocket_basic.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A929D142472ED250070E466 /* websocket_basic.c */; };
+		3A929D172472ED250070E466 /* websocket_basic.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A929D142472ED250070E466 /* websocket_basic.c */; };
+		3A929D182472ED250070E466 /* websocket_basic.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A929D152472ED250070E466 /* websocket_basic.h */; };
+		3A929D192472ED250070E466 /* websocket_basic.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A929D152472ED250070E466 /* websocket_basic.h */; };
 		3A95CBAF2070C88C00E507E3 /* ssrNative.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A57A60A206F9D44002F1F2D /* ssrNative.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3A95CBB02070C8D000E507E3 /* sockaddr_universal.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A300B5F206FF69D00ABE7C2 /* sockaddr_universal.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3A95CBB12070C8D000E507E3 /* ssr_cipher_names.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A300B61206FF69D00ABE7C2 /* ssr_cipher_names.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -288,8 +284,6 @@
 		3A300B70206FF9A400ABE7C2 /* cache.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = cache.c; path = ../src/cache.c; sourceTree = "<group>"; };
 		3A300B73206FFA0900ABE7C2 /* ssrutils.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ssrutils.c; path = ../src/ssrutils.c; sourceTree = "<group>"; };
 		3A300B74206FFA0A00ABE7C2 /* ssrutils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ssrutils.h; path = ../src/ssrutils.h; sourceTree = "<group>"; };
-		3A31838A22F8691400E7D266 /* ws_tls_basic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ws_tls_basic.c; path = ../src/ws_tls_basic.c; sourceTree = "<group>"; };
-		3A31838B22F8691400E7D266 /* ws_tls_basic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ws_tls_basic.h; path = ../src/ws_tls_basic.h; sourceTree = "<group>"; };
 		3A31839422F869EE00E7D266 /* http_parser.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = http_parser.c; path = "../depends/http-parser/http_parser.c"; sourceTree = "<group>"; };
 		3A31839522F869EE00E7D266 /* http_parser_wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = http_parser_wrapper.h; path = "../depends/http-parser/http_parser_wrapper.h"; sourceTree = "<group>"; };
 		3A31839622F869EE00E7D266 /* http_parser_wrapper.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = http_parser_wrapper.c; path = "../depends/http-parser/http_parser_wrapper.c"; sourceTree = "<group>"; };
@@ -302,6 +296,8 @@
 		3A6C0BFE2304108C00FFF1D9 /* bio.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bio.c; path = "../depends/uv-mbed/src/bio.c"; sourceTree = "<group>"; };
 		3A6C0C052304109700FFF1D9 /* uv-mbed.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "uv-mbed.h"; path = "../depends/uv-mbed/include/uv-mbed/uv-mbed.h"; sourceTree = "<group>"; };
 		3A7D2CB220771D6A00D5766F /* ssr_client_api.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ssr_client_api.h; path = ../src/client/ssr_client_api.h; sourceTree = "<group>"; };
+		3A929D142472ED250070E466 /* websocket_basic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = websocket_basic.c; path = ../src/websocket_basic.c; sourceTree = "<group>"; };
+		3A929D152472ED250070E466 /* websocket_basic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = websocket_basic.h; path = ../src/websocket_basic.h; sourceTree = "<group>"; };
 		3A95CBA42070C7DA00E507E3 /* ssrNative.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ssrNative.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3A95CC072070D26000E507E3 /* udprelay.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = udprelay.c; path = ../src/udprelay.c; sourceTree = "<group>"; };
 		3A95CC082070D26000E507E3 /* udprelay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = udprelay.h; path = ../src/udprelay.h; sourceTree = "<group>"; };
@@ -439,8 +435,8 @@
 				3A300B53206FF66500ABE7C2 /* dump_info.h */,
 				3A300B4F206FF66500ABE7C2 /* encrypt.c */,
 				3A300B51206FF66500ABE7C2 /* encrypt.h */,
-				3A31838A22F8691400E7D266 /* ws_tls_basic.c */,
-				3A31838B22F8691400E7D266 /* ws_tls_basic.h */,
+				3A929D142472ED250070E466 /* websocket_basic.c */,
+				3A929D152472ED250070E466 /* websocket_basic.h */,
 			);
 			name = src;
 			sourceTree = "<group>";
@@ -511,7 +507,6 @@
 			files = (
 				3A6C0BFF2304108C00FFF1D9 /* bio.h in Headers */,
 				3A300B71206FF9A400ABE7C2 /* cache.h in Headers */,
-				3A31838E22F8691400E7D266 /* ws_tls_basic.h in Headers */,
 				3A7D2CB320771D6A00D5766F /* ssr_client_api.h in Headers */,
 				3A300B47206FF58300ABE7C2 /* defs.h in Headers */,
 				3A300B37206FF54000ABE7C2 /* tls1.2_ticket.h in Headers */,
@@ -532,7 +527,6 @@
 				3A27FF71229974FD00CFAD25 /* tls_cli.h in Headers */,
 				3A300B58206FF66500ABE7C2 /* encrypt.h in Headers */,
 				3A300B76206FFA0A00ABE7C2 /* ssrutils.h in Headers */,
-				3A27FF95229979F300CFAD25 /* dump_info.h in Headers */,
 				3A31839A22F869EE00E7D266 /* http_parser_wrapper.h in Headers */,
 				3A300B39206FF54000ABE7C2 /* auth_chain.h in Headers */,
 				3A95CC0B2070D26100E507E3 /* udprelay.h in Headers */,
@@ -540,6 +534,7 @@
 				3A300B45206FF58300ABE7C2 /* s5.h in Headers */,
 				3A9CCE3620CE318200D9E0DC /* tunnel.h in Headers */,
 				3A300B6D206FF77E00ABE7C2 /* ssrbuffer.h in Headers */,
+				3A929D182472ED250070E466 /* websocket_basic.h in Headers */,
 				3A300B6A206FF69D00ABE7C2 /* ssr_executive.h in Headers */,
 				3A300B3C206FF54000ABE7C2 /* base64.h in Headers */,
 				3A31839E22F869EE00E7D266 /* http_parser.h in Headers */,
@@ -552,7 +547,6 @@
 			files = (
 				3A6C0C002304108C00FFF1D9 /* bio.h in Headers */,
 				3A95CBC62070C92200E507E3 /* auth.h in Headers */,
-				3A31838F22F8691400E7D266 /* ws_tls_basic.h in Headers */,
 				3A7D2CB420771D6A00D5766F /* ssr_client_api.h in Headers */,
 				3A95CBDB2070C92D00E507E3 /* s5.h in Headers */,
 				3A95CBAF2070C88C00E507E3 /* ssrNative.h in Headers */,
@@ -573,7 +567,6 @@
 				3A27FF72229974FD00CFAD25 /* tls_cli.h in Headers */,
 				3A95CBB32070C8D000E507E3 /* ssr_qr_code.h in Headers */,
 				3A95CBB12070C8D000E507E3 /* ssr_cipher_names.h in Headers */,
-				3A27FF96229979F300CFAD25 /* dump_info.h in Headers */,
 				3A31839B22F869EE00E7D266 /* http_parser_wrapper.h in Headers */,
 				3A95CBCC2070C92200E507E3 /* cstl_lib.h in Headers */,
 				3A95CBB52070C8FD00E507E3 /* cache.h in Headers */,
@@ -581,6 +574,7 @@
 				3A95CBCE2070C92200E507E3 /* http_simple.h in Headers */,
 				3A9CCE3720CE318200D9E0DC /* tunnel.h in Headers */,
 				3A95CBB42070C8FD00E507E3 /* ssrutils.h in Headers */,
+				3A929D192472ED250070E466 /* websocket_basic.h in Headers */,
 				3A95CBC82070C92200E507E3 /* base64.h in Headers */,
 				3A95CBD62070C92200E507E3 /* verify.h in Headers */,
 				3A31839F22F869EE00E7D266 /* http_parser.h in Headers */,
@@ -638,7 +632,7 @@
 		3A57A5FE206F9D44002F1F2D /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0930;
+				LastUpgradeCheck = 1110;
 				ORGANIZATIONNAME = ssrLive;
 				TargetAttributes = {
 					3A57A606206F9D44002F1F2D = {
@@ -657,6 +651,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = 3A57A5FD206F9D44002F1F2D;
 			productRefGroup = 3A57A608206F9D44002F1F2D /* Products */;
@@ -754,11 +749,11 @@
 				3A300B49206FF58300ABE7C2 /* s5.c in Sources */,
 				3A300B29206FF54000ABE7C2 /* obfs.c in Sources */,
 				3A300B2F206FF54000ABE7C2 /* auth.c in Sources */,
-				3A31838C22F8691400E7D266 /* ws_tls_basic.c in Sources */,
 				3A27FF6B229974A200CFAD25 /* text_in_color.c in Sources */,
 				3A300B33206FF54000ABE7C2 /* verify.c in Sources */,
 				3A300B75206FFA0A00ABE7C2 /* ssrutils.c in Sources */,
 				3A300B2E206FF54000ABE7C2 /* obfsutil.c in Sources */,
+				3A929D162472ED250070E466 /* websocket_basic.c in Sources */,
 				3A9CCE3820CE318200D9E0DC /* tunnel.c in Sources */,
 				3A300B72206FF9A400ABE7C2 /* cache.c in Sources */,
 				3A300B6E206FF77E00ABE7C2 /* ssrbuffer.c in Sources */,
@@ -780,7 +775,6 @@
 				3A27FF73229974FD00CFAD25 /* tls_cli.c in Sources */,
 				3A300B65206FF69D00ABE7C2 /* ssr_executive.c in Sources */,
 				3A300B55206FF66500ABE7C2 /* dump_info.c in Sources */,
-				3A27FF93229979F300CFAD25 /* dump_info.c in Sources */,
 				3A300B56206FF66500ABE7C2 /* encrypt.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -793,11 +787,11 @@
 				3A95CBD52070C92200E507E3 /* verify.c in Sources */,
 				3A95CBD92070C92D00E507E3 /* listener.c in Sources */,
 				3A95CBDA2070C92D00E507E3 /* s5.c in Sources */,
-				3A31838D22F8691400E7D266 /* ws_tls_basic.c in Sources */,
 				3A27FF6C229974A200CFAD25 /* text_in_color.c in Sources */,
 				3A95CBCF2070C92200E507E3 /* obfs.c in Sources */,
 				3A95CBC52070C92200E507E3 /* auth.c in Sources */,
 				3A95CBCD2070C92200E507E3 /* http_simple.c in Sources */,
+				3A929D172472ED250070E466 /* websocket_basic.c in Sources */,
 				3A9CCE3920CE318200D9E0DC /* tunnel.c in Sources */,
 				3A95CBBE2070C90C00E507E3 /* ssr_cipher_names.c in Sources */,
 				3A95CBD12070C92200E507E3 /* obfsutil.c in Sources */,
@@ -819,7 +813,6 @@
 				3A27FF74229974FD00CFAD25 /* tls_cli.c in Sources */,
 				3A95CBC72070C92200E507E3 /* base64.c in Sources */,
 				3A95CBBA2070C90C00E507E3 /* ssrutils.c in Sources */,
-				3A27FF94229979F300CFAD25 /* dump_info.c in Sources */,
 				3A95CBCB2070C92200E507E3 /* cstl_lib.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -979,7 +972,7 @@
 		3A57A610206F9D44002F1F2D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = "";
