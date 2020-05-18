@@ -332,7 +332,7 @@ void udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, c
 }
 
 struct udp_remote_ctx_t * udp_remote_launch_begin(uv_loop_t* loop, uint64_t timeout, const struct socks5_address *dst_addr) {
-    union sockaddr_universal u_dst_addr = { 0 };
+    union sockaddr_universal u_dst_addr = { {0} };
     uv_udp_t *udp = NULL;
     uv_timer_t *timer;
 
@@ -372,7 +372,7 @@ void udp_remote_send_data(struct udp_remote_ctx_t *remote_ctx, const uint8_t*dat
     uv_buf_t sndbuf;
     uint8_t *dup_data;
     uv_udp_send_t *send_req;
-    union sockaddr_universal u_dst_addr = { 0 };
+    union sockaddr_universal u_dst_addr = { {0} };
 
     if (remote_ctx==NULL || data==NULL || len==0) {
         return;
