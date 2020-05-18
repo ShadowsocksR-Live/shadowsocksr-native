@@ -22,6 +22,7 @@
 #include "ip_addr_cache.h"
 #include "s5.h"
 #include "base64.h"
+#include "cstl_lib.h"
 
 #ifndef SSR_MAX_CONN
 #define SSR_MAX_CONN 1024
@@ -84,6 +85,7 @@ struct server_ctx {
     struct buffer_t *client_delivery_cache;
     struct tunnel_ctx *tunnel; // __weak_ptr
     struct udp_remote_ctx_t *udp_relay;
+    struct cstl_deque* udp_recv_deque;
 };
 
 static int ssr_server_run_loop(struct server_config *config, bool force_quit);
@@ -320,6 +322,19 @@ void ssr_server_shutdown(struct ssr_server_state *state) {
     }
 }
 
+static int deque_compare_e_ptr(const void* left, const void* right) {
+    struct buffer_t* l = *((struct buffer_t**)left);
+    struct buffer_t* r = *((struct buffer_t**)right);
+    return (int)((ssize_t)l - (ssize_t)r);
+}
+
+static void deque_free_e(void* ptr) {
+    if (ptr) {
+        struct buffer_t* p = *((struct buffer_t**)ptr);
+        buffer_release(p);
+    }
+}
+
 bool _init_done_cb(struct tunnel_ctx *tunnel, void *p) {
     struct server_env_t *env = (struct server_env_t *)p;
 
@@ -349,6 +364,8 @@ bool _init_done_cb(struct tunnel_ctx *tunnel, void *p) {
 
 #define SOCKET_DATA_BUFFER_SIZE 0x8000
     ctx->client_delivery_cache = buffer_create(SOCKET_DATA_BUFFER_SIZE);
+
+    ctx->udp_recv_deque = cstl_deque_new(10, deque_compare_e_ptr, deque_free_e);
 
     return is_incoming_ip_legal(tunnel);
 }
@@ -413,6 +430,7 @@ static void tunnel_dying(struct tunnel_ctx *tunnel) {
     buffer_release(ctx->init_pkg);
     if (ctx->sec_websocket_key) { free(ctx->sec_websocket_key); }
     buffer_release(ctx->client_delivery_cache);
+    cstl_deque_delete(ctx->udp_recv_deque);
     free(ctx);
 }
 
@@ -1264,8 +1282,20 @@ static void tunnel_udp_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *s
 
         src = buffer_create_from((uint8_t *)socket->buf->base, (size_t)socket->result);
         buf = extract_data_from_assembled_websocket_frame(ctx, src);
-        p = buffer_get_data(buf, &p_len);
-        udp_remote_send_data(ctx->udp_relay, p, p_len);
+
+        do {
+            const struct buffer_t* tmp;
+            const void* udp_pkg = cstl_deque_front(ctx->udp_recv_deque);
+            if (udp_pkg == NULL) {
+                break;
+            }
+            tmp = *((struct buffer_t**)udp_pkg);
+
+            p = buffer_get_data(tmp, &p_len);
+            udp_remote_send_data(ctx->udp_relay, p, p_len);
+
+            cstl_deque_pop_front(ctx->udp_recv_deque);
+        } while (true);
 
         buffer_release(src);
         buffer_release(buf);
@@ -1323,6 +1353,11 @@ static struct buffer_t * extract_data_from_assembled_websocket_frame(struct serv
 
         ASSERT(obfs_receipt == NULL);
         ASSERT(proto_confirm == NULL);
+
+        if (ctx->udp_relay) {
+            struct buffer_t* t2 = buffer_clone(tmp);
+            cstl_deque_push_back(ctx->udp_recv_deque, &t2, sizeof(struct buffer_t*));
+        }
 
         buffer_concatenate2(buf, tmp);
 
