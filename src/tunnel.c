@@ -560,6 +560,9 @@ void socket_dump_error_info(const char *title, struct socket_ctx *socket) {
     const char *from = NULL;
     if (socket == tunnel->outgoing) {
         addr = socks5_address_to_string(tunnel->desired_addr, &malloc);
+        if (addr) {
+            sprintf(addr + strlen(addr), ":%d", (int)tunnel->desired_addr->port);
+        }
         from = "_server_";
     } else {
         union sockaddr_universal tmp = { {0} };

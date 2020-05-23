@@ -542,7 +542,7 @@ static void tunnel_arrive_end_of_file(struct tunnel_ctx *tunnel, struct socket_c
             size_t frame_size = 0;
 
             ASSERT(outgoing->rdstate == socket_state_stop);
-            ASSERT(incoming->wrstate == socket_state_stop);
+            //ASSERT(incoming->wrstate == socket_state_stop);
 
             p = websocket_build_close_frame(false, WS_CLOSE_REASON_NORMAL, NULL, &malloc, &frame_size);
             if (p) {
