@@ -497,6 +497,12 @@ static void do_parse_s5_request_from_client_app(struct tunnel_ctx *tunnel) {
 
     socks5_address_parse(data+3, size-3, tunnel->desired_addr);
 
+    if (tunnel->desired_addr->addr.ipv4.s_addr == 0 && tunnel->desired_addr->addr_type==SOCKS5_ADDRTYPE_IPV4) {
+        pr_err("%s", "zero target address, dropped.");
+        tunnel->tunnel_shutdown(tunnel);
+        return;
+    }
+
     result = s5_parse(parser, &data, &size);
     if (result == s5_result_need_more) {
         pr_err("%s", "More data is needed, but we are not going to continue.");
