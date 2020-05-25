@@ -63,17 +63,11 @@ struct obfs_t {
     struct buffer_t * (*client_encode)(struct obfs_t *obfs, const struct buffer_t *buf);
     struct buffer_t * (*client_decode)(struct obfs_t *obfs, const struct buffer_t *buf, bool *needsendback);
 
-    ssize_t (*client_udp_pre_encrypt)(struct obfs_t *obfs, char **pplaindata, size_t datalength, size_t* capacity);
-    ssize_t (*client_udp_post_decrypt)(struct obfs_t *obfs, char **pplaindata, size_t datalength, size_t* capacity);
-
     struct buffer_t * (*server_pre_encrypt)(struct obfs_t *obfs, const struct buffer_t *buf);
     struct buffer_t * (*server_post_decrypt)(struct obfs_t *obfs, struct buffer_t *buf, bool *need_feedback);
 
     struct buffer_t * (*server_encode)(struct obfs_t *obfs, const struct buffer_t *buf);
     struct buffer_t * (*server_decode)(struct obfs_t *obfs, const struct buffer_t *buf, bool *need_decrypt, bool *need_feedback);
-
-    bool (*server_udp_pre_encrypt)(struct obfs_t *obfs, struct buffer_t *buf);
-    bool (*server_udp_post_decrypt)(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *uid);
 };
 
 void * generate_global_init_data(void);
@@ -93,8 +87,6 @@ struct buffer_t * generic_server_pre_encrypt(struct obfs_t *obfs, const struct b
 struct buffer_t * generic_server_encode(struct obfs_t *obfs, const struct buffer_t *buf);
 struct buffer_t * generic_server_decode(struct obfs_t *obfs, const struct buffer_t *buf, bool *need_decrypt, bool *need_feedback);
 struct buffer_t * generic_server_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, bool *need_feedback);
-bool generic_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf);
-bool generic_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *uid);
 
 #if (defined(_MSC_VER) && (_MSC_VER < 1800))
 #include <stdio.h>

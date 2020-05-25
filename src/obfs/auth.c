@@ -90,8 +90,6 @@ struct obfs_t * auth_simple_new_obfs(void) {
 
     obfs->client_pre_encrypt = auth_simple_client_pre_encrypt;
     obfs->client_post_decrypt = auth_simple_client_post_decrypt;
-    obfs->client_udp_pre_encrypt = NULL;
-    obfs->client_udp_post_decrypt = NULL;
 
     obfs->l_data = auth_simple_local_data_init();
 
@@ -110,8 +108,6 @@ struct obfs_t * auth_sha1_new_obfs(void) {
 
     obfs->client_pre_encrypt = auth_sha1_client_pre_encrypt;
     obfs->client_post_decrypt = auth_sha1_client_post_decrypt;
-    obfs->client_udp_pre_encrypt = NULL;
-    obfs->client_udp_post_decrypt = NULL;
 
     return obfs;
 }
@@ -128,8 +124,6 @@ struct obfs_t * auth_sha1_v2_new_obfs(void) {
 
     obfs->client_pre_encrypt = auth_sha1_v2_client_pre_encrypt;
     obfs->client_post_decrypt = auth_sha1_v2_client_post_decrypt;
-    obfs->client_udp_pre_encrypt = NULL;
-    obfs->client_udp_post_decrypt = NULL;
 
     return obfs;
 }
@@ -149,8 +143,6 @@ struct obfs_t * auth_sha1_v4_new_obfs(void) {
 
     obfs->client_pre_encrypt = auth_sha1_v4_client_pre_encrypt;
     obfs->client_post_decrypt = auth_sha1_v4_client_post_decrypt;
-    obfs->client_udp_pre_encrypt = NULL;
-    obfs->client_udp_post_decrypt = NULL;
 
     obfs->server_pre_encrypt = auth_sha1_v4_server_pre_encrypt;
     obfs->server_post_decrypt = auth_sha1_v4_server_post_decrypt;
@@ -171,15 +163,11 @@ struct obfs_t * auth_aes128_md5_new_obfs(void) {
 
     obfs->client_pre_encrypt = auth_aes128_sha1_client_pre_encrypt;
     obfs->client_post_decrypt = auth_aes128_sha1_client_post_decrypt;
-    obfs->client_udp_pre_encrypt = auth_aes128_sha1_client_udp_pre_encrypt;
-    obfs->client_udp_post_decrypt = auth_aes128_sha1_client_udp_post_decrypt;
 
     obfs->server_pre_encrypt = auth_aes128_sha1_server_pre_encrypt;
     obfs->server_encode = generic_server_encode;
     obfs->server_decode = generic_server_decode;
     obfs->server_post_decrypt = auth_aes128_sha1_server_post_decrypt;
-    obfs->server_udp_pre_encrypt = generic_server_udp_pre_encrypt;
-    obfs->server_udp_post_decrypt = generic_server_udp_post_decrypt;
 
     l_data = auth_simple_local_data_init();
     l_data->hmac = ss_md5_hmac_with_key;
@@ -1335,87 +1323,6 @@ auth_aes128_sha1_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int
     return (ssize_t)len;
 }
 
-ssize_t
-auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplaindata, size_t datalength, size_t* capacity)
-{
-    size_t outlength;
-    char *plaindata = *pplaindata;
-    auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
-    uint8_t * out_buffer = (uint8_t *)calloc((datalength + 8), sizeof(uint8_t));
-
-    if (buffer_get_length(local->user_key) == 0) {
-        if(obfs->server_info.param != NULL && obfs->server_info.param[0] != 0) {
-            char *param = obfs->server_info.param;
-            char *delim = strchr(param, ':');
-            if(delim != NULL) {
-                char key_str[128];
-                long uid_long;
-                uint8_t hash[SHA1_BYTES + 1] = { 0 };
-                char uid_str[16] = { 0 };
-
-                strncpy(uid_str, param, delim - param);
-                strcpy(key_str, delim + 1);
-                uid_long = strtol(uid_str, NULL, 10);
-                memintcopy_lt(local->uid, (uint32_t)uid_long);
-
-                local->hash(hash, (uint8_t *)key_str, (int)strlen(key_str));
-                buffer_store(local->user_key, hash, local->hash_len);
-            }
-        }
-        if (buffer_get_length(local->user_key) == 0) {
-            rand_bytes((uint8_t *)local->uid, 4);
-            buffer_store(local->user_key, obfs->server_info.key, obfs->server_info.key_len);
-        }
-    }
-
-    outlength = datalength + 8;
-    memmove(out_buffer, plaindata, datalength);
-    memmove(out_buffer + datalength, local->uid, 4);
-
-    {
-        uint8_t hash[SHA1_BYTES + 1] = { 0 };
-        struct buffer_t *_msg = buffer_create_from(out_buffer, (int)(outlength - 4));
-        local->hmac(hash, _msg, local->user_key);
-        buffer_release(_msg);
-        memmove(out_buffer + outlength - 4, hash, 4);
-    }
-
-    if (*capacity < outlength) {
-        *pplaindata = (char*)realloc(*pplaindata, *capacity = (outlength * 2));
-        plaindata = *pplaindata;
-    }
-    memmove(plaindata, out_buffer, outlength);
-    free(out_buffer);
-    return (ssize_t)outlength;
-}
-
-ssize_t
-auth_aes128_sha1_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaindata, size_t datalength, size_t* capacity)
-{
-    char *plaindata;
-    auth_simple_local_data *local;
-    uint8_t hash[SHA1_BYTES + 1] = { 0 };
-
-    (void)capacity;
-    if (datalength <= 4) {
-        return 0;
-    }
-    plaindata = *pplaindata;
-    local = (auth_simple_local_data*)obfs->l_data;
-    {
-        struct buffer_t *_msg = buffer_create_from((const uint8_t *)plaindata, (size_t)(datalength - 4));
-        struct buffer_t *_key = buffer_create_from(obfs->server_info.key, (int)obfs->server_info.key_len);
-        local->hmac(hash, _msg, _key);
-        buffer_release(_msg);
-        buffer_release(_key);
-    }
-    if (memcmp(hash, plaindata + datalength - 4, 4)) {
-        return 0;
-    }
-
-    return (ssize_t)(datalength - 4);
-}
-
 struct buffer_t * auth_aes128_sha1_server_pre_encrypt(struct obfs_t *obfs, const struct buffer_t *buf) {
     struct buffer_t *ret = NULL;
     auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
@@ -1649,14 +1556,4 @@ struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, stru
 
     if (need_feedback) { *need_feedback = sendback; }
     return out_buf;
-}
-
-bool auth_aes128_sha1_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf) {
-    // TODO : need implementation future.
-    return generic_server_udp_pre_encrypt(obfs, buf);
-}
-
-bool auth_aes128_sha1_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *uid) {
-    // TODO : need implementation future.
-    return generic_server_udp_post_decrypt(obfs, buf, uid);
 }

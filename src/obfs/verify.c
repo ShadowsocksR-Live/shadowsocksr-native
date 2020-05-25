@@ -28,8 +28,6 @@ struct obfs_t * verify_simple_new_obfs(void) {
 
     obfs->client_pre_encrypt = verify_simple_client_pre_encrypt;
     obfs->client_post_decrypt = verify_simple_client_post_decrypt;
-    obfs->client_udp_pre_encrypt = NULL;
-    obfs->client_udp_post_decrypt = NULL;
 
     obfs->l_data = calloc(1, sizeof(verify_simple_local_data));
     verify_simple_local_data_init((verify_simple_local_data*)obfs->l_data);

@@ -73,17 +73,6 @@ struct buffer_t * generic_server_post_decrypt(struct obfs_t *obfs, struct buffer
     return buffer_clone(buf);
 }
 
-bool generic_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf) {
-    (void)obfs; (void)buf;
-    return true;
-}
-
-bool generic_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *uid) {
-    (void)obfs; (void)buf;
-    if (uid) { *uid = 0; }
-    return true;
-}
-
 void
 dispose_obfs(struct obfs_t *obfs)
 {
