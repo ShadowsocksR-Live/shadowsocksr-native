@@ -185,6 +185,12 @@ function domain_check() {
             ;;
         esac
     fi
+    
+    local rvs_path=${reverse_proxy_location}
+    echo "请输入 反向代理入口路径(不带前后斜杠), 默认值 ${rvs_path} "
+    stty erase '^H' && read -p "Please enter reverse proxy path without slashes (default ${rvs_path}):" rvs_path
+    [[ -z ${rvs_path} ]] && rvs_path=${reverse_proxy_location}
+    reverse_proxy_location=${rvs_path}
 }
 
 function input_web_listen_port() {
