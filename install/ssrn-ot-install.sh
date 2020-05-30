@@ -130,8 +130,12 @@ function dependency_install() {
     else
         ${INS} install cron vim curl -y
         ${INS} update -y
-        ${INS} install make zlib1g zlib1g-dev build-essential autoconf libtool openssl libssl-dev -y
-        ${INS} install python3 python python-minimal cmake git -y
+        ${INS} install cmake make zlib1g zlib1g-dev build-essential autoconf libtool openssl libssl-dev -y
+        if [[ "${ID}" == "ubuntu" && ${VERSION_ID} -ge 20 ]]; then
+            ${INS} install python3 python python2-minimal inetutils-ping -y
+        else
+            ${INS} install python3 python python-minimal -y
+        fi
     fi
     judge "Installing crontab"
 
