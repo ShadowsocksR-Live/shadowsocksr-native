@@ -162,7 +162,8 @@ function random_listen_port() {
 
 function domain_check() {
     local install=""
-    stty erase '^H' && read -p "Please enter your domain name (for example: mygoodsite.com): " web_svr_domain
+    echo "请输入 你的网站域名 (形如 mygooodsite.com)"
+    stty erase '^H' && read -p "Please enter your domain name (for example: mygooodsite.com): " web_svr_domain
     local web_svr_ip_addr=`ping ${web_svr_domain} -c 1 | sed '1{s/[^(]*(//;s/).*//;q}'`
     echo -e "${OK} ${GreenBG} Obtaining public IP information, please wait patiently ${Font}"
     web_svr_local_ip_addr=`curl -4 ip.sb`
