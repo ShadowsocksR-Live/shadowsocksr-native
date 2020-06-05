@@ -104,7 +104,7 @@ int log_tx_rx  = 0;
 int vpn        = 0;
 uint64_t tx    = 0;
 uint64_t rx    = 0;
-ev_tstamp last = 0;
+//ev_tstamp last = 0;
 char *prefix;
 #endif
 
@@ -440,13 +440,14 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
             }
 #ifdef ANDROID
             if (log_tx_rx) {
-                tx += buf->len;
+                tx += buffer_get_length(buf);
             }
 #endif
             if (!remote->connected) {
                 uv_connect_t *connect;
                 struct sockaddr *addr;
 #ifdef ANDROID
+                /*
                 if (vpn) {
                     int not_protect = 0;
                     if (remote->direct_addr.addr.ss_family == AF_INET) {
@@ -463,6 +464,7 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                         }
                     }
                 }
+                 */
 #endif
                 local_read_stop(local);
 
@@ -900,11 +902,13 @@ static void
 stat_update_cb()
 {
     if (log_tx_rx) {
+/*
         ev_tstamp now = ev_time();
         if (now - last > 1.0) {
             send_traffic_stat(tx, rx);
             last = now;
         }
+ */
     }
 }
 #endif
@@ -1020,7 +1024,7 @@ remote_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
 
 #ifdef ANDROID
         if (log_tx_rx) {
-            rx += local->buf->len;
+            rx += buffer_get_length(local->buf);
         }
 #endif
         feedback = NULL;
