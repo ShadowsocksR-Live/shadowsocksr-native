@@ -49,6 +49,7 @@ static void _uv_mbed_tcp_connect_established_cb(uv_mbed_t* mbed, void *p) {
     if (ctx->tls_tcp_conn_cb) {
         ctx->tls_tcp_conn_cb(ctx, ctx->tls_tcp_conn_cb_p);
     }
+    (void)mbed;
 }
 
 void tls_client_set_tcp_connect_callback(struct tls_cli_ctx *cli, tls_cli_tcp_conn_cb cb, void *p) {
