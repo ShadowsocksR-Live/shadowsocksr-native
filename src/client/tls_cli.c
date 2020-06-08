@@ -14,6 +14,8 @@ struct tls_cli_ctx {
     struct tunnel_ctx *tunnel; /* weak pointer */
     struct server_config *config; /* weak pointer */
     uv_mbed_t *mbed;
+    tls_cli_tcp_conn_cb tls_tcp_conn_cb;
+    void *tls_tcp_conn_cb_p;
 };
 
 static void tunnel_tls_send_data(struct tunnel_ctx *tunnel, const uint8_t *data, size_t size);
@@ -23,8 +25,9 @@ static void _mbed_alloc_cb(uv_mbed_t *mbed, size_t suggested_size, uv_buf_t* buf
 static void _mbed_data_received_cb(uv_mbed_t *mbed, ssize_t nread, uv_buf_t* buf, void *p);
 static void _mbed_write_done_cb(uv_mbed_t *mbed, int status, void *p);
 static void _mbed_close_done_cb(uv_mbed_t *mbed, void *p);
+static void _uv_mbed_tcp_connect_established_cb(uv_mbed_t* mbed, void *p);
 
-void tls_client_launch(struct tunnel_ctx *tunnel, struct server_config *config) {
+struct tls_cli_ctx* tls_client_launch(struct tunnel_ctx *tunnel, struct server_config *config) {
     uv_loop_t *loop = tunnel->loop;
     struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)calloc(1, sizeof(*ctx));
     ctx->mbed = uv_mbed_init(loop, config->over_tls_server_domain, ctx, 0);
@@ -36,6 +39,30 @@ void tls_client_launch(struct tunnel_ctx *tunnel, struct server_config *config) 
 
     uv_mbed_add_ref(ctx->mbed);
     uv_mbed_connect(ctx->mbed, config->remote_host, config->remote_port, config->connect_timeout_ms, _mbed_connect_done_cb, ctx);
+    uv_mbed_set_tcp_connect_established_callback(ctx->mbed, &_uv_mbed_tcp_connect_established_cb, ctx);
+
+    return ctx;
+}
+
+static void _uv_mbed_tcp_connect_established_cb(uv_mbed_t* mbed, void *p) {
+    struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)p;
+    if (ctx->tls_tcp_conn_cb) {
+        ctx->tls_tcp_conn_cb(ctx, ctx->tls_tcp_conn_cb_p);
+    }
+}
+
+void tls_client_set_tcp_connect_callback(struct tls_cli_ctx *cli, tls_cli_tcp_conn_cb cb, void *p) {
+    if (cli) {
+        cli->tls_tcp_conn_cb = cb;
+        cli->tls_tcp_conn_cb_p = p;
+    }
+}
+
+uv_os_sock_t tls_client_get_tcp_fd(const struct tls_cli_ctx *cli) {
+    if (cli) {
+        return uv_mbed_get_stream_fd(cli->mbed);
+    }
+    return -1;
 }
 
 void tls_client_shutdown(struct tunnel_ctx *tunnel) {
@@ -92,7 +119,7 @@ static void _mbed_data_received_cb(uv_mbed_t *mbed, ssize_t nread, uv_buf_t* buf
         if (nread == UV_EOF) {
             (void)tmp; // pr_warn("connection with %s:%d closed abnormally.", tmp, port);
         } else {
-            pr_err("read on %s:%d error %ld: %s", tmp, port, nread, uv_strerror((int) nread));
+            pr_err("read on %s:%d error %ld: %s", tmp, port, (long)nread, uv_strerror((int) nread));
         }
         free(tmp);
         uv_mbed_close(mbed, _mbed_close_done_cb, p);

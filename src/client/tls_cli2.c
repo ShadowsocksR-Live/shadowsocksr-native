@@ -86,13 +86,15 @@ static void _uv_sleep(int msec) {
 }
 #endif
 
-void tls_client_launch(struct tunnel_ctx *tunnel, struct server_config *config) {
+struct tls_cli_ctx* tls_client_launch(struct tunnel_ctx *tunnel, struct server_config *config) {
     uv_loop_t *loop = tunnel->listener->loop;
     struct tls_cli_ctx *ctx = create_tls_cli_ctx(tunnel, config);
 
     tunnel_add_ref(tunnel);
     uv_async_init(loop, ctx->async, tls_cli_state_changed_notice_async_cb);
     uv_queue_work(loop, ctx->req, tls_cli_worker_thread, tls_cli_after_cb);
+
+    return ctx;
 }
 
 struct tls_cli_ctx * create_tls_cli_ctx(struct tunnel_ctx *tunnel, struct server_config *config) {
