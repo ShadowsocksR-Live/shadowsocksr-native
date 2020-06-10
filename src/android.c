@@ -42,8 +42,10 @@
 #include "config.h"
 #endif
 
-#include "netutils.h"
+#include "ssrutils.h"
 #include "utils.h"
+
+#if ANDROID
 
 extern char *prefix;
 
@@ -80,7 +82,7 @@ protect_socket(int fd)
     }
 
     if (ancil_send_fd(sock, fd)) {
-        ERROR("[android] ancil_send_fd");
+        LOGE("%s", "[android] ancil_send_fd");
         close(sock);
         return -1;
     }
@@ -88,7 +90,7 @@ protect_socket(int fd)
     char ret = 0;
 
     if (recv(sock, &ret, 1, 0) == -1) {
-        ERROR("[android] recv");
+        LOGE("%s", "[android] recv");
         close(sock);
         return -1;
     }
@@ -132,7 +134,7 @@ send_traffic_stat(uint64_t tx, uint64_t rx)
     uint64_t stat[2] = { tx, rx };
 
     if (send(sock, stat, sizeof(stat), 0) == -1) {
-        ERROR("[android] send");
+        LOGE("%s", "[android] send");
         close(sock);
         return -1;
     }
@@ -140,7 +142,7 @@ send_traffic_stat(uint64_t tx, uint64_t rx)
     char ret = 0;
 
     if (recv(sock, &ret, 1, 0) == -1) {
-        ERROR("[android] recv");
+        LOGE("%s", "[android] recv");
         close(sock);
         return -1;
     }
@@ -148,3 +150,5 @@ send_traffic_stat(uint64_t tx, uint64_t rx)
     close(sock);
     return ret;
 }
+
+#endif // ANDROID

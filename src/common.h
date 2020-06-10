@@ -79,6 +79,13 @@ struct server_env_t {
 #ifdef ANDROID
 int protect_socket(int fd);
 int send_traffic_stat(uint64_t tx, uint64_t rx);
+
+extern int log_tx_rx;
+extern uint64_t tx;
+extern uint64_t rx;
+extern uint64_t last;
+extern char *prefix;
+
 #endif
 
 /* ASSERT() is for debug checks, VERIFY() for run-time sanity checks.

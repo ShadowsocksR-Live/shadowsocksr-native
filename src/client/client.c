@@ -1,4 +1,5 @@
 #include <string.h>
+#include <ssrutils.h>
 #include "defs.h"
 #include "common.h"
 #include "s5.h"
@@ -85,6 +86,18 @@ struct client_ctx {
 
     struct udp_data_context *udp_data_ctx;
 };
+
+#ifdef ANDROID
+static void stat_update_cb(void) {
+    if (log_tx_rx) {
+        uint64_t _now = uv_hrtime();
+        if (_now - last > 1000) {
+            send_traffic_stat(tx, rx);
+            last = _now;
+        }
+    }
+}
+#endif
 
 static struct buffer_t * initial_package_create(const struct s5_ctx *parser);
 static void tunnel_ssr_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
@@ -560,6 +573,22 @@ static void do_parse_s5_request_from_client_app(struct tunnel_ctx *tunnel) {
     }
 }
 
+static void _do_protect_socket(struct tunnel_ctx *tunnel, uv_os_sock_t fd) {
+#ifdef ANDROID
+    if (protect_socket(fd) == -1) {
+        LOGE("protect_socket");
+        tunnel->tunnel_shutdown(tunnel);
+        return;
+    }
+#endif
+    (void)tunnel; (void)fd;
+}
+
+static void _tls_cli_tcp_conn_cb(struct tls_cli_ctx *cli, void *p) {
+    struct tunnel_ctx* tunnel = (struct tunnel_ctx *)p;
+    _do_protect_socket(tunnel, tls_client_get_tcp_fd(cli));
+}
+
 static void do_common_connet_remote_server(struct tunnel_ctx* tunnel) {
     struct socket_ctx* incoming = tunnel->incoming;
     struct socket_ctx* outgoing = tunnel->outgoing;
@@ -591,8 +620,10 @@ static void do_common_connet_remote_server(struct tunnel_ctx* tunnel) {
     client_tunnel_connecting_print_info(tunnel);
 
     if (config->over_tls_enable) {
+        struct tls_cli_ctx *tls_cli;
         ctx->stage = tunnel_stage_tls_connecting;
-        tls_client_launch(tunnel, config);
+        tls_cli = tls_client_launch(tunnel, config);
+        tls_client_set_tcp_connect_callback(tls_cli, _tls_cli_tcp_conn_cb, tunnel);
         return;
     }
     else {
@@ -696,6 +727,9 @@ static void do_ssr_send_auth_package_to_server(struct tunnel_ctx *tunnel) {
             tunnel->tunnel_shutdown(tunnel);
             return;
         }
+
+        _do_protect_socket(tunnel, uv_stream_fd(&outgoing->handle.tcp));
+
         out_data = buffer_get_data(tmp, &out_data_len);
         socket_write(outgoing, out_data, out_data_len);
         buffer_release(tmp);
@@ -861,6 +895,18 @@ static void tunnel_ssr_client_streaming(struct tunnel_ctx* tunnel, struct socket
     if (tunnel->tunnel_extract_data) {
         buf = tunnel->tunnel_extract_data(current_socket, &malloc, &len);
     }
+
+#ifdef ANDROID
+    if (log_tx_rx) {
+        if (current_socket == tunnel->incoming) {
+            tx += len;
+        } else {
+            rx += len;
+        }
+        stat_update_cb();
+    }
+#endif
+
     if (buf /* && len > 0 */) {
         socket_write(target_socket, buf, len);
     } else {
@@ -1035,6 +1081,14 @@ void tunnel_tls_client_incoming_streaming(struct tunnel_ctx *tunnel, struct sock
             uint8_t *buf = NULL;
             ASSERT(tunnel->tunnel_extract_data);
             buf = tunnel->tunnel_extract_data(socket, &malloc, &len);
+
+#ifdef ANDROID
+            if (log_tx_rx) {
+                tx += len;
+            }
+            stat_update_cb();
+#endif
+
             if (buf /* && size > 0 */) {
                 tunnel_tls_send_websocket_data(tunnel, buf, len);
             } else {
@@ -1208,6 +1262,12 @@ static void tunnel_tls_on_data_received(struct tunnel_ctx *tunnel, const uint8_t
             buffer_release(tmp);
             free(payload);
         } while(true);
+
+#ifdef ANDROID
+        if (log_tx_rx) {
+            rx += buffer_get_length(ctx->local_write_cache);
+        }
+#endif
 
         if ((buffer_get_length(ctx->local_write_cache) == 0) && ctx->tls_is_eof) {
             tunnel->tunnel_shutdown(tunnel);
@@ -1397,6 +1457,7 @@ void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_u
             UNREACHABLE();
         }
     } else {
+        struct tls_cli_ctx *tls_cli;
         tunnel = tunnel_initialize(loop, NULL, config->idle_timeout, &init_done_cb, env);
         ctx = (struct client_ctx *)tunnel->data;
         ctx->cipher = tunnel_cipher_create(ctx->env, 1452);
@@ -1406,7 +1467,9 @@ void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_u
         *tunnel->desired_addr = query_data->target_addr;
 
         ctx->stage = tunnel_stage_tls_connecting;
-        tls_client_launch(tunnel, config);
+        tls_cli = tls_client_launch(tunnel, config);
+
+        tls_client_set_tcp_connect_callback(tls_cli, _tls_cli_tcp_conn_cb, tunnel);
 
         client_tunnel_connecting_print_info(tunnel);
 

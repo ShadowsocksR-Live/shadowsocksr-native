@@ -104,7 +104,7 @@ int log_tx_rx  = 0;
 int vpn        = 0;
 uint64_t tx    = 0;
 uint64_t rx    = 0;
-//ev_tstamp last = 0;
+uint64_t last = 0;
 char *prefix;
 #endif
 
@@ -447,24 +447,22 @@ local_recv_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf0)
                 uv_connect_t *connect;
                 struct sockaddr *addr;
 #ifdef ANDROID
-                /*
                 if (vpn) {
                     int not_protect = 0;
-                    if (remote->direct_addr.addr.ss_family == AF_INET) {
-                        struct sockaddr_in *s = (struct sockaddr_in *)&remote->direct_addr.addr;
+                    if (remote->addr.addr4.sin_family == AF_INET) {
+                        struct sockaddr_in *s = (struct sockaddr_in *)&remote->addr.addr4;
                         if (s->sin_addr.s_addr == inet_addr("127.0.0.1")) {
                             not_protect = 1;
                         }
                     }
                     if (!not_protect) {
-                        if (protect_socket(remote->fd) == -1) {
+                        if (protect_socket( uv_stream_fd(&remote->socket)) == -1) {
                             SS_ERROR("protect_socket");
                             tunnel_close_and_free(remote, local);
                             return;
                         }
                     }
                 }
-                 */
 #endif
                 local_read_stop(local);
 
@@ -902,13 +900,11 @@ static void
 stat_update_cb()
 {
     if (log_tx_rx) {
-/*
-        ev_tstamp now = ev_time();
-        if (now - last > 1.0) {
+        uint64_t _now = uv_hrtime();
+        if (_now - last > 1000) {
             send_traffic_stat(tx, rx);
-            last = now;
+            last = _now;
         }
- */
     }
 }
 #endif

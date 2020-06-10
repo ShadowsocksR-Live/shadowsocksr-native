@@ -201,6 +201,11 @@ endif()
 
 add_definitions(-DUDP_RELAY_ENABLE)
 
+if(ANDROID)
+    LIST(APPEND SOURCE_FILES_LOCAL android.c)
+    LIST(APPEND SOURCE_FILES_CLIENT android.c)
+endif()
+
 add_executable(ssr-client ${SOURCE_FILES_CLIENT})
 add_executable(ssr-local ${SOURCE_FILES_LOCAL})
 #add_executable(ss_tunnel ${SOURCE_FILES_TUNNEL})

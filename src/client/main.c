@@ -37,6 +37,14 @@
 #include <unistd.h>  /* getopt */
 #endif
 
+#ifdef ANDROID
+int log_tx_rx  = 0;
+uint64_t tx    = 0;
+uint64_t rx    = 0;
+uint64_t last  = 0;
+char *prefix = NULL;
+#endif
+
 static void usage(void);
 
 struct ssr_client_state *g_state = NULL;
@@ -97,6 +105,11 @@ int main(int argc, char **argv) {
             sprintf(param, "-c \"%s\"", cmds->cfg_file);
             daemon_wrapper(argv[0], param);
         }
+
+#ifdef ANDROID
+        log_tx_rx  = cmds->log_tx_rx;
+        prefix = cmds->prefix;
+#endif
 
         print_remote_info(config);
 
