@@ -57,9 +57,7 @@ struct tunnel_ctx {
     void (*tunnel_shutdown)(struct tunnel_ctx *tunnel);
     struct tls_cli_ctx *tls_ctx;
     void(*tunnel_tls_on_connection_established)(struct tunnel_ctx *tunnel);
-    void(*tunnel_tls_send_data)(struct tunnel_ctx *tunnel, const uint8_t *data, size_t size);
     void(*tunnel_tls_on_data_received)(struct tunnel_ctx *tunnel, const uint8_t *data, size_t size);
-    void(*tunnel_tls_on_shutting_down)(struct tunnel_ctx *tunnel);
 };
 
 uv_os_sock_t uv_stream_fd(const uv_tcp_t *handle);

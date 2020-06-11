@@ -16,9 +16,10 @@ struct tls_cli_ctx {
     uv_mbed_t *mbed;
     tls_cli_tcp_conn_cb tls_tcp_conn_cb;
     void *tls_tcp_conn_cb_p;
-};
 
-static void tunnel_tls_send_data(struct tunnel_ctx *tunnel, const uint8_t *data, size_t size);
+    tls_cli_on_shutting_down_cb on_shutting_down;
+    void* on_shutting_down_p;
+};
 
 static void _mbed_connect_done_cb(uv_mbed_t* mbed, int status, void *p);
 static void _mbed_alloc_cb(uv_mbed_t *mbed, size_t suggested_size, uv_buf_t* buf);
@@ -34,7 +35,6 @@ struct tls_cli_ctx* tls_client_launch(struct tunnel_ctx *tunnel, struct server_c
     ctx->config = config;
     ctx->tunnel = tunnel;
 
-    tunnel->tunnel_tls_send_data = &tunnel_tls_send_data;
     tunnel_add_ref(tunnel);
 
     uv_mbed_add_ref(ctx->mbed);
@@ -147,22 +147,21 @@ static void _mbed_write_done_cb(uv_mbed_t *mbed, int status, void *p) {
 
 static void _mbed_close_done_cb(uv_mbed_t *mbed, void *p) {
     struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)p;
-    struct tunnel_ctx *tunnel = ctx->tunnel;
-
-    assert(mbed == ctx->mbed);
-    assert(tunnel);
-    if (tunnel->tunnel_tls_on_shutting_down) {
-        tunnel->tunnel_tls_on_shutting_down(tunnel);
+    if (ctx && ctx->on_shutting_down) {
+        ctx->on_shutting_down(ctx, ctx->on_shutting_down_p);
     }
-    tunnel->tls_ctx = NULL;
-    tunnel_release(tunnel);
-
     uv_mbed_release(mbed);
     free(ctx);
 }
 
-static void tunnel_tls_send_data(struct tunnel_ctx *tunnel, const uint8_t *data, size_t size) {
-    struct tls_cli_ctx *ctx = tunnel->tls_ctx;
+void tls_cli_set_shutting_down_callback(struct tls_cli_ctx* ctx, tls_cli_on_shutting_down_cb cb, void* p) {
+    if (ctx) {
+        ctx->on_shutting_down = cb;
+        ctx->on_shutting_down_p = p;
+    }
+}
+
+void tls_cli_send_data(struct tls_cli_ctx* ctx, const uint8_t* data, size_t size) {
     uv_buf_t o = uv_buf_init((char *)data, (unsigned int)size);
     assert(ctx);
     if (ctx) {
