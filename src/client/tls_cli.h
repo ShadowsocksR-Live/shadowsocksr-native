@@ -15,7 +15,7 @@ void tls_client_set_tcp_connect_callback(struct tls_cli_ctx *cli, tls_cli_tcp_co
 
 uv_os_sock_t tls_client_get_tcp_fd(const struct tls_cli_ctx *cli);
 
-void tls_client_shutdown(struct tunnel_ctx *tunnel);
+void tls_client_shutdown(struct tls_cli_ctx* ctx);
 
 bool tls_cli_is_closing(struct tls_cli_ctx* ctx);
 

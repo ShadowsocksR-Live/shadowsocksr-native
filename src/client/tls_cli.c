@@ -69,8 +69,7 @@ uv_os_sock_t tls_client_get_tcp_fd(const struct tls_cli_ctx *cli) {
     return -1;
 }
 
-void tls_client_shutdown(struct tunnel_ctx *tunnel) {
-    struct tls_cli_ctx *ctx = tunnel->tls_ctx;
+void tls_client_shutdown(struct tls_cli_ctx* ctx) {
     assert(ctx);
     if (ctx) {
         uv_mbed_close(ctx->mbed, _mbed_close_done_cb, ctx);

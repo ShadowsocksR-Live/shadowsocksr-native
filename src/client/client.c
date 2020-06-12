@@ -227,7 +227,7 @@ static void client_tunnel_shutdown(struct tunnel_ctx *tunnel) {
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
     assert(ctx);
     if (tunnel->tls_ctx) {
-        tls_client_shutdown(tunnel);
+        tls_client_shutdown(tunnel->tls_ctx);
     } else {
         client_tunnel_shutdown_print_info(tunnel, true);
         assert(ctx && ctx->original_tunnel_shutdown);
