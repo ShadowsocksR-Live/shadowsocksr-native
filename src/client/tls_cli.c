@@ -74,6 +74,10 @@ void tls_client_shutdown(struct tunnel_ctx *tunnel) {
     }
 }
 
+bool tls_cli_is_closing(struct tls_cli_ctx* ctx) {
+    return ctx && uv_mbed_is_closing(ctx->mbed);
+}
+
 static void _mbed_connect_done_cb(uv_mbed_t* mbed, int status, void *p) {
     struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)p;
     struct tunnel_ctx *tunnel = ctx->tunnel;

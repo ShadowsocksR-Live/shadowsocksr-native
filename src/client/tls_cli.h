@@ -2,6 +2,7 @@
 #define __TLS_CLI_H__ 1
 
 #include <uv.h>
+#include <stdbool.h>
 
 struct tunnel_ctx;
 struct server_config;
@@ -15,6 +16,8 @@ void tls_client_set_tcp_connect_callback(struct tls_cli_ctx *cli, tls_cli_tcp_co
 uv_os_sock_t tls_client_get_tcp_fd(const struct tls_cli_ctx *cli);
 
 void tls_client_shutdown(struct tunnel_ctx *tunnel);
+
+bool tls_cli_is_closing(struct tls_cli_ctx* ctx);
 
 typedef void (*tls_cli_on_shutting_down_cb)(struct tls_cli_ctx* ctx, void* p);
 void tls_cli_set_shutting_down_callback(struct tls_cli_ctx* ctx, tls_cli_on_shutting_down_cb cb, void* p);
