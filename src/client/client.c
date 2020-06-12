@@ -129,6 +129,7 @@ static bool tunnel_tls_is_in_streaming(struct tunnel_ctx* tunnel);
 static void tunnel_tls_do_launch_streaming(struct tunnel_ctx *tunnel);
 static void tunnel_tls_client_incoming_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int status, void* p);
+static void tls_cli_on_write_done(struct tls_cli_ctx* tls_cli, int status, void* p);
 static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, const uint8_t* data, size_t size, void* p);
 static void tls_cli_on_shutting_down_callback(struct tls_cli_ctx* cli_ctx, void* p);
 
@@ -587,6 +588,20 @@ static void _tls_cli_tcp_conn_cb(struct tls_cli_ctx *cli, void *p) {
     _do_protect_socket(tunnel, tls_client_get_tcp_fd(cli));
 }
 
+static struct tls_cli_ctx* tls_client_creator(struct client_ctx* ctx, struct server_config* config) {
+    struct tunnel_ctx* tunnel = ctx->tunnel;
+    struct tls_cli_ctx* tls_cli = tls_client_launch(tunnel->loop, config);
+    tls_client_set_tcp_connect_callback(tls_cli, _tls_cli_tcp_conn_cb, ctx);
+    tls_cli_set_on_connection_established_callback(tls_cli, tls_cli_on_connection_established, ctx);
+    tls_cli_set_on_write_done_callback(tls_cli, tls_cli_on_write_done, ctx);
+    tls_cli_set_on_data_received_callback(tls_cli, tls_cli_on_data_received, ctx);
+    tls_cli_set_shutting_down_callback(tls_cli, tls_cli_on_shutting_down_callback, ctx);
+
+    tunnel_add_ref(tunnel);
+
+    return tls_cli;
+}
+
 static void do_common_connet_remote_server(struct tunnel_ctx* tunnel) {
     struct socket_ctx* incoming = tunnel->incoming;
     struct socket_ctx* outgoing = tunnel->outgoing;
@@ -620,11 +635,7 @@ static void do_common_connet_remote_server(struct tunnel_ctx* tunnel) {
     if (config->over_tls_enable) {
         struct tls_cli_ctx *tls_cli;
         ctx->stage = tunnel_stage_tls_connecting;
-        tls_cli = tls_client_launch(tunnel, config);
-        tls_client_set_tcp_connect_callback(tls_cli, _tls_cli_tcp_conn_cb, ctx);
-        tls_cli_set_on_connection_established_callback(tls_cli, tls_cli_on_connection_established, ctx);
-        tls_cli_set_on_data_received_callback(tls_cli, tls_cli_on_data_received, ctx);
-        tls_cli_set_shutting_down_callback(tls_cli, tls_cli_on_shutting_down_callback, ctx);
+        tls_cli = tls_client_creator(ctx, config);
         return;
     }
     else {
@@ -1174,6 +1185,17 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
     }
 }
 
+static void tls_cli_on_write_done(struct tls_cli_ctx* tls_cli, int status, void* p) {
+    struct client_ctx* ctx = (struct client_ctx*)p;
+    struct tunnel_ctx* tunnel = ctx->tunnel;
+    if (status < 0) {
+        int port = (int)tunnel->desired_addr->port;
+        char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
+        pr_err("write \"%s:%d\" failed: %d: %s", tmp, port, status, uv_strerror(status));
+        free(tmp);
+    }
+}
+
 static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, const uint8_t* data, size_t size, void* p) {
     struct client_ctx *ctx = (struct client_ctx *) p;
     struct tunnel_ctx* tunnel;
@@ -1499,12 +1521,7 @@ void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_u
         *tunnel->desired_addr = query_data->target_addr;
 
         ctx->stage = tunnel_stage_tls_connecting;
-        tls_cli = tls_client_launch(tunnel, config);
-
-        tls_client_set_tcp_connect_callback(tls_cli, _tls_cli_tcp_conn_cb, ctx);
-        tls_cli_set_on_connection_established_callback(tls_cli, tls_cli_on_connection_established, ctx);
-        tls_cli_set_on_data_received_callback(tls_cli, tls_cli_on_data_received, ctx);
-        tls_cli_set_shutting_down_callback(tls_cli, tls_cli_on_shutting_down_callback, ctx);
+        tls_cli = tls_client_creator(ctx, config);
 
         client_tunnel_connecting_print_info(tunnel);
 

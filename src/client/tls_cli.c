@@ -1,6 +1,4 @@
-#include "dump_info.h"
 #include "ssr_executive.h"
-#include "tunnel.h"
 #include "tls_cli.h"
 #include <uv.h>
 #include <uv-mbed/uv-mbed.h>
@@ -11,7 +9,6 @@
 #include <assert.h>
 
 struct tls_cli_ctx {
-    struct tunnel_ctx *tunnel; /* weak pointer */
     struct server_config *config; /* weak pointer */
     uv_mbed_t *mbed;
     tls_cli_tcp_conn_cb tls_tcp_conn_cb;
@@ -19,6 +16,9 @@ struct tls_cli_ctx {
 
     tls_cli_on_connection_established_cb on_connection_established;
     void* on_connection_established_p;
+
+    tls_cli_on_write_done_cb on_write_done;
+    void* on_write_done_p;
 
     tls_cli_on_data_received_cb on_data_received;
     void* on_data_received_p;
@@ -34,14 +34,10 @@ static void _mbed_write_done_cb(uv_mbed_t *mbed, int status, void *p);
 static void _mbed_close_done_cb(uv_mbed_t *mbed, void *p);
 static void _uv_mbed_tcp_connect_established_cb(uv_mbed_t* mbed, void *p);
 
-struct tls_cli_ctx* tls_client_launch(struct tunnel_ctx *tunnel, struct server_config *config) {
-    uv_loop_t *loop = tunnel->loop;
+struct tls_cli_ctx* tls_client_launch(uv_loop_t* loop, struct server_config* config) {
     struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)calloc(1, sizeof(*ctx));
     ctx->mbed = uv_mbed_init(loop, config->over_tls_server_domain, ctx, 0);
     ctx->config = config;
-    ctx->tunnel = tunnel;
-
-    tunnel_add_ref(tunnel);
 
     uv_mbed_add_ref(ctx->mbed);
     uv_mbed_connect(ctx->mbed, config->remote_host, config->remote_port, config->connect_timeout_ms, _mbed_connect_done_cb, ctx);
@@ -130,6 +126,13 @@ static void _mbed_data_received_cb(uv_mbed_t *mbed, ssize_t nread, uv_buf_t* buf
     free(buf->base);
 }
 
+void tls_cli_set_on_write_done_callback(struct tls_cli_ctx* tls_cli, tls_cli_on_write_done_cb cb, void* p) {
+    if (tls_cli) {
+        tls_cli->on_write_done = cb;
+        tls_cli->on_write_done_p = p;
+    }
+}
+
 void tls_cli_set_on_data_received_callback(struct tls_cli_ctx* tls_cli, tls_cli_on_data_received_cb cb, void* p) {
     if (tls_cli) {
         tls_cli->on_data_received = cb;
@@ -139,17 +142,16 @@ void tls_cli_set_on_data_received_callback(struct tls_cli_ctx* tls_cli, tls_cli_
 
 static void _mbed_write_done_cb(uv_mbed_t *mbed, int status, void *p) {
     struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)p;
-    struct tunnel_ctx *tunnel = ctx->tunnel;
     assert(ctx->mbed == mbed);
+
+    if (ctx->on_write_done) {
+        ctx->on_write_done(ctx, status, ctx->on_write_done_p);
+    }
+
     if (status < 0) {
-        int port = (int)tunnel->desired_addr->port;
-        char *tmp;
         if (uv_mbed_is_closing(mbed)) {
             return;
         }
-        tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
-        pr_err("write \"%s:%d\" failed: %d: %s", tmp, port, status, uv_strerror(status));
-        free(tmp);
         uv_mbed_close(mbed, _mbed_close_done_cb, p);
     }
 }

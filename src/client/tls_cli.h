@@ -4,11 +4,10 @@
 #include <uv.h>
 #include <stdbool.h>
 
-struct tunnel_ctx;
 struct server_config;
 struct tls_cli_ctx;
 
-struct tls_cli_ctx* tls_client_launch(struct tunnel_ctx *tunnel, struct server_config *config);
+struct tls_cli_ctx* tls_client_launch(uv_loop_t* loop, struct server_config* config);
 
 typedef void (*tls_cli_tcp_conn_cb)(struct tls_cli_ctx *cli, void *p);
 void tls_client_set_tcp_connect_callback(struct tls_cli_ctx *cli, tls_cli_tcp_conn_cb cb, void *p);
@@ -21,6 +20,9 @@ bool tls_cli_is_closing(struct tls_cli_ctx* ctx);
 
 typedef void (*tls_cli_on_connection_established_cb)(struct tls_cli_ctx* tls_cli, int status, void* p);
 void tls_cli_set_on_connection_established_callback(struct tls_cli_ctx* tls_cli, tls_cli_on_connection_established_cb cb, void* p);
+
+typedef void (*tls_cli_on_write_done_cb)(struct tls_cli_ctx* tls_cli, int status, void* p);
+void tls_cli_set_on_write_done_callback(struct tls_cli_ctx* tls_cli, tls_cli_on_write_done_cb cb, void* p);
 
 typedef void (*tls_cli_on_data_received_cb)(struct tls_cli_ctx* tls_cli, int status, const uint8_t* data, size_t size, void* p);
 void tls_cli_set_on_data_received_callback(struct tls_cli_ctx* tls_cli, tls_cli_on_data_received_cb cb, void* p);
