@@ -128,7 +128,7 @@ static bool tunnel_ssr_is_in_streaming(struct tunnel_ctx* tunnel);
 static bool tunnel_tls_is_in_streaming(struct tunnel_ctx* tunnel);
 static void tunnel_tls_do_launch_streaming(struct tunnel_ctx *tunnel);
 static void tunnel_tls_client_incoming_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
-static void tunnel_tls_on_connection_established(struct tunnel_ctx *tunnel);
+static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int status, void* p);
 static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, const uint8_t* data, size_t size, void* p);
 static void tls_cli_on_shutting_down_callback(struct tls_cli_ctx* cli_ctx, void* p);
 
@@ -162,7 +162,6 @@ static bool init_done_cb(struct tunnel_ctx *tunnel, void *p) {
     tunnel->tunnel_write_done = &tunnel_write_done;
     tunnel->tunnel_get_alloc_size = &tunnel_get_alloc_size;
     tunnel->tunnel_extract_data = &tunnel_extract_data;
-    tunnel->tunnel_tls_on_connection_established = &tunnel_tls_on_connection_established;
     if (config->over_tls_enable) {
         tunnel->tunnel_dispatcher = &tunnel_tls_dispatcher;
         tunnel->tunnel_is_in_streaming = &tunnel_tls_is_in_streaming;
@@ -623,6 +622,7 @@ static void do_common_connet_remote_server(struct tunnel_ctx* tunnel) {
         ctx->stage = tunnel_stage_tls_connecting;
         tls_cli = tls_client_launch(tunnel, config);
         tls_client_set_tcp_connect_callback(tls_cli, _tls_cli_tcp_conn_cb, ctx);
+        tls_cli_set_on_connection_established_callback(tls_cli, tls_cli_on_connection_established, ctx);
         tls_cli_set_on_data_received_callback(tls_cli, tls_cli_on_data_received, ctx);
         tls_cli_set_shutting_down_callback(tls_cli, tls_cli_on_shutting_down_callback, ctx);
         return;
@@ -1100,12 +1100,24 @@ void tunnel_tls_client_incoming_streaming(struct tunnel_ctx *tunnel, struct sock
     }
 }
 
-static void tunnel_tls_on_connection_established(struct tunnel_ctx *tunnel) {
-    struct socket_ctx *incoming = tunnel->incoming;
+static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int status, void* p) {
+    struct client_ctx* ctx = (struct client_ctx*)p;
+    struct tunnel_ctx* tunnel = ctx->tunnel;
+
+    struct socket_ctx* incoming = tunnel->incoming;
     struct socket_ctx *outgoing = tunnel->outgoing;
-    struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
     struct server_config *config = ctx->env->config;
-    
+
+    if (status < 0) {
+        int port = (int)tunnel->desired_addr->port;
+        char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
+        pr_err("connecting \"%s:%d\" failed: %d: %s", tmp, port, status, uv_strerror(status));
+        free(tmp);
+        return;
+    } else {
+        tunnel->tls_ctx = tls_cli;
+    }
+
     if (tunnel_is_dead(tunnel) || ctx == NULL) {
         /* dirty code, insure calling to client_tunnel_shutdown -> tls_client_shutdown */
         tunnel->tunnel_shutdown(tunnel);
@@ -1206,7 +1218,7 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
                 // At this moment, the UDP over TLS connection have established.
                 // We needn't send the client incoming data, because we have sent
                 // it as payload of WebSocket authenticate package in function
-                // `tunnel_tls_on_connection_established`.
+                // `tls_cli_on_connection_established`.
                 ctx->stage = tunnel_stage_tls_streaming;
                 do {
                     struct buffer_t* tmp; const uint8_t* p; size_t size = 0;
@@ -1490,6 +1502,7 @@ void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_u
         tls_cli = tls_client_launch(tunnel, config);
 
         tls_client_set_tcp_connect_callback(tls_cli, _tls_cli_tcp_conn_cb, ctx);
+        tls_cli_set_on_connection_established_callback(tls_cli, tls_cli_on_connection_established, ctx);
         tls_cli_set_on_data_received_callback(tls_cli, tls_cli_on_data_received, ctx);
         tls_cli_set_shutting_down_callback(tls_cli, tls_cli_on_shutting_down_callback, ctx);
 

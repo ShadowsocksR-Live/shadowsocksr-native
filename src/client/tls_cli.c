@@ -17,6 +17,9 @@ struct tls_cli_ctx {
     tls_cli_tcp_conn_cb tls_tcp_conn_cb;
     void *tls_tcp_conn_cb_p;
 
+    tls_cli_on_connection_established_cb on_connection_established;
+    void* on_connection_established_p;
+
     tls_cli_on_data_received_cb on_data_received;
     void* on_data_received_p;
 
@@ -82,23 +85,28 @@ bool tls_cli_is_closing(struct tls_cli_ctx* ctx) {
 
 static void _mbed_connect_done_cb(uv_mbed_t* mbed, int status, void *p) {
     struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)p;
-    struct tunnel_ctx *tunnel = ctx->tunnel;
-    assert(tunnel);
+    tls_cli_on_connection_established_cb on_connection_established_cache = ctx->on_connection_established;
+    void* on_connection_established_p_cache = ctx->on_connection_established_p;
+
     if (status < 0) {
-        int port = (int)tunnel->desired_addr->port;
-        char *tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
-        pr_err("connecting \"%s:%d\" failed: %d: %s", tmp, port, status, uv_strerror(status));
-        free(tmp);
-        uv_mbed_close(mbed, _mbed_close_done_cb, p);
-    }
-    else {
-        tunnel->tls_ctx = ctx;
+        uv_mbed_close(mbed, _mbed_close_done_cb, ctx);
+        ctx = NULL;
+    } else {
         uv_mbed_set_read_callback(mbed, _mbed_alloc_cb, _mbed_data_received_cb, p);
-        if (tunnel->tunnel_tls_on_connection_established) {
-            tunnel->tunnel_tls_on_connection_established(tunnel);
-        }
     }
+
+    if (on_connection_established_cache) {
+        on_connection_established_cache(ctx, status, on_connection_established_p_cache);
+    }
+
     uv_mbed_release(mbed);
+}
+
+void tls_cli_set_on_connection_established_callback(struct tls_cli_ctx* tls_cli, tls_cli_on_connection_established_cb cb, void* p) {
+    if (tls_cli) {
+        tls_cli->on_connection_established = cb;
+        tls_cli->on_connection_established_p = p;
+    }
 }
 
 static void _mbed_alloc_cb(uv_mbed_t *mbed, size_t suggested_size, uv_buf_t* buf) {

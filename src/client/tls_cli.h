@@ -19,6 +19,9 @@ void tls_client_shutdown(struct tls_cli_ctx* ctx);
 
 bool tls_cli_is_closing(struct tls_cli_ctx* ctx);
 
+typedef void (*tls_cli_on_connection_established_cb)(struct tls_cli_ctx* tls_cli, int status, void* p);
+void tls_cli_set_on_connection_established_callback(struct tls_cli_ctx* tls_cli, tls_cli_on_connection_established_cb cb, void* p);
+
 typedef void (*tls_cli_on_data_received_cb)(struct tls_cli_ctx* tls_cli, int status, const uint8_t* data, size_t size, void* p);
 void tls_cli_set_on_data_received_callback(struct tls_cli_ctx* tls_cli, tls_cli_on_data_received_cb cb, void* p);
 

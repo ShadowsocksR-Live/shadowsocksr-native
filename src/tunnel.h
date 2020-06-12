@@ -56,7 +56,6 @@ struct tunnel_ctx {
     bool(*tunnel_is_in_streaming)(struct tunnel_ctx* tunnel);
     void (*tunnel_shutdown)(struct tunnel_ctx *tunnel);
     struct tls_cli_ctx *tls_ctx;
-    void(*tunnel_tls_on_connection_established)(struct tunnel_ctx *tunnel);
 };
 
 uv_os_sock_t uv_stream_fd(const uv_tcp_t *handle);
