@@ -17,6 +17,9 @@ struct tls_cli_ctx {
     tls_cli_tcp_conn_cb tls_tcp_conn_cb;
     void *tls_tcp_conn_cb_p;
 
+    tls_cli_on_data_received_cb on_data_received;
+    void* on_data_received_p;
+
     tls_cli_on_shutting_down_cb on_shutting_down;
     void* on_shutting_down_p;
 };
@@ -107,29 +110,24 @@ static void _mbed_alloc_cb(uv_mbed_t *mbed, size_t suggested_size, uv_buf_t* buf
 
 static void _mbed_data_received_cb(uv_mbed_t *mbed, ssize_t nread, uv_buf_t* buf, void *p) {
     struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)p;
-    struct tunnel_ctx *tunnel = ctx->tunnel;
+    assert(ctx);
     assert(ctx->mbed == mbed);
-    if (nread > 0) {
-        if (tunnel) {
-            assert(tunnel->tunnel_tls_on_data_received);
-            if (tunnel->tunnel_tls_on_data_received) {
-                tunnel->tunnel_tls_on_data_received(tunnel, (uint8_t *)buf->base, (size_t)nread);
-            }
-        } else {
-            uv_mbed_close(mbed, _mbed_close_done_cb, p);
-        }
-    } else if (nread < 0) {
-        int port = (int)tunnel->desired_addr->port;
-        char *tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
-        if (nread == UV_EOF) {
-            (void)tmp; // pr_warn("connection with %s:%d closed abnormally.", tmp, port);
-        } else {
-            pr_err("read on %s:%d error %ld: %s", tmp, port, (long)nread, uv_strerror((int) nread));
-        }
-        free(tmp);
+
+    if (ctx->on_data_received) {
+        ctx->on_data_received(ctx, (int)nread, (uint8_t*)buf->base, (size_t)nread, ctx->on_data_received_p);
+    }
+
+    if (nread < 0) {
         uv_mbed_close(mbed, _mbed_close_done_cb, p);
     }
     free(buf->base);
+}
+
+void tls_cli_set_on_data_received_callback(struct tls_cli_ctx* tls_cli, tls_cli_on_data_received_cb cb, void* p) {
+    if (tls_cli) {
+        tls_cli->on_data_received = cb;
+        tls_cli->on_data_received_p = p;
+    }
 }
 
 static void _mbed_write_done_cb(uv_mbed_t *mbed, int status, void *p) {
