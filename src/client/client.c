@@ -510,12 +510,6 @@ static void do_parse_s5_request_from_client_app(struct tunnel_ctx *tunnel) {
 
     socks5_address_parse(data+3, size-3, tunnel->desired_addr);
 
-    if (tunnel->desired_addr->addr.ipv4.s_addr == 0 && tunnel->desired_addr->addr_type==SOCKS5_ADDRTYPE_IPV4) {
-        pr_err("%s", "zero target address, dropped.");
-        tunnel->tunnel_shutdown(tunnel);
-        return;
-    }
-
     result = s5_parse(parser, &data, &size);
     if (result == s5_result_need_more) {
         pr_err("%s", "More data is needed, but we are not going to continue.");
@@ -565,6 +559,11 @@ static void do_parse_s5_request_from_client_app(struct tunnel_ctx *tunnel) {
     }
         break;
     case s5_cmd_tcp_connect:
+        if (tunnel->desired_addr->addr.ipv4.s_addr == 0 && tunnel->desired_addr->addr_type == SOCKS5_ADDRTYPE_IPV4) {
+            pr_err("%s", "zero target address, dropped.");
+            tunnel->tunnel_shutdown(tunnel);
+            return;
+        }
         do_socks5_reply_success(tunnel);
         break;
     default:
@@ -1365,7 +1364,7 @@ static void tls_cli_on_shutting_down_callback(struct tls_cli_ctx* cli_ctx, void*
     struct tunnel_ctx* tunnel = (struct tunnel_ctx*)ctx->tunnel;
     assert(tunnel);
     assert(ctx->tls_ctx == cli_ctx);
-    client_tunnel_shutdown_print_info(tunnel, (ctx->connection_status != 0));
+    client_tunnel_shutdown_print_info(tunnel, (ctx->connection_status == 0));
 
     assert(ctx->original_tunnel_shutdown);
     if (ctx->original_tunnel_shutdown) {
