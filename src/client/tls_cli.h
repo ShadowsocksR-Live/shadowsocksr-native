@@ -9,7 +9,10 @@ struct tls_cli_ctx;
 
 struct tls_cli_ctx* tls_client_launch(uv_loop_t* loop, struct server_config* config);
 
-typedef void (*tls_cli_tcp_conn_cb)(struct tls_cli_ctx *cli, void *p);
+int tls_cli_add_ref(struct tls_cli_ctx* tls_cli);
+int tls_cli_release(struct tls_cli_ctx* tls_cli);
+
+typedef void (*tls_cli_tcp_conn_cb)(struct tls_cli_ctx* cli, void* p);
 void tls_client_set_tcp_connect_callback(struct tls_cli_ctx *cli, tls_cli_tcp_conn_cb cb, void *p);
 
 uv_os_sock_t tls_client_get_tcp_fd(const struct tls_cli_ctx *cli);

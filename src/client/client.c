@@ -84,6 +84,7 @@ struct client_ctx {
     struct buffer_t *local_write_cache;
     bool tls_is_eof;
     struct tls_cli_ctx* tls_ctx;
+    int connection_status;
 
     struct udp_data_context *udp_data_ctx;
 };
@@ -634,9 +635,8 @@ static void do_common_connet_remote_server(struct tunnel_ctx* tunnel) {
     client_tunnel_connecting_print_info(tunnel);
 
     if (config->over_tls_enable) {
-        struct tls_cli_ctx *tls_cli;
         ctx->stage = tunnel_stage_tls_connecting;
-        tls_cli = tls_client_creator(ctx, config);
+        ctx->tls_ctx = tls_client_creator(ctx, config);
         return;
     }
     else {
@@ -1120,14 +1120,16 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
     struct socket_ctx *outgoing = tunnel->outgoing;
     struct server_config *config = ctx->env->config;
 
+    assert(ctx->tls_ctx == tls_cli);
+
+    ctx->connection_status = status;
+
     if (status < 0) {
         int port = (int)tunnel->desired_addr->port;
         char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
         pr_err("connecting \"%s:%d\" failed: %d: %s", tmp, port, status, uv_strerror(status));
         free(tmp);
         return;
-    } else {
-        ctx->tls_ctx = tls_cli;
     }
 
     if (tunnel_is_dead(tunnel) || ctx == NULL) {
@@ -1189,6 +1191,7 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
 static void tls_cli_on_write_done(struct tls_cli_ctx* tls_cli, int status, void* p) {
     struct client_ctx* ctx = (struct client_ctx*)p;
     struct tunnel_ctx* tunnel = ctx->tunnel;
+    assert(ctx->tls_ctx == tls_cli);
     if (status < 0) {
         int port = (int)tunnel->desired_addr->port;
         char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
@@ -1204,6 +1207,8 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
     ASSERT(ctx);
     tunnel = ctx->tunnel;
     ASSERT(tunnel);
+
+    assert(ctx->tls_ctx == tls_cli);
 
     if (tunnel_is_dead(tunnel)) {
         tunnel->tunnel_shutdown(tunnel);
@@ -1359,14 +1364,15 @@ static void tls_cli_on_shutting_down_callback(struct tls_cli_ctx* cli_ctx, void*
     struct client_ctx *ctx = (struct client_ctx *)p;
     struct tunnel_ctx* tunnel = (struct tunnel_ctx*)ctx->tunnel;
     assert(tunnel);
-    client_tunnel_shutdown_print_info(tunnel, (ctx->tls_ctx != NULL));
+    assert(ctx->tls_ctx == cli_ctx);
+    client_tunnel_shutdown_print_info(tunnel, (ctx->connection_status != 0));
 
     assert(ctx->original_tunnel_shutdown);
     if (ctx->original_tunnel_shutdown) {
         ctx->original_tunnel_shutdown(tunnel);
     }
 
-    ctx->tls_ctx = NULL;
+    tls_cli_release(ctx->tls_ctx);
     tunnel_release(tunnel);
 
     (void)cli_ctx;
@@ -1512,7 +1518,6 @@ void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_u
             UNREACHABLE();
         }
     } else {
-        struct tls_cli_ctx *tls_cli;
         tunnel = tunnel_initialize(loop, NULL, config->idle_timeout, &init_done_cb, env);
         ctx = (struct client_ctx *)tunnel->data;
         ctx->cipher = tunnel_cipher_create(ctx->env, 1452);
@@ -1522,7 +1527,7 @@ void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_u
         *tunnel->desired_addr = query_data->target_addr;
 
         ctx->stage = tunnel_stage_tls_connecting;
-        tls_cli = tls_client_creator(ctx, config);
+        ctx->tls_ctx = tls_client_creator(ctx, config);
 
         client_tunnel_connecting_print_info(tunnel);
 

@@ -12,6 +12,8 @@ struct tls_cli_ctx {
     struct server_config *config; /* weak pointer */
     uv_mbed_t *mbed;
 
+    int ref_count;
+
     tls_cli_tcp_conn_cb tls_tcp_conn_cb;
     void *tls_tcp_conn_cb_p;
 
@@ -40,15 +42,43 @@ struct tls_cli_ctx* tls_client_launch(uv_loop_t* loop, struct server_config* con
     ctx->mbed = uv_mbed_init(loop, config->over_tls_server_domain, ctx, 0);
     ctx->config = config;
 
-    uv_mbed_add_ref(ctx->mbed);
+    tls_cli_add_ref(ctx); // for connect.
     uv_mbed_connect(ctx->mbed, config->remote_host, config->remote_port, config->connect_timeout_ms, _mbed_connect_done_cb, ctx);
     uv_mbed_set_tcp_connect_established_callback(ctx->mbed, &_uv_mbed_tcp_connect_established_cb, ctx);
+
+    tls_cli_add_ref(ctx); // for the holder.
 
     return ctx;
 }
 
+int tls_cli_add_ref(struct tls_cli_ctx* tls_cli) {
+    if (tls_cli) {
+        return (++tls_cli->ref_count);
+    }
+    return 0;
+}
+
+void _tls_cli_free_internal(struct tls_cli_ctx* tls_cli) {
+    if (tls_cli) {
+        uv_mbed_release(tls_cli->mbed);
+        free(tls_cli);
+    }
+}
+
+int tls_cli_release(struct tls_cli_ctx* tls_cli) {
+    int ref__count = 0;
+    if (tls_cli) {
+        ref__count = (--tls_cli->ref_count);
+        if (ref__count <= 0) {
+            _tls_cli_free_internal(tls_cli);
+        }
+    }
+    return ref__count;
+}
+
 static void _uv_mbed_tcp_connect_established_cb(uv_mbed_t* mbed, void *p) {
     struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)p;
+    assert(ctx->mbed == mbed);
     if (ctx->tls_tcp_conn_cb) {
         ctx->tls_tcp_conn_cb(ctx, ctx->tls_tcp_conn_cb_p);
     }
@@ -72,6 +102,7 @@ uv_os_sock_t tls_client_get_tcp_fd(const struct tls_cli_ctx *cli) {
 void tls_client_shutdown(struct tls_cli_ctx* ctx) {
     assert(ctx);
     if (ctx) {
+        tls_cli_add_ref(ctx);
         uv_mbed_close(ctx->mbed, _mbed_close_done_cb, ctx);
     }
 }
@@ -82,21 +113,19 @@ bool tls_cli_is_closing(struct tls_cli_ctx* ctx) {
 
 static void _mbed_connect_done_cb(uv_mbed_t* mbed, int status, void *p) {
     struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)p;
-    tls_cli_on_connection_established_cb on_connection_established_cache = ctx->on_connection_established;
-    void* on_connection_established_p_cache = ctx->on_connection_established_p;
 
     if (status < 0) {
+        tls_cli_add_ref(ctx);
         uv_mbed_close(mbed, _mbed_close_done_cb, ctx);
-        ctx = NULL;
     } else {
         uv_mbed_set_read_callback(mbed, _mbed_alloc_cb, _mbed_data_received_cb, p);
     }
 
-    if (on_connection_established_cache) {
-        on_connection_established_cache(ctx, status, on_connection_established_p_cache);
+    if (ctx->on_connection_established) {
+        ctx->on_connection_established(ctx, status, ctx->on_connection_established_p);
     }
 
-    uv_mbed_release(mbed);
+    tls_cli_release(ctx);
 }
 
 void tls_cli_set_on_connection_established_callback(struct tls_cli_ctx* tls_cli, tls_cli_on_connection_established_cb cb, void* p) {
@@ -122,6 +151,7 @@ static void _mbed_data_received_cb(uv_mbed_t *mbed, ssize_t nread, uv_buf_t* buf
     }
 
     if (nread < 0) {
+        tls_cli_add_ref(ctx);
         uv_mbed_close(mbed, _mbed_close_done_cb, p);
     }
     free(buf->base);
@@ -153,17 +183,20 @@ static void _mbed_write_done_cb(uv_mbed_t *mbed, int status, void *p) {
         if (uv_mbed_is_closing(mbed)) {
             return;
         }
+        tls_cli_add_ref(ctx);
         uv_mbed_close(mbed, _mbed_close_done_cb, p);
     }
+
+    tls_cli_release(ctx);
 }
 
 static void _mbed_close_done_cb(uv_mbed_t *mbed, void *p) {
     struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)p;
+    assert(ctx->mbed == mbed);
     if (ctx && ctx->on_shutting_down) {
         ctx->on_shutting_down(ctx, ctx->on_shutting_down_p);
     }
-    uv_mbed_release(mbed);
-    free(ctx);
+    tls_cli_release(ctx);
 }
 
 void tls_cli_set_shutting_down_callback(struct tls_cli_ctx* ctx, tls_cli_on_shutting_down_cb cb, void* p) {
@@ -177,6 +210,7 @@ void tls_cli_send_data(struct tls_cli_ctx* ctx, const uint8_t* data, size_t size
     uv_buf_t o = uv_buf_init((char *)data, (unsigned int)size);
     assert(ctx);
     if (ctx) {
+        tls_cli_add_ref(ctx);
         uv_mbed_write(ctx->mbed, &o, &_mbed_write_done_cb, ctx);
     }
 }
