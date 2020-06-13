@@ -11,6 +11,7 @@
 struct tls_cli_ctx {
     struct server_config *config; /* weak pointer */
     uv_mbed_t *mbed;
+
     tls_cli_tcp_conn_cb tls_tcp_conn_cb;
     void *tls_tcp_conn_cb_p;
 

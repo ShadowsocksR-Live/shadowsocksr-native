@@ -29,8 +29,6 @@ struct socket_ctx {
     const uv_buf_t *buf; /* Scratch space. Used to read data into. */
 };
 
-struct tls_cli_ctx;
-
 struct tunnel_ctx {
     void *data;
     bool terminated;
@@ -55,7 +53,6 @@ struct tunnel_ctx {
     uint8_t*(*tunnel_extract_data)(struct socket_ctx *socket, void*(*allocator)(size_t size), size_t *size);
     bool(*tunnel_is_in_streaming)(struct tunnel_ctx* tunnel);
     void (*tunnel_shutdown)(struct tunnel_ctx *tunnel);
-    struct tls_cli_ctx *tls_ctx;
 };
 
 uv_os_sock_t uv_stream_fd(const uv_tcp_t *handle);

@@ -83,6 +83,7 @@ struct client_ctx {
     struct buffer_t *server_delivery_cache;
     struct buffer_t *local_write_cache;
     bool tls_is_eof;
+    struct tls_cli_ctx* tls_ctx;
 
     struct udp_data_context *udp_data_ctx;
 };
@@ -133,7 +134,7 @@ static void tls_cli_on_write_done(struct tls_cli_ctx* tls_cli, int status, void*
 static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, const uint8_t* data, size_t size, void* p);
 static void tls_cli_on_shutting_down_callback(struct tls_cli_ctx* cli_ctx, void* p);
 
-static void tunnel_tls_send_websocket_data(struct tunnel_ctx* tunnel, const uint8_t* buf, size_t len);
+static void tls_cli_send_websocket_data(struct client_ctx* ctx, const uint8_t* buf, size_t len);
 
 static bool can_auth_none(const struct tunnel_ctx *cx);
 static bool can_auth_passwd(const struct tunnel_ctx *cx);
@@ -226,8 +227,8 @@ static void client_tunnel_shutdown_print_info(struct tunnel_ctx *tunnel, bool su
 static void client_tunnel_shutdown(struct tunnel_ctx *tunnel) {
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
     assert(ctx);
-    if (tunnel->tls_ctx) {
-        tls_client_shutdown(tunnel->tls_ctx);
+    if (ctx->tls_ctx) {
+        tls_client_shutdown(ctx->tls_ctx);
     } else {
         client_tunnel_shutdown_print_info(tunnel, true);
         assert(ctx && ctx->original_tunnel_shutdown);
@@ -1056,7 +1057,7 @@ static void tunnel_tls_do_launch_streaming(struct tunnel_ctx *tunnel) {
             return;
         }
         out_data = buffer_get_data(tmp, &out_data_len);
-        tunnel_tls_send_websocket_data(tunnel, out_data, out_data_len);
+        tls_cli_send_websocket_data(ctx, out_data, out_data_len);
         buffer_release(tmp);
 
         socket_read(incoming, true);
@@ -1064,12 +1065,12 @@ static void tunnel_tls_do_launch_streaming(struct tunnel_ctx *tunnel) {
     }
 }
 
-static void tunnel_tls_send_websocket_data(struct tunnel_ctx* tunnel, const uint8_t* buf, size_t len) {
+static void tls_cli_send_websocket_data(struct client_ctx* ctx, const uint8_t* buf, size_t len) {
     ws_frame_info info = { WS_OPCODE_BINARY, true, true, 0, 0, 0 };
     uint8_t* frame;
     ws_frame_binary_alone(true, &info);
     frame = websocket_build_frame(&info, buf, len, &malloc);
-    tls_cli_send_data(tunnel->tls_ctx, frame, info.frame_size);
+    tls_cli_send_data(ctx->tls_ctx, frame, info.frame_size);
     free(frame);
 }
 
@@ -1099,7 +1100,7 @@ void tunnel_tls_client_incoming_streaming(struct tunnel_ctx *tunnel, struct sock
 #endif
 
             if (buf /* && size > 0 */) {
-                tunnel_tls_send_websocket_data(tunnel, buf, len);
+                tls_cli_send_websocket_data(ctx, buf, len);
             } else {
                 tunnel->tunnel_shutdown(tunnel);
             }
@@ -1126,7 +1127,7 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
         free(tmp);
         return;
     } else {
-        tunnel->tls_ctx = tls_cli;
+        ctx->tls_ctx = tls_cli;
     }
 
     if (tunnel_is_dead(tunnel) || ctx == NULL) {
@@ -1176,7 +1177,7 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
                 free(b64str);
                 free(addr_p);
             }
-            tls_cli_send_data(tunnel->tls_ctx, buf, len);
+            tls_cli_send_data(ctx->tls_ctx, buf, len);
             ctx->stage = tunnel_stage_tls_websocket_upgrade;
 
             free(buf);
@@ -1252,7 +1253,7 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
 
                     tunnel_cipher_client_encrypt(ctx->cipher, tmp);
                     p = buffer_get_data(tmp, &size);
-                    tunnel_tls_send_websocket_data(tunnel, p, size);
+                    tls_cli_send_websocket_data(ctx, p, size);
 
                     cstl_deque_pop_front(ctx->udp_data_ctx->send_deque);
                 } while (true);
@@ -1358,14 +1359,14 @@ static void tls_cli_on_shutting_down_callback(struct tls_cli_ctx* cli_ctx, void*
     struct client_ctx *ctx = (struct client_ctx *)p;
     struct tunnel_ctx* tunnel = (struct tunnel_ctx*)ctx->tunnel;
     assert(tunnel);
-    client_tunnel_shutdown_print_info(tunnel, (tunnel->tls_ctx != NULL));
+    client_tunnel_shutdown_print_info(tunnel, (ctx->tls_ctx != NULL));
 
     assert(ctx->original_tunnel_shutdown);
     if (ctx->original_tunnel_shutdown) {
         ctx->original_tunnel_shutdown(tunnel);
     }
 
-    tunnel->tls_ctx = NULL;
+    ctx->tls_ctx = NULL;
     tunnel_release(tunnel);
 
     (void)cli_ctx;
@@ -1502,7 +1503,7 @@ void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_u
                 tunnel->tunnel_shutdown(tunnel);
             } else {
                 size_t len = 0; const uint8_t* p = buffer_get_data(out_ref, &len);
-                tunnel_tls_send_websocket_data(tunnel, p, len);
+                tls_cli_send_websocket_data(ctx, p, len);
             }
             buffer_release(out_ref);
         } else if (ctx->udp_data_ctx) {
