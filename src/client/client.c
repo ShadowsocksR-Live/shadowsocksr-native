@@ -1020,13 +1020,8 @@ static size_t tunnel_get_alloc_size(struct tunnel_ctx *tunnel, struct socket_ctx
 }
 
 static bool tunnel_ssr_is_in_streaming(struct tunnel_ctx* tunnel) {
-#if 1
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
     return (ctx && ctx->stage == tunnel_stage_streaming);
-#else
-    (void)tunnel;
-    return false;
-#endif
 }
 
 static bool tunnel_tls_is_in_streaming(struct tunnel_ctx* tunnel) {
@@ -1042,7 +1037,7 @@ static void tunnel_tls_do_launch_streaming(struct tunnel_ctx *tunnel) {
     ASSERT(incoming->wrstate == socket_state_stop);
 
     if (incoming->result < 0) {
-        PRINT_ERR("write error: %s", uv_strerror((int)incoming->result));
+        PRINT_ERR("[TLS] write error: %s", uv_strerror((int)incoming->result));
         tunnel->tunnel_shutdown(tunnel);
     } else {
         const uint8_t* out_data = NULL;
@@ -1126,7 +1121,7 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
     if (status < 0) {
         int port = (int)tunnel->desired_addr->port;
         char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
-        pr_err("connecting \"%s:%d\" failed: %d: %s", tmp, port, status, uv_strerror(status));
+        pr_err("[TLS] connecting \"%s:%d\" failed: %d: %s", tmp, port, status, uv_strerror(status));
         free(tmp);
         return;
     }
@@ -1194,7 +1189,7 @@ static void tls_cli_on_write_done(struct tls_cli_ctx* tls_cli, int status, void*
     if (status < 0) {
         int port = (int)tunnel->desired_addr->port;
         char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
-        pr_err("write \"%s:%d\" failed: %d: %s", tmp, port, status, uv_strerror(status));
+        pr_err("[TLS] write \"%s:%d\" failed: %d: %s", tmp, port, status, uv_strerror(status));
         free(tmp);
     }
 }
@@ -1220,7 +1215,7 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
         if (status == UV_EOF) {
             (void)tmp; // pr_warn("connection with %s:%d closed abnormally.", tmp, port);
         } else {
-            pr_err("read on %s:%d error %ld: %s", tmp, port, (long)status, uv_strerror((int)status));
+            pr_err("[TLS] read on %s:%d error %ld: %s", tmp, port, (long)status, uv_strerror((int)status));
         }
         free(tmp);
         return;

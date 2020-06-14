@@ -200,6 +200,7 @@ function domain_check() {
 
 function input_web_listen_port() {
     local port="443"
+    echo "请输入 站点端口号 (默认值 443) "
     stty erase '^H' && read -p "Please enter the access port number (default: 443):" port
     [[ -z ${port} ]] && port="443"
     echo ${port}

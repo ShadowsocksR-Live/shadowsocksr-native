@@ -154,7 +154,7 @@ int udp_create_remote_socket(bool ipv6, uv_loop_t *loop, uv_udp_t *udp) {
     }
     err = uv_udp_bind(udp, &addr.addr, 0);
     if (err != 0) {
-        LOGE("[udp] udp_create_remote_socket: %s\n", uv_strerror(err));
+        LOGE("[UDP] udp_create_remote_socket: %s\n", uv_strerror(err));
     }
     return err;
 }
@@ -176,7 +176,7 @@ udp_create_local_listener(const char *host, uint16_t port, uv_loop_t *loop, uv_u
 
     s = getaddrinfo(host, str_port, &hints, &result);
     if (s != 0) {
-        LOGE("[udp] getaddrinfo: %s", gai_strerror(s));
+        LOGE("[UDP] getaddrinfo: %s", gai_strerror(s));
         return -1;
     }
 
@@ -208,11 +208,11 @@ udp_create_local_listener(const char *host, uint16_t port, uv_loop_t *loop, uv_u
         if (r == 0) {
             break;
         }
-        LOGE("[udp] udp_create_local_listener: %s\n", uv_strerror(r));
+        LOGE("[UDP] udp_create_local_listener: %s\n", uv_strerror(r));
     }
 
     if (rp == NULL) {
-        LOGE("%s", "[udp] cannot bind");
+        LOGE("%s", "[UDP] cannot bind");
         return -1;
     }
 
@@ -282,7 +282,7 @@ void udp_remote_destroy(struct udp_remote_ctx_t *ctx) {
 static void udp_remote_timeout_cb(uv_timer_t* handle) {
     struct udp_remote_ctx_t *remote_ctx = CONTAINER_OF(handle, struct udp_remote_ctx_t, rmt_expire);
 
-    pr_info("%s", "[udp] connection timeout, shutting down");
+    pr_info("%s", "[UDP] connection timeout, shutting down");
 
     udp_remote_shutdown(remote_ctx);
 }
@@ -415,15 +415,15 @@ static void udp_tls_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_b
         }
         (void)flags;
         if (nread < 0) {
-            pr_err("%s", "[udp] udp_tls_listener_recv_cb something wrong.");
+            pr_err("%s", "[UDP] udp_tls_listener_recv_cb something wrong.");
             break;
         } else if (nread > (ssize_t) packet_size) {
-            pr_err("%s", "[udp] udp_tls_listener_recv_cb fragmentation");
+            pr_err("%s", "[UDP] udp_tls_listener_recv_cb fragmentation");
             break;
         } else if (nread == 0) {
             if (addr == NULL) {
                 // there is nothing to read
-                pr_err("%s", "[udp] udp_tls_listener_recv_cb there is nothing to read");
+                pr_err("%s", "[UDP] udp_tls_listener_recv_cb there is nothing to read");
                 break;
             } else {
                 //  an empty UDP packet is received.
@@ -460,7 +460,7 @@ udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
     // Bind to port
     serverfd = udp_create_local_listener(server_host, server_port, loop, &server_ctx->udp);
     if (serverfd < 0) {
-        FATAL("[udp] bind() error");
+        FATAL("[UDP] bind() error");
     }
 
     server_ctx->cipher_env = cipher_env;
