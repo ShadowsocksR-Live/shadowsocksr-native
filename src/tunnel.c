@@ -146,9 +146,9 @@ void tunnel_release_internal(struct tunnel_ctx *tunnel) {
     free(tunnel);
 }
 
-REF_COUNT_ADD_REF_IMPL(tunnel_ctx);
+REF_COUNT_ADD_REF_IMPL(tunnel_ctx)
 
-REF_COUNT_RELEASE_IMPL(tunnel_ctx, tunnel_release_internal);
+REF_COUNT_RELEASE_IMPL(tunnel_ctx, tunnel_release_internal)
 
 
 static void tunnel_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* socket) {

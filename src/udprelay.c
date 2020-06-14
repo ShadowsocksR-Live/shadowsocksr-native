@@ -226,9 +226,9 @@ static void udp_remote_ctx_free_internal(struct udp_remote_ctx_t *ctx) {
     free(ctx);
 }
 
-static REF_COUNT_ADD_REF_IMPL(udp_remote_ctx_t);
+static REF_COUNT_ADD_REF_IMPL(udp_remote_ctx_t)
 
-static REF_COUNT_RELEASE_IMPL(udp_remote_ctx_t, udp_remote_ctx_free_internal);
+static REF_COUNT_RELEASE_IMPL(udp_remote_ctx_t, udp_remote_ctx_free_internal)
 
 static void udp_remote_close_done_cb(uv_handle_t* handle) {
     struct udp_remote_ctx_t *ctx = (struct udp_remote_ctx_t *)handle->data;

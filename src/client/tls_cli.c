@@ -59,9 +59,9 @@ void _tls_cli_free_internal(struct tls_cli_ctx* tls_cli) {
     }
 }
 
-REF_COUNT_ADD_REF_IMPL(tls_cli_ctx);
+REF_COUNT_ADD_REF_IMPL(tls_cli_ctx)
 
-REF_COUNT_RELEASE_IMPL(tls_cli_ctx, _tls_cli_free_internal);
+REF_COUNT_RELEASE_IMPL(tls_cli_ctx, _tls_cli_free_internal)
 
 static void _uv_mbed_tcp_connect_established_cb(uv_mbed_t* mbed, void *p) {
     struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)p;
