@@ -69,6 +69,7 @@
 #include "ssr_executive.h"
 #include "dump_info.h"
 #include "s5.h"
+#include "ref_count_def.h"
 
 #ifdef MODULE_REMOTE
 #define MAX_UDP_CONN_NUM 512
@@ -111,7 +112,7 @@ struct udp_remote_ctx_t {
     udp_remote_dying_callback dying_cb;
     void *dying_p;
     bool shutting_down;
-    int ref_count;
+    REF_COUNT_MEMBER;
 };
 
 static void udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const struct sockaddr* addr, unsigned flags);
@@ -220,24 +221,18 @@ udp_create_local_listener(const char *host, uint16_t port, uv_loop_t *loop, uv_u
     return server_sock;
 }
 
-static void udp_remote_ctx_add_ref(struct udp_remote_ctx_t *ctx) {
-    if (ctx) {
-        ++ctx->ref_count;
-    }
+
+static void udp_remote_ctx_free_internal(struct udp_remote_ctx_t *ctx) {
+    free(ctx);
 }
 
-static void udp_remote_ctx_release(struct udp_remote_ctx_t *ctx) {
-    if (ctx) {
-        --ctx->ref_count;
-        if (ctx->ref_count <= 0) {
-            free(ctx);
-        }
-    }
-}
+static REF_COUNT_ADD_REF_IMPL(udp_remote_ctx_t);
+
+static REF_COUNT_RELEASE_IMPL(udp_remote_ctx_t, udp_remote_ctx_free_internal);
 
 static void udp_remote_close_done_cb(uv_handle_t* handle) {
     struct udp_remote_ctx_t *ctx = (struct udp_remote_ctx_t *)handle->data;
-    udp_remote_ctx_release(ctx);
+    udp_remote_ctx_t_release(ctx);
 }
 
 static void udp_remote_shutdown(struct udp_remote_ctx_t *ctx) {
@@ -253,13 +248,13 @@ static void udp_remote_shutdown(struct udp_remote_ctx_t *ctx) {
         uv_timer_t *timer = &ctx->rmt_expire;
         uv_timer_stop(timer);
         uv_close((uv_handle_t *)timer, udp_remote_close_done_cb);
-        udp_remote_ctx_add_ref(ctx);
+        udp_remote_ctx_t_add_ref(ctx);
     }
     {
         uv_udp_t *udp = &ctx->rmt_udp;
         uv_udp_recv_stop(udp);
         uv_close((uv_handle_t *)udp, udp_remote_close_done_cb);
-        udp_remote_ctx_add_ref(ctx);
+        udp_remote_ctx_t_add_ref(ctx);
     }
 
     if (ctx->dying_cb) {
@@ -281,7 +276,7 @@ void udp_remote_set_dying_callback(struct udp_remote_ctx_t *ctx, udp_remote_dyin
 
 void udp_remote_destroy(struct udp_remote_ctx_t *ctx) {
     udp_remote_shutdown(ctx);
-    udp_remote_ctx_release(ctx);
+    udp_remote_ctx_t_release(ctx);
 }
 
 static void udp_remote_timeout_cb(uv_timer_t* handle) {
@@ -340,7 +335,7 @@ struct udp_remote_ctx_t * udp_remote_launch_begin(uv_loop_t* loop, uint64_t time
     remote_ctx = (struct udp_remote_ctx_t *) calloc(1, sizeof(*remote_ctx));
     remote_ctx->timeout = timeout;
     remote_ctx->dst_addr = *dst_addr;
-    udp_remote_ctx_add_ref(remote_ctx);
+    udp_remote_ctx_t_add_ref(remote_ctx);
 
     udp = &remote_ctx->rmt_udp;
 

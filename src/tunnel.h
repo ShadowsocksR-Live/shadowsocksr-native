@@ -4,6 +4,7 @@
 #include <uv.h>
 #include <stdbool.h>
 #include "sockaddr_universal.h"
+#include "ref_count_def.h"
 
 struct tunnel_ctx;
 
@@ -38,7 +39,8 @@ struct tunnel_ctx {
     struct socket_ctx *outgoing;  /* Connection with upstream. */
     struct socks5_address *desired_addr;
     char extra_info[0x100];
-    int ref_count;
+
+    REF_COUNT_MEMBER;
 
     void(*tunnel_dying)(struct tunnel_ctx *tunnel);
 
@@ -64,8 +66,9 @@ size_t socket_arrived_data_size(struct socket_ctx *socket, size_t suggested_size
 typedef bool(*tunnel_init_done_cb)(struct tunnel_ctx *tunnel, void *p);
 struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsigned int idle_timeout, tunnel_init_done_cb init_done_cb, void *p);
 
-void tunnel_add_ref(struct tunnel_ctx *tunnel);
-void tunnel_release(struct tunnel_ctx *tunnel);
+REF_COUNT_ADD_REF_DECL(tunnel_ctx);
+REF_COUNT_RELEASE_DECL(tunnel_ctx);
+
 bool tunnel_is_dead(struct tunnel_ctx *tunnel);
 int socket_connect(struct socket_ctx *socket);
 bool socket_is_readable(struct socket_ctx *socket);

@@ -62,6 +62,7 @@
     <ClInclude Include="..\..\src\client\defs.h" />
     <ClInclude Include="..\..\src\client\s5.h" />
     <ClInclude Include="..\..\src\client\tls_cli.h" />
+    <ClInclude Include="..\..\src\ref_count_def.h" />
     <ClInclude Include="..\..\src\text_in_color.h" />
     <ClInclude Include="..\..\src\tunnel.h" />
     <ClInclude Include="..\..\src\cmd_line_parser.h" />

@@ -598,7 +598,7 @@ static struct tls_cli_ctx* tls_client_creator(struct client_ctx* ctx, struct ser
     tls_cli_set_on_data_received_callback(tls_cli, tls_cli_on_data_received, ctx);
     tls_cli_set_shutting_down_callback(tls_cli, tls_cli_on_shutting_down_callback, ctx);
 
-    tunnel_add_ref(tunnel);
+    tunnel_ctx_add_ref(tunnel);
 
     return tls_cli;
 }
@@ -1371,8 +1371,8 @@ static void tls_cli_on_shutting_down_callback(struct tls_cli_ctx* cli_ctx, void*
         ctx->original_tunnel_shutdown(tunnel);
     }
 
-    tls_cli_release(ctx->tls_ctx);
-    tunnel_release(tunnel);
+    tls_cli_ctx_release(ctx->tls_ctx);
+    tunnel_ctx_release(tunnel);
 
     (void)cli_ctx;
 }

@@ -248,5 +248,8 @@
     <ClInclude Include="..\..\src\websocket_basic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ref_count_def.h">
+      <Filter>client</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

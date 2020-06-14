@@ -4,13 +4,15 @@
 #include <uv.h>
 #include <stdbool.h>
 
+#include "ref_count_def.h"
+
 struct server_config;
 struct tls_cli_ctx;
 
 struct tls_cli_ctx* tls_client_launch(uv_loop_t* loop, struct server_config* config);
 
-int tls_cli_add_ref(struct tls_cli_ctx* tls_cli);
-int tls_cli_release(struct tls_cli_ctx* tls_cli);
+REF_COUNT_ADD_REF_DECL(tls_cli_ctx);
+REF_COUNT_RELEASE_DECL(tls_cli_ctx);
 
 typedef void (*tls_cli_tcp_conn_cb)(struct tls_cli_ctx* cli, void* p);
 void tls_client_set_tcp_connect_callback(struct tls_cli_ctx *cli, tls_cli_tcp_conn_cb cb, void *p);

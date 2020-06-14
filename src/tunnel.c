@@ -107,10 +107,6 @@ bool tunnel_is_dead(struct tunnel_ctx *tunnel) {
     return (tunnel->terminated != false);
 }
 
-void tunnel_add_ref(struct tunnel_ctx *tunnel) {
-    tunnel->ref_count++;
-}
-
 #ifdef __PRINT_INFO__
 int tunnel_count = 0;
 #endif // __PRINT_INFO__
@@ -131,13 +127,7 @@ void socket_context_release(struct socket_ctx *socket) {
     free(socket);
 }
 
-void tunnel_release(struct tunnel_ctx *tunnel) {
-    tunnel->ref_count--;
-    ASSERT(tunnel->ref_count >= 0);
-    if (tunnel->ref_count > 0) {
-        return;
-    }
-
+void tunnel_release_internal(struct tunnel_ctx *tunnel) {
     if (tunnel->tunnel_dying) {
         tunnel->tunnel_dying(tunnel);
     }
@@ -155,6 +145,11 @@ void tunnel_release(struct tunnel_ctx *tunnel) {
     memset(tunnel, 0, sizeof(*tunnel));
     free(tunnel);
 }
+
+REF_COUNT_ADD_REF_IMPL(tunnel_ctx);
+
+REF_COUNT_RELEASE_IMPL(tunnel_ctx, tunnel_release_internal);
+
 
 static void tunnel_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* socket) {
     ASSERT(!"You must override this function!");
@@ -178,7 +173,6 @@ struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsig
     tunnel = (struct tunnel_ctx *) calloc(1, sizeof(*tunnel));
 
     tunnel->loop = loop;
-    tunnel->ref_count = 0;
     tunnel->desired_addr = (struct socks5_address *)calloc(1, sizeof(struct socks5_address));
 
     incoming = socket_context_create(tunnel, idle_timeout);
@@ -198,7 +192,7 @@ struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsig
         success = init_done_cb(tunnel, p);
     }
 
-    tunnel_add_ref(tunnel);
+    tunnel_ctx_add_ref(tunnel);
 
     if (success) {
         if (listener) {
@@ -234,7 +228,7 @@ static void tunnel_shutdown(struct tunnel_ctx *tunnel) {
     socket_close(tunnel->incoming);
     socket_close(tunnel->outgoing);
 
-    tunnel_release(tunnel);
+    tunnel_ctx_release(tunnel);
 }
 
 static void socket_timer_start(struct socket_ctx *socket) {
@@ -540,9 +534,9 @@ static void socket_close(struct socket_ctx *socket) {
     uv_read_stop(&socket->handle.stream);
     socket_timer_stop(socket);
 
-    tunnel_add_ref(tunnel);
+    tunnel_ctx_add_ref(tunnel);
     uv_close(&socket->handle.handle, socket_close_done_cb);
-    tunnel_add_ref(tunnel);
+    tunnel_ctx_add_ref(tunnel);
     uv_close((uv_handle_t *)&socket->timer_handle, socket_close_done_cb);
 }
 
@@ -550,7 +544,7 @@ static void socket_close_done_cb(uv_handle_t *handle) {
     struct socket_ctx *socket = (struct socket_ctx *) handle->data;
     struct tunnel_ctx *tunnel = socket->tunnel;
 
-    tunnel_release(tunnel);
+    tunnel_ctx_release(tunnel);
 }
 
 void socket_dump_error_info(const char *title, struct socket_ctx *socket) {
