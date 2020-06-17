@@ -226,6 +226,18 @@ bool universal_address_to_socks5(const union sockaddr_universal *addr, struct so
     return result;
 }
 
+int universal_address_from_string_no_dns(const char* addr_str, uint16_t port, union sockaddr_universal* addr) {
+    int result = -1;
+    if ((result = uv_inet_pton(AF_INET, addr_str, &addr->addr4.sin_addr)) == 0) {
+        addr->addr4.sin_family = AF_INET;
+        addr->addr4.sin_port = htons((uint16_t)port);
+    } else if ((result = uv_inet_pton(AF_INET6, addr_str, &addr->addr6.sin6_addr)) == 0) {
+        addr->addr6.sin6_family = AF_INET6;
+        addr->addr6.sin6_port = htons((uint16_t)port);
+    }
+    return result;
+}
+
 int universal_address_from_string(const char *addr_str, uint16_t port, bool tcp, union sockaddr_universal *addr)
 {
     struct addrinfo hints = { 0 }, *ai = NULL;
@@ -234,6 +246,10 @@ int universal_address_from_string(const char *addr_str, uint16_t port, bool tcp,
     int result = -1;
 
     if (addr_str == NULL || port == 0 || addr == NULL) {
+        return result;
+    }
+
+    if ((result = universal_address_from_string_no_dns(addr_str, port, addr)) == 0) {
         return result;
     }
 

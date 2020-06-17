@@ -43,7 +43,8 @@ uint8_t * socks5_address_binary(const struct socks5_address *addr, void*(*alloca
 bool socks5_address_to_universal(const struct socks5_address *s5addr, bool use_dns, union sockaddr_universal *addr);
 bool universal_address_to_socks5(const union sockaddr_universal *addr, struct socks5_address *s5addr);
 
-int universal_address_from_string(const char *addr_str, uint16_t port, bool tcp, union sockaddr_universal *addr);
+int universal_address_from_string_no_dns(const char* addr_str, uint16_t port, union sockaddr_universal* addr);
+int universal_address_from_string(const char* addr_str, uint16_t port, bool tcp, union sockaddr_universal* addr);
 char * universal_address_to_string(const union sockaddr_universal *addr, void*(*allocator)(size_t));
 uint16_t universal_address_get_port(const union sockaddr_universal *addr);
 
