@@ -983,6 +983,7 @@ static void tunnel_dying(struct tunnel_ctx *tunnel) {
     buffer_release(ctx->server_delivery_cache);
     buffer_release(ctx->local_write_cache);
     udp_data_context_destroy(ctx->udp_data_ctx);
+    tls_cli_ctx_release(ctx->tls_ctx);
     free(ctx);
 }
 
@@ -1366,7 +1367,6 @@ static void tls_cli_on_shutting_down_callback(struct tls_cli_ctx* cli_ctx, void*
         ctx->original_tunnel_shutdown(tunnel);
     }
 
-    tls_cli_ctx_release(ctx->tls_ctx);
     tunnel_ctx_release(tunnel);
 
     (void)cli_ctx;
