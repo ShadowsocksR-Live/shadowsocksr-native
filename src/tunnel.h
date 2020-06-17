@@ -30,11 +30,11 @@ struct socket_ctx {
     enum socket_state rdstate;
     enum socket_state wrstate;
     unsigned int idle_timeout;
-    bool terminated;
+    bool is_terminated;
 
     REF_COUNT_MEMBER;
 
-    ssize_t result;
+    int result;
     union uv_any_handle handle;
     bool check_timeout;
     uv_timer_t timer_handle;  /* For detecting timeouts. */
@@ -82,7 +82,7 @@ void socket_ctx_set_on_timeout_cb(struct socket_ctx* socket, socket_ctx_on_timeo
 
 struct tunnel_ctx {
     void *data;
-    bool terminated;
+    bool is_terminated;
     uv_loop_t *loop; /* Backlink to owning loop object. */
     struct socket_ctx *incoming;  /* Connection with the SOCKS client. */
     struct socket_ctx *outgoing;  /* Connection with upstream. */

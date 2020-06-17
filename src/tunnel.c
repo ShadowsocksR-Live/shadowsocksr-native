@@ -110,17 +110,12 @@ size_t socket_arrived_data_size(struct socket_ctx *socket, size_t suggested_size
     return data_size;
 }
 
-bool tunnel_is_dead(struct tunnel_ctx *tunnel) {
-    return (tunnel->terminated != false);
-}
-
 #ifdef __PRINT_INFO__
 int tunnel_count = 0;
 #endif // __PRINT_INFO__
 
 struct socket_ctx* socket_context_create(uv_loop_t* loop, unsigned int idle_timeout) {
     struct socket_ctx *socket = (struct socket_ctx *) calloc(1, sizeof(*socket));
-    //socket->tunnel = tunnel;
     socket->result = 0;
     socket->rdstate = socket_state_stop;
     socket->wrstate = socket_state_stop;
@@ -187,7 +182,7 @@ void socket_ctx_set_on_timeout_cb(struct socket_ctx* socket, socket_ctx_on_timeo
     }
 }
 
-void tunnel_release_internal(struct tunnel_ctx *tunnel) {
+void tunnel_destroy_internal(struct tunnel_ctx *tunnel) {
     if (tunnel->tunnel_dying) {
         tunnel->tunnel_dying(tunnel);
     }
@@ -208,7 +203,7 @@ void tunnel_release_internal(struct tunnel_ctx *tunnel) {
 
 REF_COUNT_ADD_REF_IMPL(tunnel_ctx)
 
-REF_COUNT_RELEASE_IMPL(tunnel_ctx, tunnel_release_internal)
+REF_COUNT_RELEASE_IMPL(tunnel_ctx, tunnel_destroy_internal)
 
 
 static void tunnel_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* socket) {
@@ -241,8 +236,10 @@ struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsig
     socket_ctx_set_on_alloc_cb(incoming, tunnel_socket_ctx_on_alloc_cb, tunnel);
     socket_ctx_set_on_read_cb(incoming, tunnel_socket_ctx_on_read_cb, tunnel);
     socket_ctx_set_on_written_cb(incoming, tunnel_socket_ctx_on_written_cb, tunnel);
-    socket_ctx_set_on_closed_cb(incoming, tunnel_socket_ctx_on_closed_cb, tunnel);
     socket_ctx_set_on_timeout_cb(incoming, tunnel_socket_ctx_on_timeout_cb, tunnel);
+
+    socket_ctx_set_on_closed_cb(incoming, tunnel_socket_ctx_on_closed_cb, tunnel);
+    tunnel_ctx_add_ref(tunnel);
 
     if (listener) {
         VERIFY(0 == uv_accept((uv_stream_t *)listener, &incoming->handle.stream));
@@ -255,8 +252,10 @@ struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsig
     socket_ctx_set_on_alloc_cb(outgoing, tunnel_socket_ctx_on_alloc_cb, tunnel);
     socket_ctx_set_on_read_cb(outgoing, tunnel_socket_ctx_on_read_cb, tunnel);
     socket_ctx_set_on_written_cb(outgoing, tunnel_socket_ctx_on_written_cb, tunnel);
-    socket_ctx_set_on_closed_cb(outgoing, tunnel_socket_ctx_on_closed_cb, tunnel);
     socket_ctx_set_on_timeout_cb(outgoing, tunnel_socket_ctx_on_timeout_cb, tunnel);
+
+    socket_ctx_set_on_closed_cb(outgoing, tunnel_socket_ctx_on_closed_cb, tunnel);
+    tunnel_ctx_add_ref(tunnel);
 
     tunnel->outgoing = outgoing;
 
@@ -288,11 +287,16 @@ static bool tunnel_is_in_streaming(struct tunnel_ctx* tunnel) {
     return false;
 }
 
-static void tunnel_shutdown(struct tunnel_ctx *tunnel) {
+bool tunnel_is_dead(struct tunnel_ctx* tunnel) {
+    if (tunnel == NULL) { return true; }
+    return (tunnel->is_terminated != false);
+}
+
+static void tunnel_shutdown(struct tunnel_ctx* tunnel) {
     if (tunnel_is_dead(tunnel) != false) {
         return;
     }
-    tunnel->terminated = true;
+    tunnel->is_terminated = true;
 
     /* Try to cancel the request. The callback still runs but if the
     * cancellation succeeded, it gets called with status=UV_ECANCELED.
@@ -400,6 +404,7 @@ void socket_ctx_read(struct socket_ctx* socket, bool check_timeout) {
 
 static void uv_socket_read_done_cb(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf) {
     struct socket_ctx* socket = CONTAINER_OF(handle, struct socket_ctx, handle);
+    socket->result = (int)nread;
     do {
         if (nread == 0) {
             // NOT indicate an error or EOF.
@@ -579,15 +584,15 @@ void socket_ctx_write(struct socket_ctx* socket, const void* data, size_t len) {
 }
 
 static void uv_socket_write_done_cb(uv_write_t* req, int status) {
-    struct socket_ctx* socket;
+    struct socket_ctx* socket = CONTAINER_OF(req->handle, struct socket_ctx, handle.stream);
     char* write_buf = NULL;
-
-    socket = CONTAINER_OF(req->handle, struct socket_ctx, handle.stream);
 
     VERIFY((write_buf = (char*)req->data));
     free(write_buf);
 
     free(req);
+
+    socket->result = status;
 
     if (socket->on_written) {
         socket->on_written(socket, status, socket->on_written_p);
@@ -596,8 +601,6 @@ static void uv_socket_write_done_cb(uv_write_t* req, int status) {
 
 static void tunnel_socket_ctx_on_written_cb(struct socket_ctx* socket, int status, void* p) {
     struct tunnel_ctx* tunnel = (struct tunnel_ctx*)p;
-
-    socket->result = status;
 
     if (tunnel_is_dead(tunnel)) {
         return;
@@ -622,21 +625,22 @@ static void tunnel_socket_ctx_on_written_cb(struct socket_ctx* socket, int statu
 }
 
 bool socket_ctx_is_dead(struct socket_ctx* socket) {
-    return (socket->terminated != false);
+    if (socket == NULL) { return true; }
+    return (socket->is_terminated != false);
 }
 
 void socket_ctx_close(struct socket_ctx* socket) {
+    if (socket_ctx_is_dead(socket)) {
+        return;
+    }
+    socket->is_terminated = true;
+
     ASSERT(socket->rdstate != socket_state_dead);
     ASSERT(socket->wrstate != socket_state_dead);
     socket->rdstate = socket_state_dead;
     socket->wrstate = socket_state_dead;
     socket->timer_handle.data = socket;
     socket->handle.handle.data = socket;
-
-    if (socket_ctx_is_dead(socket)) {
-        return;
-    }
-    socket->terminated = true;
 
     if (socket->getaddrinfo_pending) {
         uv_cancel(&socket->req.req);
@@ -655,6 +659,7 @@ void socket_ctx_close(struct socket_ctx* socket) {
 static void uv_socket_close_done_cb(uv_handle_t *handle) {
     struct socket_ctx *socket = (struct socket_ctx *) handle->data;
     if ((--socket->closing_count) <= 0) {
+        ASSERT(socket->closing_count == 0);
         if (socket->on_closed) {
             socket->on_closed(socket, socket->on_closed_p);
         }
@@ -665,6 +670,7 @@ static void uv_socket_close_done_cb(uv_handle_t *handle) {
 static void tunnel_socket_ctx_on_closed_cb(struct socket_ctx* socket, void* p) {
     struct tunnel_ctx* tunnel = (struct tunnel_ctx*)p;
     tunnel->tunnel_shutdown(tunnel);
+    tunnel_ctx_release(tunnel);
     (void)socket;
 }
 
