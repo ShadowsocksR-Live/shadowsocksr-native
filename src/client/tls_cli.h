@@ -11,8 +11,8 @@ struct tls_cli_ctx;
 
 struct tls_cli_ctx* tls_client_launch(uv_loop_t* loop, struct server_config* config);
 
-REF_COUNT_ADD_REF_DECL(tls_cli_ctx);
-REF_COUNT_RELEASE_DECL(tls_cli_ctx);
+REF_COUNT_ADD_REF_DECL(tls_cli_ctx); // tls_cli_ctx_add_ref
+REF_COUNT_RELEASE_DECL(tls_cli_ctx); // tls_cli_ctx_release
 
 typedef void (*tls_cli_tcp_conn_cb)(struct tls_cli_ctx* cli, void* p);
 void tls_client_set_tcp_connect_callback(struct tls_cli_ctx *cli, tls_cli_tcp_conn_cb cb, void *p);
