@@ -77,7 +77,6 @@ void socket_ctx_set_on_connect_cb(struct socket_ctx* socket, socket_ctx_on_conne
 void socket_ctx_set_on_alloc_cb(struct socket_ctx* socket, socket_ctx_on_alloc_cb on_alloc, void* p);
 void socket_ctx_set_on_read_cb(struct socket_ctx* socket, socket_ctx_on_read_cb on_read, void* p);
 void socket_ctx_set_on_written_cb(struct socket_ctx* socket, socket_ctx_on_written_cb on_written, void* p);
-void socket_ctx_set_on_closed_cb(struct socket_ctx* socket, socket_ctx_on_closed_cb on_closed, void* p);
 void socket_ctx_set_on_timeout_cb(struct socket_ctx* socket, socket_ctx_on_timeout_cb on_timeout, void* p);
 
 struct tunnel_ctx {
@@ -121,7 +120,7 @@ REF_COUNT_RELEASE_DECL(tunnel_ctx);
 bool tunnel_is_dead(struct tunnel_ctx *tunnel);
 
 int socket_ctx_connect(struct socket_ctx* socket);
-void socket_ctx_close(struct socket_ctx* socket);
+void socket_ctx_close(struct socket_ctx* socket, socket_ctx_on_closed_cb on_closed, void* p);
 bool socket_ctx_is_dead(struct socket_ctx* socket);
 bool socket_ctx_is_readable(struct socket_ctx* socket);
 bool socket_ctx_is_writeable(struct socket_ctx *socket);

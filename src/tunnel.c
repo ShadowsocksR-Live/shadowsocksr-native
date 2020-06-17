@@ -168,13 +168,6 @@ void socket_ctx_set_on_written_cb(struct socket_ctx* socket, socket_ctx_on_writt
     }
 }
 
-void socket_ctx_set_on_closed_cb(struct socket_ctx* socket, socket_ctx_on_closed_cb on_closed, void* p) {
-    if (socket) {
-        socket->on_closed = on_closed;
-        socket->on_closed_p = p;
-    }
-}
-
 void socket_ctx_set_on_timeout_cb(struct socket_ctx* socket, socket_ctx_on_timeout_cb on_timeout, void* p) {
     if (socket) {
         socket->on_timeout = on_timeout;
@@ -238,9 +231,6 @@ struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsig
     socket_ctx_set_on_written_cb(incoming, tunnel_socket_ctx_on_written_cb, tunnel);
     socket_ctx_set_on_timeout_cb(incoming, tunnel_socket_ctx_on_timeout_cb, tunnel);
 
-    socket_ctx_set_on_closed_cb(incoming, tunnel_socket_ctx_on_closed_cb, tunnel);
-    tunnel_ctx_add_ref(tunnel);
-
     if (listener) {
         VERIFY(0 == uv_accept((uv_stream_t *)listener, &incoming->handle.stream));
     }
@@ -253,9 +243,6 @@ struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsig
     socket_ctx_set_on_read_cb(outgoing, tunnel_socket_ctx_on_read_cb, tunnel);
     socket_ctx_set_on_written_cb(outgoing, tunnel_socket_ctx_on_written_cb, tunnel);
     socket_ctx_set_on_timeout_cb(outgoing, tunnel_socket_ctx_on_timeout_cb, tunnel);
-
-    socket_ctx_set_on_closed_cb(outgoing, tunnel_socket_ctx_on_closed_cb, tunnel);
-    tunnel_ctx_add_ref(tunnel);
 
     tunnel->outgoing = outgoing;
 
@@ -301,8 +288,12 @@ static void tunnel_shutdown(struct tunnel_ctx* tunnel) {
     /* Try to cancel the request. The callback still runs but if the
     * cancellation succeeded, it gets called with status=UV_ECANCELED.
     */
-    socket_ctx_close(tunnel->incoming);
-    socket_ctx_close(tunnel->outgoing);
+
+    tunnel_ctx_add_ref(tunnel);
+    socket_ctx_close(tunnel->incoming, tunnel_socket_ctx_on_closed_cb, tunnel);
+
+    tunnel_ctx_add_ref(tunnel);
+    socket_ctx_close(tunnel->outgoing, tunnel_socket_ctx_on_closed_cb, tunnel);
 
     tunnel_ctx_release(tunnel);
 }
@@ -322,7 +313,6 @@ static void uv_socket_timer_expire_cb(uv_timer_t* handle) {
     struct socket_ctx* socket = CONTAINER_OF(handle, struct socket_ctx, timer_handle);
     socket->result = UV_ETIMEDOUT;
     socket_ctx_add_ref(socket);
-    socket_ctx_close(socket);
     if (socket->on_timeout) {
         socket->on_timeout(socket, socket->on_timeout_p);
     }
@@ -414,9 +404,6 @@ static void uv_socket_read_done_cb(uv_stream_t* handle, ssize_t nread, const uv_
         if (socket->on_read) {
             uv_buf_t tmp = uv_buf_init(buf->base, (unsigned int)(nread > 0 ? nread : 0));
             socket->on_read(socket, (int)nread, &tmp, socket->on_read_p);
-        }
-        if (nread < 0) {
-            socket_ctx_close(socket);
         }
     } while (false);
     if (buf->base) {
@@ -629,8 +616,9 @@ bool socket_ctx_is_dead(struct socket_ctx* socket) {
     return (socket->is_terminated != false);
 }
 
-void socket_ctx_close(struct socket_ctx* socket) {
+void socket_ctx_close(struct socket_ctx* socket, socket_ctx_on_closed_cb on_closed, void* p) {
     if (socket_ctx_is_dead(socket)) {
+        on_closed(socket, p);
         return;
     }
     socket->is_terminated = true;
@@ -654,6 +642,9 @@ void socket_ctx_close(struct socket_ctx* socket) {
     socket_ctx_add_ref(socket);
     uv_close((uv_handle_t *)&socket->timer_handle, uv_socket_close_done_cb);
     socket->closing_count = 2;
+
+    socket->on_closed = on_closed;
+    socket->on_closed_p = p;
 }
 
 static void uv_socket_close_done_cb(uv_handle_t *handle) {
@@ -662,6 +653,8 @@ static void uv_socket_close_done_cb(uv_handle_t *handle) {
         ASSERT(socket->closing_count == 0);
         if (socket->on_closed) {
             socket->on_closed(socket, socket->on_closed_p);
+            socket->on_closed = NULL;
+            socket->on_closed_p = NULL;
         }
     }
     socket_ctx_release(socket);
@@ -669,7 +662,6 @@ static void uv_socket_close_done_cb(uv_handle_t *handle) {
 
 static void tunnel_socket_ctx_on_closed_cb(struct socket_ctx* socket, void* p) {
     struct tunnel_ctx* tunnel = (struct tunnel_ctx*)p;
-    tunnel->tunnel_shutdown(tunnel);
     tunnel_ctx_release(tunnel);
     (void)socket;
 }
