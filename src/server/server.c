@@ -546,7 +546,7 @@ static void tunnel_arrive_end_of_file(struct tunnel_ctx *tunnel, struct socket_c
 
             p = websocket_build_close_frame(false, WS_CLOSE_REASON_NORMAL, NULL, &malloc, &frame_size);
             if (p) {
-                socket_ctx_write(incoming, p, frame_size);
+                tunnel_socket_ctx_write(tunnel, incoming, p, frame_size);
                 ctx->ws_close_frame_sent = true;
                 free(p);
             } else {
@@ -687,7 +687,7 @@ static void do_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *incomi
 
         if (obfs_receipt) {
             ASSERT(proto_confirm == NULL);
-            socket_ctx_write(incoming, buffer_get_data(obfs_receipt, NULL), buffer_get_length(obfs_receipt));
+            tunnel_socket_ctx_write(tunnel, incoming, buffer_get_data(obfs_receipt, NULL), buffer_get_length(obfs_receipt));
             ctx->stage = tunnel_stage_obfs_receipt_done;
             break;
         }
@@ -701,7 +701,7 @@ static void do_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *incomi
 
         if (proto_confirm) {
             ASSERT(obfs_receipt == NULL);
-            socket_ctx_write(incoming, buffer_get_data(proto_confirm, NULL), buffer_get_length(proto_confirm));
+            tunnel_socket_ctx_write(tunnel, incoming, buffer_get_data(proto_confirm, NULL), buffer_get_length(proto_confirm));
             ctx->stage = tunnel_stage_protocol_confirm_done;
             break;
         }
@@ -777,7 +777,7 @@ static void do_handle_client_feedback(struct tunnel_ctx *tunnel, struct socket_c
         buffer_concatenate2(ctx->init_pkg, result);
 
         if (proto_confirm) {
-            socket_ctx_write(incoming, buffer_get_data(proto_confirm, NULL), buffer_get_length(proto_confirm));
+            tunnel_socket_ctx_write(tunnel, incoming, buffer_get_data(proto_confirm, NULL), buffer_get_length(proto_confirm));
             ctx->stage = tunnel_stage_protocol_confirm_done;
             break;
         }
@@ -993,7 +993,7 @@ static void do_connect_host_done(struct tunnel_ctx *tunnel, struct socket_ctx *s
         size_t len = 0;
         const uint8_t *data = buffer_get_data(ctx->init_pkg, &len);
         if (len > 0) {
-            socket_ctx_write(outgoing, data, len);
+            tunnel_socket_ctx_write(tunnel, outgoing, data, len);
             ctx->stage = tunnel_stage_launch_streaming;
         } else {
             outgoing->wrstate = socket_state_done;
@@ -1039,7 +1039,7 @@ void udp_remote_on_data_arrived(struct udp_remote_ctx_t *remote_ctx, const uint8
     struct socket_ctx *socket = tunnel->incoming;
     struct buffer_t *src = buffer_create_from(data, len);
     struct buffer_t *dst = build_websocket_frame_from_raw(ctx, src);
-    socket_ctx_write(socket, buffer_get_data(dst, NULL), buffer_get_length(dst));
+    tunnel_socket_ctx_write(tunnel, socket, buffer_get_data(dst, NULL), buffer_get_length(dst));
     buffer_release(src);
     buffer_release(dst);
     (void)remote_ctx;
@@ -1162,7 +1162,7 @@ static void do_tls_client_feedback(struct tunnel_ctx *tunnel) {
 
     ASSERT(config->over_tls_enable); (void)config;
 
-    socket_ctx_write(incoming, tls_ok, strlen(tls_ok));
+    tunnel_socket_ctx_write(tunnel, incoming, tls_ok, strlen(tls_ok));
     free(tls_ok);
 
     ctx->stage = tunnel_stage_tls_client_feedback;
@@ -1214,7 +1214,7 @@ static void tunnel_server_streaming(struct tunnel_ctx* tunnel, struct socket_ctx
             ASSERT(tunnel->tunnel_extract_data);
             buf = tunnel->tunnel_extract_data(tunnel, current_socket, &malloc, &len);
             if (buf /* && len > 0 */) {
-                socket_ctx_write(target_socket, buf, len);
+                tunnel_socket_ctx_write(tunnel, target_socket, buf, len);
             } else {
                 tunnel->tunnel_shutdown(tunnel);
             }

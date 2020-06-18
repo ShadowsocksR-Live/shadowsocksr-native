@@ -128,6 +128,7 @@ void socket_ctx_read(struct socket_ctx *socket, bool check_timeout);
 void socket_ctx_getaddrinfo(struct socket_ctx *socket, const char *hostname, uint16_t port);
 void socket_ctx_write(struct socket_ctx *socket, const void *data, size_t len);
 
+void tunnel_socket_ctx_write(struct tunnel_ctx* tunnel, struct socket_ctx* socket, const void* data, size_t len);
 void tunnel_dump_error_info(struct tunnel_ctx* tunnel, struct socket_ctx* socket, const char* title);
 
 #endif // !defined(__tunnel_h__)

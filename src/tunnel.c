@@ -549,14 +549,7 @@ void socket_ctx_write(struct socket_ctx* socket, const void* data, size_t len) {
     uv_buf_t buf;
     char *write_buf = NULL;
     uv_write_t *req;
-    /*
-    struct tunnel_ctx *tunnel = socket->tunnel;
 
-    (void)tunnel;
-    if (tunnel->tunnel_is_in_streaming(tunnel) == false) {
-        ASSERT(socket->wrstate == socket_state_stop);
-    }
-    */
     socket->wrstate = socket_state_busy;
 
     // It's okay to cast away constness here, uv_write() won't modify the memory.
@@ -584,6 +577,13 @@ static void uv_socket_write_done_cb(uv_write_t* req, int status) {
     if (socket->on_written) {
         socket->on_written(socket, status, socket->on_written_p);
     }
+}
+
+void tunnel_socket_ctx_write(struct tunnel_ctx* tunnel, struct socket_ctx* socket, const void* data, size_t len) {
+    if (tunnel->tunnel_is_in_streaming(tunnel) == false) {
+        ASSERT(socket->wrstate == socket_state_stop);
+    }
+    socket_ctx_write(socket, data, len);
 }
 
 static void tunnel_socket_ctx_on_written_cb(struct socket_ctx* socket, int status, void* p) {

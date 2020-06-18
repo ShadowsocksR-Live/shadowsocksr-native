@@ -452,7 +452,7 @@ static void do_handshake(struct tunnel_ctx *tunnel) {
     methods = s5_get_auth_methods(parser);
     if ((methods & s5_auth_none) && can_auth_none(tunnel)) {
         s5_select_auth(parser, s5_auth_none);
-        socket_ctx_write(incoming, "\5\0", 2); /* No auth required. */
+        tunnel_socket_ctx_write(tunnel, incoming, "\5\0", 2); /* No auth required. */
         ctx->stage = tunnel_stage_handshake_replied;
         return;
     }
@@ -462,7 +462,7 @@ static void do_handshake(struct tunnel_ctx *tunnel) {
         return;
     }
 
-    socket_ctx_write(incoming, "\5\377", 2); /* No acceptable auth. */
+    tunnel_socket_ctx_write(tunnel, incoming, "\5\377", 2); /* No acceptable auth. */
     ctx->stage = tunnel_stage_kill;
 }
 
@@ -553,7 +553,7 @@ static void do_parse_s5_request_from_client_app(struct tunnel_ctx *tunnel) {
 
         buf = s5_build_udp_assoc_package(config->udp, addr, port, &malloc, &len);
         free(addr);
-        socket_ctx_write(incoming, buf, len);
+        tunnel_socket_ctx_write(tunnel, incoming, buf, len);
         free(buf);
         ctx->stage = tunnel_stage_s5_udp_accoc;
     }
@@ -669,7 +669,7 @@ static void do_resolve_ssr_server_host_aftercare(struct tunnel_ctx *tunnel) {
         pr_err("lookup error for \"%s\": %s", config->remote_host,
             uv_strerror((int)outgoing->result));
         /* Send back a 'Host unreachable' reply. */
-        socket_ctx_write(incoming, "\5\4\0\1\0\0\0\0\0\0", 10);
+        tunnel_socket_ctx_write(tunnel, incoming, "\5\4\0\1\0\0\0\0\0\0", 10);
         ctx->stage = tunnel_stage_kill;
         return;
     }
@@ -706,7 +706,7 @@ static void do_connect_ssr_server(struct tunnel_ctx *tunnel) {
     if (!can_access(tunnel, &outgoing->addr.addr)) {
         pr_warn("connection not allowed by ruleset");
         /* Send a 'Connection not allowed by ruleset' reply. */
-        socket_ctx_write(incoming, "\5\2\0\1\0\0\0\0\0\0", 10);
+        tunnel_socket_ctx_write(tunnel, incoming, "\5\2\0\1\0\0\0\0\0\0", 10);
         ctx->stage = tunnel_stage_kill;
         return;
     }
@@ -743,7 +743,7 @@ static void do_ssr_send_auth_package_to_server(struct tunnel_ctx *tunnel) {
         _do_protect_socket(tunnel, uv_stream_fd(&outgoing->handle.tcp));
 
         out_data = buffer_get_data(tmp, &out_data_len);
-        socket_ctx_write(outgoing, out_data, out_data_len);
+        tunnel_socket_ctx_write(tunnel, outgoing, out_data, out_data_len);
         buffer_release(tmp);
 
         ctx->stage = tunnel_stage_ssr_auth_sent;
@@ -751,7 +751,7 @@ static void do_ssr_send_auth_package_to_server(struct tunnel_ctx *tunnel) {
     } else {
         tunnel_dump_error_info(tunnel, outgoing, "upstream connection");
         /* Send a 'Connection refused' reply. */
-        socket_ctx_write(incoming, "\5\5\0\1\0\0\0\0\0\0", 10);
+        tunnel_socket_ctx_write(tunnel, incoming, "\5\5\0\1\0\0\0\0\0\0", 10);
         ctx->stage = tunnel_stage_kill;
         return;
     }
@@ -811,7 +811,7 @@ static bool do_ssr_receipt_for_feedback(struct tunnel_ctx *tunnel) {
     ASSERT(buffer_get_length(buf) == 0);
 
     if (feedback) {
-        socket_ctx_write(outgoing, buffer_get_data(feedback, NULL), buffer_get_length(feedback));
+        tunnel_socket_ctx_write(tunnel, outgoing, buffer_get_data(feedback, NULL), buffer_get_length(feedback));
         ctx->stage = tunnel_stage_ssr_receipt_to_server_sent;
         buffer_release(feedback);
         done = true;
@@ -835,7 +835,7 @@ static void do_socks5_reply_success(struct tunnel_ctx *tunnel) {
     ASSERT(outgoing->rdstate == socket_state_stop);
     ASSERT(outgoing->wrstate == socket_state_stop);
 
-    socket_ctx_write(incoming, buf, size);
+    tunnel_socket_ctx_write(tunnel, incoming, buf, size);
     free(buf);
     ctx->stage = tunnel_stage_s5_response_done;
 }
@@ -874,7 +874,7 @@ static void do_launch_streaming(struct tunnel_ctx *tunnel) {
             return;
         }
         out_data = buffer_get_data(tmp, &out_data_len);
-        socket_ctx_write(outgoing, out_data, out_data_len);
+        tunnel_socket_ctx_write(tunnel, outgoing, out_data, out_data_len);
         buffer_release(tmp);
         buffer_reset(ctx->first_client_pkg);
     }
@@ -920,7 +920,7 @@ static void tunnel_ssr_client_streaming(struct tunnel_ctx* tunnel, struct socket
 #endif
 
     if (buf /* && len > 0 */) {
-        socket_ctx_write(target_socket, buf, len);
+        tunnel_socket_ctx_write(tunnel, target_socket, buf, len);
     } else {
         tunnel->tunnel_shutdown(tunnel);
     }
@@ -1344,7 +1344,7 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
             size_t s = 0;
             const uint8_t *p = buffer_get_data(ctx->local_write_cache, &s);
             if (p && s) {
-                socket_ctx_write(tunnel->incoming, p, s);
+                tunnel_socket_ctx_write(tunnel, tunnel->incoming, p, s);
                 buffer_reset(ctx->local_write_cache);
             }
         }
