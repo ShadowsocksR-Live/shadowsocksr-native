@@ -232,6 +232,7 @@ static void client_tunnel_shutdown_print_info(struct tunnel_ctx *tunnel, bool su
     free(tmp);
 }
 
+// tunnel->tunnel_shutdown(tunnel)
 static void client_tunnel_shutdown(struct tunnel_ctx *tunnel) {
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
     assert(ctx);
@@ -247,14 +248,14 @@ static void client_tunnel_shutdown(struct tunnel_ctx *tunnel) {
     }
 }
 
-static void _do_shutdown_tunnel(struct cstl_set *set, const void *obj, bool *stop, void *p) {
+static void _iterator_tunnel_shutdown(struct cstl_set* set, const void* obj, bool* stop, void* p) {
     struct tunnel_ctx *tunnel = (struct tunnel_ctx *)obj;
     tunnel->tunnel_shutdown(tunnel);
     (void)set; (void)stop; (void)p;
 }
 
-void client_shutdown(struct server_env_t *env) {
-    cstl_set_container_traverse(env->tunnel_set, &_do_shutdown_tunnel, NULL);
+void client_env_shutdown(struct server_env_t* env) {
+    cstl_set_container_traverse(env->tunnel_set, &_iterator_tunnel_shutdown, NULL);
 }
 
 static struct buffer_t * initial_package_create(const struct s5_ctx *parser) {

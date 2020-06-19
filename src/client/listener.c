@@ -191,7 +191,7 @@ void ssr_run_loop_shutdown(struct ssr_client_state *state) {
         }
     }
 
-    client_shutdown(state->env);
+    client_env_shutdown(state->env);
 
     pr_info(" ");
     pr_info("terminated.\n");
