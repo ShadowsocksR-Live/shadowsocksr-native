@@ -19,7 +19,8 @@ void tls_client_set_tcp_connect_callback(struct tls_cli_ctx *cli, tls_cli_tcp_co
 
 uv_os_sock_t tls_client_get_tcp_fd(const struct tls_cli_ctx *cli);
 
-void tls_client_shutdown(struct tls_cli_ctx* ctx);
+typedef void (*tls_cli_on_shutting_down_cb)(struct tls_cli_ctx* ctx, void* p);
+void tls_client_shutdown(struct tls_cli_ctx* ctx, tls_cli_on_shutting_down_cb cb, void* p);
 
 bool tls_cli_is_closing(struct tls_cli_ctx* ctx);
 
@@ -31,9 +32,6 @@ void tls_cli_set_on_write_done_callback(struct tls_cli_ctx* tls_cli, tls_cli_on_
 
 typedef void (*tls_cli_on_data_received_cb)(struct tls_cli_ctx* tls_cli, int status, const uint8_t* data, size_t size, void* p);
 void tls_cli_set_on_data_received_callback(struct tls_cli_ctx* tls_cli, tls_cli_on_data_received_cb cb, void* p);
-
-typedef void (*tls_cli_on_shutting_down_cb)(struct tls_cli_ctx* ctx, void* p);
-void tls_cli_set_shutting_down_callback(struct tls_cli_ctx* ctx, tls_cli_on_shutting_down_cb cb, void* p);
 
 void tls_cli_send_data(struct tls_cli_ctx* ctx, const uint8_t* data, size_t size);
 

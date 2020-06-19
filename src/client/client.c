@@ -86,6 +86,8 @@ struct client_ctx {
     struct tls_cli_ctx* tls_ctx;
     int connection_status;
 
+    REF_COUNT_MEMBER;
+
     struct udp_data_context *udp_data_ctx;
 };
 
@@ -100,6 +102,9 @@ static void stat_update_cb(void) {
     }
 }
 #endif
+
+REF_COUNT_ADD_REF_DECL(client_ctx); // client_ctx_add_ref
+REF_COUNT_RELEASE_DECL(client_ctx); // client_ctx_release
 
 static struct buffer_t * initial_package_create(const struct s5_ctx *parser);
 static void tunnel_ssr_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
@@ -151,6 +156,8 @@ static bool init_done_cb(struct tunnel_ctx *tunnel, void *p) {
     ctx->tunnel = tunnel;
     ctx->env = env;
     tunnel->data = ctx;
+
+    client_ctx_add_ref(ctx);
 
     /* override the origin function tunnel_shutdown */
     ctx->original_tunnel_shutdown = tunnel->tunnel_shutdown;
@@ -229,7 +236,8 @@ static void client_tunnel_shutdown(struct tunnel_ctx *tunnel) {
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
     assert(ctx);
     if (ctx->tls_ctx) {
-        tls_client_shutdown(ctx->tls_ctx);
+        client_ctx_add_ref(ctx);
+        tls_client_shutdown(ctx->tls_ctx, tls_cli_on_shutting_down_callback, ctx);
     } else {
         client_tunnel_shutdown_print_info(tunnel, true);
         assert(ctx && ctx->original_tunnel_shutdown);
@@ -596,7 +604,6 @@ static struct tls_cli_ctx* tls_client_creator(struct client_ctx* ctx, struct ser
     tls_cli_set_on_connection_established_callback(tls_cli, tls_cli_on_connection_established, ctx);
     tls_cli_set_on_write_done_callback(tls_cli, tls_cli_on_write_done, ctx);
     tls_cli_set_on_data_received_callback(tls_cli, tls_cli_on_data_received, ctx);
-    tls_cli_set_shutting_down_callback(tls_cli, tls_cli_on_shutting_down_callback, ctx);
 
     tunnel_ctx_add_ref(tunnel);
 
@@ -969,10 +976,13 @@ static uint8_t* tunnel_extract_data(struct tunnel_ctx* tunnel, struct socket_ctx
     return result;
 }
 
-static void tunnel_dying(struct tunnel_ctx *tunnel) {
-    struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
-
+static void tunnel_dying(struct tunnel_ctx* tunnel) {
+    struct client_ctx* ctx = (struct client_ctx*)tunnel->data;
     cstl_set_container_remove(ctx->env->tunnel_set, tunnel);
+    client_ctx_release(ctx);
+}
+
+void client_ctx_destroy_internal(struct client_ctx *ctx) {
     if (ctx->cipher) {
         tunnel_cipher_release(ctx->cipher);
     }
@@ -986,6 +996,9 @@ static void tunnel_dying(struct tunnel_ctx *tunnel) {
     tls_cli_ctx_release(ctx->tls_ctx);
     free(ctx);
 }
+
+REF_COUNT_ADD_REF_IMPL(client_ctx)
+REF_COUNT_RELEASE_IMPL(client_ctx, client_ctx_destroy_internal)
 
 static void tunnel_timeout_expire_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     (void)tunnel;
@@ -1124,6 +1137,9 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
         char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
         pr_err("[TLS] connecting \"%s:%d\" failed: %d: %s", tmp, port, status, uv_strerror(status));
         free(tmp);
+
+        client_ctx_add_ref(ctx);
+        tls_client_shutdown(ctx->tls_ctx, tls_cli_on_shutting_down_callback, ctx);
         return;
     }
 
@@ -1192,6 +1208,9 @@ static void tls_cli_on_write_done(struct tls_cli_ctx* tls_cli, int status, void*
         char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
         pr_err("[TLS] write \"%s:%d\" failed: %d: %s", tmp, port, status, uv_strerror(status));
         free(tmp);
+
+        client_ctx_add_ref(ctx);
+        tls_client_shutdown(ctx->tls_ctx, tls_cli_on_shutting_down_callback, ctx);
     }
 }
 
@@ -1219,6 +1238,9 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
             pr_err("[TLS] read on %s:%d error %ld: %s", tmp, port, (long)status, uv_strerror((int)status));
         }
         free(tmp);
+
+        client_ctx_add_ref(ctx);
+        tls_client_shutdown(ctx->tls_ctx, tls_cli_on_shutting_down_callback, ctx);
         return;
     }
 
@@ -1367,6 +1389,7 @@ static void tls_cli_on_shutting_down_callback(struct tls_cli_ctx* cli_ctx, void*
         ctx->original_tunnel_shutdown(tunnel);
     }
 
+    client_ctx_release(ctx);
     tunnel_ctx_release(tunnel);
 
     (void)cli_ctx;

@@ -86,9 +86,12 @@ uv_os_sock_t tls_client_get_tcp_fd(const struct tls_cli_ctx *cli) {
     return -1;
 }
 
-void tls_client_shutdown(struct tls_cli_ctx* ctx) {
+void tls_client_shutdown(struct tls_cli_ctx* ctx, tls_cli_on_shutting_down_cb cb, void* p) {
     assert(ctx);
     if (ctx) {
+        ctx->on_shutting_down = cb;
+        ctx->on_shutting_down_p = p;
+
         tls_cli_ctx_add_ref(ctx);
         uv_mbed_close(ctx->mbed, _mbed_close_done_cb, ctx);
     }
@@ -102,8 +105,6 @@ static void _mbed_connect_done_cb(uv_mbed_t* mbed, int status, void *p) {
     struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)p;
 
     if (status < 0) {
-        tls_cli_ctx_add_ref(ctx);
-        uv_mbed_close(mbed, _mbed_close_done_cb, ctx);
     } else {
         uv_mbed_set_read_callback(mbed, _mbed_alloc_cb, _mbed_data_received_cb, p);
     }
@@ -137,10 +138,6 @@ static void _mbed_data_received_cb(uv_mbed_t *mbed, ssize_t nread, uv_buf_t* buf
         ctx->on_data_received(ctx, (int)nread, (uint8_t*)buf->base, (size_t)nread, ctx->on_data_received_p);
     }
 
-    if (nread < 0) {
-        tls_cli_ctx_add_ref(ctx);
-        uv_mbed_close(mbed, _mbed_close_done_cb, p);
-    }
     free(buf->base);
 }
 
@@ -166,14 +163,6 @@ static void _mbed_write_done_cb(uv_mbed_t *mbed, int status, void *p) {
         ctx->on_write_done(ctx, status, ctx->on_write_done_p);
     }
 
-    if (status < 0) {
-        if (uv_mbed_is_closing(mbed)) {
-            return;
-        }
-        tls_cli_ctx_add_ref(ctx);
-        uv_mbed_close(mbed, _mbed_close_done_cb, p);
-    }
-
     tls_cli_ctx_release(ctx);
 }
 
@@ -184,13 +173,6 @@ static void _mbed_close_done_cb(uv_mbed_t *mbed, void *p) {
         ctx->on_shutting_down(ctx, ctx->on_shutting_down_p);
     }
     tls_cli_ctx_release(ctx);
-}
-
-void tls_cli_set_shutting_down_callback(struct tls_cli_ctx* ctx, tls_cli_on_shutting_down_cb cb, void* p) {
-    if (ctx) {
-        ctx->on_shutting_down = cb;
-        ctx->on_shutting_down_p = p;
-    }
 }
 
 void tls_cli_send_data(struct tls_cli_ctx* ctx, const uint8_t* data, size_t size) {
