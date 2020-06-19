@@ -1138,8 +1138,7 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
         pr_err("[TLS] connecting \"%s:%d\" failed: %d: %s", tmp, port, status, uv_strerror(status));
         free(tmp);
 
-        client_ctx_add_ref(ctx);
-        tls_client_shutdown(ctx->tls_ctx, tls_cli_on_shutting_down_callback, ctx);
+        tunnel->tunnel_shutdown(tunnel);
         return;
     }
 
@@ -1209,8 +1208,7 @@ static void tls_cli_on_write_done(struct tls_cli_ctx* tls_cli, int status, void*
         pr_err("[TLS] write \"%s:%d\" failed: %d: %s", tmp, port, status, uv_strerror(status));
         free(tmp);
 
-        client_ctx_add_ref(ctx);
-        tls_client_shutdown(ctx->tls_ctx, tls_cli_on_shutting_down_callback, ctx);
+        tunnel->tunnel_shutdown(tunnel);
     }
 }
 
@@ -1239,8 +1237,7 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
         }
         free(tmp);
 
-        client_ctx_add_ref(ctx);
-        tls_client_shutdown(ctx->tls_ctx, tls_cli_on_shutting_down_callback, ctx);
+        tunnel->tunnel_shutdown(tunnel);
         return;
     }
 
