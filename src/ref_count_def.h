@@ -1,6 +1,7 @@
 #ifndef __REF_COUNT_H__
 #define __REF_COUNT_H__ 1
 
+#include <assert.h>
 
 #define REF_COUNT_MEMBER \
     int ref_count
@@ -25,6 +26,7 @@ int struct_name##_release(struct struct_name* struct_name##_ptr) { \
     if (struct_name##_ptr) { \
         ref__count = (--struct_name##_ptr->ref_count); \
         if (ref__count <= 0) { \
+            assert(ref__count == 0); \
             internal_free_fn(struct_name##_ptr); \
         } \
     } \
