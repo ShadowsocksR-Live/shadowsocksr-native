@@ -85,6 +85,7 @@ struct client_ctx {
     bool tls_is_eof;
     struct tls_cli_ctx* tls_ctx;
     int connection_status;
+    bool is_terminated;
 
     REF_COUNT_MEMBER;
 
@@ -146,6 +147,7 @@ static bool can_auth_none(const struct tunnel_ctx *cx);
 static bool can_auth_passwd(const struct tunnel_ctx *cx);
 static bool can_access(const struct tunnel_ctx *cx, const struct sockaddr *addr);
 
+static bool tunnel_is_terminated(struct tunnel_ctx* tunnel);
 static void client_tunnel_shutdown(struct tunnel_ctx *tunnel);
 
 static bool init_done_cb(struct tunnel_ctx *tunnel, void *p) {
@@ -162,6 +164,7 @@ static bool init_done_cb(struct tunnel_ctx *tunnel, void *p) {
     /* override the origin function tunnel_shutdown */
     ctx->original_tunnel_shutdown = tunnel->tunnel_shutdown;
     tunnel->tunnel_shutdown = &client_tunnel_shutdown;
+    tunnel->tunnel_is_terminated = &tunnel_is_terminated;
 
     tunnel->tunnel_dying = &tunnel_dying;
     tunnel->tunnel_timeout_expire_done = &tunnel_timeout_expire_done;
@@ -233,7 +236,7 @@ static void client_tunnel_shutdown_print_info(struct tunnel_ctx *tunnel, bool su
 }
 
 // tunnel->tunnel_shutdown(tunnel)
-static void client_tunnel_shutdown(struct tunnel_ctx *tunnel) {
+static void client__tunnel_shutdown(struct tunnel_ctx *tunnel) {
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
     assert(ctx);
     if (ctx->tls_ctx) {
@@ -246,6 +249,21 @@ static void client_tunnel_shutdown(struct tunnel_ctx *tunnel) {
             ctx->original_tunnel_shutdown(tunnel);
         }
     }
+}
+
+static void client_tunnel_shutdown(struct tunnel_ctx* tunnel) {
+    struct client_ctx* ctx = (struct client_ctx*)tunnel->data;
+    assert(ctx);
+    if (ctx->is_terminated == false) {
+        ctx->is_terminated = true;
+        client__tunnel_shutdown(tunnel);
+    }
+}
+
+static bool tunnel_is_terminated(struct tunnel_ctx* tunnel) {
+    struct client_ctx* ctx = (struct client_ctx*)tunnel->data;
+    assert(ctx && (ctx->is_terminated == false || ctx->is_terminated == true));
+    return (ctx->is_terminated != false);
 }
 
 static void _iterator_tunnel_shutdown(struct cstl_set* set, const void* obj, bool* stop, void* p) {
@@ -1143,8 +1161,7 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
         return;
     }
 
-    if (tunnel_is_dead(tunnel) || ctx == NULL) {
-        /* dirty code, insure calling to client_tunnel_shutdown -> tls_client_shutdown */
+    if (tunnel->tunnel_is_terminated(tunnel)) {
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
@@ -1223,7 +1240,7 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
 
     assert(ctx->tls_ctx == tls_cli);
 
-    if (tunnel_is_dead(tunnel)) {
+    if (tunnel->tunnel_is_terminated(tunnel)) {
         tunnel->tunnel_shutdown(tunnel);
         return;
     }

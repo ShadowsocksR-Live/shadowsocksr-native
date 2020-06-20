@@ -33,6 +33,7 @@
 
 static bool tunnel_is_in_streaming(struct tunnel_ctx* tunnel);
 static void tunnel_shutdown(struct tunnel_ctx *tunnel);
+static bool tunnel_is_terminated(struct tunnel_ctx* tunnel);
 static void uv_socket_timer_expire_cb(uv_timer_t *handle);
 static void socket_ctx_timer_start(struct socket_ctx *socket);
 static void socket_ctx_timer_stop(struct socket_ctx *socket);
@@ -249,6 +250,7 @@ struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsig
     tunnel->tunnel_shutdown = &tunnel_shutdown;
     tunnel->tunnel_is_in_streaming = &tunnel_is_in_streaming;
     tunnel->tunnel_dispatcher = &tunnel_dispatcher;
+    tunnel->tunnel_is_terminated = &tunnel_is_terminated;
 
     if (init_done_cb) {
         success = init_done_cb(tunnel, p);
@@ -274,20 +276,17 @@ static bool tunnel_is_in_streaming(struct tunnel_ctx* tunnel) {
     return false;
 }
 
-bool tunnel_is_dead(struct tunnel_ctx* tunnel) {
+static bool tunnel_is_terminated(struct tunnel_ctx* tunnel) {
     if (tunnel == NULL) { return true; }
+    assert(tunnel && (tunnel->is_terminated == false || tunnel->is_terminated == true));
     return (tunnel->is_terminated != false);
 }
 
 static void tunnel_shutdown(struct tunnel_ctx* tunnel) {
-    if (tunnel_is_dead(tunnel) != false) {
+    if (tunnel->is_terminated != false) {
         return;
     }
     tunnel->is_terminated = true;
-
-    /* Try to cancel the request. The callback still runs but if the
-    * cancellation succeeded, it gets called with status=UV_ECANCELED.
-    */
 
     tunnel_ctx_add_ref(tunnel);
     socket_ctx_close(tunnel->incoming, tunnel_socket_ctx_on_closed_cb, tunnel);
@@ -322,7 +321,7 @@ static void uv_socket_timer_expire_cb(uv_timer_t* handle) {
 static void tunnel_socket_ctx_on_timeout_cb(struct socket_ctx* socket, void* p) {
     struct tunnel_ctx *tunnel = (struct tunnel_ctx *)p;
 
-    if (tunnel_is_dead(tunnel)) {
+    if (tunnel->tunnel_is_terminated(tunnel)) {
         return;
     }
 
@@ -360,7 +359,7 @@ static void uv_socket_connect_done_cb(uv_connect_t* req, int status) {
 static void tunnel_socket_ctx_on_connect_cb(struct socket_ctx* socket, int status, void* p) {
     struct tunnel_ctx *tunnel = (struct tunnel_ctx *)p;
 
-    if (tunnel_is_dead(tunnel)) {
+    if (tunnel->tunnel_is_terminated(tunnel)) {
         return;
     }
 
@@ -414,7 +413,7 @@ static void uv_socket_read_done_cb(uv_stream_t* handle, ssize_t nread, const uv_
 static void tunnel_socket_ctx_on_read_cb(struct socket_ctx* socket, int status, const uv_buf_t* buf, void* p) {
     struct tunnel_ctx* tunnel = (struct tunnel_ctx*)p;
     do {
-        if (tunnel_is_dead(tunnel)) {
+        if (tunnel->tunnel_is_terminated(tunnel)) {
             break;
         }
 
@@ -529,7 +528,7 @@ static void uv_socket_getaddrinfo_cb(uv_getaddrinfo_t* req, int status, struct a
 
 static void tunnel_socket_ctx_on_getaddrinfo_cb(struct socket_ctx* socket, int status, void* p) {
     struct tunnel_ctx* tunnel = (struct tunnel_ctx*)p;
-    if (tunnel_is_dead(tunnel)) {
+    if (tunnel->tunnel_is_terminated(tunnel)) {
         return;
     }
 
@@ -589,7 +588,7 @@ void tunnel_socket_ctx_write(struct tunnel_ctx* tunnel, struct socket_ctx* socke
 static void tunnel_socket_ctx_on_written_cb(struct socket_ctx* socket, int status, void* p) {
     struct tunnel_ctx* tunnel = (struct tunnel_ctx*)p;
 
-    if (tunnel_is_dead(tunnel)) {
+    if (tunnel->tunnel_is_terminated(tunnel)) {
         return;
     }
 
