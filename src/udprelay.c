@@ -115,8 +115,8 @@ struct udp_remote_ctx_t {
     REF_COUNT_MEMBER;
 };
 
-REF_COUNT_ADD_REF_DECL(udp_remote_ctx_t); // udp_remote_ctx_t_add_ref
-REF_COUNT_RELEASE_DECL(udp_remote_ctx_t); // udp_remote_ctx_t_release
+static REF_COUNT_ADD_REF_DECL(udp_remote_ctx_t); // udp_remote_ctx_t_add_ref
+static REF_COUNT_RELEASE_DECL(udp_remote_ctx_t); // udp_remote_ctx_t_release
 
 static void udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const struct sockaddr* addr, unsigned flags);
 static void udp_remote_timeout_cb(uv_timer_t* handle);

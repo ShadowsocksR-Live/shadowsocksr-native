@@ -351,7 +351,7 @@ function nginx_web_server_config_end() {
         }
         
         location / {
-            rewrite ^/(.*)$ https://${web_svr_domain}/$1 permanent;
+            rewrite ^/(.*)$ https://${web_svr_domain}:${web_svr_listen_port}/$1 permanent;
         }
     }
 
