@@ -97,7 +97,7 @@ void server_shutdown(struct server_env_t *env);
 void signal_quit_cb(uv_signal_t *handle, int signum);
 void tunnel_incoming_connection_established_cb(uv_stream_t *server, int status);
 
-static void tunnel_dying(struct tunnel_ctx *tunnel);
+static void tunnel_destroying(struct tunnel_ctx* tunnel);
 static void tunnel_timeout_expire_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void tunnel_outgoing_connected_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void tunnel_read_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
@@ -345,7 +345,7 @@ bool _init_done_cb(struct tunnel_ctx *tunnel, void *p) {
     ctx->tunnel = tunnel;
     tunnel->data = ctx;
 
-    tunnel->tunnel_dying = &tunnel_dying;
+    tunnel->tunnel_destroying = &tunnel_destroying;
     tunnel->tunnel_timeout_expire_done = &tunnel_timeout_expire_done;
     tunnel->tunnel_outgoing_connected_done = &tunnel_outgoing_connected_done;
     tunnel->tunnel_read_done = &tunnel_read_done;
@@ -417,7 +417,7 @@ void tunnel_incoming_connection_established_cb(uv_stream_t *server, int status) 
     server_tunnel_initialize((uv_tcp_t *)server, env->config->idle_timeout);
 }
 
-static void tunnel_dying(struct tunnel_ctx *tunnel) {
+static void tunnel_destroying(struct tunnel_ctx* tunnel) {
     struct server_ctx *ctx = (struct server_ctx *) tunnel->data;
 
     udp_remote_set_dying_callback(ctx->udp_relay, NULL, NULL);

@@ -124,7 +124,7 @@ static void do_action_after_auth_server_success(struct tunnel_ctx* tunnel);
 static void do_launch_streaming(struct tunnel_ctx *tunnel);
 static void tunnel_ssr_client_streaming(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
 static uint8_t* tunnel_extract_data(struct tunnel_ctx* tunnel, struct socket_ctx* socket, void* (*allocator)(size_t size), size_t* size);
-static void tunnel_dying(struct tunnel_ctx *tunnel);
+static void tunnel_destroying(struct tunnel_ctx* tunnel);
 static void tunnel_timeout_expire_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void tunnel_outgoing_connected_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void tunnel_read_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
@@ -166,7 +166,7 @@ static bool init_done_cb(struct tunnel_ctx *tunnel, void *p) {
     tunnel->tunnel_shutdown = &client_tunnel_shutdown;
     tunnel->tunnel_is_terminated = &tunnel_is_terminated;
 
-    tunnel->tunnel_dying = &tunnel_dying;
+    tunnel->tunnel_destroying = &tunnel_destroying;
     tunnel->tunnel_timeout_expire_done = &tunnel_timeout_expire_done;
     tunnel->tunnel_outgoing_connected_done = &tunnel_outgoing_connected_done;
     tunnel->tunnel_read_done = &tunnel_read_done;
@@ -995,7 +995,7 @@ static uint8_t* tunnel_extract_data(struct tunnel_ctx* tunnel, struct socket_ctx
     return result;
 }
 
-static void tunnel_dying(struct tunnel_ctx* tunnel) {
+static void tunnel_destroying(struct tunnel_ctx* tunnel) {
     struct client_ctx* ctx = (struct client_ctx*)tunnel->data;
     cstl_set_container_remove(ctx->env->tunnel_set, tunnel);
     client_ctx_release(ctx);

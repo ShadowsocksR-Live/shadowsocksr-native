@@ -69,8 +69,8 @@ struct socket_ctx {
 
 struct socket_ctx* socket_context_create(uv_loop_t* loop, unsigned int idle_timeout);
 
-REF_COUNT_ADD_REF_DECL(socket_ctx);
-REF_COUNT_RELEASE_DECL(socket_ctx);
+REF_COUNT_ADD_REF_DECL(socket_ctx); // socket_ctx_add_ref
+REF_COUNT_RELEASE_DECL(socket_ctx); // socket_ctx_release
 
 void socket_ctx_set_on_getaddrinfo_cb(struct socket_ctx* socket, socket_ctx_on_getaddrinfo_cb on_getaddrinfo, void* p);
 void socket_ctx_set_on_connect_cb(struct socket_ctx* socket, socket_ctx_on_connect_cb on_connect, void* p);
@@ -90,7 +90,7 @@ struct tunnel_ctx {
 
     REF_COUNT_MEMBER;
 
-    void(*tunnel_dying)(struct tunnel_ctx *tunnel);
+    void(*tunnel_destroying)(struct tunnel_ctx *tunnel);
 
     void (*tunnel_dispatcher)(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
     void(*tunnel_timeout_expire_done)(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
@@ -115,8 +115,8 @@ size_t socket_arrived_data_size(struct socket_ctx *socket, size_t suggested_size
 typedef bool(*tunnel_init_done_cb)(struct tunnel_ctx *tunnel, void *p);
 struct tunnel_ctx * tunnel_initialize(uv_loop_t *loop, uv_tcp_t *listener, unsigned int idle_timeout, tunnel_init_done_cb init_done_cb, void *p);
 
-REF_COUNT_ADD_REF_DECL(tunnel_ctx);
-REF_COUNT_RELEASE_DECL(tunnel_ctx);
+REF_COUNT_ADD_REF_DECL(tunnel_ctx); // tunnel_ctx_add_ref
+REF_COUNT_RELEASE_DECL(tunnel_ctx); // tunnel_ctx_release
 
 int socket_ctx_connect(struct socket_ctx* socket);
 void socket_ctx_close(struct socket_ctx* socket, socket_ctx_on_closed_cb on_closed, void* p);

@@ -177,8 +177,8 @@ void socket_ctx_set_on_timeout_cb(struct socket_ctx* socket, socket_ctx_on_timeo
 }
 
 void tunnel_destroy_internal(struct tunnel_ctx *tunnel) {
-    if (tunnel->tunnel_dying) {
-        tunnel->tunnel_dying(tunnel);
+    if (tunnel->tunnel_destroying) {
+        tunnel->tunnel_destroying(tunnel);
     }
 
 #ifdef __PRINT_INFO__
