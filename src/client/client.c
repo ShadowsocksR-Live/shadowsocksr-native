@@ -148,7 +148,7 @@ static bool can_auth_passwd(const struct tunnel_ctx *cx);
 static bool can_access(const struct tunnel_ctx *cx, const struct sockaddr *addr);
 
 static bool tunnel_is_terminated(struct tunnel_ctx* tunnel);
-static void client_tunnel_shutdown(struct tunnel_ctx *tunnel);
+static void tunnel_shutdown(struct tunnel_ctx *tunnel);
 
 static bool init_done_cb(struct tunnel_ctx *tunnel, void *p) {
     struct server_env_t *env = (struct server_env_t *)p;
@@ -163,7 +163,7 @@ static bool init_done_cb(struct tunnel_ctx *tunnel, void *p) {
 
     /* override the origin function tunnel_shutdown */
     ctx->original_tunnel_shutdown = tunnel->tunnel_shutdown;
-    tunnel->tunnel_shutdown = &client_tunnel_shutdown;
+    tunnel->tunnel_shutdown = &tunnel_shutdown;
     tunnel->tunnel_is_terminated = &tunnel_is_terminated;
 
     tunnel->tunnel_destroying = &tunnel_destroying;
@@ -235,8 +235,7 @@ static void client_tunnel_shutdown_print_info(struct tunnel_ctx *tunnel, bool su
     free(tmp);
 }
 
-// tunnel->tunnel_shutdown(tunnel)
-static void client__tunnel_shutdown(struct tunnel_ctx *tunnel) {
+static void client_tunnel_shutdown(struct tunnel_ctx *tunnel) {
     struct client_ctx *ctx = (struct client_ctx *) tunnel->data;
     assert(ctx);
     if (ctx->tls_ctx) {
@@ -251,12 +250,12 @@ static void client__tunnel_shutdown(struct tunnel_ctx *tunnel) {
     }
 }
 
-static void client_tunnel_shutdown(struct tunnel_ctx* tunnel) {
+static void tunnel_shutdown(struct tunnel_ctx* tunnel) {
     struct client_ctx* ctx = (struct client_ctx*)tunnel->data;
     assert(ctx);
     if (ctx->is_terminated == false) {
         ctx->is_terminated = true;
-        client__tunnel_shutdown(tunnel);
+        client_tunnel_shutdown(tunnel);
     }
 }
 
@@ -1162,7 +1161,6 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
     }
 
     if (tunnel->tunnel_is_terminated(tunnel)) {
-        tunnel->tunnel_shutdown(tunnel);
         return;
     }
 
@@ -1241,7 +1239,6 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
     assert(ctx->tls_ctx == tls_cli);
 
     if (tunnel->tunnel_is_terminated(tunnel)) {
-        tunnel->tunnel_shutdown(tunnel);
         return;
     }
 
