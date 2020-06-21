@@ -529,29 +529,33 @@ function install_ssr_service() {
     fi
 }
 
+function do_uninstall_ssr_action() {
+    ${service_stub} status > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        ${service_stub} stop
+    fi
+    if check_sys packageManager yum; then
+        chkconfig --del ${service_name}
+    elif check_sys packageManager apt; then
+        update-rc.d -f ${service_name} remove
+    fi
+
+    systemctl stop ${service_name}.service
+
+    rm -rf ${config_dir}
+    rm -f ${service_stub}
+    rm -f ${target_dir}/${bin_name}
+    rm -f ${service_dir}/${service_name}.service
+    echo "ShadowsocksR uninstall success!"
+}
+
 # Uninstall ShadowsocksR
 function uninstall_shadowsocksr() {
     printf "Are you sure uninstall ${proj_name}? (y/n)\n"
     read -p "(Default: n):" answer
     [ -z ${answer} ] && answer="n"
     if [ "${answer}" == "y" ] || [ "${answer}" == "Y" ]; then
-        ${service_stub} status > /dev/null 2>&1
-        if [ $? -eq 0 ]; then
-            ${service_stub} stop
-        fi
-        if check_sys packageManager yum; then
-            chkconfig --del ${service_name}
-        elif check_sys packageManager apt; then
-            update-rc.d -f ${service_name} remove
-        fi
-
-        systemctl stop ${service_name}.service
-
-        rm -rf ${config_dir}
-        rm -f ${service_stub}
-        rm -f ${target_dir}/${bin_name}
-        rm -f ${service_dir}/${service_name}.service
-        echo "ShadowsocksR uninstall success!"
+        do_uninstall_ssr_action
     else
         echo
         echo "uninstall cancelled, nothing to do..."
@@ -572,6 +576,8 @@ function install_shadowsocksr() {
     cd ${cur_dir}
 
     install_build_tools
+
+    do_uninstall_ssr_action
 
     build_ssr_native
 
