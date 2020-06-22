@@ -52,12 +52,12 @@ static void tunnel_socket_ctx_on_written_cb(struct socket_ctx* socket, int statu
 static void tunnel_socket_ctx_on_closed_cb(struct socket_ctx* socket, void* p);
 static void tunnel_socket_ctx_on_timeout_cb(struct socket_ctx* socket, void* p);
 
-    uv_os_sock_t uv_stream_fd(const uv_tcp_t *handle) {
+uv_os_sock_t uv_stream_fd(const uv_tcp_t* handle) {
 #if defined(_WIN32)
     return handle->socket;
 #elif defined(__APPLE__)
     int uv___stream_fd(const uv_stream_t* handle);
-    return uv___stream_fd((const uv_stream_t *)handle);
+    return uv___stream_fd((const uv_stream_t*)handle);
 #else
     return (handle)->io_watcher.fd;
 #endif
@@ -610,13 +610,13 @@ static void tunnel_socket_ctx_on_written_cb(struct socket_ctx* socket, int statu
     }
 }
 
-bool socket_ctx_is_dead(struct socket_ctx* socket) {
+bool socket_ctx_is_terminated(struct socket_ctx* socket) {
     if (socket == NULL) { return true; }
     return (socket->is_terminated != false);
 }
 
 void socket_ctx_close(struct socket_ctx* socket, socket_ctx_on_closed_cb on_closed, void* p) {
-    if (socket_ctx_is_dead(socket)) {
+    if (socket_ctx_is_terminated(socket)) {
         on_closed(socket, p);
         return;
     }

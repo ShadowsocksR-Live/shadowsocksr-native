@@ -120,7 +120,7 @@ REF_COUNT_RELEASE_DECL(tunnel_ctx); // tunnel_ctx_release
 
 int socket_ctx_connect(struct socket_ctx* socket);
 void socket_ctx_close(struct socket_ctx* socket, socket_ctx_on_closed_cb on_closed, void* p);
-bool socket_ctx_is_dead(struct socket_ctx* socket);
+bool socket_ctx_is_terminated(struct socket_ctx* socket);
 bool socket_ctx_is_readable(struct socket_ctx* socket);
 bool socket_ctx_is_writeable(struct socket_ctx *socket);
 void socket_ctx_read(struct socket_ctx *socket, bool check_timeout);
