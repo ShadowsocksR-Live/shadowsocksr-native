@@ -1,14 +1,14 @@
 #ifndef __TLS_CLI_H__
 #define __TLS_CLI_H__ 1
 
-#include <uv.h>
 #include <stdbool.h>
+#include <uv.h>
 
 #include "ref_count_def.h"
 
 struct tls_cli_ctx;
 
-uv_os_sock_t tls_client_get_tcp_fd(const struct tls_cli_ctx *cli);
+uv_os_sock_t tls_client_get_tcp_fd(const struct tls_cli_ctx* cli);
 
 bool tls_cli_is_closing(struct tls_cli_ctx* ctx);
 

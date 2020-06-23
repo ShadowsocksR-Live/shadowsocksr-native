@@ -1,20 +1,20 @@
 #include "tls_cli.h"
-#include <uv.h>
-#include <uv-mbed/uv-mbed.h>
 #include "ref_count_def.h"
+#include <uv-mbed/uv-mbed.h>
+#include <uv.h>
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 struct tls_cli_ctx {
-    uv_mbed_t *mbed;
+    uv_mbed_t* mbed;
 
     REF_COUNT_MEMBER;
 
     tls_cli_tcp_conn_cb tls_tcp_conn_cb;
-    void *tls_tcp_conn_cb_p;
+    void* tls_tcp_conn_cb_p;
 
     tls_cli_on_connection_established_cb on_connection_established;
     void* on_connection_established_p;
@@ -51,10 +51,10 @@ bool tls_cli_is_closing(struct tls_cli_ctx* ctx) {
 }
 
 static void _mbed_connect_done_cb(uv_mbed_t* mbed, int status, void* p);
-static void _uv_mbed_tcp_connect_established_cb(uv_mbed_t* mbed, void *p);
+static void _uv_mbed_tcp_connect_established_cb(uv_mbed_t* mbed, void* p);
 
 struct tls_cli_ctx* tls_client_launch(uv_loop_t* loop, const char* domain, const char* ip_addr, int port, uint64_t timeout_msec) {
-    struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)calloc(1, sizeof(*ctx));
+    struct tls_cli_ctx* ctx = (struct tls_cli_ctx*)calloc(1, sizeof(*ctx));
     ctx->mbed = uv_mbed_init(loop, domain, ctx, 0);
 
     tls_cli_ctx_add_ref(ctx); // for connect.
@@ -68,8 +68,8 @@ struct tls_cli_ctx* tls_client_launch(uv_loop_t* loop, const char* domain, const
     return ctx;
 }
 
-static void _uv_mbed_tcp_connect_established_cb(uv_mbed_t* mbed, void *p) {
-    struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)p;
+static void _uv_mbed_tcp_connect_established_cb(uv_mbed_t* mbed, void* p) {
+    struct tls_cli_ctx* ctx = (struct tls_cli_ctx*)p;
     assert(ctx->mbed == mbed);
     if (ctx->tls_tcp_conn_cb) {
         ctx->tls_tcp_conn_cb(ctx, ctx->tls_tcp_conn_cb_p);
@@ -96,7 +96,7 @@ static void _mbed_data_received_cb(uv_mbed_t* mbed, ssize_t nread, uv_buf_t* buf
 }
 
 static void _mbed_connect_done_cb(uv_mbed_t* mbed, int status, void* p) {
-    struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)p;
+    struct tls_cli_ctx* ctx = (struct tls_cli_ctx*)p;
 
     if (status >= 0) {
         uv_mbed_set_read_callback(mbed, _mbed_alloc_cb, _mbed_data_received_cb, p);
@@ -109,8 +109,8 @@ static void _mbed_connect_done_cb(uv_mbed_t* mbed, int status, void* p) {
     tls_cli_ctx_release(ctx);
 }
 
-static void _mbed_write_done_cb(uv_mbed_t *mbed, int status, void *p) {
-    struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)p;
+static void _mbed_write_done_cb(uv_mbed_t* mbed, int status, void* p) {
+    struct tls_cli_ctx* ctx = (struct tls_cli_ctx*)p;
     assert(ctx->mbed == mbed);
 
     if (ctx->on_write_done) {
@@ -121,7 +121,7 @@ static void _mbed_write_done_cb(uv_mbed_t *mbed, int status, void *p) {
 }
 
 void tls_client_send_data(struct tls_cli_ctx* ctx, const uint8_t* data, size_t size) {
-    uv_buf_t o = uv_buf_init((char *)data, (unsigned int)size);
+    uv_buf_t o = uv_buf_init((char*)data, (unsigned int)size);
     assert(ctx);
     if (ctx) {
         tls_cli_ctx_add_ref(ctx);
@@ -129,8 +129,8 @@ void tls_client_send_data(struct tls_cli_ctx* ctx, const uint8_t* data, size_t s
     }
 }
 
-static void _mbed_close_done_cb(uv_mbed_t *mbed, void *p) {
-    struct tls_cli_ctx *ctx = (struct tls_cli_ctx *)p;
+static void _mbed_close_done_cb(uv_mbed_t* mbed, void* p) {
+    struct tls_cli_ctx* ctx = (struct tls_cli_ctx*)p;
     assert(ctx->mbed == mbed);
     if (ctx && ctx->on_shutting_down) {
         ctx->on_shutting_down(ctx, ctx->on_shutting_down_p);
@@ -176,4 +176,3 @@ void tls_cli_set_on_data_received_callback(struct tls_cli_ctx* tls_cli, tls_cli_
         tls_cli->on_data_received_p = p;
     }
 }
-
