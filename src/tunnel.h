@@ -43,7 +43,7 @@ struct socket_ctx {
     union sockaddr_universal addr;
     const uv_buf_t *buf; /* Scratch space. Used to read data into. */
 
-    bool getaddrinfo_pending;
+    bool on_getaddrinfo_pending;
     socket_ctx_on_getaddrinfo_cb on_getaddrinfo;
     void* on_getaddrinfo_p;
 
@@ -97,7 +97,7 @@ struct tunnel_ctx {
     void(*tunnel_outgoing_connected_done)(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
     void(*tunnel_read_done)(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
     void(*tunnel_arrive_end_of_file)(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
-    void(*tunnel_getaddrinfo_done)(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
+    void(*tunnel_on_getaddrinfo_done)(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
     void(*tunnel_write_done)(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
     size_t(*tunnel_get_alloc_size)(struct tunnel_ctx *tunnel, struct socket_ctx *socket, size_t suggested_size);
     uint8_t* (*tunnel_extract_data)(struct tunnel_ctx* tunnel, struct socket_ctx* socket, void* (*allocator)(size_t size), size_t* size);

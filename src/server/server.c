@@ -102,7 +102,7 @@ static void tunnel_timeout_expire_done(struct tunnel_ctx *tunnel, struct socket_
 static void tunnel_outgoing_connected_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void tunnel_read_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void tunnel_arrive_end_of_file(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
-static void tunnel_getaddrinfo_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
+static void tunnel_on_getaddrinfo_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static void tunnel_write_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket);
 static size_t tunnel_get_alloc_size(struct tunnel_ctx *tunnel, struct socket_ctx *socket, size_t suggested_size);
 static bool tunnel_is_in_streaming(struct tunnel_ctx* tunnel);
@@ -350,7 +350,7 @@ bool _init_done_cb(struct tunnel_ctx *tunnel, void *p) {
     tunnel->tunnel_outgoing_connected_done = &tunnel_outgoing_connected_done;
     tunnel->tunnel_read_done = &tunnel_read_done;
     tunnel->tunnel_arrive_end_of_file = &tunnel_arrive_end_of_file;
-    tunnel->tunnel_getaddrinfo_done = &tunnel_getaddrinfo_done;
+    tunnel->tunnel_on_getaddrinfo_done = &tunnel_on_getaddrinfo_done;
     tunnel->tunnel_write_done = &tunnel_write_done;
     tunnel->tunnel_get_alloc_size = &tunnel_get_alloc_size;
     tunnel->tunnel_is_in_streaming = &tunnel_is_in_streaming;
@@ -558,7 +558,7 @@ static void tunnel_arrive_end_of_file(struct tunnel_ctx *tunnel, struct socket_c
     }
 }
 
-static void tunnel_getaddrinfo_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
+static void tunnel_on_getaddrinfo_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     tunnel->tunnel_dispatcher(tunnel, socket);
 }
 

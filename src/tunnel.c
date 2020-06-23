@@ -40,7 +40,7 @@ static void socket_ctx_timer_stop(struct socket_ctx *socket);
 static void uv_socket_connect_done_cb(uv_connect_t *req, int status);
 static void uv_socket_read_done_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf);
 static void uv_socket_alloc_cb(uv_handle_t *handle, size_t size, uv_buf_t *buf);
-static void uv_socket_getaddrinfo_cb(uv_getaddrinfo_t *req, int status, struct addrinfo *ai);
+static void uv_socket_on_getaddrinfo_cb(uv_getaddrinfo_t *req, int status, struct addrinfo *ai);
 static void uv_socket_write_done_cb(uv_write_t *req, int status);
 static void uv_socket_close_done_cb(uv_handle_t *handle);
 
@@ -491,18 +491,18 @@ void socket_ctx_getaddrinfo(struct socket_ctx* socket, const char* hostname, uin
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
-    VERIFY(0 == uv_getaddrinfo(loop, &socket->req.getaddrinfo, uv_socket_getaddrinfo_cb, hostname,
+    VERIFY(0 == uv_getaddrinfo(loop, &socket->req.getaddrinfo, uv_socket_on_getaddrinfo_cb, hostname,
         NULL,
         &hints));
     socket_ctx_timer_start(socket);
-    socket->getaddrinfo_pending = true;
+    socket->on_getaddrinfo_pending = true;
 }
 
-static void uv_socket_getaddrinfo_cb(uv_getaddrinfo_t* req, int status, struct addrinfo* ai) {
+static void uv_socket_on_getaddrinfo_cb(uv_getaddrinfo_t* req, int status, struct addrinfo* ai) {
     struct socket_ctx* socket = CONTAINER_OF(req, struct socket_ctx, req.getaddrinfo);
     socket->result = status;
 
-    socket->getaddrinfo_pending = false;
+    socket->on_getaddrinfo_pending = false;
 
     socket_ctx_timer_stop(socket);
 
@@ -549,9 +549,9 @@ static void tunnel_socket_ctx_on_getaddrinfo_cb(struct socket_ctx* socket, int s
         return;
     }
 
-    ASSERT(tunnel->tunnel_getaddrinfo_done);
-    if (tunnel->tunnel_getaddrinfo_done) {
-        tunnel->tunnel_getaddrinfo_done(tunnel, socket);
+    ASSERT(tunnel->tunnel_on_getaddrinfo_done);
+    if (tunnel->tunnel_on_getaddrinfo_done) {
+        tunnel->tunnel_on_getaddrinfo_done(tunnel, socket);
     }
 }
 
@@ -640,7 +640,7 @@ void socket_ctx_close(struct socket_ctx* socket, socket_ctx_on_closed_cb on_clos
     socket->timer_handle.data = socket;
     socket->handle.handle.data = socket;
 
-    if (socket->getaddrinfo_pending) {
+    if (socket->on_getaddrinfo_pending) {
         uv_cancel(&socket->req.req);
     }
 
