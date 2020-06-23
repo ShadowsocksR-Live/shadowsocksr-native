@@ -52,12 +52,12 @@ static void tunnel_socket_ctx_on_written_cb(struct socket_ctx* socket, int statu
 static void tunnel_socket_ctx_on_closed_cb(struct socket_ctx* socket, void* p);
 static void tunnel_socket_ctx_on_timeout_cb(struct socket_ctx* socket, void* p);
 
-    uv_os_sock_t uv_stream_fd(const uv_tcp_t *handle) {
+uv_os_sock_t uv_stream_fd(const uv_tcp_t* handle) {
 #if defined(_WIN32)
     return handle->socket;
 #elif defined(__APPLE__)
     int uv___stream_fd(const uv_stream_t* handle);
-    return uv___stream_fd((const uv_stream_t *)handle);
+    return uv___stream_fd((const uv_stream_t*)handle);
 #else
     return (handle)->io_watcher.fd;
 #endif
@@ -507,15 +507,26 @@ static void uv_socket_getaddrinfo_cb(uv_getaddrinfo_t* req, int status, struct a
     socket_ctx_timer_stop(socket);
 
     if (status == 0) {
-        /* FIXME Should try all addresses. */
+        bool found = false;
+        struct addrinfo* iter;
         uint16_t port = socket->addr.addr4.sin_port;
-        if (ai->ai_family == AF_INET) {
-            socket->addr.addr4 = *(const struct sockaddr_in*)ai->ai_addr;
-        } else if (ai->ai_family == AF_INET6) {
-            socket->addr.addr6 = *(const struct sockaddr_in6*)ai->ai_addr;
-        } else {
-            UNREACHABLE();
+        for (iter = ai; iter != NULL; iter = iter->ai_next) {
+            if (iter->ai_family == AF_INET) {
+                socket->addr.addr4 = *(const struct sockaddr_in*)iter->ai_addr;
+                found = true;
+                break;
+            }
         }
+        if (found == false) {
+            for (iter = ai; iter != NULL; iter = iter->ai_next) {
+                if (iter->ai_family == AF_INET6) {
+                    socket->addr.addr6 = *(const struct sockaddr_in6*)iter->ai_addr;
+                    found = true;
+                    break;
+                }
+            }
+        }
+        ASSERT(found);
         socket->addr.addr4.sin_port = port;
     }
 
@@ -610,13 +621,13 @@ static void tunnel_socket_ctx_on_written_cb(struct socket_ctx* socket, int statu
     }
 }
 
-bool socket_ctx_is_dead(struct socket_ctx* socket) {
+bool socket_ctx_is_terminated(struct socket_ctx* socket) {
     if (socket == NULL) { return true; }
     return (socket->is_terminated != false);
 }
 
 void socket_ctx_close(struct socket_ctx* socket, socket_ctx_on_closed_cb on_closed, void* p) {
-    if (socket_ctx_is_dead(socket)) {
+    if (socket_ctx_is_terminated(socket)) {
         on_closed(socket, p);
         return;
     }
