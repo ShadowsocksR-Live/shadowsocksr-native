@@ -243,10 +243,10 @@ static void client_tunnel_shutdown(struct tunnel_ctx *tunnel) {
         tls_client_shutdown(ctx->tls_ctx, tls_cli_on_shutting_down_callback, ctx);
     } else {
         client_tunnel_shutdown_print_info(tunnel, true);
-        assert(ctx && ctx->original_tunnel_shutdown);
-        if (ctx && ctx->original_tunnel_shutdown) {
-            ctx->original_tunnel_shutdown(tunnel);
-        }
+    }
+    assert(ctx && ctx->original_tunnel_shutdown);
+    if (ctx && ctx->original_tunnel_shutdown) {
+        ctx->original_tunnel_shutdown(tunnel);
     }
 }
 
@@ -1396,12 +1396,6 @@ static void tls_cli_on_shutting_down_callback(struct tls_cli_ctx* cli_ctx, void*
     assert(tunnel);
     assert(ctx->tls_ctx == cli_ctx);
     client_tunnel_shutdown_print_info(tunnel, (ctx->connection_status == 0));
-
-    assert(ctx->original_tunnel_shutdown);
-    if (ctx->original_tunnel_shutdown) {
-        ctx->original_tunnel_shutdown(tunnel);
-    }
-
     client_ctx_release(ctx);
     tunnel_ctx_release(tunnel);
 
