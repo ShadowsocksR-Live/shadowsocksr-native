@@ -53,6 +53,13 @@ void state_set_force_quit(struct ssr_client_state *state, bool force_quit);
 void print_remote_info(const struct server_config *config);
 static bool verify_config(struct server_config *config);
 
+#if defined(__unix__) || defined(__linux__)
+#include <signal.h>
+void sighandler(int sig) {
+    pr_err("signal %d", sig);
+}
+#endif // defined(__unix__) || defined(__linux__)
+
 void fn_onexit(void) {
     MEM_CHECK_DUMP_LEAKS();
 }
@@ -62,6 +69,11 @@ struct cmd_line_info *cmds = NULL;
 int main(int argc, char **argv) {
     struct server_config *config = NULL;
     int err = -1;
+
+    #if defined(__unix__) || defined(__linux__)
+    struct sigaction sa = { {&sighandler}, {{0}}, 0, NULL };
+    sigaction(SIGPIPE, &sa, NULL);
+    #endif // defined(__unix__) || defined(__linux__)
 
     MEM_CHECK_BEGIN();
     MEM_CHECK_BREAK_ALLOC(63);

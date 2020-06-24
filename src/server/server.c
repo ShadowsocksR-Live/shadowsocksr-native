@@ -138,10 +138,22 @@ void on_atexit(void) {
     MEM_CHECK_DUMP_LEAKS();
 }
 
+#if defined(__unix__) || defined(__linux__)
+#include <signal.h>
+void sighandler(int sig) {
+    pr_err("signal %d", sig);
+}
+#endif // defined(__unix__) || defined(__linux__)
+
 int main(int argc, char * const argv[]) {
     struct server_config *config = NULL;
     int err = -1;
     struct cmd_line_info *cmds = NULL;
+
+    #if defined(__unix__) || defined(__linux__)
+    struct sigaction sa = { {&sighandler}, {{0}}, 0, NULL };
+    sigaction(SIGPIPE, &sa, NULL);
+    #endif // defined(__unix__) || defined(__linux__)
 
     MEM_CHECK_BEGIN();
     MEM_CHECK_BREAK_ALLOC(63);
