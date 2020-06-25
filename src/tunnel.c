@@ -53,14 +53,11 @@ static void tunnel_socket_ctx_on_closed_cb(struct socket_ctx* socket, void* p);
 static void tunnel_socket_ctx_on_timeout_cb(struct socket_ctx* socket, void* p);
 
 uv_os_sock_t uv_stream_fd(const uv_tcp_t* handle) {
-#if defined(_WIN32)
-    return handle->socket;
-#elif defined(__APPLE__)
-    int uv___stream_fd(const uv_stream_t* handle);
-    return uv___stream_fd((const uv_stream_t*)handle);
-#else
-    return (handle)->io_watcher.fd;
-#endif
+    uv_os_fd_t fd = (uv_os_fd_t)-1;
+    if (handle) {
+        uv_fileno((const uv_handle_t*)handle, &fd);
+    }
+    return (uv_os_sock_t)fd;
 }
 
 uint16_t get_socket_port(const uv_tcp_t *tcp) {
