@@ -396,7 +396,6 @@ static void _do_shutdown_tunnel(struct cstl_set *set, const void *obj, bool *sto
 }
 
 void server_shutdown(struct server_env_t *env) {
-    env->shutting_down = true;
     cstl_set_container_traverse(env->tunnel_set, &_do_shutdown_tunnel, NULL);
 }
 

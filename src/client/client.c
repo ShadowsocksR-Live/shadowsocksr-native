@@ -282,7 +282,6 @@ static void _iterator_tunnel_shutdown(struct cstl_set* set, const void* obj, boo
 }
 
 void client_env_shutdown(struct server_env_t* env) {
-    env->shutting_down = true;
     cstl_set_container_traverse(env->tunnel_set, &_iterator_tunnel_shutdown, NULL);
 }
 
@@ -1038,11 +1037,6 @@ static void tunnel_outgoing_connected_done(struct tunnel_ctx* tunnel, struct soc
 }
 
 static void tunnel_read_done(struct tunnel_ctx* tunnel, struct socket_ctx* socket) {
-    struct client_ctx* ctx = (struct client_ctx*)tunnel->data;
-    if (ctx && ctx->env->shutting_down) {
-        tunnel->tunnel_shutdown(tunnel);
-        return;
-    }
     tunnel->tunnel_dispatcher(tunnel, socket);
 }
 
