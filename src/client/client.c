@@ -1498,7 +1498,7 @@ void udp_on_recv_data(struct udp_listener_ctx_t* udp_ctx, const union sockaddr_u
     struct server_config* config = env->config;
     struct tunnel_ctx* tunnel = NULL;
     struct client_ctx* ctx = NULL;
-    size_t data_len, frag_number;
+    size_t data_len = 0, frag_number = 0;
     const uint8_t* data_p = buffer_get_data(data, &data_len);
     struct udp_data_context* query_data;
     const uint8_t* raw_p = NULL; size_t raw_len = 0;

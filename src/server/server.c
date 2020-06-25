@@ -75,7 +75,7 @@ struct server_ctx {
     struct tunnel_cipher_ctx *cipher;
     struct buffer_t *init_pkg;
     enum tunnel_stage stage;
-    size_t _tcp_mss;
+    size_t tcp_mss;
     size_t _overhead;
     size_t _recv_buffer_size;
     size_t _recv_d_max_size;
@@ -661,7 +661,7 @@ static size_t _get_read_size(struct tunnel_ctx *tunnel, struct socket_ctx *socke
     }
     buffer_size = socket_arrived_data_size(socket, suggested_size);
 
-    frame_size = ctx->_tcp_mss - ctx->_overhead;
+    frame_size = ctx->tcp_mss - ctx->_overhead;
 
     buffer_size = min(buffer_size, ctx->_recv_d_max_size);
     ctx->_recv_d_max_size = min(ctx->_recv_d_max_size + frame_size, TCP_BUF_SIZE_MAX);
@@ -682,7 +682,7 @@ static void do_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *incomi
     struct buffer_t *result = NULL;
     struct buffer_t *buf = buffer_create_from((uint8_t *)incoming->buf->base, incoming->result);
     do {
-        size_t tcp_mss = _update_tcp_mss(incoming);
+        size_t tcp_mss = update_tcp_mss(incoming);
 
         ASSERT(incoming == tunnel->incoming);
 
@@ -693,7 +693,7 @@ static void do_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *incomi
 
         ASSERT(ctx->cipher == NULL);
         ctx->cipher = tunnel_cipher_create(ctx->env, tcp_mss);
-        ctx->_tcp_mss = tcp_mss;
+        ctx->tcp_mss = tcp_mss;
 
         result = tunnel_cipher_server_decrypt(ctx->cipher, buf, &obfs_receipt, &proto_confirm);
 
@@ -1074,7 +1074,7 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
     do {
         uint8_t *indata = (uint8_t *)socket->buf->base;
         size_t len = (size_t)socket->result;
-        size_t tcp_mss = _update_tcp_mss(socket);
+        size_t tcp_mss = update_tcp_mss(socket);
         const char* udp_field;
 
         ASSERT(socket == tunnel->incoming);
@@ -1087,7 +1087,7 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
 
         ASSERT(ctx->cipher == NULL);
         ctx->cipher = tunnel_cipher_create(ctx->env, tcp_mss);
-        ctx->_tcp_mss = tcp_mss;
+        ctx->tcp_mss = tcp_mss;
 
         hdrs = http_headers_parse(true, indata, len);
         {
@@ -1156,9 +1156,8 @@ static size_t _tls_get_read_size(struct tunnel_ctx *tunnel, struct socket_ctx *s
 
     data_size = socket_arrived_data_size(socket, suggested_size);
     frame_size = websocket_frame_size(false, data_size);
-    if (frame_size >= ctx->_tcp_mss) {
-        // read_size = ctx->_tcp_mss - (2 + sizeof(uint64_t) + 0);
-        read_size = ctx->_tcp_mss - (2 + sizeof(uint16_t) + 0);
+    if (frame_size >= ctx->tcp_mss) {
+        read_size = ctx->tcp_mss - (2 + sizeof(uint16_t) + 0);
     } else {
         read_size = data_size;
     }
