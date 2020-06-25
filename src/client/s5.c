@@ -478,7 +478,9 @@ const uint8_t * s5_parse_upd_package(const uint8_t *pkg, size_t len, struct sock
         }
         offset = sizeof(uint16_t) + sizeof(uint8_t);
         address = pkg + offset;
-        socks5_address_parse(address, len-offset, dst_addr);
+        if (socks5_address_parse(address, len - offset, dst_addr) == false) {
+            break;
+        }
 
         offset += socks5_address_size(dst_addr);
 
