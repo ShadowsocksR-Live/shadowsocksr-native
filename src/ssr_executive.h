@@ -44,8 +44,10 @@ struct server_env_t {
     void *data;
 
     struct server_config *config; // __weak_ptr
-    
+
     struct cstl_set *tunnel_set;
+
+    bool shutting_down;
 
     struct cipher_env_t *cipher;
 
