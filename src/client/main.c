@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
     struct server_config *config = NULL;
     int err = -1;
 
-    #if defined(__unix__) || defined(__linux__)
+    #if (defined(__unix__) || defined(__linux__)) && !defined(__mips)
     struct sigaction sa = { {&sighandler}, {{0}}, 0, NULL };
     sigaction(SIGPIPE, &sa, NULL);
     #endif // defined(__unix__) || defined(__linux__)

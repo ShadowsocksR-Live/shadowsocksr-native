@@ -150,7 +150,7 @@ int main(int argc, char * const argv[]) {
     int err = -1;
     struct cmd_line_info *cmds = NULL;
 
-    #if defined(__unix__) || defined(__linux__)
+    #if (defined(__unix__) || defined(__linux__)) && !defined(__mips)
     struct sigaction sa = { {&sighandler}, {{0}}, 0, NULL };
     sigaction(SIGPIPE, &sa, NULL);
     #endif // defined(__unix__) || defined(__linux__)

@@ -287,7 +287,7 @@ uint8_t * websocket_build_frame(ws_frame_info *info, const uint8_t *payload, siz
     } else if(payload_len > 125 && payload_len <= 0xffff) {
         payload_len_small = 126;
         len_size = sizeof(uint16_t);
-    } else if(payload_len > 0xffff && payload_len <= 0xffffffffffffffffLL) {
+    } else if(payload_len > 0xffff && payload_len <= 0xffffffff /* 0xffffffffffffffffLL */) {
         payload_len_small = 127;
         len_size = sizeof(uint64_t);
     } else {
@@ -484,7 +484,7 @@ size_t websocket_frame_size(bool masking, size_t payload_len) {
         len_size = 0;
     } else if(payload_len > 125 && payload_len <= 0xffff) {
         len_size = sizeof(uint16_t);
-    } else if(payload_len > 0xffff && payload_len <= 0xffffffffffffffffLL) {
+    } else if(payload_len > 0xffff && payload_len <= 0xffffffff /* 0xffffffffffffffffLL */) {
         len_size = sizeof(uint64_t);
     } else {
         assert(0);
