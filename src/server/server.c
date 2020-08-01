@@ -1136,8 +1136,7 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
             break;
         }
 
-        ASSERT(result /* && result->len!=0 */);
-        if (is_legal_header(result) == false) {
+        if (result==NULL || is_legal_header(result) == false) {
             tunnel->tunnel_shutdown(tunnel);
             break;
         }

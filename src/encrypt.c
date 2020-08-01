@@ -991,7 +991,13 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
         if (!ctx->init) {
             uint8_t iv[MAX_IV_LENGTH + 1] = { 0 };
             iv_len      = (size_t)env->enc_iv_len;
-            plain_len -= iv_len;
+            if (plain_len >= iv_len) {
+                plain_len -= iv_len;
+            } else {
+                free(plain_buffer);
+                free(cipher_buffer);
+                return -1;
+            }
 
             memcpy(iv, cipher_buffer, iv_len);
             cipher_context_set_iv(env, &ctx->cipher_ctx, iv, iv_len, 0);
