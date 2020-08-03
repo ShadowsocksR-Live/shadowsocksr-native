@@ -73,16 +73,16 @@ static size_t _memory_size_internal(void *ptr) {
 }
 
 static void mem_alloc_size_verify(size_t expected_size, size_t allocated_size) {
-    if (allocated_size < expected_size) {
-        char info[0x100] = { 0 };
-        const char* fmt = ">>>> memory panic of expected size = %d and allocated size = %d <<<<\n";
+    char info[0x100] = { 0 };
+    const char* fmt = ">>>> memory panic of expected size = %d and allocated size = %d <<<<\n";
 #if defined(__mips)
-        allocated_size += 4; // FIXME: it is a strange bug here.
+    if (allocated_size < expected_size) {
+        allocated_size += 4; // FIXME: it is a strange bug from malloc_usable_size.
+    }
 #endif
-        if (allocated_size < expected_size) {
-            sprintf(info, fmt, (int)expected_size, (int)allocated_size);
-            assert(!info);
-        }
+    if (allocated_size < expected_size) {
+        sprintf(info, fmt, (int)expected_size, (int)allocated_size);
+        assert(!info);
     }
 }
 
