@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <stdio.h>
 #include "ssrbuffer.h"
 
 #ifndef max
@@ -73,6 +74,7 @@ static size_t _memory_size_internal(void *ptr) {
 
 struct buffer_t * buffer_create(size_t capacity) {
     struct buffer_t *ptr = (struct buffer_t *) calloc(1, sizeof(struct buffer_t));
+    size_t real_size = 0;
     assert(ptr);
     if (ptr == NULL) {
         return NULL;
@@ -81,7 +83,9 @@ struct buffer_t * buffer_create(size_t capacity) {
     assert(ptr->buffer);
     ptr->capacity = capacity;
     ptr->ref_count = 1;
-    if (ptr->capacity > _memory_size_internal(ptr->buffer)) {
+    real_size = _memory_size_internal(ptr->buffer);
+    if (real_size < capacity) {
+        printf(">>>> memory panic of capacity=%d and real_size=%d <<<<\n", (int)capacity, (int)real_size);
         assert(0);
     }
     return ptr;
