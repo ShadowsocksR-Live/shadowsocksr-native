@@ -72,7 +72,8 @@ static size_t _memory_size_internal(void *ptr) {
 #endif
 }
 
-static void mem_alloc_size_verify(size_t expected_size, size_t allocated_size) {
+static void mem_alloc_size_verify(size_t expected_size, void* ptr) {
+    size_t allocated_size = _memory_size_internal(ptr);
     const char* fmt = ">>>> memory panic of expected size = %d and allocated size = %d <<<<\n";
 #if defined(__mips)
     if (allocated_size < expected_size) {
@@ -98,7 +99,7 @@ struct buffer_t * buffer_create(size_t capacity) {
     }
     ptr->capacity = capacity;
     ptr->ref_count = 1;
-    mem_alloc_size_verify(capacity, _memory_size_internal(ptr->buffer));
+    mem_alloc_size_verify(capacity, ptr->buffer);
     return ptr;
 }
 
@@ -204,7 +205,7 @@ size_t buffer_realloc(struct buffer_t *ptr, size_t capacity) {
         }
         memset(ptr->buffer + ptr->capacity, 0, real_capacity - ptr->capacity);
         ptr->capacity = real_capacity;
-        mem_alloc_size_verify(real_capacity, _memory_size_internal(ptr->buffer));
+        mem_alloc_size_verify(real_capacity, ptr->buffer);
     }
     return real_capacity;
 }
@@ -290,7 +291,7 @@ void buffer_release(struct buffer_t *ptr) {
         return;
     }
     if (ptr->buffer != NULL) {
-        mem_alloc_size_verify(ptr->capacity, _memory_size_internal(ptr->buffer));
+        mem_alloc_size_verify(ptr->capacity, ptr->buffer);
         free(ptr->buffer);
     }
     free(ptr);
