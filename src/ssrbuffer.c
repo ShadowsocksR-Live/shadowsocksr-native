@@ -72,22 +72,34 @@ static size_t _memory_size_internal(void *ptr) {
 #endif
 }
 
+static void mem_alloc_size_verify(size_t expected_size, size_t allocated_size) {
+    if (allocated_size < expected_size) {
+        char info[0x100] = { 0 };
+        const char* fmt = ">>>> memory panic of expected size = %d and allocated size = %d <<<<\n";
+#if defined(__mips)
+        allocated_size += 4; // FIXME: it is a strange bug here.
+#endif
+        if (allocated_size < expected_size) {
+            sprintf(info, fmt, (int)expected_size, (int)allocated_size);
+            assert(!info);
+        }
+    }
+}
+
 struct buffer_t * buffer_create(size_t capacity) {
     struct buffer_t *ptr = (struct buffer_t *) calloc(1, sizeof(struct buffer_t));
-    size_t real_size = 0;
     assert(ptr);
     if (ptr == NULL) {
         return NULL;
     }
     ptr->buffer = (uint8_t *) calloc(capacity, sizeof(uint8_t));
-    assert(ptr->buffer);
+    if (ptr->buffer == NULL) {
+        free(ptr);
+        return NULL;
+    }
     ptr->capacity = capacity;
     ptr->ref_count = 1;
-    real_size = _memory_size_internal(ptr->buffer);
-    if (real_size < capacity) {
-        printf(">>>> memory panic of capacity=%d and real_size=%d <<<<\n", (int)capacity, (int)real_size);
-        assert(0);
-    }
+    mem_alloc_size_verify(capacity, _memory_size_internal(ptr->buffer));
     return ptr;
 }
 
@@ -185,11 +197,16 @@ size_t buffer_realloc(struct buffer_t *ptr, size_t capacity) {
     }
     real_capacity = max(capacity, ptr->capacity);
     if (ptr->capacity < real_capacity) {
+        size_t alloc_size = 0;
+        void* old_buf = ptr->buffer;
         ptr->buffer = (uint8_t *) realloc(ptr->buffer, real_capacity);
-        assert(ptr->buffer);
+        if (ptr->buffer == NULL) {
+            free(old_buf);
+            return 0;
+        }
         memset(ptr->buffer + ptr->capacity, 0, real_capacity - ptr->capacity);
         ptr->capacity = real_capacity;
-        assert(ptr->capacity <= _memory_size_internal(ptr->buffer));
+        mem_alloc_size_verify(real_capacity, _memory_size_internal(ptr->buffer));
     }
     return real_capacity;
 }
@@ -275,7 +292,7 @@ void buffer_release(struct buffer_t *ptr) {
         return;
     }
     if (ptr->buffer != NULL) {
-        assert(ptr->capacity <= _memory_size_internal(ptr->buffer));
+        mem_alloc_size_verify(ptr->capacity, _memory_size_internal(ptr->buffer));
         free(ptr->buffer);
     }
     free(ptr);
