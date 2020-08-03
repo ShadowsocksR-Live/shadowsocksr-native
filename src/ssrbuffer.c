@@ -73,7 +73,6 @@ static size_t _memory_size_internal(void *ptr) {
 }
 
 static void mem_alloc_size_verify(size_t expected_size, size_t allocated_size) {
-    char info[0x100] = { 0 };
     const char* fmt = ">>>> memory panic of expected size = %d and allocated size = %d <<<<\n";
 #if defined(__mips)
     if (allocated_size < expected_size) {
@@ -81,8 +80,8 @@ static void mem_alloc_size_verify(size_t expected_size, size_t allocated_size) {
     }
 #endif
     if (allocated_size < expected_size) {
-        sprintf(info, fmt, (int)expected_size, (int)allocated_size);
-        assert(!info);
+        printf(fmt, (int)expected_size, (int)allocated_size);
+        assert(0);
     }
 }
 
@@ -197,7 +196,6 @@ size_t buffer_realloc(struct buffer_t *ptr, size_t capacity) {
     }
     real_capacity = max(capacity, ptr->capacity);
     if (ptr->capacity < real_capacity) {
-        size_t alloc_size = 0;
         void* old_buf = ptr->buffer;
         ptr->buffer = (uint8_t *) realloc(ptr->buffer, real_capacity);
         if (ptr->buffer == NULL) {
