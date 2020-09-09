@@ -90,6 +90,8 @@ set(SOURCE_FILES_CLIENT
         dump_info.h
         cmd_line_parser.c
         cmd_line_parser.h
+        exe_file_path.c
+        exe_file_path.h
         daemon_wrapper.c
         daemon_wrapper.h
         ${SOURCE_FILES_OBFS}
@@ -131,6 +133,8 @@ set(SOURCE_FILES_SERVER
         ssr_executive.h
         cmd_line_parser.c
         cmd_line_parser.h
+        exe_file_path.c
+        exe_file_path.h
         daemon_wrapper.c
         daemon_wrapper.h
         config_json.c

@@ -32,6 +32,7 @@
 #include "ssr_cipher_names.h"
 #include "daemon_wrapper.h"
 #include "ssrbuffer.h"
+#include "exe_file_path.h"
 
 #if HAVE_UNISTD_H
 #include <unistd.h>  /* getopt */
@@ -99,7 +100,18 @@ int main(int argc, char **argv) {
 
         config = config_create();
         if (parse_config_file(false, cmds->cfg_file, config) == false) {
-            break;
+            bool succ = false;
+            char* separ = NULL;
+            char* cfg_file = exe_file_path(&malloc);
+            if (cfg_file && ((separ = strrchr(cfg_file, PATH_SEPARATOR)))) {
+                ++separ;
+                strcpy(separ, CFG_JSON);
+                succ = parse_config_file(false, cfg_file, config);
+            }
+            free(cfg_file);
+            if (!succ) {
+                break;
+            }
         }
 
         if (verify_config(config) == false) {

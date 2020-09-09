@@ -1235,6 +1235,7 @@ static void tls_cli_on_write_done(struct tls_cli_ctx* tls_cli, int status, void*
 
         tunnel->tunnel_shutdown(tunnel);
     }
+    (void)tls_cli;
 }
 
 static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, const uint8_t* data, size_t size, void* p) {

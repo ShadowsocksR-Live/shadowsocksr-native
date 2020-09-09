@@ -126,6 +126,9 @@
     <ClCompile Include="..\..\src\ip_addr_cache.c">
       <Filter>server</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\exe_file_path.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\encrypt.h">
@@ -238,6 +241,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ip_addr_cache.h">
       <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\exe_file_path.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -22,10 +22,18 @@
 #ifndef _COMMON_H
 #define _COMMON_H
 
-#if defined(WIN32)
-#define DEFAULT_CONF_PATH "config.json"
+#if defined(_WIN32)
+#define PATH_SEPARATOR '\\'
 #else
-#define DEFAULT_CONF_PATH "/etc/ssr-native/config.json"
+#define PATH_SEPARATOR '/'
+#endif
+
+#define CFG_JSON "config.json"
+
+#if defined(WIN32)
+#define DEFAULT_CONF_PATH CFG_JSON
+#else
+#define DEFAULT_CONF_PATH "/etc/ssr-native/" CFG_JSON
 #endif // defined(WIN32)
 
 #ifndef SOL_TCP

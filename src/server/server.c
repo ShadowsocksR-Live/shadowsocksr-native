@@ -16,6 +16,7 @@
 #include "tunnel.h"
 #include "daemon_wrapper.h"
 #include "cmd_line_parser.h"
+#include "exe_file_path.h"
 #include "ssrutils.h"
 #include "websocket_basic.h"
 #include "http_parser_wrapper.h"
@@ -179,7 +180,18 @@ int main(int argc, char * const argv[]) {
 
         config = config_create();
         if (parse_config_file(true, cmds->cfg_file, config) == false) {
-            break;
+            bool succ = false;
+            char* separ = NULL;
+            char* cfg_file = exe_file_path(&malloc);
+            if (cfg_file && ((separ = strrchr(cfg_file, PATH_SEPARATOR)))) {
+                ++separ;
+                strcpy(separ, CFG_JSON);
+                succ = parse_config_file(true, cfg_file, config);
+            }
+            free(cfg_file);
+            if (!succ) {
+                break;
+            }
         }
 
         config_ssrot_revision(config);

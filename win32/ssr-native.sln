@@ -26,13 +26,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ssr-server", "ssr-server\ss
 		{F1F4BA6A-0368-4F34-95BB-C29A2244A772} = {F1F4BA6A-0368-4F34-95BB-C29A2244A772}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ssr-local", "ssr-local\ssr-local.vcxproj", "{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}"
-	ProjectSection(ProjectDependencies) = postProject
-		{46CF2D25-6A36-4189-B59C-E4815388E554} = {46CF2D25-6A36-4189-B59C-E4815388E554}
-		{44EA013F-AD0F-4D53-8E06-0B4EF26F4B65} = {44EA013F-AD0F-4D53-8E06-0B4EF26F4B65}
-		{A185B162-6CB6-4502-B03F-B56F7699A8D9} = {A185B162-6CB6-4502-B03F-B56F7699A8D9}
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "uv-mbed", "..\depends\uv-mbed\win32\dll\uv-mbed.vcxproj", "{E683C8F1-3C3F-4B5D-B60E-87D792D21002}"
 	ProjectSection(ProjectDependencies) = postProject
 		{46CF2D25-6A36-4189-B59C-E4815388E554} = {46CF2D25-6A36-4189-B59C-E4815388E554}
@@ -95,14 +88,6 @@ Global
 		{756AF57D-970B-4DB5-B661-EA1ACFA75694}.Release|Win32.Build.0 = Release|Win32
 		{756AF57D-970B-4DB5-B661-EA1ACFA75694}.Release|x64.ActiveCfg = Release|x64
 		{756AF57D-970B-4DB5-B661-EA1ACFA75694}.Release|x64.Build.0 = Release|x64
-		{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}.Debug|Win32.ActiveCfg = Debug|Win32
-		{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}.Debug|Win32.Build.0 = Debug|Win32
-		{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}.Debug|x64.ActiveCfg = Debug|x64
-		{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}.Debug|x64.Build.0 = Debug|x64
-		{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}.Release|Win32.ActiveCfg = Release|Win32
-		{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}.Release|Win32.Build.0 = Release|Win32
-		{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}.Release|x64.ActiveCfg = Release|x64
-		{FF0C1545-CB8D-4AAD-9962-0AADAC37C456}.Release|x64.Build.0 = Release|x64
 		{E683C8F1-3C3F-4B5D-B60E-87D792D21002}.Debug|Win32.ActiveCfg = Debug|Win32
 		{E683C8F1-3C3F-4B5D-B60E-87D792D21002}.Debug|Win32.Build.0 = Debug|Win32
 		{E683C8F1-3C3F-4B5D-B60E-87D792D21002}.Debug|x64.ActiveCfg = Debug|x64
@@ -114,5 +99,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {179CF1E8-E417-4FC3-870E-3359B223BCEE}
 	EndGlobalSection
 EndGlobal

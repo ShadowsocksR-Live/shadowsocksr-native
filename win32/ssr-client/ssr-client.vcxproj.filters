@@ -132,6 +132,9 @@
     <ClCompile Include="..\..\depends\http-parser\http_parser_wrapper.c">
       <Filter>http-parser</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\exe_file_path.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\encrypt.h">
@@ -250,6 +253,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ref_count_def.h">
       <Filter>client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\exe_file_path.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

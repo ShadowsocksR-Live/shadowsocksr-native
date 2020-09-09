@@ -27,6 +27,7 @@
     <ClCompile Include="..\..\src\config_json.c" />
     <ClCompile Include="..\..\src\daemon_wrapper.c" />
     <ClCompile Include="..\..\src\dump_info.c" />
+    <ClCompile Include="..\..\src\exe_file_path.c" />
     <ClCompile Include="..\..\src\ip_addr_cache.c" />
     <ClCompile Include="..\..\src\sockaddr_universal.c" />
     <ClCompile Include="..\..\src\ssr_executive.c" />
@@ -59,6 +60,7 @@
     <ClInclude Include="..\..\src\cache.h" />
     <ClInclude Include="..\..\src\client\defs.h" />
     <ClInclude Include="..\..\src\client\s5.h" />
+    <ClInclude Include="..\..\src\exe_file_path.h" />
     <ClInclude Include="..\..\src\ip_addr_cache.h" />
     <ClInclude Include="..\..\src\text_in_color.h" />
     <ClInclude Include="..\..\src\tunnel.h" />
