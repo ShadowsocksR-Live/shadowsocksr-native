@@ -452,7 +452,7 @@ static void tunnel_destroying(struct tunnel_ctx* tunnel) {
         tunnel_cipher_release(ctx->cipher);
     }
     buffer_release(ctx->init_pkg);
-    if (ctx->sec_websocket_key) { free(ctx->sec_websocket_key); }
+    object_safe_free((void**)&ctx->sec_websocket_key);
     buffer_release(ctx->client_delivery_cache);
     cstl_deque_delete(ctx->udp_recv_deque);
     free(ctx);
@@ -1109,8 +1109,7 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
                 tunnel->tunnel_shutdown(tunnel);
                 break;
             }
-            ctx->sec_websocket_key = (char *) calloc(strlen(key) + 1, sizeof(char));
-            strcpy(ctx->sec_websocket_key, key);
+            string_safe_assign(&ctx->sec_websocket_key, key);
         }
         {
             size_t cb = http_headers_get_content_beginning(hdrs);

@@ -1016,7 +1016,7 @@ void client_ctx_destroy_internal(struct client_ctx* ctx) {
     buffer_release(ctx->init_pkg);
     buffer_release(ctx->first_client_pkg);
     s5_ctx_release(ctx->parser);
-    if (ctx->sec_websocket_key) { free(ctx->sec_websocket_key); }
+    object_safe_free((void**)&ctx->sec_websocket_key);
     buffer_release(ctx->server_delivery_cache);
     buffer_release(ctx->local_write_cache);
     udp_data_context_destroy(ctx->udp_data_ctx);
@@ -1198,9 +1198,10 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
             size_t typ_len = 0;
             const uint8_t* typ = buffer_get_data(tmp, &typ_len);
             char* key = websocket_generate_sec_websocket_key(&malloc);
-            ctx->sec_websocket_key = key;
+            string_safe_assign(&ctx->sec_websocket_key, key);
+            free(key);
 
-            buf = websocket_connect_request(domain, domain_port, url_path, key, &malloc, &len);
+            buf = websocket_connect_request(domain, domain_port, url_path, ctx->sec_websocket_key, &malloc, &len);
             buf = http_header_set_payload_data(buf, &len, &realloc, typ, typ_len);
             if (ctx->udp_data_ctx) {
                 size_t addr_len = 0;
