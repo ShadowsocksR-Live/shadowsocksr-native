@@ -123,6 +123,8 @@ uint32_t ws_hton32(uint32_t n);
 uint64_t ws_ntoh64(uint64_t n);
 uint64_t ws_hton64(uint64_t n);
 
+char* ws_normal_response(void* (*allocator)(size_t), const char* domain);
+
 #ifdef __cplusplus
 }
 #endif
