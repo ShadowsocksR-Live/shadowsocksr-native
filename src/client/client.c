@@ -1207,7 +1207,7 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
                 size_t addr_len = 0;
                 uint8_t* addr_p = socks5_address_binary(&ctx->udp_data_ctx->target_addr, &malloc, &addr_len);
                 char* b64str = url_safe_base64_encode_alloc(addr_p, (int)addr_len, &malloc);
-                static const char* udp_fmt = "UDP: %s\r\n";
+                static const char* udp_fmt = "UDP" ": %s\r\n";
                 char* udp_field = (char*)calloc(strlen(udp_fmt) + strlen(b64str) + 1, sizeof(*udp_field));
                 sprintf(udp_field, udp_fmt, b64str);
                 buf = http_header_append_new_field(buf, &len, &realloc, udp_field);
