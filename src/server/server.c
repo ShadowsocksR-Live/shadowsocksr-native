@@ -1130,6 +1130,27 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
             }
             string_safe_assign(&ctx->sec_websocket_key, key);
         }
+        if (config->target_address)
+        {
+            uint8_t* addr_p;
+            size_t p_len = 0;
+            struct buffer_t* buf;
+            const char* addr_field = http_headers_get_field_val(hdrs, "Target-Address");
+            if (addr_field == NULL) {
+                do_normal_response(tunnel);
+                break;
+            }
+            addr_p = url_safe_base64_decode_alloc(addr_field, &malloc, &p_len);
+            if (addr_p == NULL) {
+                do_normal_response(tunnel);
+                break;
+            }
+            buf = buffer_create_from(addr_p, p_len);
+            free(addr_p);
+            result = tunnel_cipher_server_decrypt(ctx->cipher, buf, &obfs_receipt, &proto_confirm);
+            buffer_release(buf);
+        }
+        else
         {
             size_t cb = http_headers_get_content_beginning(hdrs);
             struct buffer_t *buf = buffer_create_from(indata + cb, len - cb);

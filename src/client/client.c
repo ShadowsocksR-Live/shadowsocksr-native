@@ -1202,7 +1202,19 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
             free(key);
 
             buf = websocket_connect_request(domain, domain_port, url_path, ctx->sec_websocket_key, &malloc, &len);
+            if (config->target_address)
+            {
+                char* b64addr = url_safe_base64_encode_alloc(typ, (int)typ_len, &malloc);
+                static const char* addr_fmt = "Target-Address" ": %s\r\n";
+                char* addr_field = (char*)calloc(strlen(addr_fmt) + strlen(b64addr) + 1, sizeof(*addr_field));
+                sprintf(addr_field, addr_fmt, b64addr);
+                buf = http_header_append_new_field(buf, &len, &realloc, addr_field);
+                free(addr_field);
+                free(b64addr);
+            }
+            else {
             buf = http_header_set_payload_data(buf, &len, &realloc, typ, typ_len);
+            }
             if (ctx->udp_data_ctx) {
                 size_t addr_len = 0;
                 uint8_t* addr_p = socks5_address_binary(&ctx->udp_data_ctx->target_addr, &malloc, &addr_len);

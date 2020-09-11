@@ -32,6 +32,7 @@ struct server_config {
     char *over_tls_server_domain;
     char *over_tls_path;
     char *over_tls_root_cert_file;
+    bool target_address;
     bool udp;
     unsigned int idle_timeout; /* Connection idle timeout in ms. */
     uint64_t connect_timeout_ms;

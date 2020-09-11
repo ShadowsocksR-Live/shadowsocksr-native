@@ -222,6 +222,7 @@ bool parse_config_file(bool is_server, const char *file, struct server_config *c
                 struct json_object_iter iter2 = { NULL };
                 json_object_object_foreachC(obj_obj, iter2) {
                     const char *obj_str2 = NULL;
+                    obj_bool = false;
 
                     if (json_iter_extract_bool("enable", &iter2, &obj_bool)) {
                         config->over_tls_enable = obj_bool;
@@ -233,6 +234,10 @@ bool parse_config_file(bool is_server, const char *file, struct server_config *c
                     }
                     if (json_iter_extract_string("path", &iter2, &obj_str2)) {
                         string_safe_assign(&config->over_tls_path, obj_str2);
+                        continue;
+                    }
+                    if (json_iter_extract_bool("target_address", &iter2, &obj_bool)) {
+                        config->target_address = obj_bool;
                         continue;
                     }
                     if (json_iter_extract_string("root_cert_file", &iter2, &obj_str2)) {
