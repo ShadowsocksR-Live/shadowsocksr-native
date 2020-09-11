@@ -273,7 +273,7 @@ uint8_t* url_safe_base64_decode_alloc(const char* coded_src, void* (*allocator)(
         return NULL;
     }
     memset(result, 0, len + 1);
-    url_safe_base64_decode((const unsigned char *)coded_src, (unsigned char*)result);
+    len = url_safe_base64_decode((const unsigned char *)coded_src, (unsigned char*)result);
     if (size) {
         *size = len;
     }
