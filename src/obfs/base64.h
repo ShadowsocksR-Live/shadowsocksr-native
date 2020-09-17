@@ -93,9 +93,11 @@ extern "C" {
 
 int std_base64_encode_len(volatile int len);
 int std_base64_encode(const unsigned char *plain_src, int len_plain_src, unsigned char *coded_dst);
+char* std_base64_encode_alloc(const unsigned char* plain_src, int len_plain_src, void* (*allocator)(size_t));
 
 int std_base64_decode_len(const unsigned char *coded_src);
 int std_base64_decode(const unsigned char *coded_src, unsigned char *plain_dst);
+uint8_t* std_base64_decode_alloc(const char* coded_src, void* (*allocator)(size_t), size_t* size);
 
 int url_safe_base64_encode_len(int len);
 int url_safe_base64_encode(const unsigned char *plain_src, int len_plain_src, unsigned char *coded_dst);

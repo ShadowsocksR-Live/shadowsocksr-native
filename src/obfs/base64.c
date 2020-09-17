@@ -201,6 +201,42 @@ int std_base64_encode(const unsigned char *string, int len, unsigned char *encod
     return (int)(p - encoded);
 }
 
+char* std_base64_encode_alloc(const unsigned char* plain_src, int len_plain_src, void* (*allocator)(size_t)) {
+    size_t len = 0;
+    char* result = NULL;
+    if (plain_src == NULL || len_plain_src == 0 || allocator == NULL) {
+        return NULL;
+    }
+    len = (size_t)std_base64_encode_len(len_plain_src);
+    result = (char*)allocator(len + 1);
+    if (result == NULL) {
+        return NULL;
+    }
+    memset(result, 0, len + 1);
+    std_base64_encode(plain_src, len_plain_src, (unsigned char*)result);
+
+    return result;
+}
+
+uint8_t* std_base64_decode_alloc(const char* coded_src, void* (*allocator)(size_t), size_t* size) {
+    size_t len = 0;
+    uint8_t* result = NULL;
+    if (coded_src == NULL || allocator == NULL) {
+        return NULL;
+    }
+    len = (size_t) std_base64_decode_len((const unsigned char*)coded_src);
+    result = (uint8_t*)allocator(len + 1);
+    if (result == NULL) {
+        return NULL;
+    }
+    memset(result, 0, len + 1);
+    len = (size_t)std_base64_decode((const unsigned char*)coded_src, result);
+    if (size) {
+        *size = len;
+    }
+    return result;
+}
+
 //
 // https://en.wikipedia.org/wiki/Base64#URL_applications
 //
