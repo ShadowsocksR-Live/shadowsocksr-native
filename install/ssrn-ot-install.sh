@@ -335,9 +335,9 @@ function nginx_web_server_config_end() {
             proxy_redirect off;
             proxy_pass http://${web_svr_reverse_proxy_host}:${web_svr_reverse_proxy_port};
             proxy_http_version 1.1;
-            proxy_set_header Upgrade \$http_upgrade;
+            proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection "upgrade";
-            proxy_set_header Host \$http_host;
+            proxy_set_header Host $http_host;
         }
     }
 
