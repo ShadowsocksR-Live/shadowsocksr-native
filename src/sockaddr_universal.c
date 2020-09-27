@@ -264,21 +264,29 @@ int universal_address_from_string(const char *addr_str, uint16_t port, bool tcp,
         return result;
     }
 
-    // Note, we're taking the first valid address, there may be more than one
-    switch (ai->ai_family) {
-    case AF_INET:
-        addr->addr4 = *(const struct sockaddr_in *) ai->ai_addr;
+    {
+        bool found = false;
+        struct addrinfo* iter;
+        for (iter = ai; iter != NULL; iter = iter->ai_next) {
+            if (iter->ai_family == AF_INET) {
+                addr->addr4 = *(const struct sockaddr_in*)iter->ai_addr;
+                found = true;
+                break;
+            }
+        }
+        if (found == false) {
+            for (iter = ai; iter != NULL; iter = iter->ai_next) {
+                if (iter->ai_family == AF_INET6) {
+                    addr->addr6 = *(const struct sockaddr_in6*)iter->ai_addr;
+                    found = true;
+                    break;
+                }
+            }
+        }
+        assert(found);
         addr->addr4.sin_port = htons(port);
-        result = 0;
-        break;
-    case AF_INET6:
-        addr->addr6 = *(const struct sockaddr_in6 *) ai->ai_addr;
-        addr->addr6.sin6_port = htons(port);
-        result = 0;
-        break;
-    default:
-        assert(0);
-        break;
+
+        result = found ? 0 : -1;
     }
 
     freeaddrinfo(ai);
