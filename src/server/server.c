@@ -246,9 +246,7 @@ static int ssr_server_run_loop(struct server_config *config, bool force_quit) {
 
         uv_tcp_init(loop, listener);
 
-        addr.addr4.sin_family = AF_INET;
-        addr.addr4.sin_port = htons(config->listen_port);
-        addr.addr4.sin_addr.s_addr = htonl(INADDR_ANY);
+        universal_address_from_string(config->listen_host, config->listen_port, true, &addr);
         uv_tcp_bind(listener, &addr.addr, 0);
 
         error = uv_listen((uv_stream_t *)listener, SSR_MAX_CONN, tunnel_incoming_connection_established_cb);
