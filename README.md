@@ -306,3 +306,9 @@ To uninstall the server, use the following command
 ```
 ./ssrn-install.sh uninstall
 ```
+
+
+## Stargazers over time
+
+[![Stargazers over time](https://starchart.cc/ShadowsocksR-Live/shadowsocksr-native.svg)](https://starchart.cc/ShadowsocksR-Live/shadowsocksr-native)
+      
