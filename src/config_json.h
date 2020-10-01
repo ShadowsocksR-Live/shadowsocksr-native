@@ -5,6 +5,6 @@
 
 struct server_config;
 
-bool parse_config_file(bool is_server, const char *file, struct server_config *config);
+struct server_config* parse_config_file(bool is_server, const char* file);
 
 #endif // !defined(__config_json_h__)

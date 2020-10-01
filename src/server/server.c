@@ -179,18 +179,16 @@ int main(int argc, char * const argv[]) {
             string_safe_assign(&cmds->cfg_file, DEFAULT_CONF_PATH);
         }
 
-        config = config_create();
-        if (parse_config_file(true, cmds->cfg_file, config) == false) {
-            bool succ = false;
+        if ((config = parse_config_file(true, cmds->cfg_file)) == NULL) {
             char* separ = NULL;
             char* cfg_file = exe_file_path(&malloc);
             if (cfg_file && ((separ = strrchr(cfg_file, PATH_SEPARATOR)))) {
                 ++separ;
                 strcpy(separ, CFG_JSON);
-                succ = parse_config_file(true, cfg_file, config);
+                config = parse_config_file(true, cfg_file);
             }
             free(cfg_file);
-            if (!succ) {
+            if (config == NULL) {
                 break;
             }
         }
