@@ -554,7 +554,7 @@ size_t auth_chain_a_pack_auth_data(struct obfs_t *obfs, char *data, size_t datal
             uid[i] = (uint8_t)local->uid[i] ^ local->last_client_hash[8 + i];
         }
 
-        std_base64_encode(buffer_get_data(local->user_key, NULL), (int)buffer_get_length(local->user_key), encrypt_key_base64);
+        std_base64_encode(buffer_get_data(local->user_key, NULL), (size_t)buffer_get_length(local->user_key), (char*)encrypt_key_base64);
         salt_len = strlen(salt);
         base64_len = (buffer_get_length(local->user_key) + 2) / 3 * 4;
         memcpy(encrypt_key_base64 + base64_len, salt, salt_len);
@@ -574,8 +574,8 @@ size_t auth_chain_a_pack_auth_data(struct obfs_t *obfs, char *data, size_t datal
         buffer_release(_msg);
     }
 
-    std_base64_encode(buffer_get_data(local->user_key, NULL), (int)buffer_get_length(local->user_key), (unsigned char *)password);
-    std_base64_encode(local->last_client_hash, 16, (unsigned char *)(password + strlen(password)));
+    std_base64_encode(buffer_get_data(local->user_key, NULL), (size_t)buffer_get_length(local->user_key), (char *)password);
+    std_base64_encode(local->last_client_hash, 16, (char *)(password + strlen(password)));
     local->cipher = cipher_env_new_instance(password, "rc4");
     local->encrypt_ctx = enc_ctx_new_instance(local->cipher, true);
     local->decrypt_ctx = enc_ctx_new_instance(local->cipher, false);
@@ -810,10 +810,10 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
         memcpy(local->last_server_hash, md5data, 16);
         {
             uint8_t enc_key[16 + 1] = { 0 };
-            size_t b64len = (size_t) std_base64_encode_len((int) buffer_get_length(local->user_key));
+            size_t b64len = (size_t)std_base64_encode_len((size_t)buffer_get_length(local->user_key));
             size_t salt_len = strlen(local->salt);
             uint8_t *key = (uint8_t *)calloc(b64len + salt_len, sizeof(uint8_t));
-            std_base64_encode(buffer_get_data(local->user_key, NULL), (int)buffer_get_length(local->user_key), key);
+            std_base64_encode(buffer_get_data(local->user_key, NULL), (size_t)buffer_get_length(local->user_key), (char*)key);
             strcat((char *)key, local->salt);
             bytes_to_key_with_size(key, strlen((char *)key), enc_key, 16);
             ss_aes_128_cbc_decrypt(16, buffer_get_data(local->recv_buffer, NULL)+16, head, enc_key);
@@ -837,11 +837,11 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
         local->client_id = client_id;
         local->connection_id = connection_id;
         {
-            size_t b64len1 = (size_t) std_base64_encode_len((int) buffer_get_length(local->user_key));
-            size_t b64len2 = (size_t) std_base64_encode_len((int) sizeof(local->last_client_hash));
+            size_t b64len1 = (size_t)std_base64_encode_len((size_t)buffer_get_length(local->user_key));
+            size_t b64len2 = (size_t)std_base64_encode_len((size_t)sizeof(local->last_client_hash));
             password = (uint8_t *)calloc(b64len1 + b64len2, sizeof(uint8_t));
-            b64len1 = std_base64_encode(buffer_get_data(local->user_key, NULL), (int)buffer_get_length(local->user_key), password);
-            b64len2 = std_base64_encode(local->last_client_hash, (int)sizeof(local->last_client_hash), password + b64len1);
+            b64len1 = std_base64_encode(buffer_get_data(local->user_key, NULL), (size_t)buffer_get_length(local->user_key), (char*)password);
+            b64len2 = std_base64_encode(local->last_client_hash, (size_t)sizeof(local->last_client_hash), (char*)(password + b64len1));
         }
         buffer_shortened_to(local->recv_buffer, 36, buffer_get_length(local->recv_buffer) - 36);
         local->has_recv_header = true;

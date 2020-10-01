@@ -1132,7 +1132,7 @@ auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_i
         {
             size_t local_key_len = 0;
             const uint8_t *local_key = buffer_get_data(local->user_key, &local_key_len);
-            std_base64_encode(local_key, (int)local_key_len, (unsigned char *)encrypt_key_base64);
+            std_base64_encode(local_key, (size_t)local_key_len, (char*)encrypt_key_base64);
         }
         strcat(encrypt_key_base64, salt);
 
@@ -1444,12 +1444,12 @@ struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, stru
             size_t local_key_len = 0;
             const uint8_t *local_key = buffer_get_data(local->user_key, &local_key_len);
 
-            size_t b64len = (size_t) std_base64_encode_len((int)local_key_len);
+            size_t b64len = (size_t)std_base64_encode_len((size_t)local_key_len);
             uint8_t *key = (uint8_t*) calloc(b64len + strlen(local->salt) + 1, sizeof(*key));
             size_t key_len;
 
             (void)in_data;
-            key_len = (size_t) std_base64_encode(local_key, (int)local_key_len, key);
+            key_len = (size_t) std_base64_encode(local_key, (size_t)local_key_len, (char*)key);
             memmove(key+key_len, (uint8_t *)local->salt, strlen(local->salt));
             key_len += strlen(local->salt);
 

@@ -82,15 +82,14 @@
 /* Base64 encoder/decoder. Originally Apache file ap_base64.c
  */
 
-#include <string.h>
-#include <stdlib.h>
 #include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "base64.h"
 
 /* aaaack but it's fast and const should make it shared text page. */
-static const unsigned char pr2six[256] =
-{
+static const uint8_t pr2six[256] = {
     /* ASCII table */
     64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
     64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
@@ -110,53 +109,55 @@ static const unsigned char pr2six[256] =
     64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64
 };
 
-int std_base64_decode_len(const unsigned char *bufcoded)
+int std_base64_decode_len(const unsigned char* bufcoded)
 {
     int nbytesdecoded;
-    register const unsigned char *bufin;
+    register const unsigned char* bufin;
     register int nprbytes;
 
-    bufin = (const unsigned char *) bufcoded;
-    while (pr2six[*(bufin++)] <= 63);
+    bufin = (const unsigned char*)bufcoded;
+    while (pr2six[*(bufin++)] <= 63)
+        ;
 
-    nprbytes = (int)((bufin - (const unsigned char *) bufcoded) - 1);
+    nprbytes = (int)((bufin - (const unsigned char*)bufcoded) - 1);
     nbytesdecoded = ((nprbytes + 3) / 4) * 3;
 
     return nbytesdecoded + 1;
 }
 
-int std_base64_decode(const unsigned char *bufcoded, unsigned char *bufplain)
+int std_base64_decode(const unsigned char* bufcoded, unsigned char* bufplain)
 {
     int nbytesdecoded;
-    register const unsigned char *bufin;
-    register unsigned char *bufout;
+    register const unsigned char* bufin;
+    register unsigned char* bufout;
     register int nprbytes;
 
-    bufin = (const unsigned char *) bufcoded;
-    while (pr2six[*(bufin++)] <= 63);
-    nprbytes = (int)((bufin - (const unsigned char *) bufcoded) - 1);
+    bufin = (const unsigned char*)bufcoded;
+    while (pr2six[*(bufin++)] <= 63)
+        ;
+    nprbytes = (int)((bufin - (const unsigned char*)bufcoded) - 1);
     nbytesdecoded = ((nprbytes + 3) / 4) * 3;
 
-    bufout = (unsigned char *) bufplain;
-    bufin = (const unsigned char *) bufcoded;
+    bufout = (unsigned char*)bufplain;
+    bufin = (const unsigned char*)bufcoded;
 
     while (nprbytes > 4) {
-        *(bufout++) = (unsigned char) (pr2six[*bufin] << 2 | pr2six[bufin[1]] >> 4);
-        *(bufout++) = (unsigned char) (pr2six[bufin[1]] << 4 | pr2six[bufin[2]] >> 2);
-        *(bufout++) = (unsigned char) (pr2six[bufin[2]] << 6 | pr2six[bufin[3]]);
+        *(bufout++) = (unsigned char)(pr2six[*bufin] << 2 | pr2six[bufin[1]] >> 4);
+        *(bufout++) = (unsigned char)(pr2six[bufin[1]] << 4 | pr2six[bufin[2]] >> 2);
+        *(bufout++) = (unsigned char)(pr2six[bufin[2]] << 6 | pr2six[bufin[3]]);
         bufin += 4;
         nprbytes -= 4;
     }
 
     /* Note: (nprbytes == 1) would be an error, so just ingore that case */
     if (nprbytes > 1) {
-        *(bufout++) = (unsigned char) (pr2six[*bufin] << 2 | pr2six[bufin[1]] >> 4);
+        *(bufout++) = (unsigned char)(pr2six[*bufin] << 2 | pr2six[bufin[1]] >> 4);
     }
     if (nprbytes > 2) {
-        *(bufout++) = (unsigned char) (pr2six[bufin[1]] << 4 | pr2six[bufin[2]] >> 2);
+        *(bufout++) = (unsigned char)(pr2six[bufin[1]] << 4 | pr2six[bufin[2]] >> 2);
     }
     if (nprbytes > 3) {
-        *(bufout++) = (unsigned char) (pr2six[bufin[2]] << 6 | pr2six[bufin[3]]);
+        *(bufout++) = (unsigned char)(pr2six[bufin[2]] << 6 | pr2six[bufin[3]]);
     }
 
     *(bufout++) = '\0';
@@ -164,24 +165,23 @@ int std_base64_decode(const unsigned char *bufcoded, unsigned char *bufplain)
     return nbytesdecoded;
 }
 
-static const unsigned char basis_64[] =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static const uint8_t basis_64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-int std_base64_encode_len(volatile int len)
+size_t std_base64_encode_len(volatile size_t len)
 {
     return (((len + 2) / 3) * 4) + 1;
 }
 
-int std_base64_encode(const unsigned char *string, int len, unsigned char *encoded)
+size_t std_base64_encode(const uint8_t* string, size_t len, char* encoded)
 {
-    int i;
-    unsigned char *p;
+    size_t i;
+    uint8_t* p;
 
-    p = encoded;
+    p = (uint8_t*)encoded;
     for (i = 0; i < len - 2; i += 3) {
         *p++ = basis_64[(string[i] >> 2) & 0x3F];
-        *p++ = basis_64[((string[i] & 0x3) << 4) | ((int) (string[i + 1] & 0xF0) >> 4)];
-        *p++ = basis_64[((string[i + 1] & 0xF) << 2) | ((int) (string[i + 2] & 0xC0) >> 6)];
+        *p++ = basis_64[((string[i] & 0x3) << 4) | ((size_t)(string[i + 1] & 0xF0) >> 4)];
+        *p++ = basis_64[((string[i + 1] & 0xF) << 2) | ((size_t)(string[i + 2] & 0xC0) >> 6)];
         *p++ = basis_64[string[i + 2] & 0x3F];
     }
     if (i < len) {
@@ -189,42 +189,43 @@ int std_base64_encode(const unsigned char *string, int len, unsigned char *encod
         if (i == (len - 1)) {
             *p++ = basis_64[((string[i] & 0x3) << 4)];
             *p++ = '=';
-        }
-        else {
-            *p++ = basis_64[((string[i] & 0x3) << 4) | ((int) (string[i + 1] & 0xF0) >> 4)];
+        } else {
+            *p++ = basis_64[((string[i] & 0x3) << 4) | ((size_t)(string[i + 1] & 0xF0) >> 4)];
             *p++ = basis_64[((string[i + 1] & 0xF) << 2)];
         }
         *p++ = '=';
     }
 
     *p = '\0'; // *p++ = '\0';
-    return (int)(p - encoded);
+    return (size_t)(p - (uint8_t*)encoded);
 }
 
-char* std_base64_encode_alloc(const unsigned char* plain_src, int len_plain_src, void* (*allocator)(size_t)) {
+char* std_base64_encode_alloc(const uint8_t* plain_src, size_t len_plain_src, void* (*allocator)(size_t))
+{
     size_t len = 0;
     char* result = NULL;
     if (plain_src == NULL || len_plain_src == 0 || allocator == NULL) {
         return NULL;
     }
-    len = (size_t)std_base64_encode_len(len_plain_src);
+    len = (size_t)std_base64_encode_len((size_t)len_plain_src);
     result = (char*)allocator(len + 1);
     if (result == NULL) {
         return NULL;
     }
     memset(result, 0, len + 1);
-    std_base64_encode(plain_src, len_plain_src, (unsigned char*)result);
+    std_base64_encode(plain_src, (size_t)len_plain_src, (char*)result);
 
     return result;
 }
 
-uint8_t* std_base64_decode_alloc(const char* coded_src, void* (*allocator)(size_t), size_t* size) {
+uint8_t* std_base64_decode_alloc(const char* coded_src, void* (*allocator)(size_t), size_t* size)
+{
     size_t len = 0;
     uint8_t* result = NULL;
     if (coded_src == NULL || allocator == NULL) {
         return NULL;
     }
-    len = (size_t) std_base64_decode_len((const unsigned char*)coded_src);
+    len = (size_t)std_base64_decode_len((const unsigned char*)coded_src);
     result = (uint8_t*)allocator(len + 1);
     if (result == NULL) {
         return NULL;
@@ -241,25 +242,28 @@ uint8_t* std_base64_decode_alloc(const char* coded_src, void* (*allocator)(size_
 // https://en.wikipedia.org/wiki/Base64#URL_applications
 //
 
-static void str_replace_char(unsigned char *str, unsigned char old_char, unsigned char new_char);
-static void str_url_safe_base64_to_std_base64(unsigned char *coded_src);
+static void str_replace_char(unsigned char* str, unsigned char old_char, unsigned char new_char);
+static void str_url_safe_base64_to_std_base64(unsigned char* coded_src);
 
-int url_safe_base64_encode_len(int len) {
-    return std_base64_encode_len(len);
+int url_safe_base64_encode_len(int len)
+{
+    return (int)std_base64_encode_len((size_t)len);
 }
 
-int url_safe_base64_encode(const unsigned char *plain_src, int len_plain_src, unsigned char *coded_dst) {
-    std_base64_encode(plain_src, len_plain_src, coded_dst);
+int url_safe_base64_encode(const unsigned char* plain_src, int len_plain_src, unsigned char* coded_dst)
+{
+    std_base64_encode(plain_src, (size_t)len_plain_src, (char*)coded_dst);
     str_replace_char(coded_dst, '+', '-');
     str_replace_char(coded_dst, '/', '_');
     str_replace_char(coded_dst, '=', 0);
-    return (int) strlen((const char *)coded_dst);
+    return (int)strlen((const char*)coded_dst);
 }
 
-char* url_safe_base64_encode_alloc(const unsigned char* plain_src, int len_plain_src, void* (*allocator)(size_t)) {
+char* url_safe_base64_encode_alloc(const unsigned char* plain_src, int len_plain_src, void* (*allocator)(size_t))
+{
     char* result = NULL;
-    size_t len = (size_t) url_safe_base64_encode_len(len_plain_src);
-    if (plain_src==NULL || len_plain_src==0 || allocator==NULL) {
+    size_t len = (size_t)url_safe_base64_encode_len(len_plain_src);
+    if (plain_src == NULL || len_plain_src == 0 || allocator == NULL) {
         return NULL;
     }
     result = (char*)allocator(len + 1);
@@ -273,50 +277,54 @@ char* url_safe_base64_encode_alloc(const unsigned char* plain_src, int len_plain
     return result;
 }
 
-
-int url_safe_base64_decode_len(const unsigned char *coded_src) {
+int url_safe_base64_decode_len(const unsigned char* coded_src)
+{
     int result;
-    size_t len = strlen((const char *)coded_src);
-    unsigned char *new_buf = (unsigned char *) calloc(len + 4, sizeof(new_buf[0]));
+    size_t len = strlen((const char*)coded_src);
+    unsigned char* new_buf = (unsigned char*)calloc(len + 4, sizeof(new_buf[0]));
     memcpy(new_buf, coded_src, len);
-    
+
     str_url_safe_base64_to_std_base64(new_buf);
     result = std_base64_decode_len(new_buf);
     free(new_buf);
     return result;
 }
 
-int url_safe_base64_decode(const unsigned char *coded_src, unsigned char *plain_dst) {
+int url_safe_base64_decode(const unsigned char* coded_src, unsigned char* plain_dst)
+{
     int result;
-    size_t len = strlen((const char *)coded_src);
-    unsigned char *new_buf = (unsigned char *) calloc(len + 4, sizeof(new_buf[0]));
+    size_t len = strlen((const char*)coded_src);
+    unsigned char* new_buf = (unsigned char*)calloc(len + 4, sizeof(new_buf[0]));
     memcpy(new_buf, coded_src, len);
-    
+
     str_url_safe_base64_to_std_base64(new_buf);
     result = std_base64_decode(new_buf, plain_dst);
     free(new_buf);
     return result;
 }
 
-uint8_t* url_safe_base64_decode_alloc(const char* coded_src, void* (*allocator)(size_t), size_t* size) {
-    size_t len; uint8_t* result = NULL;
-    if (coded_src==NULL || allocator==NULL || size==NULL) {
+uint8_t* url_safe_base64_decode_alloc(const char* coded_src, void* (*allocator)(size_t), size_t* size)
+{
+    size_t len;
+    uint8_t* result = NULL;
+    if (coded_src == NULL || allocator == NULL || size == NULL) {
         return NULL;
     }
-    len = url_safe_base64_decode_len((const unsigned char *)coded_src);
+    len = url_safe_base64_decode_len((const unsigned char*)coded_src);
     result = (uint8_t*)allocator(len + 1);
     if (result == NULL) {
         return NULL;
     }
     memset(result, 0, len + 1);
-    len = url_safe_base64_decode((const unsigned char *)coded_src, (unsigned char*)result);
+    len = url_safe_base64_decode((const unsigned char*)coded_src, (unsigned char*)result);
     if (size) {
         *size = len;
     }
     return result;
 }
 
-static void str_replace_char(unsigned char *str, unsigned char old_char, unsigned char new_char) {
+static void str_replace_char(unsigned char* str, unsigned char old_char, unsigned char new_char)
+{
     for (;; str++) {
         if (!*str) {
             break;
@@ -327,28 +335,29 @@ static void str_replace_char(unsigned char *str, unsigned char old_char, unsigne
     }
 }
 
-static void str_url_safe_base64_to_std_base64(unsigned char *coded_src) {
+static void str_url_safe_base64_to_std_base64(unsigned char* coded_src)
+{
     size_t len;
 
     str_replace_char(coded_src, '-', '+');
     str_replace_char(coded_src, '_', '/');
 
-    len = strlen((const char *)coded_src);
+    len = strlen((const char*)coded_src);
 
     switch (len % 4) {
-        case 1:
-            assert(0);
-            break;
-        case 2:
-            coded_src[len] = '=';
-            coded_src[len+1] = '=';
-            coded_src[len+2] = 0;
-            break;
-        case 3:
-            coded_src[len] = '=';
-            coded_src[len+1] = 0;
-            break;
-        default:
-            break;
+    case 1:
+        assert(0);
+        break;
+    case 2:
+        coded_src[len] = '=';
+        coded_src[len + 1] = '=';
+        coded_src[len + 2] = 0;
+        break;
+    case 3:
+        coded_src[len] = '=';
+        coded_src[len + 1] = 0;
+        break;
+    default:
+        break;
     }
 }
