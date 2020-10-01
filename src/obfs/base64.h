@@ -93,15 +93,15 @@ size_t std_base64_encode_len(volatile size_t len);
 size_t std_base64_encode(const uint8_t* plain_src, size_t len_plain_src, char* coded_dst);
 char* std_base64_encode_alloc(const uint8_t* plain_src, size_t len_plain_src, void* (*allocator)(size_t));
 
-int std_base64_decode_len(const unsigned char* coded_src);
-int std_base64_decode(const unsigned char* coded_src, unsigned char* plain_dst);
+size_t std_base64_decode_len(const char* coded_src);
+size_t std_base64_decode(const char* coded_src, uint8_t* plain_dst);
 uint8_t* std_base64_decode_alloc(const char* coded_src, void* (*allocator)(size_t), size_t* size);
 
-int url_safe_base64_encode_len(int len);
-int url_safe_base64_encode(const unsigned char* plain_src, int len_plain_src, unsigned char* coded_dst);
-char* url_safe_base64_encode_alloc(const unsigned char* plain_src, int len_plain_src, void* (*allocator)(size_t));
-int url_safe_base64_decode_len(const unsigned char* coded_src);
-int url_safe_base64_decode(const unsigned char* coded_src, unsigned char* plain_dst);
+size_t url_safe_base64_encode_len(size_t len);
+size_t url_safe_base64_encode(const uint8_t* plain_src, size_t len_plain_src, char* coded_dst);
+char* url_safe_base64_encode_alloc(const uint8_t* plain_src, size_t len_plain_src, void* (*allocator)(size_t));
+size_t url_safe_base64_decode_len(const char* coded_src);
+size_t url_safe_base64_decode(const char* coded_src, uint8_t* plain_dst);
 uint8_t* url_safe_base64_decode_alloc(const char* coded_src, void* (*allocator)(size_t), size_t* size);
 
 #ifdef __cplusplus
