@@ -122,7 +122,7 @@ function judge() {
 }
 
 function dependency_install() {
-    ${INS} install wget git lsof -y
+    ${INS} install curl wget git lsof -y
 
     if [[ "${ID}" == "centos" ]]; then
        ${INS} -y install crontabs
@@ -233,14 +233,15 @@ function nginx_web_server_config_begin() {
 
     rm -rf ${site_dir}
     mkdir -p ${site_dir}/.well-known/acme-challenge/
-    wget https://raw.githubusercontent.com/nginx/nginx/master/docs/html/index.html -O ${site_dir}/index.html
-    wget https://raw.githubusercontent.com/nginx/nginx/master/docs/html/50x.html -O ${site_dir}/50x.html
+    curl -L https://raw.githubusercontent.com/nginx/nginx/master/docs/html/index.html -o ${site_dir}/index.html
+    curl -L https://raw.githubusercontent.com/nginx/nginx/master/docs/html/50x.html -o ${site_dir}/50x.html
     judge "[nginx] copy files"
 
     rm -rf ${nginx_conf_dir}/*
     cat > ${nginx_conf} <<EOF
     server {
-        listen 80;
+        listen 80 default_server;
+        listen [::]:80 default_server;
         server_name localhost;
         index index.html index.htm index.nginx-debian.html;
         root  ${site_dir};
@@ -271,7 +272,7 @@ function do_lets_encrypt_certificate_authority() {
     openssl req -new -sha256 -key domain.key -subj "/" -reqexts SAN -config <(cat ${openssl_cnf} <(printf "[SAN]\nsubjectAltName=DNS:${web_svr_domain},DNS:www.${web_svr_domain}")) > domain.csr
     judge "[CA] Create CSR file"
 
-    wget https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py
+    curl -L https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py -o acme_tiny.py
     python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir ${site_dir}/.well-known/acme-challenge/ > ./signed.crt
     judge "[CA] Obtain website certificate"
 
@@ -320,8 +321,8 @@ function nginx_web_server_config_end() {
     cat > ${nginx_conf} <<EOF
 
     server {
-        listen ${web_svr_listen_port} ssl;
-        ssl on;
+        listen ${web_svr_listen_port} ssl default_server;
+        listen [::]:${web_svr_listen_port} ssl default_server;
         ssl_certificate       ${site_cert_dir}/chained.pem;
         ssl_certificate_key   ${site_cert_dir}/domain.key;
         ssl_protocols         TLSv1 TLSv1.1 TLSv1.2;
@@ -342,7 +343,8 @@ function nginx_web_server_config_end() {
     }
 
     server {
-        listen 80;
+        listen 80 default_server;
+        listen [::]:80 default_server;
         server_name ${web_svr_domain};
         index index.html index.htm index.nginx-debian.html;
         root  ${site_dir};
@@ -351,7 +353,7 @@ function nginx_web_server_config_end() {
         }
         
         location / {
-            rewrite ^/(.*)$ https://${web_svr_domain}:${web_svr_listen_port}/$1 permanent;
+            # rewrite ^/(.*)$ https://${web_svr_domain}:${web_svr_listen_port}/$1 permanent;
         }
     }
 
@@ -363,7 +365,7 @@ EOF
 ssr_n_install() {
     rm -rf ${ssr_n_install_sh}
 
-    wget --no-check-certificate ${ssr_n_install_sh_url}
+    curl -L ${ssr_n_install_sh_url} -o ${ssr_n_install_sh}
 
     if [[ -f ${ssr_n_install_sh} ]]; then
         chmod +x ${ssr_n_install_sh}
