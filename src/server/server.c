@@ -248,12 +248,17 @@ static int ssr_server_run_loop(struct server_config *config, bool force_quit) {
             PRINT_ERR("universal_address_from_string( %s ).\n", config->listen_host);
             return -1;
         }
-        uv_tcp_bind(listener, &addr.addr, 0);
+        error = uv_tcp_bind(listener, &addr.addr, 0);
+        if (error != 0) {
+            PRINT_ERR("uv_tcp_bind: %s", uv_strerror(error));
+            return error;
+        }
 
         error = uv_listen((uv_stream_t *)listener, SSR_MAX_CONN, tunnel_incoming_connection_established_cb);
 
         if (error != 0) {
-            return fprintf(stderr, "Error on listening: %s.\n", uv_strerror(error));
+            PRINT_ERR("Error on listening: %s.\n", uv_strerror(error));
+            return error;
         }
         state->tcp_listener = listener;
 
@@ -1483,8 +1488,16 @@ static uint8_t* tunnel_extract_data(struct tunnel_ctx* tunnel, struct socket_ctx
 }
 
 void print_server_info(const struct server_config *config) {
+    union sockaddr_universal listen_addr = { { 0 } };
+    universal_address_from_string_no_dns(config->listen_host, config->listen_port, &listen_addr);
+
     pr_info("ShadowsocksR native server\n");
-    pr_info("listen port      %hu", config->listen_port);
+    if (listen_addr.addr6.sin6_family == AF_INET6) {
+        pr_info("listen address   [%s]:%hu", config->listen_host, config->listen_port);
+    } else {
+        pr_info("listen address   %s:%hu", config->listen_host, config->listen_port);
+    }
+    pr_info(" ");
     pr_info("method           %s", config->method);
     pr_info("password         %s", config->password);
     pr_info("protocol         %s", config->protocol);

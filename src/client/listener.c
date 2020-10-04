@@ -316,7 +316,11 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
 
         port = get_socket_port(tcp_server);
 
-        pr_info("listening on     %s:%hu\n", addrbuf, port);
+        if (s.addr6.sin6_family == AF_INET6) {
+            pr_info("listening on     [%s]:%hu\n", addrbuf, port);
+        } else {
+            pr_info("listening on     %s:%hu\n", addrbuf, port);
+        }
 
         if (cf->udp) {
             union sockaddr_universal remote_addr = { {0} };

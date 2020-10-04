@@ -157,6 +157,7 @@ int main(int argc, char **argv) {
 void print_remote_info(const struct server_config *config) {
     char remote_host[256] = { 0 };
     char password[256] = { 0 };
+    union sockaddr_universal remote_addr = { { 0 } };
 
     strcpy(remote_host, config->remote_host);
     if (strlen(remote_host) > 4) {
@@ -174,8 +175,14 @@ void print_remote_info(const struct server_config *config) {
         }
     }
 
+    universal_address_from_string_no_dns(config->remote_host, config->remote_port, &remote_addr);
+
     pr_info("ShadowsocksR native client\n");
-    pr_info("remote server    %s:%hu", remote_host, config->remote_port);
+    if (remote_addr.addr6.sin6_family == AF_INET6) {
+        pr_info("remote server    [%s]:%hu", remote_host, config->remote_port);
+    } else {
+        pr_info("remote server    %s:%hu", remote_host, config->remote_port);
+    }
     pr_info("method           %s", config->method);
     pr_info("password         %s", password);
     pr_info("protocol         %s", config->protocol);
