@@ -481,7 +481,7 @@ function install_ssr_service() {
     if [ -f ${target_dir}/${bin_name} ]; then
 
         # Download ShadowsocksR Native service script
-        if ! wget --no-check-certificate ${daemon_script_url} -O ${service_stub} ; then
+        if ! curl -L ${daemon_script_url} -o ${service_stub} ; then
             echo -e "[${red}Error${plain}] Failed to download ${proj_name} Native chkconfig file!"
             exit 1
         fi
