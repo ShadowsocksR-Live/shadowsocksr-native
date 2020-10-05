@@ -217,9 +217,10 @@ static void uv_socket_on_getaddrinfo_cb(uv_getaddrinfo_t* req, int status, struc
     socket_ctx_timer_stop(socket);
 
     if (status == 0) {
+        uint16_t port = socket->addr.addr4.sin_port;
+#if 0
         bool found = false;
         struct addrinfo* iter;
-        uint16_t port = socket->addr.addr4.sin_port;
         for (iter = ai; iter != NULL; iter = iter->ai_next) {
             if (iter->ai_family == AF_INET) {
                 socket->addr.addr4 = *(const struct sockaddr_in*)iter->ai_addr;
@@ -237,6 +238,15 @@ static void uv_socket_on_getaddrinfo_cb(uv_getaddrinfo_t* req, int status, struc
             }
         }
         ASSERT(found);
+#else
+        if (ai->ai_family == AF_INET) {
+            socket->addr.addr4 = *(const struct sockaddr_in*)ai->ai_addr;
+        } else if (ai->ai_family == AF_INET6) {
+            socket->addr.addr6 = *(const struct sockaddr_in6*)ai->ai_addr;
+        } else {
+            UNREACHABLE();
+        }
+#endif
         socket->addr.addr4.sin_port = port;
     }
 
