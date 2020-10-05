@@ -34,7 +34,7 @@
 static void socket_ctx_timer_start(struct socket_ctx* socket);
 static void socket_ctx_timer_stop(struct socket_ctx* socket);
 
-static void tunnel_socket_ctx_on_getaddrinfo_cb(struct socket_ctx* socket, int status, void* p);
+static void tunnel_socket_ctx_on_getaddrinfo_cb(struct socket_ctx* socket, int status, const struct addrinfo* ai, void* p);
 static void tunnel_socket_ctx_on_connect_cb(struct socket_ctx* socket, int status, void* p);
 static size_t tunnel_socket_ctx_on_alloc_cb(struct socket_ctx* socket, size_t size, void* p);
 static void tunnel_socket_ctx_on_read_cb(struct socket_ctx* socket, int status, const uv_buf_t* buf, void* p);
@@ -240,11 +240,11 @@ static void uv_socket_on_getaddrinfo_cb(uv_getaddrinfo_t* req, int status, struc
         socket->addr.addr4.sin_port = port;
     }
 
-    uv_freeaddrinfo(ai);
-
     if (socket->on_getaddrinfo) {
-        socket->on_getaddrinfo(socket, status, socket->on_getaddrinfo_p);
+        socket->on_getaddrinfo(socket, status, ai, socket->on_getaddrinfo_p);
     }
+
+    uv_freeaddrinfo(ai);
 }
 
 void socket_ctx_getaddrinfo(struct socket_ctx* socket, const char* hostname, uint16_t port) {
@@ -613,7 +613,7 @@ static size_t tunnel_socket_ctx_on_alloc_cb(struct socket_ctx* socket, size_t si
     return size;
 }
 
-static void tunnel_socket_ctx_on_getaddrinfo_cb(struct socket_ctx* socket, int status, void* p) {
+static void tunnel_socket_ctx_on_getaddrinfo_cb(struct socket_ctx* socket, int status, const struct addrinfo* ai, void* p) {
     struct tunnel_ctx* tunnel = (struct tunnel_ctx*)p;
     if (tunnel->tunnel_is_terminated(tunnel)) {
         return;
@@ -627,7 +627,7 @@ static void tunnel_socket_ctx_on_getaddrinfo_cb(struct socket_ctx* socket, int s
 
     ASSERT(tunnel->tunnel_on_getaddrinfo_done);
     if (tunnel->tunnel_on_getaddrinfo_done) {
-        tunnel->tunnel_on_getaddrinfo_done(tunnel, socket);
+        tunnel->tunnel_on_getaddrinfo_done(tunnel, socket, ai);
     }
 }
 

@@ -15,7 +15,7 @@ enum socket_state {
 
 struct socket_ctx;
 
-typedef void (*socket_ctx_on_getaddrinfo_cb)(struct socket_ctx* socket, int status, void* p);
+typedef void (*socket_ctx_on_getaddrinfo_cb)(struct socket_ctx* socket, int status, const struct addrinfo* ai, void* p);
 typedef void (*socket_ctx_on_connect_cb)(struct socket_ctx* socket, int status, void* p);
 typedef size_t (*socket_ctx_on_alloc_cb)(struct socket_ctx* socket, size_t size, void* p);
 typedef void (*socket_ctx_on_read_cb)(struct socket_ctx* socket, int status, const uv_buf_t* buf, void* p);
@@ -109,7 +109,7 @@ struct tunnel_ctx {
     void (*tunnel_outgoing_connected_done)(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
     void (*tunnel_read_done)(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
     void (*tunnel_arrive_end_of_file)(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
-    void (*tunnel_on_getaddrinfo_done)(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
+    void (*tunnel_on_getaddrinfo_done)(struct tunnel_ctx* tunnel, struct socket_ctx* socket, const struct addrinfo* ai);
     void (*tunnel_write_done)(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
     size_t (*tunnel_get_alloc_size)(struct tunnel_ctx* tunnel, struct socket_ctx* socket, size_t suggested_size);
     uint8_t* (*tunnel_extract_data)(struct tunnel_ctx* tunnel, struct socket_ctx* socket, void* (*allocator)(size_t size), size_t* size);
