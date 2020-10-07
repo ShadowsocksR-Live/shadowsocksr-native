@@ -893,7 +893,7 @@ static void do_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     const char *host = NULL;
     struct socks5_address *s5addr;
     union sockaddr_universal target = { {0} };
-    bool ipFound = true;
+    bool ipFound = false;
     struct buffer_t *init_pkg = ctx->init_pkg;
 
     ASSERT(socket == tunnel->incoming);
@@ -912,17 +912,7 @@ static void do_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
 
     host = s5addr->addr.domainname;
 
-    if (socks5_address_to_universal(s5addr, false, &target) == false) {
-        ASSERT(s5addr->addr_type == SOCKS5_ADDRTYPE_DOMAINNAME);
-
-        if (uv_ip4_addr(host, s5addr->port, &target.addr4) != 0) {
-            if (uv_ip6_addr(host, s5addr->port, &target.addr6) != 0) {
-                ipFound = false;
-            }
-        }
-    }
-
-    if (ipFound == false) {
+    {
         struct ssr_server_state *state = (struct ssr_server_state *)ctx->env->data;
         union sockaddr_universal *addr = ip_addr_cache_retrieve_address(state->resolved_ip_cache, host, &malloc);
         if (addr) {
