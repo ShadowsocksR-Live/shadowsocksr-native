@@ -679,9 +679,6 @@ void tunnel_dump_error_info(struct tunnel_ctx* tunnel, struct socket_ctx* socket
     const char* from = NULL;
     if (socket == tunnel->outgoing) {
         addr = socks5_address_to_string(tunnel->desired_addr, &malloc);
-        if (addr) {
-            sprintf(addr + strlen(addr), ":%d", (int)tunnel->desired_addr->port);
-        }
         from = "_server_";
     } else {
         union sockaddr_universal tmp = { { 0 } };
@@ -691,9 +688,6 @@ void tunnel_dump_error_info(struct tunnel_ctx* tunnel, struct socket_ctx* socket
         if ((strcmp(addr, "127.0.0.1") == 0) || (strlen(addr) == 0)) {
             free(addr);
             addr = socks5_address_to_string(tunnel->desired_addr, &malloc);
-            if (addr) {
-                sprintf(addr + strlen(addr), ":%d", (int)tunnel->desired_addr->port);
-            }
         }
         from = "_client_";
     }

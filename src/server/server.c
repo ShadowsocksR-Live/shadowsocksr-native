@@ -995,7 +995,9 @@ static void do_connect_host_start(struct tunnel_ctx *tunnel, struct socket_ctx *
     err = socket_ctx_connect(outgoing);
 
     if (err != 0) {
-        pr_err("connect error: %s", uv_strerror(err));
+        char* addr = socks5_address_to_string(tunnel->desired_addr, &malloc);
+        pr_err("connect \"%s\" error: %s", addr, uv_strerror(err));
+        free(addr);
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
