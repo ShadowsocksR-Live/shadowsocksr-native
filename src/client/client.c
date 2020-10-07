@@ -204,7 +204,7 @@ struct tunnel_ctx* client_tunnel_initialize(uv_tcp_t* lx, unsigned int idle_time
 
 static void client_tunnel_connecting_print_info(struct tunnel_ctx* tunnel) {
     struct client_ctx* ctx = (struct client_ctx*)tunnel->data;
-    char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
+    char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc, true);
     const char* udp = ctx->udp_data_ctx ? "[UDP]" : "";
 #if defined(__PRINT_INFO__)
     pr_info("++++ connecting %s \"%s\" ... ++++", udp, tmp);
@@ -215,7 +215,7 @@ static void client_tunnel_connecting_print_info(struct tunnel_ctx* tunnel) {
 
 static void client_tunnel_shutdown_print_info(struct tunnel_ctx* tunnel, bool success) {
     struct client_ctx* ctx = (struct client_ctx*)tunnel->data;
-    char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
+    char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc, true);
     const char* udp = (ctx->stage == tunnel_stage_s5_udp_accoc || ctx->udp_data_ctx) ? "[UDP]" : "";
     if (!success) {
 #if defined(__PRINT_INFO__)
@@ -1161,7 +1161,7 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
     ctx->connection_status = status;
 
     if (status < 0) {
-        char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
+        char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc, true);
         pr_err("[TLS] connecting \"%s\" failed: %d: %s", tmp, status, uv_strerror(status));
         free(tmp);
 
@@ -1241,7 +1241,7 @@ static void tls_cli_on_write_done(struct tls_cli_ctx* tls_cli, int status, void*
     struct tunnel_ctx* tunnel = ctx->tunnel;
     assert(ctx->tls_ctx == tls_cli);
     if (status < 0) {
-        char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
+        char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc, true);
         pr_err("[TLS] write \"%s\" failed: %d: %s", tmp, status, uv_strerror(status));
         free(tmp);
 
@@ -1265,7 +1265,7 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
     }
 
     if (status < 0) {
-        char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc);
+        char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc, true);
         if (status == UV_EOF) {
             (void)tmp; // pr_warn("connection with %s:%d closed abnormally.", tmp, port);
         } else {

@@ -60,7 +60,7 @@ bool socks5_address_parse(const uint8_t *data, size_t len, struct socks5_address
     return true;
 }
 
-char * socks5_address_to_string(const struct socks5_address *addr, void*(*allocator)(size_t)) {
+char* socks5_address_to_string(const struct socks5_address* addr, void* (*allocator)(size_t), bool with_port) {
     const char *addr_ptr = NULL;
     char *buffer = NULL;
     static const size_t size = 0x100 + 7;
@@ -89,7 +89,7 @@ char * socks5_address_to_string(const struct socks5_address *addr, void*(*alloca
         char tmp[INET6_ADDRSTRLEN + 1] = { 0 };
         uv_inet_ntop(AF_INET6, &addr->addr.ipv6, tmp, sizeof(tmp));
         assert(size >= INET6_ADDRSTRLEN + 3);
-        sprintf(buffer, "[%s]", tmp);
+        sprintf(buffer, with_port ? "[%s]" : "%s", tmp);
         break;
     }
     case SOCKS5_ADDRTYPE_DOMAINNAME:
@@ -102,7 +102,9 @@ char * socks5_address_to_string(const struct socks5_address *addr, void*(*alloca
         return NULL;
         break;
     }
-    sprintf(buffer + strlen(buffer), ":%d", (int)addr->port);
+    if (with_port) {
+        sprintf(buffer + strlen(buffer), ":%d", (int)addr->port);
+    }
     return buffer;
 }
 

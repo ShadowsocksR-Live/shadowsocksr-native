@@ -37,7 +37,7 @@ struct socks5_address {
 };
 
 bool socks5_address_parse(const uint8_t *data, size_t len, struct socks5_address *addr);
-char * socks5_address_to_string(const struct socks5_address *addr, void*(*allocator)(size_t));
+char * socks5_address_to_string(const struct socks5_address *addr, void*(*allocator)(size_t), bool with_port);
 size_t socks5_address_size(const struct socks5_address *addr);
 uint8_t * socks5_address_binary(const struct socks5_address *addr, void*(*allocator)(size_t), size_t *size);
 bool socks5_address_to_universal(const struct socks5_address *s5addr, bool use_dns, union sockaddr_universal *addr);
