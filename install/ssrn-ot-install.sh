@@ -168,7 +168,7 @@ function domain_check() {
     local install=""
     echo "请输入 你的网站域名 (形如 mygooodsite.com)"
     stty erase '^H' && read -p "Please enter your domain name (for example: mygooodsite.com): " web_svr_domain
-    local web_svr_ip_addr=`ping ${web_svr_domain} -c 1 | sed '1{s/[^(]*(//;s/).*//;q}'` | sed '1{s/[^(]*(//;s/).*//;q}'`
+    local web_svr_ip_addr=`ping ${web_svr_domain} -c 1 | sed '1{s/[^(]*(//;s/).*//;q}' | sed '1{s/[^(]*(//;s/).*//;q}'`
     echo -e "${OK} ${GreenBG} Obtaining public IP information, please wait patiently ${Font}"
     web_svr_local_ip_addr=`curl ip.sb`
     echo -e "DNS resolution IP: ${web_svr_ip_addr}"
