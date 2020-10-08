@@ -996,7 +996,7 @@ static void do_connect_host_start(struct tunnel_ctx *tunnel, struct socket_ctx *
         {
             char* host = socks5_address_to_string(tunnel->desired_addr, &malloc, false);
             struct ssr_server_state* state = (struct ssr_server_state*)ctx->env->data;
-            if (ip_addr_cache_is_address_exist(state->resolved_ip_cache, host) == false) {
+            if (ip_addr_cache_is_address_exist(state->resolved_ip_cache, host)) {
                 ip_addr_cache_remove_address(state->resolved_ip_cache, host);
             }
             free(host);
