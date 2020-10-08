@@ -16,6 +16,7 @@ union sockaddr_universal;
 struct ip_addr_cache * ip_addr_cache_create(size_t expire_interval_seconds);
 void ip_addr_cache_add_address(struct ip_addr_cache *addr_cache, const char *host, const union sockaddr_universal *address);
 bool ip_addr_cache_is_address_exist(struct ip_addr_cache *addr_cache, const char *host);
+void ip_addr_cache_remove_address(struct ip_addr_cache* addr_cache, const char* host);
 union sockaddr_universal * ip_addr_cache_retrieve_address(struct ip_addr_cache *addr_cache, const char *host, void*(*allocator)(size_t));
 void ip_addr_cache_destroy(struct ip_addr_cache *addr_cache);
 

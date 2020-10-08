@@ -959,11 +959,12 @@ static void do_resolve_host_done(struct tunnel_ctx *tunnel, struct socket_ctx *s
     }
 
     {
-        char *host = tunnel->desired_addr->addr.domainname;
-        struct ssr_server_state *state = (struct ssr_server_state *)ctx->env->data;
+        char* host = socks5_address_to_string(tunnel->desired_addr, &malloc, false);
+        struct ssr_server_state* state = (struct ssr_server_state*)ctx->env->data;
         if (ip_addr_cache_is_address_exist(state->resolved_ip_cache, host) == false) {
             ip_addr_cache_add_address(state->resolved_ip_cache, host, &outgoing->addr);
         }
+        free(host);
     }
 
     do_connect_host_start(tunnel, socket);
@@ -991,10 +992,20 @@ static void do_connect_host_start(struct tunnel_ctx *tunnel, struct socket_ctx *
     addr = socks5_address_to_string(tunnel->desired_addr, &malloc, true);
     if (err != 0) {
         pr_err("connect \"%s\" error: %s", addr, uv_strerror(err));
+
+        {
+            char* host = socks5_address_to_string(tunnel->desired_addr, &malloc, false);
+            struct ssr_server_state* state = (struct ssr_server_state*)ctx->env->data;
+            if (ip_addr_cache_is_address_exist(state->resolved_ip_cache, host) == false) {
+                ip_addr_cache_remove_address(state->resolved_ip_cache, host);
+            }
+            free(host);
+        }
+
         tunnel->tunnel_shutdown(tunnel);
     } else {
 #if defined(__PRINT_INFO__)
-        pr_info("connect \"%s\" ...", addr);
+        pr_info("connecting \"%s\" ...", addr);
 #endif
     }
     free(addr);

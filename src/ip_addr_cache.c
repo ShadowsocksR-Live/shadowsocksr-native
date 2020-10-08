@@ -56,6 +56,19 @@ void ip_addr_cache_add_address(struct ip_addr_cache *addr_cache, const char *hos
     }
 }
 
+void ip_addr_cache_remove_address(struct ip_addr_cache* addr_cache, const char* host) {
+    if (addr_cache == NULL || host == NULL) {
+        return;
+    }
+    if (cstl_map_exists(addr_cache->resolved_ips, &host) == cstl_true) {
+        if (cstl_map_remove(addr_cache->resolved_ips, &host) != CSTL_ERROR_SUCCESS) {
+            assert(!"remove the item failed!");
+        }
+    } else {
+        assert(!"the item not exist!");
+    }
+}
+
 void expire_ip_remove_cb(struct cstl_map *map, const void *key, const void *value, cstl_bool *stop, void *p) {
     struct ip_addr_cache *addr_cache = (struct ip_addr_cache *)p;
     struct address_timestamp **addr = (struct address_timestamp **)value;
