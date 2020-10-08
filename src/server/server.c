@@ -974,6 +974,7 @@ static void do_connect_host_start(struct tunnel_ctx *tunnel, struct socket_ctx *
     struct socket_ctx *incoming;
     struct socket_ctx *outgoing;
     int err;
+    char* addr;
 
     (void)socket;
     incoming = tunnel->incoming;
@@ -982,17 +983,21 @@ static void do_connect_host_start(struct tunnel_ctx *tunnel, struct socket_ctx *
     ASSERT(incoming->wrstate == socket_state_stop);
     ASSERT(outgoing->rdstate == socket_state_stop);
     ASSERT(outgoing->wrstate == socket_state_stop);
+    ASSERT(socket == outgoing);
 
     ctx->stage = tunnel_stage_connect_host;
     err = socket_ctx_connect(outgoing);
 
+    addr = socks5_address_to_string(tunnel->desired_addr, &malloc, true);
     if (err != 0) {
-        char* addr = socks5_address_to_string(tunnel->desired_addr, &malloc, true);
         pr_err("connect \"%s\" error: %s", addr, uv_strerror(err));
-        free(addr);
         tunnel->tunnel_shutdown(tunnel);
-        return;
+    } else {
+#if defined(__PRINT_INFO__)
+        pr_info("connect \"%s\" ...", addr);
+#endif
     }
+    free(addr);
 }
 
 static void do_connect_host_done(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
