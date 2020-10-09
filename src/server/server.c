@@ -471,7 +471,14 @@ static void tunnel_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* sock
     const char *info = tunnel_stage_string(ctx->stage); (void)info;
     (void)done;
 #if defined(__PRINT_INFO__)
-    pr_info("%s", info);
+    if (tunnel_is_in_streaming(tunnel)) {
+        if (tunnel->in_streaming == false) {
+            tunnel->in_streaming = true;
+            pr_info("%s ...", info);
+        }
+    } else {
+        pr_info("%s", info);
+    }
 #endif
     strncpy(tunnel->extra_info, info, 0x100 - 1);
     switch (ctx->stage) {

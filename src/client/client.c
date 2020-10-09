@@ -306,7 +306,14 @@ static void tunnel_ssr_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* 
     struct socket_ctx* outgoing = tunnel->outgoing;
     const char* info = tunnel_stage_string(ctx->stage); (void)info;
 #if defined(__PRINT_INFO__)
-    pr_info("%s", info);
+    if (tunnel_ssr_is_in_streaming(tunnel)) {
+        if (tunnel->in_streaming == false) {
+            tunnel->in_streaming = true;
+            pr_info("%s ...", info);
+        }
+    } else {
+        pr_info("%s", info);
+    }
 #endif
     strncpy(tunnel->extra_info, info, 0x100 - 1);
     ASSERT(config->over_tls_enable == false);
@@ -390,7 +397,14 @@ static void tunnel_tls_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* 
     struct socket_ctx* incoming = tunnel->incoming;
     const char* info = tunnel_stage_string(ctx->stage); (void)info;
 #if defined(__PRINT_INFO__)
-    pr_info("%s", info);
+    if (tunnel_tls_is_in_streaming(tunnel)) {
+        if (tunnel->in_streaming == false) {
+            tunnel->in_streaming = true;
+            pr_info("%s ...", info);
+        }
+    } else {
+        pr_info("%s", info);
+    }
 #endif
     strncpy(tunnel->extra_info, info, 0x100 - 1);
     ASSERT(config->over_tls_enable);

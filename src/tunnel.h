@@ -102,6 +102,10 @@ struct tunnel_ctx {
 
     REF_COUNT_MEMBER;
 
+#if defined(__PRINT_INFO__)
+    bool in_streaming;
+#endif
+
     void (*tunnel_destroying)(struct tunnel_ctx* tunnel);
 
     void (*tunnel_dispatcher)(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
