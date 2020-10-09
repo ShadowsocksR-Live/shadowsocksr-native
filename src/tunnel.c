@@ -258,16 +258,11 @@ static void uv_socket_on_getaddrinfo_cb(uv_getaddrinfo_t* req, int status, struc
 }
 
 void socket_ctx_getaddrinfo(struct socket_ctx* socket, const char* hostname, uint16_t port) {
-    struct addrinfo hints;
     uv_loop_t* loop = socket->handle.tcp.loop;
 
     socket->addr.addr4.sin_port = htons(port);
 
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-    VERIFY(0 == uv_getaddrinfo(loop, &socket->req.getaddrinfo, uv_socket_on_getaddrinfo_cb, hostname, NULL, &hints));
+    VERIFY(0 == uv_getaddrinfo(loop, &socket->req.getaddrinfo, uv_socket_on_getaddrinfo_cb, hostname, NULL, NULL));
     socket_ctx_timer_start(socket);
     socket->on_getaddrinfo_pending = true;
 }
