@@ -7,6 +7,8 @@ export PATH
 #   Author: ssrlive                                               #
 #=================================================================#
 
+source /etc/os-release
+
 proj_name="ShadowsocksR Native"
 
 daemon_script_url="https://raw.githubusercontent.com/ShadowsocksR-Live/shadowsocksr-native/master/install/ssr-daemon.sh"
@@ -351,7 +353,15 @@ function install_build_tools() {
         apt-get -y install git gcc g++ gdb wget curl automake
     fi
 
-    curl https://cmake.org/files/v3.17/cmake-3.17.0-Linux-x86_64.sh -o cmake_pkg.sh
+    if [[ "${ID}" == "centos" ]]; then
+        echo "Installing CentOS kernel-headers ..."
+        rm -rf kernel-headers.rpm
+        curl http://vault.centos.org/5.7/os/x86_64/CentOS/kernel-headers-2.6.18-274.el5.x86_64.rpm -o kernel-headers.rpm
+        rpm -ivh kernel-headers.rpm
+        rm -rf kernel-headers.rpm
+    fi
+
+    curl https://cmake.org/files/v3.18/cmake-3.18.4-Linux-x86_64.sh -o cmake_pkg.sh
     sh cmake_pkg.sh --prefix=/usr/ --exclude-subdir && rm -rf cmake_pkg.sh
 }
 
