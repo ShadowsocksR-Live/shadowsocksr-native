@@ -122,8 +122,8 @@ EOF
 }
 
 function over_write_resolve_file() {
-    echo "脚本将完全重写 /etc/resolv.conf 文件, 按任意键继续, 或者 Ctrl+C 退出"
-    echo "Script will over write your /etc/resolv.conf file"
+    echo "脚本将完全重写 /etc/resolv.conf 文件, 参考网站 https://nat64.xyz/ , 请按任意键继续, 或者 Ctrl+C 退出安装脚本"
+    echo "Script will over write your /etc/resolv.conf file, see https://nat64.xyz/ "
     echo "Press any key to start...or Press Ctrl+C to quit"
     char=`get_char`
     cat > /etc/resolv.conf <<EOF
