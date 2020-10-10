@@ -165,19 +165,13 @@ int udp_create_remote_socket(bool ipv6, uv_loop_t *loop, uv_udp_t *udp) {
 static int
 udp_create_local_listener(const char *host, uint16_t port, uv_loop_t *loop, uv_udp_t *udp)
 {
-    struct addrinfo hints = { 0 };
     struct addrinfo *result = NULL, *rp, *ipv4v6bindall;
     int s, server_sock = 0;
     char str_port[32] = { 0 };
 
-    hints.ai_family   = AF_UNSPEC;               /* Return IPv4 and IPv6 choices */
-    hints.ai_socktype = SOCK_DGRAM;              /* We want a UDP socket */
-    hints.ai_flags    = AI_PASSIVE | AI_ADDRCONFIG; /* For wildcard IP address */
-    hints.ai_protocol = IPPROTO_UDP;
-
     sprintf(str_port, "%d", port);
 
-    s = getaddrinfo(host, str_port, &hints, &result);
+    s = getaddrinfo(host, str_port, NULL, &result);
     if (s != 0) {
         LOGE("[UDP] getaddrinfo: %s", gai_strerror(s));
         return -1;
