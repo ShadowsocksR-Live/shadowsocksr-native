@@ -998,7 +998,9 @@ static void do_connect_host_start(struct tunnel_ctx *tunnel, struct socket_ctx *
 
     addr = socks5_address_to_string(tunnel->desired_addr, &malloc, true);
     if (err != 0) {
-        pr_err("connect \"%s\" error: %s", addr, uv_strerror(err));
+        u_short sa_family = socket->addr.addr.sa_family;
+        char* sf = (sa_family == AF_INET) ? "IPv4" : ((sa_family == AF_INET6) ? "IPv6" : "unknown");
+        pr_err("connect \"%s\" (%s) error: %s", addr, sf, uv_strerror(err));
 
         {
             char* host = socks5_address_to_string(tunnel->desired_addr, &malloc, false);
