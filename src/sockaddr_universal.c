@@ -329,3 +329,24 @@ uint16_t universal_address_get_port(const union sockaddr_universal *addr) {
     }
     return 0;
 }
+
+bool map_ipv4_to_ipv6(const struct sockaddr_in* addr4, struct sockaddr_in6* addr6)
+{
+    volatile struct sockaddr_in addr4_cache;
+    if (addr4 == NULL || addr6 == NULL || addr4->sin_family != AF_INET) {
+        return false;
+    }
+    memcpy((void*)&addr4_cache, addr4, sizeof(addr4_cache));
+
+    memset(addr6, 0, sizeof(*addr6));
+
+    addr6->sin6_family = AF_INET6;
+    addr6->sin6_port = addr4_cache.sin_port;
+
+    addr6->sin6_addr.s6_addr[10] = 0xff;
+    addr6->sin6_addr.s6_addr[11] = 0xff;
+
+    *((uint32_t*)&(addr6->sin6_addr.s6_addr[12])) = addr4_cache.sin_addr.s_addr;
+
+    return true;
+}

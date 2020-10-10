@@ -47,5 +47,6 @@ int universal_address_from_string_no_dns(const char* addr_str, uint16_t port, un
 int universal_address_from_string(const char* addr_str, uint16_t port, bool tcp, union sockaddr_universal* addr);
 char * universal_address_to_string(const union sockaddr_universal *addr, void*(*allocator)(size_t));
 uint16_t universal_address_get_port(const union sockaddr_universal *addr);
+bool map_ipv4_to_ipv6(const struct sockaddr_in* addr4, struct sockaddr_in6* addr6);
 
 #endif // !defined(__sockaddr_universal_h__)
