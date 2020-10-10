@@ -122,6 +122,7 @@ EOF
 }
 
 function over_write_resolve_file() {
+    echo "脚本将完全重写 /etc/resolv.conf 文件, 按任意键继续, 或者 Ctrl+C 退出"
     echo "Script will over write your /etc/resolv.conf file"
     echo "Press any key to start...or Press Ctrl+C to quit"
     char=`get_char`
@@ -270,8 +271,10 @@ function nginx_web_server_config_begin() {
     }
 EOF
 
-    nginx -s stop
-    nginx
+    systemctl stop nginx
+    sleep 2
+    systemctl start nginx
+    sleep 2
 }
 
 function do_lets_encrypt_certificate_authority() {
@@ -319,7 +322,10 @@ cd ${site_cert_dir}
 python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir ${site_dir}/.well-known/acme-challenge/ > ./signed.crt || exit
 wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > intermediate.pem
 cat signed.crt intermediate.pem > chained.pem
-nginx -s reload
+systemctl stop nginx
+sleep 2
+systemctl start nginx
+sleep 2
 EOF
 
     chmod a+x ${site_cert_dir}/renew_cert.sh
@@ -330,6 +336,7 @@ EOF
     fi
 
     systemctl stop ${cron_name}
+    sleep 2
     rm -rf tmp_info
     crontab -l > tmp_info
     echo "0 0 1 * * ${site_cert_dir}/renew_cert.sh >/dev/null 2>&1" >> tmp_info && crontab tmp_info && rm -rf tmp_info
@@ -383,7 +390,10 @@ function nginx_web_server_config_end() {
 
 EOF
 
-    nginx -s reload
+    systemctl stop nginx
+    sleep 2
+    systemctl start nginx
+    sleep 2
 }
 
 ssr_n_install() {

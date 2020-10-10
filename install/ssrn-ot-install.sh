@@ -248,8 +248,10 @@ function nginx_web_server_config_begin() {
     }
 EOF
 
-    nginx -s stop
-    nginx
+    systemctl stop nginx
+    sleep 2
+    systemctl start nginx
+    sleep 2
 }
 
 function do_lets_encrypt_certificate_authority() {
@@ -297,7 +299,10 @@ cd ${site_cert_dir}
 python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir ${site_dir}/.well-known/acme-challenge/ > ./signed.crt || exit
 wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > intermediate.pem
 cat signed.crt intermediate.pem > chained.pem
-nginx -s reload
+systemctl stop nginx
+sleep 2
+systemctl start nginx
+sleep 2
 EOF
 
     chmod a+x ${site_cert_dir}/renew_cert.sh
@@ -359,7 +364,10 @@ function nginx_web_server_config_end() {
 
 EOF
 
-    nginx -s reload
+    systemctl stop nginx
+    sleep 2
+    systemctl start nginx
+    sleep 2
 }
 
 ssr_n_install() {
