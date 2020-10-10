@@ -174,7 +174,7 @@ function domain_check() {
     echo -e "DNS resolution IP: ${web_svr_ip_addr}"
     echo -e "Local IP: ${web_svr_local_ip_addr}"
     sleep 2
-    if [[ $(echo ${web_svr_local_ip_addr}|tr '.' '+'|bc) -eq $(echo ${web_svr_ip_addr}|tr '.' '+'|bc) ]]; then
+    if [[ $(echo ${web_svr_local_ip_addr} | tr a-z A-Z) = $(echo ${web_svr_ip_addr} | tr a-z A-Z) ]]; then
         echo -e "${OK} ${GreenBG} The DNS resolution IP matches local IP ${Font}"
         sleep 2
     else
