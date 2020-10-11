@@ -271,7 +271,7 @@ function do_lets_encrypt_certificate_authority() {
     fi
 
     openssl genrsa 4096 > domain.key
-    openssl req -new -sha256 -key domain.key -subj "/" -reqexts SAN -config <(cat ${openssl_cnf} <(printf "[SAN]\nsubjectAltName=DNS:${web_svr_domain},DNS:www.${web_svr_domain}")) > domain.csr
+    openssl req -new -sha256 -key domain.key -subj "/" -reqexts SAN -config <(cat ${openssl_cnf} <(printf "[SAN]\nsubjectAltName=DNS:${web_svr_domain}")) > domain.csr
     judge "[CA] Create CSR file"
 
     curl -L https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py -o acme_tiny.py
