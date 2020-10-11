@@ -330,7 +330,7 @@ uint16_t universal_address_get_port(const union sockaddr_universal *addr) {
     return 0;
 }
 
-bool map_ipv4_to_ipv6(const struct sockaddr_in* addr4, struct sockaddr_in6* addr6)
+bool ip_mapping_v4_to_v6(const struct sockaddr_in* addr4, struct sockaddr_in6* addr6)
 {
     volatile struct sockaddr_in addr4_cache;
     if (addr4 == NULL || addr6 == NULL || addr4->sin_family != AF_INET) {
