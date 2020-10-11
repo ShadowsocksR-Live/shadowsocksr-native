@@ -679,7 +679,7 @@ void tunnel_dump_error_info(struct tunnel_ctx* tunnel, struct socket_ctx* socket
         union sockaddr_universal tmp = { { 0 } };
         int len = sizeof(tmp);
         uv_tcp_getpeername(&socket->handle.tcp, &tmp.addr, &len);
-        addr = universal_address_to_string(&tmp, &malloc);
+        addr = universal_address_to_string(&tmp, &malloc, false);
         if ((strcmp(addr, "127.0.0.1") == 0) || (strlen(addr) == 0)) {
             free(addr);
             addr = socks5_address_to_string(tunnel->desired_addr, &malloc, true);

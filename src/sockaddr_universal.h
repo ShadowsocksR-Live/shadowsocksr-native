@@ -45,7 +45,7 @@ bool universal_address_to_socks5(const union sockaddr_universal *addr, struct so
 
 int universal_address_from_string_no_dns(const char* addr_str, uint16_t port, union sockaddr_universal* addr);
 int universal_address_from_string(const char* addr_str, uint16_t port, bool tcp, union sockaddr_universal* addr);
-char * universal_address_to_string(const union sockaddr_universal *addr, void*(*allocator)(size_t));
+char* universal_address_to_string(const union sockaddr_universal* addr, void* (*allocator)(size_t), bool with_port);
 uint16_t universal_address_get_port(const union sockaddr_universal *addr);
 bool ip_mapping_v4_to_v6(const struct sockaddr_in* addr4, struct sockaddr_in6* addr6);
 

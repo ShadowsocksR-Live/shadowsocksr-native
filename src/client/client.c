@@ -597,7 +597,7 @@ static void do_parse_s5_request_from_client_app(struct tunnel_ctx* tunnel) {
 
         VERIFY(0 == uv_tcp_getsockname(&incoming->handle.tcp, (struct sockaddr*)&sockname, &namelen));
 
-        addr = universal_address_to_string(&sockname, &malloc);
+        addr = universal_address_to_string(&sockname, &malloc, false);
         port = universal_address_get_port(&sockname);
 
         buf = s5_build_udp_assoc_package(config->udp, addr, port, &malloc, &len);

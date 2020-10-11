@@ -257,7 +257,9 @@ static int ssr_server_run_loop(struct server_config *config, bool force_quit) {
         error = uv_listen((uv_stream_t *)listener, SSR_MAX_CONN, tunnel_incoming_connection_established_cb);
 
         if (error != 0) {
-            PRINT_ERR("Error on listening: %s.\n", uv_strerror(error));
+            char* addr_str = universal_address_to_string(&addr, &malloc, true);
+            PRINT_ERR("Error on listening \"%s\": %s.\n", addr_str, uv_strerror(error));
+            free(addr_str);
             return error;
         }
         state->tcp_listener = listener;
