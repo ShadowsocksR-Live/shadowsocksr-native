@@ -1304,7 +1304,9 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
             pl != size ||
             0 != strcmp(accept_val, calc_val))
         {
-            PRINT_ERR("[TLS] error with status: %s", http_headers_get_status(hdrs));
+            char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc, true);
+            pr_err("[TLS] websocket error at \"%s\" with status: %s", tmp, http_headers_get_status(hdrs));
+            free(tmp);
             tunnel->tunnel_shutdown(tunnel);
         } else {
             if (ctx->udp_data_ctx) {
