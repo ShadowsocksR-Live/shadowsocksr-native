@@ -13,6 +13,7 @@
 #elif defined(__APPLE__)
 #include <stdint.h>
 #include <mach-o/dyld.h>
+#include <sys/param.h>
 #elif defined(__linux__)
 #define SELF_EXE "/proc/self/exe"
 #elif defined(__FreeBSD__)
