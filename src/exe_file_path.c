@@ -36,7 +36,7 @@ char* exe_file_path(void* (*allocator)(size_t)) {
 
 #if defined(_WIN32)
         bufsize = MAX_PATH;
-        buf = allocator(bufsize);
+        buf = (char*)allocator(bufsize);
         if (buf == NULL) {
             break;
         }
@@ -51,7 +51,7 @@ char* exe_file_path(void* (*allocator)(size_t)) {
 
 #elif defined(__APPLE__)
         bufsize = MAXPATHLEN;
-        buf = allocator(bufsize);
+        buf = (char*)allocator(bufsize);
         if (buf == NULL) {
             break;
         }
@@ -63,7 +63,7 @@ char* exe_file_path(void* (*allocator)(size_t)) {
 
 #elif defined(__unix__)
         bufsize = 256*2;
-        buf = allocator(bufsize);
+        buf = (char*)allocator(bufsize);
         if (buf == NULL) {
             break;
         }
