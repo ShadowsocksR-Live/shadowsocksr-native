@@ -80,7 +80,6 @@ function download_ssr_bin() {
         "enable": true,
         "server_domain": "${domain_name}",
         "path": "/${ssrot_path}/",
-        "target_address": true,
         "root_cert_file": ""
     }
 }
