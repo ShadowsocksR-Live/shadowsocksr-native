@@ -1201,9 +1201,7 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
                 cstl_deque_pop_front(ctx->udp_data_ctx->send_deque);
             }
         }
-        if (ssr_ok != tunnel_cipher_client_encrypt(ctx->cipher, tmp)) {
-            tunnel->tunnel_shutdown(tunnel);
-        } else {
+        {
             const char* url_path = config->over_tls_path;
             const char* domain = config->over_tls_server_domain;
             unsigned short domain_port = config->remote_port;
@@ -1216,18 +1214,14 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
             free(key);
 
             buf = websocket_connect_request(domain, domain_port, url_path, ctx->sec_websocket_key, &malloc, &len);
-            if (config->target_address)
             {
-                char* b64addr = url_safe_base64_encode_alloc(typ, (size_t)typ_len, &malloc);
+                char* b64addr = std_base64_encode_alloc(typ, (size_t)typ_len, &malloc);
                 static const char* addr_fmt = "Target-Address" ": %s\r\n";
                 char* addr_field = (char*)calloc(strlen(addr_fmt) + strlen(b64addr) + 1, sizeof(*addr_field));
                 sprintf(addr_field, addr_fmt, b64addr);
                 buf = http_header_append_new_field(buf, &len, &realloc, addr_field);
                 free(addr_field);
                 free(b64addr);
-            }
-            else {
-            buf = http_header_set_payload_data(buf, &len, &realloc, typ, typ_len);
             }
             if (ctx->udp_data_ctx) {
                 size_t addr_len = 0;
