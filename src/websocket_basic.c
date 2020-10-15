@@ -200,6 +200,17 @@ char * websocket_generate_sec_websocket_accept(const char *sec_websocket_key, vo
     return b64_str;
 }
 
+const char* ws_close_reason_string(enum ws_close_reason reason) {
+#define WS_CLOSE_REASON_GEN(_, name, msg) case (name): return msg;
+    switch (reason) {
+    WS_CLOSE_REASON_MAP(WS_CLOSE_REASON_GEN)
+    default:; /* Silence WS_CLOSE_REASON_MAX -Wswitch warning. */
+    }
+#undef WS_CLOSE_REASON_GEN
+    return "Error! Unknown reason";
+}
+
+
 #define WEBSOCKET_REQUEST_FORMAT0                                               \
     "GET %s HTTP/1.1\r\n"                                                       \
     "Host: %s:%d\r\n"                                                           \

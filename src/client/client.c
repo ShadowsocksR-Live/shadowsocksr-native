@@ -1354,7 +1354,12 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
                 if (info.payload_size >= sizeof(uint16_t)) {
                     reason = (ws_close_reason)ws_ntoh16(*((uint16_t*)payload));
                 }
-                ASSERT(reason == WS_CLOSE_REASON_NORMAL);
+                if (reason != WS_CLOSE_REASON_NORMAL) {
+                    char* target = socks5_address_to_string(tunnel->desired_addr, &malloc, true);
+                    const char* fmt = "[TLS] websocket warning at \"%s\" with close reason %s and info \"%s\"";
+                    pr_warn(fmt, target, ws_close_reason_string(reason), ((char*)payload)+sizeof(uint16_t));
+                    free(target);
+                }
                 free(payload);
                 ctx->tls_is_eof = true;
                 break;
