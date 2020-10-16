@@ -232,6 +232,8 @@ static int ssr_server_run_loop(struct server_config *config, bool force_quit) {
     loop = (uv_loop_t *) calloc(1, sizeof(uv_loop_t));
     uv_loop_init(loop);
 
+    config_ssrot_revision(config);
+
     state = (struct ssr_server_state *) calloc(1, sizeof(*state));
     state->force_quit = force_quit;
     state->env = ssr_cipher_env_create(config, state);

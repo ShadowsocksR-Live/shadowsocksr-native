@@ -70,6 +70,8 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
     int err;
     uv_getaddrinfo_t *req;
 
+    config_ssrot_revision(cf);
+
     loop = (uv_loop_t *) calloc(1, sizeof(uv_loop_t));
     uv_loop_init(loop);
 
