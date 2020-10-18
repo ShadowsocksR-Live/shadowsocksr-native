@@ -4,11 +4,11 @@
 
 rm -rf ssr-native-linux-x64.zip
 wget https://github.com/ShadowsocksR-Live/shadowsocksr-native/releases/latest/download/ssr-native-linux-x64.zip
-if [ $? -ne 0 ]; then echo "wget failed"; exit $?; fi
+if [ $? -ne 0 ]; then echo "wget failed"; exit -1; fi
 
 rm -rf ssr-server
 unzip ssr-native-linux-x64.zip ssr-server
-if [ $? -ne 0 ]; then echo "unzip failed"; exit $?; fi
+if [ $? -ne 0 ]; then echo "unzip failed"; exit -1; fi
 
 chmod +x ssr-server
 rm -rf ssr-native-linux-x64.zip
