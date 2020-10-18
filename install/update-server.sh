@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# sudo apt install curl unzip -y
+# sudo apt install wget unzip -y
 
 rm -rf ssr-native-linux-x64.zip
 wget https://github.com/ShadowsocksR-Live/shadowsocksr-native/releases/latest/download/ssr-native-linux-x64.zip
