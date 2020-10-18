@@ -16,6 +16,8 @@ rm -rf ssr-native-linux-x64.zip
 sudo rm -rf /usr/bin/ssr-server
 sudo mv ssr-server /usr/bin/
 
+echo "Restarting ssr-native.service ..."
+
 sudo systemctl stop ssr-native.service
 sleep 2
 sudo systemctl start ssr-native.service
