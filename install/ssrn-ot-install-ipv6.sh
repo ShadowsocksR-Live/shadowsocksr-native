@@ -199,6 +199,7 @@ function domain_check() {
     if [[ $(echo ${web_svr_local_ip_addr} | tr a-z A-Z) = $(echo ${web_svr_ip_addr} | tr a-z A-Z) ]]; then
         echo -e "${OK} ${GreenBG} The DNS resolution IP matches local IP ${Font}"
         sleep 2
+        web_svr_local_ip_addr=${web_svr_domain}
     else
         echo -e "${Error} ${RedBG} The DNS resolution IP does not match the local IP. Do you want to continue the installation? (y/n) ${Font}" && read install
         case $install in
@@ -443,7 +444,7 @@ function main() {
     is_root
     check_system
 
-    over_write_resolve_file
+    # over_write_resolve_file
 
     dependency_install
     web_svr_reverse_proxy_port=`random_listen_port`
