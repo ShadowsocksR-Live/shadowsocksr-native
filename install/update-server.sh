@@ -4,6 +4,7 @@
 
 function check_root_account() {
     if [ `id -u` != 0 ]; then
+        echo -e "当前账号不是 root 账号，请切换到 root 账号再运行本脚本。"
         echo -e "Current account is not root user, please switch to root user and re-execute this script."
         exit 1
     fi
