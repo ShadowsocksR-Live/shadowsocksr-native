@@ -9,7 +9,7 @@ function check_root_account() {
     fi
 }
 
-function do_update() {
+function do_download_ssr_server_bin() {
     rm -rf ssr-native-linux-x64.zip
     wget https://github.com/ShadowsocksR-Live/shadowsocksr-native/releases/latest/download/ssr-native-linux-x64.zip
     if [ $? -ne 0 ]; then echo "wget failed"; exit -1; fi
@@ -23,6 +23,11 @@ function do_update() {
 
     rm -rf /usr/bin/ssr-server
     mv ssr-server /usr/bin/
+}
+
+function do_update_ssr_server() {
+
+    do_download_ssr_server_bin
 
     echo "Restarting ssr-native.service ..."
 
@@ -35,7 +40,7 @@ function do_update() {
 
 function main() {
     check_root_account
-    do_update
+    do_update_ssr_server
 }
 
 main
