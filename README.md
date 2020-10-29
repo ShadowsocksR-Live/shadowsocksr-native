@@ -133,6 +133,12 @@ mkdir build && cd build
 cmake .. && make
 # make install
 # /bin/cp -rfa src/ssr-* /usr/bin
+
+# build 32-bit binary
+apt-get install gcc-multilib -y
+rm -rf *
+cmake -D CMAKE_C_FLAGS=-m32 .. && make
+
 ```
 
 The target binaries are `ssr-n/build/src/ssr-server`, `ssr-n/build/src/ssr-client` and `ssr-n/build/src/ssr-local`.
