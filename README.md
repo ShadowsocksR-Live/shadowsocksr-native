@@ -135,7 +135,7 @@ cmake .. && make
 # /bin/cp -rfa src/ssr-* /usr/bin
 
 # build 32-bit binary
-apt-get install gcc-multilib -y
+sudo apt-get install gcc-multilib -y
 rm -rf *
 cmake -D CMAKE_C_FLAGS=-m32 .. && make
 
