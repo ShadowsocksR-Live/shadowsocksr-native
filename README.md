@@ -137,7 +137,7 @@ cmake .. && make
 # build 32-bit binary
 sudo apt-get install gcc-multilib -y
 rm -rf *
-cmake -D CMAKE_C_FLAGS=-m32 -D CMAKE_CXX_FLAGS=-m32 .. && make
+cmake -D CMAKE_C_FLAGS=-m32 .. && make
 
 ```
 
