@@ -493,7 +493,7 @@ enum ssr_error tunnel_cipher_client_encrypt(struct tunnel_cipher_ctx *tc, struct
 
     obfs_plugin = tc->obfs;
     if (obfs_plugin && obfs_plugin->client_encode) {
-        struct buffer_t *tmp = obfs_plugin->client_encode(tc->obfs, buf);
+        struct buffer_t* tmp = obfs_plugin->client_encode(obfs_plugin, buf);
         buffer_replace(buf, tmp); buffer_release(tmp);
     }
     // SSR end
@@ -512,14 +512,14 @@ enum ssr_error tunnel_cipher_client_decrypt(struct tunnel_cipher_ctx *tc, struct
 
     if (obfs_plugin && obfs_plugin->client_decode) {
         bool needsendback = 0;
-        struct buffer_t *result = obfs_plugin->client_decode(tc->obfs, buf, &needsendback);
+        struct buffer_t* result = obfs_plugin->client_decode(obfs_plugin, buf, &needsendback);
         if (result == NULL) {
             return ssr_error_client_decode;
         }
         buffer_replace(buf, result); buffer_release(result);
         if (needsendback && obfs_plugin->client_encode) {
             struct buffer_t *empty = buffer_create_from((const uint8_t *)"", 0);
-            struct buffer_t *sendback = obfs_plugin->client_encode(tc->obfs, empty);
+            struct buffer_t* sendback = obfs_plugin->client_encode(obfs_plugin, empty);
             ASSERT(feedback);
             if (feedback) {
                 *feedback = sendback;
@@ -538,7 +538,7 @@ enum ssr_error tunnel_cipher_client_decrypt(struct tunnel_cipher_ctx *tc, struct
         size_t len0 = 0, capacity = 0;
         uint8_t *p = (uint8_t *) buffer_raw_clone(buf, &malloc, &len0, &capacity);
         ssize_t len = protocol_plugin->client_post_decrypt(
-            tc->protocol, (char **)&p, (int)len0, &capacity);
+            protocol_plugin, (char**)&p, (int)len0, &capacity);
         if (len >= 0) {
             buffer_store(buf, p, (size_t)len);
         }
