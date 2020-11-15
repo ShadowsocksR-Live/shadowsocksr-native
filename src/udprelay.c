@@ -32,7 +32,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifndef __MINGW32__
+#if !defined(__MINGW32__) && !defined(_WIN32)
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>

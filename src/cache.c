@@ -334,6 +334,7 @@ cache_insert(struct cache *cache, char *key, size_t key_len, void *data)
 }
 
 #if defined(_WIN32)
+#include <Windows.h>
 
 ev_tstamp
 _ev_time(void)

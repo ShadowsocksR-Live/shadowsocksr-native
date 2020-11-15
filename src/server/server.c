@@ -427,7 +427,7 @@ void signal_quit_cb(uv_signal_t *handle, int signum) {
     switch (signum) {
     case SIGINT:
     case SIGTERM:
-#ifndef __MINGW32__
+#if !defined(__MINGW32__) && !defined(_WIN32)
     case SIGUSR1:
 #endif
     {

@@ -37,7 +37,7 @@
 #include <stdlib.h> /* malloc() */
 #include <string.h> /* strncpy() */
 
-#ifndef __MINGW32__
+#if !defined(__MINGW32__) && !defined(_WIN32)
 #include <sys/socket.h>
 #else
 #include "win32.h"

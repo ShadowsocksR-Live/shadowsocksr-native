@@ -42,7 +42,7 @@
 #define USING_CRYPTO "MBEDTLS_VERSION_TEXT"
 #endif
 
-#ifndef __MINGW32__
+#if !defined(__MINGW32__) && !defined(_WIN32)
 #include <errno.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -161,7 +161,7 @@ static void on_alloc(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf) 
     do_alloc_uv_buffer(suggested_size, buf);
 }
 
-#ifndef __MINGW32__
+#if !defined(__MINGW32__) && !defined(_WIN32)
 int
 setnonblocking(int fd)
 {
@@ -1318,7 +1318,7 @@ signal_cb(uv_signal_t* handle, int signum)
     switch (signum) {
         case SIGINT:
         case SIGTERM:
-#ifndef __MINGW32__
+#if !defined(__MINGW32__) && !defined(_WIN32)
         case SIGUSR1:
 #endif
             keep_resolving = 0;
@@ -1929,7 +1929,7 @@ int ssr_local_main_loop(const struct server_config *config, void(*feedback_state
     //    FATAL("failed to switch user");
     //}
 
-#ifndef __MINGW32__
+#if !defined(__MINGW32__) && !defined(_WIN32)
     if (geteuid() == 0){
         LOGI("%s", "running from root user");
     }

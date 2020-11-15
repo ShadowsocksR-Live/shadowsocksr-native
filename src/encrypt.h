@@ -27,7 +27,7 @@
 #include "config.h"
 #endif
 
-#ifndef __MINGW32__
+#if !defined(__MINGW32__) && !defined(_WIN32)
 #include <sys/socket.h>
 #endif
 

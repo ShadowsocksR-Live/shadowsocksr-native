@@ -79,7 +79,7 @@ typedef mbedtls_md_info_t digest_type_t;
 
 #include <sodium.h>
 
-#ifndef __MINGW32__
+#if !defined(__MINGW32__) && !defined(_WIN32)
 #include <arpa/inet.h>
 #endif
 

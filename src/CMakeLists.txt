@@ -5,6 +5,11 @@ if (ENABLE_DUMP_INFO)
     add_definitions("-D__PRINT_INFO__")
 endif()
 
+if (MSVC)
+    add_definitions("-DSODIUM_STATIC")
+    add_definitions("-DMBEDTLS_API")
+endif()
+
 if(ANDROID)
 include_directories(${LIB_ANCILLARY_DIR})
 endif()
@@ -187,6 +192,12 @@ if (WIN32)
     list ( APPEND SOURCE_FILES_SERVER win32.c )
 endif ()
 
+if (MSVC)
+    list ( APPEND SOURCE_FILES_CLIENT ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/getopt.c ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/getopt_long.c ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/strncasecmp.c )
+    list ( APPEND SOURCE_FILES_LOCAL ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/getopt.c ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/getopt_long.c ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/strncasecmp.c )
+    list ( APPEND SOURCE_FILES_SERVER ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/getopt.c ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/getopt_long.c ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/strncasecmp.c )
+endif(MSVC)
+
 if (!APPLE)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 endif()
@@ -231,8 +242,11 @@ set_target_properties(ssr-server PROPERTIES COMPILE_DEFINITIONS MODULE_REMOTE)
 set (ss_lib_common
         json-c
         uv_a
-        m
         )
+
+if (!WIN32)
+    list ( APPEND ss_lib_common m )
+endif()
 
 set (ss_lib_net
         ${ss_lib_common}

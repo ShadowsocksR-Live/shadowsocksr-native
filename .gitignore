@@ -1,7 +1,7 @@
-win32/.vs/
-win32/Debug/
-win32/Release/
-win32/x64/
+.vs/
+Debug/
+Release/
+x64/
 
 win32/libcork/Debug/
 win32/libcork/Release/
