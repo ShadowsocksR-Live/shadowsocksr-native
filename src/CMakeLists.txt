@@ -244,7 +244,8 @@ set (ss_lib_common
         uv_a
         )
 
-if (!WIN32)
+if (MSVC)
+else()
     list ( APPEND ss_lib_common m )
 endif()
 
