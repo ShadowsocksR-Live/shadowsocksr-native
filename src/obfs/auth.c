@@ -1114,22 +1114,23 @@ auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_i
         char encrypt_key_base64[256] = {0};
         if (buffer_get_length(local->user_key) == 0) {
             if(server->param != NULL && server->param[0] != 0) {
-                char *param = server->param;
-                char *delim = strchr(param, ':');
-                if(delim != NULL) {
+                char* param = strdup(server->param);
+                char* delim = NULL;
+                if (param && ((delim = strchr(param, ':')) != NULL)) {
                     uint8_t hash[SHA1_BYTES + 1] = { 0 };
                     long uid_long;
-                    char key_str[128];
-                    char uid_str[16] = { 0 };
-                    strncpy(uid_str, param, delim - param);
-                    strcpy(key_str, delim + 1);
+                    char* key_str = NULL;
+                    char* uid_str = param;
+                    delim[0] = 0;
+                    key_str = delim + 1;
                     uid_long = strtol(uid_str, NULL, 10);
                     memintcopy_lt(local->uid, (uint32_t)uid_long);
 
-                    local->hash(hash, (uint8_t *)key_str, (int)strlen(key_str));
+                    local->hash(hash, (uint8_t*)key_str, (int)strlen(key_str));
 
                     buffer_store(local->user_key, hash, local->hash_len);
                 }
+                free(param);
             }
             if (buffer_get_length(local->user_key) == 0) {
                 rand_bytes((uint8_t *)local->uid, 4);
