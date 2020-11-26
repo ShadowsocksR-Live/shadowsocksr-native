@@ -135,6 +135,9 @@
     <ClCompile Include="..\..\src\exe_file_path.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\strtrim.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\encrypt.h">
@@ -255,6 +258,9 @@
       <Filter>client</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\exe_file_path.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\strtrim.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -23,6 +23,8 @@ set(SOURCE_FILES_SNI
         )
 
 set(SOURCE_FILES_OBFS
+        strtrim.c
+        strtrim.h
         ssr_cipher_names.c
         ssr_cipher_names.h
         obfs/auth.c

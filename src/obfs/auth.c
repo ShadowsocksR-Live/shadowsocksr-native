@@ -9,6 +9,7 @@
 #include "encrypt.h"
 #include "obfs.h"
 #include "ssrbuffer.h"
+#include "strtrim.h"
 #if defined(WIN32) || defined(_WIN32)
 #include <winsock2.h>
 #else
@@ -1123,9 +1124,11 @@ auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_i
                     char* uid_str = param;
                     delim[0] = 0;
                     key_str = delim + 1;
+                    uid_str = strtrim(uid_str, trim_type_both, NULL);
                     uid_long = strtol(uid_str, NULL, 10);
                     memintcopy_lt(local->uid, (uint32_t)uid_long);
 
+                    key_str = strtrim(key_str, trim_type_both, NULL);
                     local->hash(hash, (uint8_t*)key_str, (int)strlen(key_str));
 
                     buffer_store(local->user_key, hash, local->hash_len);

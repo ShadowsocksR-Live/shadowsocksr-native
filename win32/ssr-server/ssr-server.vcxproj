@@ -31,6 +31,7 @@
     <ClCompile Include="..\..\src\ip_addr_cache.c" />
     <ClCompile Include="..\..\src\sockaddr_universal.c" />
     <ClCompile Include="..\..\src\ssr_executive.c" />
+    <ClCompile Include="..\..\src\strtrim.c" />
     <ClCompile Include="..\..\src\text_in_color.c" />
     <ClCompile Include="..\..\src\tunnel.c" />
     <ClCompile Include="..\..\src\encrypt.c" />
@@ -62,6 +63,7 @@
     <ClInclude Include="..\..\src\client\s5.h" />
     <ClInclude Include="..\..\src\exe_file_path.h" />
     <ClInclude Include="..\..\src\ip_addr_cache.h" />
+    <ClInclude Include="..\..\src\strtrim.h" />
     <ClInclude Include="..\..\src\text_in_color.h" />
     <ClInclude Include="..\..\src\tunnel.h" />
     <ClInclude Include="..\..\src\cmd_line_parser.h" />

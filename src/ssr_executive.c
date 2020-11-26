@@ -40,6 +40,7 @@
 #include "obfs.h"
 #include "crc32.h"
 #include "cstl_lib.h"
+#include "strtrim.h"
 
 const char * ssr_strerror(enum ssr_error err) {
 #define SSR_ERR_GEN(_, name, errmsg) case (name): return errmsg;
@@ -143,6 +144,7 @@ void config_parse_protocol_param(struct server_config *config, const char *param
     iter = strchr(p0, '#');
     if (iter) {
         *iter = '\0'; iter++;
+        p0 = strtrim(p0, trim_type_both, NULL);
         max_cli = strtol(p0, NULL, 10);
         user_id = iter;
     }
@@ -157,6 +159,8 @@ void config_parse_protocol_param(struct server_config *config, const char *param
         auth_key = strchr(user_id, ':');
         if (auth_key) {
             *auth_key = '\0'; auth_key++;
+            user_id = strtrim(user_id, trim_type_both, NULL);
+            auth_key = strtrim(auth_key, trim_type_both, NULL);
             config_add_user_id_with_auth_key(config, user_id, auth_key);
         }
 
