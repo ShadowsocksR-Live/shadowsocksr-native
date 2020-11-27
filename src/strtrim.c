@@ -13,6 +13,7 @@ char* strtrim(char* src, enum str_trim_type trim_type, void* (*allocator)(size_t
     }
     if (allocator) {
         result = (char*)allocator(strlen(src) + 1);
+        if (result == NULL) { return NULL; }
         strcpy(result, src);
     }
     else {
@@ -41,7 +42,7 @@ static char* trim_leading_space(char* str) {
 
 static char* trim_trailing_space(char* str) {
     char* end;
-    if (str == NULL) { return NULL; }
+    if (str == NULL || strlen(str) == 0) { return str; }
     end = str + strlen(str) - 1;
     while (end > str && isspace((unsigned char)*end)) { end--; }
 
