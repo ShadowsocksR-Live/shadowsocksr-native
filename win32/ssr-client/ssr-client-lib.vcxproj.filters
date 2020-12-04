@@ -1,0 +1,263 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="getopt">
+      <UniqueIdentifier>{afc0f4b8-71fb-42b7-9bad-8d26e166c367}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="obfs">
+      <UniqueIdentifier>{a16cfa70-3b2c-4305-9deb-bbd194275b80}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="client">
+      <UniqueIdentifier>{2dc57378-9a2f-45a4-b750-819da8f2d2f2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="http-parser">
+      <UniqueIdentifier>{5ff86971-510a-4e35-b862-c701e2446371}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\encrypt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\obfs\http_simple.c">
+      <Filter>obfs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\obfs\obfs.c">
+      <Filter>obfs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\obfs\obfsutil.c">
+      <Filter>obfs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\obfs\tls1.2_ticket.c">
+      <Filter>obfs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\obfs\verify.c">
+      <Filter>obfs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\obfs\auth.c">
+      <Filter>obfs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\obfs\auth_chain.c">
+      <Filter>obfs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\obfs\base64.c">
+      <Filter>obfs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\obfs\crc32.c">
+      <Filter>obfs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\cache.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\client\listener.c">
+      <Filter>client</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\client\s5.c">
+      <Filter>client</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\tunnel.c">
+      <Filter>client</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ssrutils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ssrbuffer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\udprelay.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ssr_cipher_names.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\obfs\cstl_lib.c">
+      <Filter>obfs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ssr_executive.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\getopt_long.c">
+      <Filter>getopt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\strncasecmp.c">
+      <Filter>getopt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\getopt.c">
+      <Filter>getopt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sockaddr_universal.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dump_info.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\client\client.c">
+      <Filter>client</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\daemon_wrapper.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\cmd_line_parser.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\text_in_color.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\client\tls_cli.c">
+      <Filter>client</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\websocket_basic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\depends\http-parser\http_parser.c">
+      <Filter>http-parser</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\depends\http-parser\http_parser_wrapper.c">
+      <Filter>http-parser</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\exe_file_path.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\strtrim.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\encrypt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\obfs\http_simple.h">
+      <Filter>obfs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\obfs\obfs.h">
+      <Filter>obfs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\obfs\obfsutil.h">
+      <Filter>obfs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\obfs\tls1.2_ticket.h">
+      <Filter>obfs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\obfs\verify.h">
+      <Filter>obfs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\obfs\auth.h">
+      <Filter>obfs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\obfs\auth_chain.h">
+      <Filter>obfs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\obfs\base64.h">
+      <Filter>obfs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\obfs\crc32.h">
+      <Filter>obfs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\cache.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\client\s5.h">
+      <Filter>client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\client\defs.h">
+      <Filter>client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ssrutils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\protocol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ssrbuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\udprelay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\netutils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ssr_cipher_names.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\obfs\cstl_lib.h">
+      <Filter>obfs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ssr_executive.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\getopt_long.h">
+      <Filter>getopt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\stdbool.h">
+      <Filter>getopt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\strings.h">
+      <Filter>getopt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\unistd.h">
+      <Filter>getopt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\getopt.h">
+      <Filter>getopt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\sockaddr_universal.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\dump_info.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\tunnel.h">
+      <Filter>client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\cmd_line_parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\daemon_wrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\text_in_color.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\client\tls_cli.h">
+      <Filter>client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\depends\http-parser\http_parser.h">
+      <Filter>http-parser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\depends\http-parser\http_parser_wrapper.h">
+      <Filter>http-parser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\websocket_basic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ref_count_def.h">
+      <Filter>client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\exe_file_path.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\strtrim.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ssr-client-lib.def">
+      <Filter>client</Filter>
+    </None>
+  </ItemGroup>
+</Project>
