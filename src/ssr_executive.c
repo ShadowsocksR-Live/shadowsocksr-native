@@ -72,12 +72,27 @@ struct server_config * config_create(void) {
     struct server_config *config;
 
     config = (struct server_config *) calloc(1, sizeof(*config));
-    string_safe_assign(&config->listen_host, DEFAULT_BIND_HOST);
+
+    string_safe_assign(&config->remarks, "Default");
+    string_safe_assign(&config->password, "password");
     string_safe_assign(&config->method, DEFAULT_METHOD);
-    config->listen_port = DEFAULT_BIND_PORT;
+    string_safe_assign(&config->protocol, "origin");
+    string_safe_assign(&config->protocol_param, "");
+    string_safe_assign(&config->obfs, "plain");
+    string_safe_assign(&config->obfs_param, "");
+    config->udp = true;
     config->idle_timeout = DEFAULT_IDLE_TIMEOUT;
     config->connect_timeout_ms = DEFAULT_CONNECT_TIMEOUT;
     config->udp_timeout = DEFAULT_UDP_TIMEOUT;
+
+    string_safe_assign(&config->remote_host, "");
+    config->remote_port = 443;
+    string_safe_assign(&config->listen_host, DEFAULT_BIND_HOST);
+    config->listen_port = DEFAULT_BIND_PORT;
+
+    config->over_tls_enable = false;
+    string_safe_assign(&config->over_tls_server_domain, "");
+    string_safe_assign(&config->over_tls_path, DEFAULT_SSROT_PATH);
 
     return config;
 }

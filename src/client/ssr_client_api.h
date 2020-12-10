@@ -5,6 +5,8 @@
 #ifndef SHADOWSOCKSR_NATIVE_SSR_CLIENT_API_H
 #define SHADOWSOCKSR_NATIVE_SSR_CLIENT_API_H
 
+#include <stdbool.h>
+
 struct server_config;
 struct ssr_client_state;
 

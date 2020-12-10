@@ -90,7 +90,8 @@ void string_safe_assign(char **target, const char *value);
 #define DEFAULT_IDLE_TIMEOUT  (60 * MILLISECONDS_PER_SECOND)
 #define DEFAULT_CONNECT_TIMEOUT  (6 * MILLISECONDS_PER_SECOND)
 #define DEFAULT_UDP_TIMEOUT      (6 * MILLISECONDS_PER_SECOND)
-#define DEFAULT_METHOD        "rc4-md5"
+#define DEFAULT_METHOD        "aes-128-ctr"
+#define DEFAULT_SSROT_PATH    "/abcd1234/"
 
 #if !defined(TCP_BUF_SIZE_MAX)
 #define TCP_BUF_SIZE_MAX 32 * 1024
