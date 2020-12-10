@@ -97,6 +97,40 @@ struct server_config * config_create(void) {
     return config;
 }
 
+struct server_config * config_clone(struct server_config* src) {
+    struct server_config *config = NULL;
+    if (src == NULL) {
+        return config;
+    }
+    config = (struct server_config *) calloc(1, sizeof(*config));
+    if (config == NULL) {
+        return config;
+    }
+
+    string_safe_assign(&config->remarks, src->remarks);
+    string_safe_assign(&config->password, src->password);
+    string_safe_assign(&config->method, src->method);
+    string_safe_assign(&config->protocol, src->protocol);
+    string_safe_assign(&config->protocol_param, src->protocol_param);
+    string_safe_assign(&config->obfs, src->obfs);
+    string_safe_assign(&config->obfs_param, src->obfs_param);
+    config->udp = src->udp;
+    config->idle_timeout = src->idle_timeout;
+    config->connect_timeout_ms = src->connect_timeout_ms;
+    config->udp_timeout = src->udp_timeout;
+
+    string_safe_assign(&config->remote_host, src->remote_host);
+    config->remote_port = src->remote_port;
+    string_safe_assign(&config->listen_host, src->listen_host);
+    config->listen_port = src->listen_port;
+
+    config->over_tls_enable = src->over_tls_enable;
+    string_safe_assign(&config->over_tls_server_domain, src->over_tls_server_domain);
+    string_safe_assign(&config->over_tls_path, src->over_tls_path);
+
+    return config;
+}
+
 void config_release(struct server_config *cf) {
     if (cf == NULL) {
         return;

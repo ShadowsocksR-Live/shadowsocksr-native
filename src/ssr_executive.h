@@ -98,6 +98,7 @@ void string_safe_assign(char **target, const char *value);
 #endif
 
 struct server_config * config_create(void);
+struct server_config * config_clone(struct server_config* src);
 void config_release(struct server_config *cf);
 void config_ssrot_revision(struct server_config* config);
 

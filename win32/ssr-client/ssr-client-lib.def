@@ -11,6 +11,7 @@ object_safe_free
 string_safe_assign
 
 config_create
+config_clone
 config_release
 config_ssrot_revision
 
