@@ -41,13 +41,21 @@ struct listener_t {
     struct udp_listener_ctx_t *udp_server;
 };
 
+enum running_state {
+    running_state_living = 0,
+    running_state_quit = 1,
+    running_state_dead = 2,
+};
+
 struct ssr_client_state {
     struct server_env_t *env;
 
     uv_signal_t *sigint_watcher;
     uv_signal_t *sigterm_watcher;
 
-    bool shutting_down;
+    uv_idle_t* idler_watcher;
+
+    enum running_state running_state_flag;
     bool force_quit;
     
     int listener_count;
@@ -62,6 +70,7 @@ extern void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union soc
 static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrinfo *addrs);
 static void listen_incoming_connection_cb(uv_stream_t *server, int status);
 static void signal_quit(uv_signal_t* handle, int signum);
+static void idler_watcher_cb(uv_idle_t* handle);
 
 int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ssr_client_state *state, void *p), void *p) {
     uv_loop_t * loop = NULL;
@@ -111,6 +120,10 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
     uv_signal_init(loop, state->sigterm_watcher);
     uv_signal_start(state->sigterm_watcher, signal_quit, SIGTERM);
 
+    state->idler_watcher = (uv_idle_t*) calloc(1, sizeof(uv_idle_t));
+    uv_idle_init(loop, state->idler_watcher);
+    uv_idle_start(state->idler_watcher, idler_watcher_cb);
+
     /* Start the event loop.  Control continues in getaddrinfo_done_cb(). */
     err = uv_run(loop, UV_RUN_DEFAULT);
     if (err != 0) {
@@ -131,7 +144,8 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
 
     free(state->sigint_watcher);
     free(state->sigterm_watcher);
-    
+    free(state->idler_watcher);
+
     free(state);
 
     free(loop);
@@ -165,15 +179,23 @@ void ssr_run_loop_shutdown(struct ssr_client_state *state) {
         return;
     }
     
-    if (state->shutting_down) {
+    if (state->running_state_flag != running_state_living) {
         return;
     }
-    state->shutting_down = true;
+    state->running_state_flag = running_state_quit;
+}
+
+void _ssr_run_loop_shutdown(struct ssr_client_state* state) {
+    ASSERT(state->running_state_flag != running_state_living);
+    state->running_state_flag = running_state_dead;
 
     uv_signal_stop(state->sigint_watcher);
     uv_close((uv_handle_t*)state->sigint_watcher, NULL);
     uv_signal_stop(state->sigterm_watcher);
     uv_close((uv_handle_t*)state->sigterm_watcher, NULL);
+
+    uv_idle_stop(state->idler_watcher);
+    uv_close((uv_handle_t*)state->idler_watcher, NULL);
 
     if (state->listeners && state->listener_count) {
         size_t n = 0;
@@ -367,5 +389,17 @@ static void signal_quit(uv_signal_t* handle, int signum) {
     default:
         ASSERT(0);
         break;
+    }
+}
+
+static void idler_watcher_cb(uv_idle_t* handle) {
+    struct server_env_t* env;
+    struct ssr_client_state* state;
+    ASSERT(handle);
+    env = (struct server_env_t*)handle->loop->data;
+    state = (struct ssr_client_state*)env->data;
+    ASSERT(state);
+    if (state->running_state_flag == running_state_quit) {
+        _ssr_run_loop_shutdown(state);
     }
 }
