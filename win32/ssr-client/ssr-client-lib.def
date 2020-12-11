@@ -5,6 +5,8 @@ ssr_run_loop_shutdown
 ssr_get_listen_socket_fd
 state_set_force_quit
 
+set_dump_info_callback
+
 exe_file_path
 
 object_safe_free
