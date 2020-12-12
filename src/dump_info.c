@@ -28,10 +28,10 @@ const char *get_app_name(void) {
     return name ? name + 1 : progname;
 }
 
-void(*info_callback)(const char *info, void *p) = NULL;
+void(*info_callback)(int dump_level, const char *info, void *p) = NULL;
 void *info_callback_p = NULL;
 
-void set_dump_info_callback(void(*callback)(const char *info, void *p), void *p) {
+void set_dump_info_callback(void(*callback)(int dump_level, const char *info, void *p), void *p) {
     info_callback = callback;
     info_callback_p = p;
 }
@@ -129,7 +129,7 @@ static void pr_do(FILE *stream, dump_level level, const char *fmt, va_list ap) {
 
     if (info_callback) {
         sprintf(p, "%s %s %s  %s\n", get_app_name(), date_time, label, fmtbuf);
-        info_callback(p, info_callback_p);
+        info_callback((int)level, p, info_callback_p);
     } else {
         fprintf(stream, "%s %s %s  ", get_app_name(), date_time, label);
         sprintf(p, "%s\n", fmtbuf);
