@@ -18,6 +18,13 @@ static const char *ot_path = "ot_path";
 
 
 char * ssr_qr_code_encode(const struct server_config *config, void*(*alloc_fn)(size_t size)) {
+    unsigned char *base64_buf;
+    char *basic;
+    char *optional;
+    char *result;
+    static const char *fmt0 = "%s=%s";
+    static const char *fmt1 = "&%s=%s";
+
     if (config==NULL || alloc_fn==NULL) {
         return NULL;
     }
@@ -33,9 +40,9 @@ char * ssr_qr_code_encode(const struct server_config *config, void*(*alloc_fn)(s
 
     // ssr://base64(host:port:protocol:method:obfs:base64pass/?obfsparam=base64param&protoparam=base64param&remarks=base64remarks&group=base64group&udpport=0&uot=0&ot_enable=0&ot_domain=base64domain&ot_path=base64path)
 
-    unsigned char *base64_buf = (unsigned char *)calloc(SSR_BUFF_SIZE, sizeof(base64_buf[0]));
+    base64_buf = (unsigned char *)calloc(SSR_BUFF_SIZE, sizeof(base64_buf[0]));
 
-    char *basic = (char *)calloc(SSR_BUFF_SIZE, sizeof(basic[0]));
+    basic = (char *)calloc(SSR_BUFF_SIZE, sizeof(basic[0]));
 
     url_safe_base64_encode((unsigned char *)config->password, (int)strlen(config->password), base64_buf);
     sprintf(basic, "%s:%d:%s:%s:%s:%s",
@@ -43,9 +50,7 @@ char * ssr_qr_code_encode(const struct server_config *config, void*(*alloc_fn)(s
             config->protocol, config->method, config->obfs,
             base64_buf);
 
-    char *optional = (char *)calloc(SSR_BUFF_SIZE, sizeof(optional[0]));
-    static const char *fmt0 = "%s=%s";
-    static const char *fmt1 = "&%s=%s";
+    optional = (char *)calloc(SSR_BUFF_SIZE, sizeof(optional[0]));
 
     if ((config->obfs_param != NULL) && (strlen(config->obfs_param) != 0)) {
         size_t len = strlen(optional);
@@ -85,7 +90,7 @@ char * ssr_qr_code_encode(const struct server_config *config, void*(*alloc_fn)(s
         sprintf(optional+len, len?fmt1:fmt0, ot_path, base64_buf);
     }
 
-    char *result = (char *)alloc_fn(SSR_BUFF_SIZE * sizeof(result[0]));
+    result = (char *)alloc_fn(SSR_BUFF_SIZE * sizeof(result[0]));
     sprintf(result, strlen(optional) ? "%s/?%s" : "%s/%s", basic, optional);
     
     memset(base64_buf, 0, SSR_BUFF_SIZE*sizeof(base64_buf[0]));
@@ -104,10 +109,11 @@ struct server_config * decode_shadowsocks(const char *text);
 struct server_config * decode_ssr(const char *text);
 
 struct server_config * ssr_qr_code_decode(const char *text) {
+    size_t hdr_len;
     if (text == NULL || strlen(text)==0) {
         return NULL;
     }
-    size_t hdr_len = strlen(ss_header);
+    hdr_len = strlen(ss_header);
     if (strncmp(text, ss_header, hdr_len) == 0) {
         return decode_shadowsocks(text);
     }
@@ -129,10 +135,19 @@ struct server_config * decode_shadowsocks(const char *text) {
     char *plain_text = NULL;
 
     do {
+        size_t hdr_len;
+        char *remarks;
+        int len;
+        char *method;
+        char *password;
+        char *port;
+        char *hostname;
+        const char *t;
+
         if (text == NULL || strlen(text)==0) {
             break;
         }
-        size_t hdr_len = strlen(ss_header);
+        hdr_len = strlen(ss_header);
         if (strncmp(text, ss_header, hdr_len) != 0) {
             break;
         }
@@ -140,7 +155,7 @@ struct server_config * decode_shadowsocks(const char *text) {
         
         contents = strdup(text);
 
-        char *remarks = strchr(contents, '#');
+        remarks = strchr(contents, '#');
         
         if (remarks != NULL) {
             *remarks++ = '\0';
@@ -151,25 +166,25 @@ struct server_config * decode_shadowsocks(const char *text) {
             break;
         }
 
-        int len = url_safe_base64_decode_len((unsigned char *)contents);
+        len = (int) url_safe_base64_decode_len((unsigned char *)contents);
         plain_text = (char *) calloc(len+1, sizeof(plain_text[0]));
         url_safe_base64_decode((const unsigned char *)contents, (unsigned char *)plain_text);
         
-        char *method = plain_text;
+        method = plain_text;
 
-        char *password = strchr(plain_text, ':');
+        password = strchr(plain_text, ':');
         if (password == NULL) {
             break;
         }
         *password++ = '\0';
 
-        char *port = strrchr(password, ':');
+        port = strrchr(password, ':');
         if (port == NULL) {
             break;
         }
         *port++ = '\0';
         
-        char *hostname = strrchr(password, '@');
+        hostname = strrchr(password, '@');
         if (hostname == NULL) {
             break;
         }
@@ -183,8 +198,6 @@ struct server_config * decode_shadowsocks(const char *text) {
         if (remarks) {
             string_safe_assign(&config->remarks, remarks);
         }
-
-        const char *t;
 
         t = ssr_protocol_name_of_type(ssr_protocol_origin);
         string_safe_assign(&config->protocol, t);
@@ -207,25 +220,39 @@ struct server_config * decode_shadowsocks(const char *text) {
 struct server_config * decode_ssr(const char *text) {
     struct server_config *config = NULL;
     unsigned char *swap_buf = NULL;
-    char *plain_text = NULL;
+    char *plain_text, *basic, *optional, *base64pass, *obfs, *method, *protocol, *port, *host, *iter;
     
     do {
+        size_t hdr_len;
+        int len;
+        const char *params[] = {
+            obfsparam,
+            protoparam,
+            remarks,
+            group,
+            udpport,
+            uot,
+            ot_enable,
+            ot_domain,
+            ot_path,
+        };
+
         if (text == NULL || strlen(text)==0) {
             break;
         }
-        size_t hdr_len = strlen(ssr_header);
+        hdr_len = strlen(ssr_header);
         if (strncmp(text, ssr_header, hdr_len) != 0) {
             break;
         }
         text = text + hdr_len;
         
-        int len = url_safe_base64_decode_len((unsigned char *)text);
+        len = (int) url_safe_base64_decode_len((unsigned char *)text);
         plain_text = (char *) calloc(len+1, sizeof(plain_text[0]));
         url_safe_base64_decode((const unsigned char *)text, (unsigned char *)plain_text);
         
-        char *basic = plain_text;
+        basic = plain_text;
         
-        char *optional = strchr(plain_text, '/');
+        optional = strchr(plain_text, '/');
         if (optional != NULL) {
             *optional++ = '\0';
             if (*optional == '?') {
@@ -233,37 +260,37 @@ struct server_config * decode_ssr(const char *text) {
             }
         }
         
-        char *base64pass = strrchr(basic, ':');
+        base64pass = strrchr(basic, ':');
         if (base64pass == NULL) {
             break;
         }
         *base64pass++ = '\0';
 
-        char *obfs = strrchr(basic, ':');
+        obfs = strrchr(basic, ':');
         if (obfs == NULL) {
             break;
         }
         *obfs++ = '\0';
         
-        char *method = strrchr(basic, ':');
+        method = strrchr(basic, ':');
         if (method == NULL) {
             break;
         }
         *method++ = '\0';
         
-        char *protocol = strrchr(basic, ':');
+        protocol = strrchr(basic, ':');
         if (protocol == NULL) {
             break;
         }
         *protocol++ = '\0';
         
-        char *port = strrchr(basic, ':');
+        port = strrchr(basic, ':');
         if (port == NULL) {
             break;
         }
         *port++ = '\0';
         
-        char *host = basic;
+        host = basic;
         
         swap_buf = (unsigned char *) calloc(SSR_BUFF_SIZE, sizeof(swap_buf[0]));
         
@@ -281,28 +308,17 @@ struct server_config * decode_ssr(const char *text) {
             break;
         }
         
-        const char *params[] = {
-            obfsparam,
-            protoparam,
-            remarks,
-            group,
-            udpport,
-            uot,
-            ot_enable,
-            ot_domain,
-            ot_path,
-        };
-        
-        char *iter = optional;
+        iter = optional;
         
         do {
+            char *key, *value;
             char *next = strchr(iter, '&');
             if (next) {
                 *next++ = 0;
             }
             
-            char *key = iter;
-            char *value = strchr(iter, '=');
+            key = iter;
+            value = strchr(iter, '=');
             if (value) {
                 int i=0, n;
                 *value++ = 0;
