@@ -63,6 +63,8 @@ struct ssr_client_state {
 
     void(*feedback_state)(struct ssr_client_state *state, void *p);
     void *ptr;
+
+    int error_code;
 };
 
 extern void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_universal *src_addr, const struct buffer_t *data, void*p);
@@ -106,6 +108,7 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
     if (err != 0) {
         pr_err("getaddrinfo: %s", uv_strerror(err));
         if (state->feedback_state) {
+            state->error_code = err;
             state->feedback_state(state, state->ptr);
         }
         return err;
@@ -235,6 +238,10 @@ int ssr_get_listen_socket_fd(struct ssr_client_state *state) {
     return (int) uv_stream_fd(state->listeners[0].tcp_server);
 }
 
+int ssr_get_client_error_code(struct ssr_client_state *state) {
+    return state->error_code;
+}
+
 /* Bind a server to each address that getaddrinfo() reported. */
 static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrinfo *addrs) {
     char addrbuf[INET6_ADDRSTRLEN + 1];
@@ -264,6 +271,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
         pr_err("getaddrinfo(\"%s\"): %s", cf->listen_host, uv_strerror(status));
         uv_freeaddrinfo(addrs);
         if (state->feedback_state) {
+            state->error_code = status;
             state->feedback_state(state, state->ptr);
         }
         return;
@@ -329,6 +337,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
         }
 
         if (state->feedback_state) {
+            state->error_code = err;
             state->feedback_state(state, state->ptr);
         }
 

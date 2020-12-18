@@ -3,6 +3,7 @@ EXPORTS
 ssr_run_loop_begin
 ssr_run_loop_shutdown
 ssr_get_listen_socket_fd
+ssr_get_client_error_code
 state_set_force_quit
 
 ssr_qr_code_encode

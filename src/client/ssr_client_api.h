@@ -23,6 +23,7 @@ struct ssr_client_state;
 int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ssr_client_state *state, void *p), void *p);
 void ssr_run_loop_shutdown(struct ssr_client_state *state);
 int ssr_get_listen_socket_fd(struct ssr_client_state *state);
+int ssr_get_client_error_code(struct ssr_client_state *state);
 void state_set_force_quit(struct ssr_client_state *state, bool force_quit);
 
 #endif //SHADOWSOCKSR_NATIVE_SSR_CLIENT_API_H
