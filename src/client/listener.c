@@ -57,6 +57,7 @@ struct ssr_client_state {
 
     enum running_state running_state_flag;
     bool force_quit;
+    int force_quit_delay_ms;
     
     int listener_count;
     struct listener_t *listeners;
@@ -87,6 +88,7 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
     uv_loop_init(loop);
 
     state = (struct ssr_client_state *) calloc(1, sizeof(*state));
+    state->force_quit_delay_ms = 3000;
     state->listeners = NULL;
     state->env = ssr_cipher_env_create(cf, state);
     state->feedback_state = feedback_state;
@@ -160,8 +162,9 @@ static void tcp_close_done_cb(uv_handle_t* handle) {
     free((void *)((uv_tcp_t *)handle));
 }
 
-void state_set_force_quit(struct ssr_client_state *state, bool force_quit) {
+void state_set_force_quit(struct ssr_client_state *state, bool force_quit, int delay_ms) {
     state->force_quit = force_quit;
+    state->force_quit_delay_ms = delay_ms;
 }
 
 void force_quit_timer_close_cb(uv_handle_t* handle) {
@@ -226,7 +229,7 @@ void _ssr_run_loop_shutdown(struct ssr_client_state* state) {
     if (state->force_quit) {
         uv_timer_t *t = (uv_timer_t*) calloc(1, sizeof(*t));
         uv_timer_init(state->sigint_watcher->loop, t);
-        uv_timer_start(t, force_quit_timer_cb, 3000, 0); // wait 3 seconds.
+        uv_timer_start(t, force_quit_timer_cb, state->force_quit_delay_ms, 0); // wait 3 seconds.
     }
 }
 

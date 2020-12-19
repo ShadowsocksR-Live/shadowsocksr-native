@@ -50,7 +50,7 @@ static void usage(void);
 
 struct ssr_client_state *g_state = NULL;
 void feedback_state(struct ssr_client_state *state, void *p);
-void state_set_force_quit(struct ssr_client_state *state, bool force_quit);
+void state_set_force_quit(struct ssr_client_state *state, bool force_quit, int delay_ms);
 void print_remote_info(const struct server_config *config);
 static bool verify_config(struct server_config *config);
 
@@ -206,7 +206,7 @@ void print_remote_info(const struct server_config *config) {
 void feedback_state(struct ssr_client_state *state, void *p) {
     g_state = state;
     (void)p;
-    state_set_force_quit(state, cmds->force_quit);
+    state_set_force_quit(state, cmds->force_quit, 3000);
 }
 
 static bool verify_config(struct server_config *config) {
