@@ -9,6 +9,8 @@ state_set_force_quit
 ssr_qr_code_encode
 ssr_qr_code_decode
 
+set_app_name
+get_app_name
 set_dump_info_callback
 
 exe_file_path
