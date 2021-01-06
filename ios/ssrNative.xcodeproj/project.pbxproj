@@ -47,7 +47,7 @@
 		3A300B56206FF66500ABE7C2 /* encrypt.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A300B4F206FF66500ABE7C2 /* encrypt.c */; };
 		3A300B57206FF66500ABE7C2 /* common.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A300B50206FF66500ABE7C2 /* common.h */; };
 		3A300B58206FF66500ABE7C2 /* encrypt.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A300B51206FF66500ABE7C2 /* encrypt.h */; };
-		3A300B5A206FF66500ABE7C2 /* dump_info.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A300B53206FF66500ABE7C2 /* dump_info.h */; };
+		3A300B5A206FF66500ABE7C2 /* dump_info.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A300B53206FF66500ABE7C2 /* dump_info.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3A300B63206FF69D00ABE7C2 /* ssr_qr_code.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A300B5B206FF69D00ABE7C2 /* ssr_qr_code.c */; };
 		3A300B64206FF69D00ABE7C2 /* ssr_qr_code.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A300B5C206FF69D00ABE7C2 /* ssr_qr_code.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3A300B65206FF69D00ABE7C2 /* ssr_executive.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A300B5D206FF69D00ABE7C2 /* ssr_executive.c */; };
@@ -70,8 +70,8 @@
 		3A31839D22F869EE00E7D266 /* http_parser_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A31839622F869EE00E7D266 /* http_parser_wrapper.c */; };
 		3A31839E22F869EE00E7D266 /* http_parser.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A31839722F869EE00E7D266 /* http_parser.h */; };
 		3A31839F22F869EE00E7D266 /* http_parser.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A31839722F869EE00E7D266 /* http_parser.h */; };
-		3A425B4C25346B0200EE3AC5 /* exe_file_path.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A425B4925346B0200EE3AC5 /* exe_file_path.h */; };
-		3A425B4D25346B0200EE3AC5 /* exe_file_path.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A425B4925346B0200EE3AC5 /* exe_file_path.h */; };
+		3A425B4C25346B0200EE3AC5 /* exe_file_path.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A425B4925346B0200EE3AC5 /* exe_file_path.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		3A425B4D25346B0200EE3AC5 /* exe_file_path.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A425B4925346B0200EE3AC5 /* exe_file_path.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3A425B4E25346B0200EE3AC5 /* exe_file_path.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A425B4A25346B0200EE3AC5 /* exe_file_path.c */; };
 		3A425B4F25346B0200EE3AC5 /* exe_file_path.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A425B4A25346B0200EE3AC5 /* exe_file_path.c */; };
 		3A425B5025346B0200EE3AC5 /* ref_count_def.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A425B4B25346B0200EE3AC5 /* ref_count_def.h */; };
@@ -100,7 +100,7 @@
 		3A95CBB52070C8FD00E507E3 /* cache.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A300B6F206FF9A300ABE7C2 /* cache.h */; };
 		3A95CBB62070C8FD00E507E3 /* ssrbuffer.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A300B6B206FF77E00ABE7C2 /* ssrbuffer.h */; };
 		3A95CBB72070C8FD00E507E3 /* common.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A300B50206FF66500ABE7C2 /* common.h */; };
-		3A95CBB82070C8FD00E507E3 /* dump_info.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A300B53206FF66500ABE7C2 /* dump_info.h */; };
+		3A95CBB82070C8FD00E507E3 /* dump_info.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A300B53206FF66500ABE7C2 /* dump_info.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3A95CBB92070C8FD00E507E3 /* encrypt.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A300B51206FF66500ABE7C2 /* encrypt.h */; };
 		3A95CBBA2070C90C00E507E3 /* ssrutils.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A300B73206FFA0900ABE7C2 /* ssrutils.c */; };
 		3A95CBBB2070C90C00E507E3 /* cache.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A300B70206FF9A400ABE7C2 /* cache.c */; };
@@ -143,6 +143,12 @@
 		3A95CC0A2070D26100E507E3 /* udprelay.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A95CC072070D26000E507E3 /* udprelay.c */; };
 		3A95CC0B2070D26100E507E3 /* udprelay.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A95CC082070D26000E507E3 /* udprelay.h */; };
 		3A95CC0C2070D26100E507E3 /* udprelay.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A95CC082070D26000E507E3 /* udprelay.h */; };
+		3A96C74C2590817100CE40A7 /* ssr_extern_def.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A96C74B2590817100CE40A7 /* ssr_extern_def.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		3A96C74D2590817100CE40A7 /* ssr_extern_def.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A96C74B2590817100CE40A7 /* ssr_extern_def.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		3A96C7502590825000CE40A7 /* strtrim.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A96C74E2590825000CE40A7 /* strtrim.c */; };
+		3A96C7512590825000CE40A7 /* strtrim.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A96C74E2590825000CE40A7 /* strtrim.c */; };
+		3A96C7522590825000CE40A7 /* strtrim.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A96C74F2590825000CE40A7 /* strtrim.h */; };
+		3A96C7532590825000CE40A7 /* strtrim.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A96C74F2590825000CE40A7 /* strtrim.h */; };
 		3A9CCE3620CE318200D9E0DC /* tunnel.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A9CCE3420CE318200D9E0DC /* tunnel.h */; };
 		3A9CCE3720CE318200D9E0DC /* tunnel.h in Headers */ = {isa = PBXBuildFile; fileRef = 3A9CCE3420CE318200D9E0DC /* tunnel.h */; };
 		3A9CCE3820CE318200D9E0DC /* tunnel.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A9CCE3520CE318200D9E0DC /* tunnel.c */; };
@@ -310,6 +316,9 @@
 		3A95CBA42070C7DA00E507E3 /* ssrNative.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ssrNative.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3A95CC072070D26000E507E3 /* udprelay.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = udprelay.c; path = ../src/udprelay.c; sourceTree = "<group>"; };
 		3A95CC082070D26000E507E3 /* udprelay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = udprelay.h; path = ../src/udprelay.h; sourceTree = "<group>"; };
+		3A96C74B2590817100CE40A7 /* ssr_extern_def.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ssr_extern_def.h; path = ../src/ssr_extern_def.h; sourceTree = "<group>"; };
+		3A96C74E2590825000CE40A7 /* strtrim.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strtrim.c; path = ../src/strtrim.c; sourceTree = "<group>"; };
+		3A96C74F2590825000CE40A7 /* strtrim.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = strtrim.h; path = ../src/strtrim.h; sourceTree = "<group>"; };
 		3A9CCE3420CE318200D9E0DC /* tunnel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = tunnel.h; path = ../src/tunnel.h; sourceTree = "<group>"; };
 		3A9CCE3520CE318200D9E0DC /* tunnel.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = tunnel.c; path = ../src/tunnel.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -437,8 +446,11 @@
 				3A300B61206FF69D00ABE7C2 /* ssr_cipher_names.h */,
 				3A300B5D206FF69D00ABE7C2 /* ssr_executive.c */,
 				3A300B62206FF69D00ABE7C2 /* ssr_executive.h */,
+				3A96C74B2590817100CE40A7 /* ssr_extern_def.h */,
 				3A300B5B206FF69D00ABE7C2 /* ssr_qr_code.c */,
 				3A300B5C206FF69D00ABE7C2 /* ssr_qr_code.h */,
+				3A96C74E2590825000CE40A7 /* strtrim.c */,
+				3A96C74F2590825000CE40A7 /* strtrim.h */,
 				3A300B50206FF66500ABE7C2 /* common.h */,
 				3A300B4E206FF66400ABE7C2 /* dump_info.c */,
 				3A300B53206FF66500ABE7C2 /* dump_info.h */,
@@ -517,19 +529,22 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3A300B5A206FF66500ABE7C2 /* dump_info.h in Headers */,
+				3A425B4C25346B0200EE3AC5 /* exe_file_path.h in Headers */,
+				3A96C74C2590817100CE40A7 /* ssr_extern_def.h in Headers */,
 				3A6C0BFF2304108C00FFF1D9 /* bio.h in Headers */,
 				3A300B71206FF9A400ABE7C2 /* cache.h in Headers */,
 				3A7D2CB320771D6A00D5766F /* ssr_client_api.h in Headers */,
 				3A300B47206FF58300ABE7C2 /* defs.h in Headers */,
 				3A300B37206FF54000ABE7C2 /* tls1.2_ticket.h in Headers */,
 				3A300B64206FF69D00ABE7C2 /* ssr_qr_code.h in Headers */,
-				3A300B5A206FF66500ABE7C2 /* dump_info.h in Headers */,
 				3A300B2D206FF54000ABE7C2 /* cstl_lib.h in Headers */,
 				3A300B67206FF69D00ABE7C2 /* sockaddr_universal.h in Headers */,
 				3A300B2C206FF54000ABE7C2 /* auth.h in Headers */,
 				3A300B35206FF54000ABE7C2 /* http_simple.h in Headers */,
 				3A57A60C206F9D44002F1F2D /* ssrNative.h in Headers */,
 				3A300B57206FF66500ABE7C2 /* common.h in Headers */,
+				3A96C7522590825000CE40A7 /* strtrim.h in Headers */,
 				3A300B2A206FF54000ABE7C2 /* verify.h in Headers */,
 				3A300B38206FF54000ABE7C2 /* obfs.h in Headers */,
 				3A425B5025346B0200EE3AC5 /* ref_count_def.h in Headers */,
@@ -546,7 +561,6 @@
 				3A300B69206FF69D00ABE7C2 /* ssr_cipher_names.h in Headers */,
 				3A300B45206FF58300ABE7C2 /* s5.h in Headers */,
 				3A9CCE3620CE318200D9E0DC /* tunnel.h in Headers */,
-				3A425B4C25346B0200EE3AC5 /* exe_file_path.h in Headers */,
 				3A300B6D206FF77E00ABE7C2 /* ssrbuffer.h in Headers */,
 				3A929D182472ED250070E466 /* websocket_basic.h in Headers */,
 				3A300B6A206FF69D00ABE7C2 /* ssr_executive.h in Headers */,
@@ -559,6 +573,9 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3A95CBB82070C8FD00E507E3 /* dump_info.h in Headers */,
+				3A425B4D25346B0200EE3AC5 /* exe_file_path.h in Headers */,
+				3A96C74D2590817100CE40A7 /* ssr_extern_def.h in Headers */,
 				3A6C0C002304108C00FFF1D9 /* bio.h in Headers */,
 				3A95CBC62070C92200E507E3 /* auth.h in Headers */,
 				3A7D2CB420771D6A00D5766F /* ssr_client_api.h in Headers */,
@@ -572,10 +589,10 @@
 				3A95CBB02070C8D000E507E3 /* sockaddr_universal.h in Headers */,
 				3A95CBB92070C8FD00E507E3 /* encrypt.h in Headers */,
 				3A95CBB22070C8D000E507E3 /* ssr_executive.h in Headers */,
+				3A96C7532590825000CE40A7 /* strtrim.h in Headers */,
 				3A95CBD02070C92200E507E3 /* obfs.h in Headers */,
 				3A95CBD22070C92200E507E3 /* obfsutil.h in Headers */,
 				3A425B5125346B0200EE3AC5 /* ref_count_def.h in Headers */,
-				3A95CBB82070C8FD00E507E3 /* dump_info.h in Headers */,
 				3A6C0C072304109700FFF1D9 /* uv-mbed.h in Headers */,
 				3A95CBB62070C8FD00E507E3 /* ssrbuffer.h in Headers */,
 				3A27FF6E229974A200CFAD25 /* text_in_color.h in Headers */,
@@ -588,7 +605,6 @@
 				3A95CC0C2070D26100E507E3 /* udprelay.h in Headers */,
 				3A95CBCE2070C92200E507E3 /* http_simple.h in Headers */,
 				3A9CCE3720CE318200D9E0DC /* tunnel.h in Headers */,
-				3A425B4D25346B0200EE3AC5 /* exe_file_path.h in Headers */,
 				3A95CBB42070C8FD00E507E3 /* ssrutils.h in Headers */,
 				3A929D192472ED250070E466 /* websocket_basic.h in Headers */,
 				3A95CBC82070C92200E507E3 /* base64.h in Headers */,
@@ -774,6 +790,7 @@
 				3A300B72206FF9A400ABE7C2 /* cache.c in Sources */,
 				3A300B6E206FF77E00ABE7C2 /* ssrbuffer.c in Sources */,
 				3A31839822F869EE00E7D266 /* http_parser.c in Sources */,
+				3A96C7502590825000CE40A7 /* strtrim.c in Sources */,
 				3A425B4E25346B0200EE3AC5 /* exe_file_path.c in Sources */,
 				3A95CC092070D26100E507E3 /* udprelay.c in Sources */,
 				3A300B68206FF69D00ABE7C2 /* ssr_cipher_names.c in Sources */,
@@ -813,6 +830,7 @@
 				3A95CBBE2070C90C00E507E3 /* ssr_cipher_names.c in Sources */,
 				3A95CBD12070C92200E507E3 /* obfsutil.c in Sources */,
 				3A31839922F869EE00E7D266 /* http_parser.c in Sources */,
+				3A96C7512590825000CE40A7 /* strtrim.c in Sources */,
 				3A425B4F25346B0200EE3AC5 /* exe_file_path.c in Sources */,
 				3A95CC0A2070D26100E507E3 /* udprelay.c in Sources */,
 				3A95CBBD2070C90C00E507E3 /* sockaddr_universal.c in Sources */,

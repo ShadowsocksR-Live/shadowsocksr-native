@@ -8,13 +8,13 @@
 #include "ssr_extern_def.h"
 
 #include <stdbool.h>
-#include <ssr_qr_code.h>
-#include <ssr_cipher_names.h>
-#include <exe_file_path.h>
-#include <dump_info.h>
-#include <ssr_executive.h>
+#include "ssr_qr_code.h"
+#include "ssr_cipher_names.h"
+#include "exe_file_path.h"
+#include "dump_info.h"
+#include "ssr_executive.h"
 #if !defined(_WIN32)
-#include <sockaddr_universal.h>
+#include "sockaddr_universal.h"
 #endif
 
 struct ssr_client_state;
