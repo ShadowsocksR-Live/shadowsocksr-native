@@ -53,7 +53,7 @@ struct ssr_client_state {
     uv_signal_t *sigint_watcher;
     uv_signal_t *sigterm_watcher;
 
-    uv_idle_t* idler_watcher;
+    uv_timer_t* exit_flag_timer;
 
     enum running_state running_state_flag;
     bool force_quit;
@@ -73,7 +73,7 @@ extern void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union soc
 static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrinfo *addrs);
 static void listen_incoming_connection_cb(uv_stream_t *server, int status);
 static void signal_quit(uv_signal_t* handle, int signum);
-static void idler_watcher_cb(uv_idle_t* handle);
+static void idler_watcher_cb(uv_timer_t* handle);
 
 int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ssr_client_state *state, void *p), void *p) {
     uv_loop_t * loop = NULL;
@@ -125,9 +125,9 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
     uv_signal_init(loop, state->sigterm_watcher);
     uv_signal_start(state->sigterm_watcher, signal_quit, SIGTERM);
 
-    state->idler_watcher = (uv_idle_t*) calloc(1, sizeof(uv_idle_t));
-    uv_idle_init(loop, state->idler_watcher);
-    uv_idle_start(state->idler_watcher, idler_watcher_cb);
+    state->exit_flag_timer = (uv_timer_t*) calloc(1, sizeof(uv_timer_t));
+    uv_timer_init(loop, state->exit_flag_timer);
+    uv_timer_start(state->exit_flag_timer, idler_watcher_cb, 0, 500);
 
     /* Start the event loop.  Control continues in getaddrinfo_done_cb(). */
     err = uv_run(loop, UV_RUN_DEFAULT);
@@ -149,7 +149,7 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
 
     free(state->sigint_watcher);
     free(state->sigterm_watcher);
-    free(state->idler_watcher);
+    free(state->exit_flag_timer);
 
     free(state);
 
@@ -200,8 +200,8 @@ void _ssr_run_loop_shutdown(struct ssr_client_state* state) {
     uv_signal_stop(state->sigterm_watcher);
     uv_close((uv_handle_t*)state->sigterm_watcher, NULL);
 
-    uv_idle_stop(state->idler_watcher);
-    uv_close((uv_handle_t*)state->idler_watcher, NULL);
+    uv_timer_stop(state->exit_flag_timer);
+    uv_close((uv_handle_t*)state->exit_flag_timer, NULL);
 
     if (state->listeners && state->listener_count) {
         size_t n = 0;
@@ -404,7 +404,7 @@ static void signal_quit(uv_signal_t* handle, int signum) {
     }
 }
 
-static void idler_watcher_cb(uv_idle_t* handle) {
+static void idler_watcher_cb(uv_timer_t* handle) {
     struct server_env_t* env;
     struct ssr_client_state* state;
     ASSERT(handle);
