@@ -2,6 +2,7 @@
 Debug/
 Release/
 x64/
+CMakeSettings.json
 
 win32/libcork/Debug/
 win32/libcork/Release/

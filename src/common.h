@@ -53,37 +53,6 @@
 #define __weak_ptr
 #endif
 
-#if defined(_LOCAL_H)
-struct server_env_t {
-    char *hostname;
-    char *host;
-    int port;
-    int udp_port;
-    struct sockaddr_storage *addr; // resolved address
-    struct sockaddr_storage *addr_udp; // resolved address
-    int addr_len;
-    int addr_udp_len;
-
-    char *psw; // raw password
-    struct cipher_env_t *cipher;
-
-    // SSR
-    char *protocol_name; // for logging use only?
-    char *obfs_name; // for logging use only?
-
-    char *protocol_param;
-    char *obfs_param;
-
-    void *protocol_global;
-    void *obfs_global;
-
-    int enable;
-    char *id;
-    char *group;
-    int udp_over_tcp;
-};
-#endif // defined(_LOCAL_H)
-
 #ifdef ANDROID
 int protect_socket(int fd);
 int send_traffic_stat(uint64_t tx, uint64_t rx);

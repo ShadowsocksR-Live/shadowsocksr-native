@@ -60,7 +60,6 @@
 #include "encrypt.h"
 #include "sockaddr_universal.h"
 #include "ssrbuffer.h"
-#include "jconf.h"
 
 #include "obfs/obfs.h"
 
