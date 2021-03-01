@@ -142,10 +142,6 @@ if(USE_CRYPTO_MBEDTLS)
     include_directories(${UVMBED_DIR}/include)
 endif()
 
-if (WIN32)
-    list ( APPEND SOURCE_FILES_SERVER win32.c )
-endif ()
-
 if (MSVC)
     list ( APPEND SOURCE_FILES_CLIENT ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/getopt.c ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/getopt_long.c ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/strncasecmp.c )
     list ( APPEND SOURCE_FILES_SERVER ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/getopt.c ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/getopt_long.c ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/strncasecmp.c )

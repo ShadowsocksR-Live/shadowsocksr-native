@@ -54,16 +54,6 @@ FILE *logfile;
 int use_syslog = 0;
 #endif
 
-#ifndef __MINGW32__
-void
-SS_ERROR(const char *s)
-{
-    char *msg = strerror(errno);
-    LOGE("%s: %s", s, msg);
-}
-
-#endif
-
 int use_tty = 1;
 
 char *

@@ -79,7 +79,9 @@ int ftruncate(int, off_t);
 
 #include <WinSock2.h>
 
+#if !defined(CONNECT_IN_PROGRESS)
 #define CONNECT_IN_PROGRESS WSAEINPROGRESS
+#endif
 
 #ifdef __cplusplus
 }

@@ -182,19 +182,6 @@ extern int use_syslog;
 
 #endif
 
-#ifdef __MINGW32__
-
-#ifdef SS_ERROR
-#undef SS_ERROR
-#endif
-#define SS_ERROR(s) ss_error(s)
-
-#else
-
-void SS_ERROR(const char *s);
-
-#endif
-
 char *ss_itoa(int i);
 int ss_isnumeric(const char *s);
 int run_as(const char *user);

@@ -32,10 +32,6 @@
 #include "ssrutils.h"
 #include "uthash.h"
 
-#ifdef __MINGW32__
-#include "win32.h"
-#endif
-
 #if !defined(_WIN32)
 #include <sys/time.h>
 #endif
