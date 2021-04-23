@@ -1,5 +1,9 @@
 
+#if defined(_MSC_VER)
+#include <json-c/win32/json.h>
+#else
 #include <json-c/json.h>
+#endif
 #include "config_json.h"
 #include "ssr_executive.h"
 

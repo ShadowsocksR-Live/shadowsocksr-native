@@ -166,7 +166,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_WIN32;WIN32;_DEBUG;_CONSOLE;__MINGW32__;__MINGW64_VERSION_MAJOR;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;USE_CRYPTO_MBEDTLS;_WINSOCK_DEPRECATED_NO_WARNINGS;VERSION="3.0.1";HAVE_PCRE_H;MODULE_LOCAL;UDP_RELAY_ENABLE;__PRINT_INFO__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)../../depends;$(ProjectDir)../../depends/json-c/win32;$(ProjectDir)../../depends/json-c;$(ProjectDir)../../depends/mbedtls/include;$(ProjectDir)../../depends/libsodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include/sodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include;$(ProjectDir)../../depends/libsodium/ssrbuild/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../../depends/uv-mbed/include;$(ProjectDir)../../libcork/include;$(ProjectDir)../../libipset/include;$(ProjectDir)../../libudns;$(ProjectDir)../../depends/pcre4w/pcre;$(ProjectDir)../../depends/http-parser;$(ProjectDir)../include;$(ProjectDir)../../src;$(ProjectDir)../../src/obfs;$(ProjectDir)../../src/client;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DisableSpecificWarnings>4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4819;4996;4068;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -183,7 +183,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_WIN32;_DEBUG;_CONSOLE;__MINGW32__;__MINGW64_VERSION_MAJOR;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;USE_CRYPTO_MBEDTLS;_WINSOCK_DEPRECATED_NO_WARNINGS;VERSION="3.0.1";HAVE_PCRE_H;MODULE_LOCAL;UDP_RELAY_ENABLE;_CRTDBG_MAP_ALLOC;__MEM_CHECK__=1;__PRINT_INFO__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)../../depends;$(ProjectDir)../../depends/json-c/win32;$(ProjectDir)../../depends/json-c;$(ProjectDir)../../depends/mbedtls/include;$(ProjectDir)../../depends/libsodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include/sodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include;$(ProjectDir)../../depends/libsodium/ssrbuild/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../../depends/uv-mbed/include;$(ProjectDir)../../depends/http-parser;$(ProjectDir)../include;$(ProjectDir)../../src;$(ProjectDir)../../src/obfs;$(ProjectDir)../../src/client;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DisableSpecificWarnings>4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4819;4996;4068;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -202,7 +202,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>_WIN32;WIN32;NDEBUG;_CONSOLE;__MINGW32__;__MINGW64_VERSION_MAJOR;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;USE_CRYPTO_MBEDTLS;_WINSOCK_DEPRECATED_NO_WARNINGS;VERSION="3.0.1";HAVE_PCRE_H;MODULE_LOCAL;UDP_RELAY_ENABLE;__PRINT_INFO__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)../../depends;$(ProjectDir)../../depends/json-c/win32;$(ProjectDir)../../depends/json-c;$(ProjectDir)../../depends/mbedtls/include;$(ProjectDir)../../depends/libsodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include/sodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include;$(ProjectDir)../../depends/libsodium/ssrbuild/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../../depends/uv-mbed/include;$(ProjectDir)../../depends/http-parser;$(ProjectDir)../include;$(ProjectDir)../../src;$(ProjectDir)../../src/obfs;$(ProjectDir)../../src/client;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DisableSpecificWarnings>4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4819;4996;4068;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -223,7 +223,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>_WIN32;NDEBUG;_CONSOLE;__MINGW32__;__MINGW64_VERSION_MAJOR;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;USE_CRYPTO_MBEDTLS;_WINSOCK_DEPRECATED_NO_WARNINGS;VERSION="3.0.1";HAVE_PCRE_H;MODULE_LOCAL;UDP_RELAY_ENABLE;__PRINT_INFO__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)../../depends;$(ProjectDir)../../depends/json-c/win32;$(ProjectDir)../../depends/json-c;$(ProjectDir)../../depends/mbedtls/include;$(ProjectDir)../../depends/libsodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include/sodium;$(ProjectDir)../../depends/libsodium/src/libsodium/include;$(ProjectDir)../../depends/libsodium/ssrbuild/include;$(ProjectDir)../../depends/libuv/include;$(ProjectDir)../../depends/uv-mbed/include;$(ProjectDir)../../depends/http-parser;$(ProjectDir)../include;$(ProjectDir)../../src;$(ProjectDir)../../src/obfs;$(ProjectDir)../../src/client;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DisableSpecificWarnings>4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4819;4996;4068;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
