@@ -212,7 +212,7 @@ function nginx_install() {
     fi
 
     if [[ "${ID}" == "ubuntu" ]]; then
-        ${INS} install nginx-full -y
+        ${INS} install nginx-extras -y
     else
         ${INS} install nginx -y
     fi
