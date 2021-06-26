@@ -211,7 +211,11 @@ function nginx_install() {
         return 0
     fi
 
-    ${INS} install nginx -y
+    if [[ "${ID}" == "ubuntu" ]]; then
+        ${INS} install nginx-full -y
+    else
+        ${INS} install nginx -y
+    fi
 
     if [[ -d /etc/nginx ]]; then
         echo -e "${OK} ${GreenBG} nginx installation is complete ${Font}"
