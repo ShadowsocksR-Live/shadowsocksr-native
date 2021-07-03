@@ -283,7 +283,7 @@ function do_lets_encrypt_certificate_authority() {
     judge "[CA] Obtain website certificate"
 
     wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > intermediate.pem
-    cat signed.crt intermediate.pem > full_chained_cert.pem
+    cat signed.crt intermediate.pem > chained_cert.pem
     judge "[CA] Merger of intermediate certificate and website certificate"
 
     wget -O - https://letsencrypt.org/certs/isrgrootx1.pem > root.pem
@@ -302,7 +302,7 @@ function acme_cron_update(){
 cd ${site_cert_dir}
 python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir ${site_dir}/.well-known/acme-challenge/ > ./signed.crt || exit
 wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > intermediate.pem
-cat signed.crt intermediate.pem > full_chained_cert.pem
+cat signed.crt intermediate.pem > chained_cert.pem
 systemctl stop nginx
 sleep 2
 systemctl start nginx
@@ -332,7 +332,7 @@ function nginx_web_server_config_end() {
     server {
         listen ${web_svr_listen_port} ssl default_server;
         listen [::]:${web_svr_listen_port} ssl default_server;
-        ssl_certificate       ${site_cert_dir}/full_chained_cert.pem;
+        ssl_certificate       ${site_cert_dir}/chained_cert.pem;
         ssl_certificate_key   ${site_cert_dir}/private_key.pem;
         ssl_protocols         TLSv1 TLSv1.1 TLSv1.2;
         ssl_ciphers           HIGH:!aNULL:!MD5;
