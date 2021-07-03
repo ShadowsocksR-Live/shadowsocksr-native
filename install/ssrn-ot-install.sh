@@ -274,8 +274,8 @@ function do_lets_encrypt_certificate_authority() {
         openssl_cnf="/etc/pki/tls/openssl.cnf"
     fi
 
-    openssl genrsa 4096 > domain.key
-    openssl req -new -sha256 -key domain.key -subj "/" -reqexts SAN -config <(cat ${openssl_cnf} <(printf "[SAN]\nsubjectAltName=DNS:${web_svr_domain}")) > domain.csr
+    openssl genrsa 4096 > private_key.pem
+    openssl req -new -sha256 -key private_key.pem -subj "/" -reqexts SAN -config <(cat ${openssl_cnf} <(printf "[SAN]\nsubjectAltName=DNS:${web_svr_domain}")) > domain.csr
     judge "[CA] Create CSR file"
 
     curl -L https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py -o acme_tiny.py
@@ -333,7 +333,7 @@ function nginx_web_server_config_end() {
         listen ${web_svr_listen_port} ssl default_server;
         listen [::]:${web_svr_listen_port} ssl default_server;
         ssl_certificate       ${site_cert_dir}/chained.pem;
-        ssl_certificate_key   ${site_cert_dir}/domain.key;
+        ssl_certificate_key   ${site_cert_dir}/private_key.pem;
         ssl_protocols         TLSv1 TLSv1.1 TLSv1.2;
         ssl_ciphers           HIGH:!aNULL:!MD5;
         server_name           ${web_svr_domain};
