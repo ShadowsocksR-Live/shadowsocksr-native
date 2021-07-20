@@ -129,7 +129,7 @@ struct obfs_t * obfs_instance_create(const char *plugin_name) {
 }
 
 struct obfs_t * protocol_instance_create(const char *plugin_name) {
-    struct obfs_t *plug_in = NULL;
+    struct obfs_t *protocol_obj = NULL;
     enum ssr_protocol protocol_type;
 
     init_crc32_table();
@@ -139,69 +139,69 @@ struct obfs_t * protocol_instance_create(const char *plugin_name) {
     switch(protocol_type) {
     case ssr_protocol_origin:
         // origin
-        plug_in = NULL;
+        protocol_obj = NULL;
         break;
     case ssr_protocol_verify_simple:
         // verify_simple
-        plug_in = verify_simple_new_obfs();
+        protocol_obj = verify_simple_new_obfs();
         break;
     case ssr_protocol_auth_simple:
         // auth_simple
-        plug_in = auth_simple_new_obfs();
+        protocol_obj = auth_simple_new_obfs();
         break;
     case ssr_protocol_auth_sha1:
         // auth_sha1
-        plug_in = auth_sha1_new_obfs();
+        protocol_obj = auth_sha1_new_obfs();
         break;
     case ssr_protocol_auth_sha1_v2:
         // auth_sha1_v2
-        plug_in = auth_sha1_v2_new_obfs();
+        protocol_obj = auth_sha1_v2_new_obfs();
         break;
     case ssr_protocol_auth_sha1_v4:
         // auth_sha1_v4
-        plug_in = auth_sha1_v4_new_obfs();
+        protocol_obj = auth_sha1_v4_new_obfs();
         break;
     case ssr_protocol_auth_aes128_md5:
         // auth_aes128_md5
-        plug_in = auth_aes128_md5_new_obfs();
+        protocol_obj = auth_aes128_md5_new_obfs();
         break;
     case ssr_protocol_auth_aes128_sha1:
         // auth_aes128_sha1
-        plug_in = auth_aes128_sha1_new_obfs();
+        protocol_obj = auth_aes128_sha1_new_obfs();
         break;
     case ssr_protocol_auth_chain_a:
         // auth_chain_a
-        plug_in = auth_chain_a_new_obfs();
+        protocol_obj = auth_chain_a_new_obfs();
         break;
     case ssr_protocol_auth_chain_b:
         // auth_chain_b
-        plug_in = auth_chain_b_new_obfs();
+        protocol_obj = auth_chain_b_new_obfs();
         break;
     case ssr_protocol_auth_chain_c:
         // auth_chain_c
-        plug_in = auth_chain_c_new_obfs();
+        protocol_obj = auth_chain_c_new_obfs();
         break;
     case ssr_protocol_auth_chain_d:
         // auth_chain_d
-        plug_in = auth_chain_d_new_obfs();
+        protocol_obj = auth_chain_d_new_obfs();
         break;
     case ssr_protocol_auth_chain_e:
         // auth_chain_e
-        plug_in = auth_chain_e_new_obfs();
+        protocol_obj = auth_chain_e_new_obfs();
         break;
     case ssr_protocol_auth_chain_f:
         // auth_chain_f
-        plug_in = auth_chain_f_new_obfs();
+        protocol_obj = auth_chain_f_new_obfs();
         break;
     default:
         assert(0); // LOGE("Load obfs '%s' failed", plugin_name);
         break;
     }
 
-    if (plug_in) {
-        plug_in->audit_incoming_user = &protocol_audit_incoming_user;
+    if (protocol_obj) {
+        protocol_obj->audit_incoming_user = &protocol_audit_incoming_user;
     }
-    return plug_in;
+    return protocol_obj;
 }
 
 void obfs_instance_destroy(struct obfs_t *plugin) {
