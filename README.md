@@ -20,13 +20,23 @@ As I typed each line of code, I was full of fear. Cherish what you using.
 
 ## Index
 
-- [Intro](#intro)
-- [Features](#features)
-- [Protocols & obfuscators](#protocols--obfuscators)
-- [Build](#build)
-- [Sample configure file](#sample-configure-file)
-- [cmake](#cmake)
-- [Deploy server](#deploy-server)
+- [ShadowsocksR-native](#shadowsocksr-native)
+  - [Index](#index)
+  - [Intro](#intro)
+  - [Features](#features)
+  - [Encrypto method](#encrypto-method)
+  - [Protocols & obfuscators](#protocols--obfuscators)
+  - [Build](#build)
+    - [Distribution-specific guide](#distribution-specific-guide)
+    - [Debian & Ubuntu](#debian--ubuntu)
+    - [CentOS](#centos)
+    - [macOS](#macos)
+    - [Windows](#windows)
+  - [Usage](#usage)
+  - [Sample configure file](#sample-configure-file)
+  - [cmake](#cmake)
+  - [Deploy server](#deploy-server)
+  - [Stargazers over time](#stargazers-over-time)
 
 ## Intro
 
