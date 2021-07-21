@@ -87,7 +87,7 @@ bool protocol_audit_incoming_user(struct obfs_t *obfs, const char *user_id, cons
 }
 
 struct obfs_t * obfs_instance_create(const char *plugin_name) {
-    struct obfs_t *plug_in = NULL;
+    struct obfs_t * obfs_obj = NULL;
     enum ssr_obfs obfs_type;
 
     init_crc32_table();
@@ -98,34 +98,34 @@ struct obfs_t * obfs_instance_create(const char *plugin_name) {
     switch(obfs_type) {
     case ssr_obfs_plain:
         // plain
-        plug_in = NULL;
+        obfs_obj = NULL;
         break;
     case ssr_obfs_http_simple:
         // http_simple
-        plug_in = http_simple_new_obfs();
+        obfs_obj = http_simple_new_obfs();
         break;
     case ssr_obfs_http_post:
         // http_post
-        plug_in = http_post_new_obfs();
+        obfs_obj = http_post_new_obfs();
         break;
     case ssr_obfs_http_mix:
         // http_mix
-        plug_in = http_mix_new_obfs();
+        obfs_obj = http_mix_new_obfs();
         break;
     case ssr_obfs_tls_1_2_ticket_auth:
         // tls1.2_ticket_auth
-        plug_in = tls12_ticket_auth_new_obfs();
+        obfs_obj = tls12_ticket_auth_new_obfs();
         break;
     case ssr_obfs_tls_1_2_ticket_fastauth:
         // tls1.2_ticket_fastauth
-        plug_in = tls12_ticket_fastauth_new_obfs();
+        obfs_obj = tls12_ticket_fastauth_new_obfs();
         break;
     default:
         assert(0); // LOGE("Load obfs '%s' failed", plugin_name);
         break;
     }
 
-    return plug_in;
+    return obfs_obj;
 }
 
 struct obfs_t * protocol_instance_create(const char *plugin_name) {
