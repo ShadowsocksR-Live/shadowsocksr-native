@@ -68,7 +68,8 @@ char* exe_file_path(void* (*allocator)(size_t)) {
             break;
         }
         memset(buf, 0, bufsize);
-        readlink(SELF_EXE, buf, bufsize);
+        int r = readlink(SELF_EXE, buf, bufsize);
+        (void)r;
         break;
 
 #else
