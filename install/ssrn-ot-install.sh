@@ -237,6 +237,7 @@ function nginx_web_server_config_begin() {
 
     rm -rf ${site_dir}
     mkdir -p ${site_dir}/.well-known/acme-challenge/
+    chown -R www-data:www-data ${site_dir}
     curl -L https://raw.githubusercontent.com/nginx/nginx/master/docs/html/index.html -o ${site_dir}/index.html
     curl -L https://raw.githubusercontent.com/nginx/nginx/master/docs/html/50x.html -o ${site_dir}/50x.html
     judge "[nginx] copy files"
@@ -247,7 +248,7 @@ function nginx_web_server_config_begin() {
         listen 80 default_server;
         listen [::]:80 default_server;
         server_name localhost;
-        index index.html index.htm index.nginx-debian.html;
+        index index.php index.html index.htm index.nginx-debian.html;
         root  ${site_dir};
     }
 EOF
@@ -337,9 +338,14 @@ function nginx_web_server_config_end() {
         ssl_protocols         TLSv1 TLSv1.1 TLSv1.2;
         ssl_ciphers           HIGH:!aNULL:!MD5;
         server_name           ${web_svr_domain};
-        index index.html index.htm index.nginx-debian.html;
+        index index.php index.html index.htm index.nginx-debian.html;
         root  ${site_dir};
         error_page 400 = /400.html;
+        
+        location ~ \\.php$ {
+            # include snippets/fastcgi-php.conf;
+            # fastcgi_pass unix:/run/php/php7.4-fpm.sock;
+        }
 
         location /${reverse_proxy_location}/ {
             proxy_redirect off;
@@ -355,7 +361,7 @@ function nginx_web_server_config_end() {
         listen 80 default_server;
         listen [::]:80 default_server;
         server_name ${web_svr_domain};
-        index index.html index.htm index.nginx-debian.html;
+        index index.php index.html index.htm index.nginx-debian.html;
         root  ${site_dir};
 
         location /.well-known/acme-challenge/ {
