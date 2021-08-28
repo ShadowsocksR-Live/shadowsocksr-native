@@ -87,6 +87,7 @@ static void _mbed_data_received_cb(uv_mbed_t* mbed, ssize_t nread, uv_buf_t* buf
     struct tls_cli_ctx* ctx = (struct tls_cli_ctx*)p;
     assert(ctx);
     assert(ctx->mbed == mbed);
+    (void)mbed;
 
     if (ctx->on_data_received) {
         ctx->on_data_received(ctx, (int)nread, (uint8_t*)buf->base, (size_t)(nread > 0 ? nread : 0), ctx->on_data_received_p);
@@ -112,6 +113,7 @@ static void _mbed_connect_done_cb(uv_mbed_t* mbed, int status, void* p) {
 static void _mbed_write_done_cb(uv_mbed_t* mbed, int status, void* p) {
     struct tls_cli_ctx* ctx = (struct tls_cli_ctx*)p;
     assert(ctx->mbed == mbed);
+    (void)mbed;
 
     if (ctx->on_write_done) {
         ctx->on_write_done(ctx, status, ctx->on_write_done_p);
@@ -132,6 +134,7 @@ void tls_client_send_data(struct tls_cli_ctx* ctx, const uint8_t* data, size_t s
 static void _mbed_close_done_cb(uv_mbed_t* mbed, void* p) {
     struct tls_cli_ctx* ctx = (struct tls_cli_ctx*)p;
     assert(ctx->mbed == mbed);
+    (void)mbed;
     if (ctx && ctx->on_shutting_down) {
         ctx->on_shutting_down(ctx, ctx->on_shutting_down_p);
     }
