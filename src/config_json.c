@@ -1,5 +1,5 @@
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && !defined(CMAKE_INTDIR)
 #include <json-c/win32/json.h>
 #else
 #include <json-c/json.h>
