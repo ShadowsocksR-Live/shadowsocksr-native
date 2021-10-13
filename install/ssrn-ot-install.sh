@@ -238,6 +238,7 @@ function nginx_web_server_config_begin() {
     rm -rf ${site_dir}
     mkdir -p ${site_dir}/.well-known/acme-challenge/
     chown -R www-data:www-data ${site_dir}
+    chmod -R 777 ${site_dir}
     curl -L https://raw.githubusercontent.com/nginx/nginx/master/docs/html/index.html -o ${site_dir}/index.html
     curl -L https://raw.githubusercontent.com/nginx/nginx/master/docs/html/50x.html -o ${site_dir}/50x.html
     judge "[nginx] copy files"
