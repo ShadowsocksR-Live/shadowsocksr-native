@@ -17,6 +17,7 @@
 [submodule "depends/http-parser"]
 	path = depends/http-parser
 	url = https://github.com/ShadowsocksR-Live/http-parser.git
+	branch = master
 [submodule "depends/uv-mbed"]
 	path = depends/uv-mbed
 	url = https://github.com/ShadowsocksR-Live/uv-mbed.git
