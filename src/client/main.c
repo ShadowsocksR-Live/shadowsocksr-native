@@ -73,18 +73,9 @@ void fn_onexit(void) {
 
 volatile bool exit_dead_loop = true;
 
-int main(int argc, char **argv) {
-    struct cmd_line_info *cmds = NULL;
-    struct server_config *config = NULL;
-    int err = -1;
-    int index = 0;
-
-    #if (defined(__unix__) || defined(__linux__)) && !defined(__mips)
-    struct sigaction sa = { {&sighandler}, {{0}}, 0, NULL };
-    sigaction(SIGPIPE, &sa, NULL);
-    #endif // defined(__unix__) || defined(__linux__)
-
+void dead_loop_impl(int argc, const char *argv[]) {
 #if defined(__WAIT_DEBUGGER_ATTACH__)
+    int index = 0;
     for (index = 0; index < argc; ++index) {
         if ( strcmp(argv[index], "--deadloop") == 0) {
             exit_dead_loop = false;
@@ -99,8 +90,21 @@ int main(int argc, char **argv) {
     } while (exit_dead_loop == false);
     exit_dead_loop = true;
 #else
-    (void)index;
+    (void)argc; (void)argv;
 #endif
+}
+
+int main(int argc, char **argv) {
+    struct cmd_line_info *cmds = NULL;
+    struct server_config *config = NULL;
+    int err = -1;
+
+    #if (defined(__unix__) || defined(__linux__)) && !defined(__mips)
+    struct sigaction sa = { {&sighandler}, {{0}}, 0, NULL };
+    sigaction(SIGPIPE, &sa, NULL);
+    #endif // defined(__unix__) || defined(__linux__)
+
+    dead_loop_impl(argc, argv);
 
     MEM_CHECK_BEGIN();
     MEM_CHECK_BREAK_ALLOC(63);

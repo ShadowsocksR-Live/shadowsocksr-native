@@ -16,6 +16,7 @@ struct cmd_line_info * cmd_line_info_create(int argc, char * const argv[]) {
     static struct option long_options[] = {
         { "help", no_argument,       0, 0 },
         { "host", required_argument, 0, 0 },
+        { "deadloop", no_argument,   0, 0 },
         { 0,      0, 0, 0 },
     };
     int option_index = 0;
