@@ -137,7 +137,9 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
 
     if (uv_loop_close(loop) != 0) {
         if (state->force_quit == false) {
+#if ANDROID
             ASSERT(false);
+#endif
         }
     }
 

@@ -53,7 +53,7 @@
 #define __weak_ptr
 #endif
 
-#ifdef ANDROID
+#if ANDROID
 int protect_socket(int fd);
 int send_traffic_stat(uint64_t tx, uint64_t rx);
 
@@ -61,7 +61,7 @@ extern int log_tx_rx;
 extern uint64_t tx;
 extern uint64_t rx;
 extern uint64_t last;
-extern char *prefix;
+extern char *stat_path;
 
 #endif
 

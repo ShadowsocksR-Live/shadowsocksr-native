@@ -12,9 +12,10 @@ struct cmd_line_info {
     bool daemon_flag;
     bool help_flag;
     bool force_quit;
-#ifdef ANDROID
+    int force_quit_delay_ms;
+#if ANDROID
     int log_tx_rx;
-    char *prefix;
+    char *stat_path;
 #endif
 };
 

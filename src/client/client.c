@@ -91,7 +91,7 @@ struct client_ctx {
     struct udp_data_context* udp_data_ctx;
 };
 
-#ifdef ANDROID
+#if ANDROID
 static void stat_update_cb(void) {
     if (log_tx_rx) {
         uint64_t _now = uv_hrtime();
@@ -621,7 +621,7 @@ static void do_parse_s5_request_from_client_app(struct tunnel_ctx* tunnel) {
 }
 
 static void _do_protect_socket(struct tunnel_ctx* tunnel, uv_os_sock_t fd) {
-#ifdef ANDROID
+#if ANDROID
     if (protect_socket(fd) == -1) {
         LOGE("protect_socket");
         tunnel->tunnel_shutdown(tunnel);
@@ -956,7 +956,7 @@ static void tunnel_ssr_client_streaming(struct tunnel_ctx* tunnel, struct socket
         buf = tunnel->tunnel_extract_data(tunnel, current_socket, &malloc, &len);
     }
 
-#ifdef ANDROID
+#if ANDROID
     if (log_tx_rx) {
         if (current_socket == tunnel->incoming) {
             tx += len;
@@ -1142,7 +1142,7 @@ void tunnel_tls_client_incoming_streaming(struct tunnel_ctx* tunnel, struct sock
             ASSERT(tunnel->tunnel_extract_data);
             buf = tunnel->tunnel_extract_data(tunnel, socket, &malloc, &len);
 
-#ifdef ANDROID
+#if ANDROID
             if (log_tx_rx) {
                 tx += len;
             }
@@ -1380,7 +1380,7 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
             free(payload);
         } while (true);
 
-#ifdef ANDROID
+#if ANDROID
         if (log_tx_rx) {
             rx += buffer_get_length(ctx->local_write_cache);
         }

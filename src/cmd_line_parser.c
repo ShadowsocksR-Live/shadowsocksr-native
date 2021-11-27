@@ -13,13 +13,31 @@ struct cmd_line_info * cmd_line_info_create(int argc, char * const argv[]) {
 
     struct cmd_line_info *info = (struct cmd_line_info *)calloc(1, sizeof(*info));
 
-    while (-1 != (opt = getopt(argc, argv, "c:P:xdfh"))) {
+    static struct option long_options[] = {
+        { "help", no_argument,       0, 0 },
+        { "host", required_argument, 0, 0 },
+        { 0,      0, 0, 0 },
+    };
+    int option_index = 0;
+
+    info->force_quit_delay_ms = 3000; // TODO: add force_quit_delay_ms command argument.
+
+    while (-1 != (opt = getopt_long(argc, argv, "c:S:Vdfh", long_options, &option_index))) {
         switch (opt) {
-#ifdef ANDROID
-        case 'P':
-            string_safe_assign(&info->prefix, optarg);
+        case 0:
+            if (option_index == 0) {
+                info->help_flag = true; // --help option
+            }
             break;
-        case 'x':
+#if ANDROID
+        case '?':
+        case '-':
+            // FIXME: ignore all unknow options.
+            break;
+        case 'S':
+            string_safe_assign(&info->stat_path, optarg);
+            break;
+        case 'V':
             info->log_tx_rx = 1;
             break;
 #endif
@@ -43,8 +61,8 @@ struct cmd_line_info * cmd_line_info_create(int argc, char * const argv[]) {
 
 void cmd_line_info_destroy(struct cmd_line_info *info) {
     if (info) {
-#ifdef ANDROID
-        object_safe_free((void **)&info->prefix);
+#if ANDROID
+        object_safe_free((void **)&info->stat_path);
 #endif
         object_safe_free((void **)&info->cfg_file);
         free(info);
