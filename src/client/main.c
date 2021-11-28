@@ -73,7 +73,7 @@ void fn_onexit(void) {
 
 volatile bool exit_dead_loop = true;
 
-void dead_loop_impl(int argc, const char *argv[]) {
+void dead_loop_impl(int argc, char * const argv[]) {
 #if defined(__WAIT_DEBUGGER_ATTACH__)
     int index = 0;
     for (index = 0; index < argc; ++index) {
@@ -94,7 +94,7 @@ void dead_loop_impl(int argc, const char *argv[]) {
 #endif
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char * const argv[]) {
     struct cmd_line_info *cmds = NULL;
     struct server_config *config = NULL;
     int err = -1;
