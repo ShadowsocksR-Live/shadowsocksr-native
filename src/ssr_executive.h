@@ -37,6 +37,12 @@ struct server_config {
     uint64_t connect_timeout_ms;
     uint64_t udp_timeout;
     char *remarks;
+
+    // user tag verification logic
+    bool user_verify; // server only.
+    struct cstl_map *user_tag_container;
+
+    char* user_tag; // client only.
 };
 
 struct server_env_t {

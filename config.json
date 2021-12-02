@@ -12,11 +12,14 @@
     "udp_timeout": 6,
 
     "server_settings": {
+        "user_verify": false,
+        "user_tag_container": ["user1_tag", "user2_tag", "user3_tag"],
         "listen_address": "0.0.0.0",
         "listen_port": 12475
     },
 
     "client_settings": {
+        "user_tag": "user1_tag",
         "server": "12.34.56.78",
         "server_port": 12475,
         "listen_address": "0.0.0.0",
