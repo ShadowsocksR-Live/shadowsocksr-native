@@ -871,6 +871,12 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
         data_len = data_len ^ (*((uint16_t *)(local->last_client_hash + 14))); // TODO: ntohs
 #pragma GCC diagnostic pop
 
+#if !defined(NDEBUG) || (defined(DEBUG) || defined(_DEBUG))
+        if (obfs->auth_success) {
+            assert(data_len > 0);
+        }
+#endif
+
         rand_len = local->get_tcp_rand_len(local, data_len, &local->random_client, local->last_client_hash);
         length = data_len + rand_len;
         if (length >= 4096) {

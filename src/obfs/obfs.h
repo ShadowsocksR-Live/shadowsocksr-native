@@ -48,6 +48,10 @@ struct obfs_t {
     struct server_info_t server_info;
     void *l_data;
 
+#if !defined(NDEBUG) || (defined(DEBUG) || defined(_DEBUG))
+    bool auth_success; // just for debugging only
+#endif
+
     void * (*generate_global_init_data)(void);
     size_t (*get_overhead)(struct obfs_t *obfs);
     bool (*need_feedback)(struct obfs_t *obfs);
