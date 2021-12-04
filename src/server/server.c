@@ -772,6 +772,15 @@ static void do_prepare_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socke
         protocol = ctx->cipher->protocol;
         obfs = ctx->cipher->obfs;
 
+#if !defined(NDEBUG) || (defined(DEBUG) || defined(_DEBUG))
+        if (protocol) {
+            protocol->auth_success = true;
+        }
+        if (obfs) {
+            obfs->auth_success = true;
+        }
+#endif
+
         pre_parse_header(init_pkg);
 
         info = protocol ? protocol->get_server_info(protocol) : (obfs ? obfs->get_server_info(obfs) : NULL);

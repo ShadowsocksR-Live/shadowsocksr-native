@@ -1268,7 +1268,7 @@ cipher_env_release(struct cipher_env_t *env)
     if (env == NULL) {
         return;
     }
-    if (env->enc_method == ss_cipher_table) {
+    if (env->enc_method <= ss_cipher_table) {
         safe_free(env->enc_table);
         safe_free(env->dec_table);
     } else {
