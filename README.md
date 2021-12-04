@@ -278,15 +278,15 @@ So we must install it by ourselves.
 ```bash
 sudo su
 cd /
-curl https://cmake.org/files/v3.14/cmake-3.14.5-Linux-x86_64.sh -o a.sh
-sh a.sh  --prefix=/usr/ --exclude-subdir
+wget --no-check-certificate https://cmake.org/files/v3.22/cmake-3.22.0-linux-x86_64.sh -O a.sh
+bash a.sh  --prefix=/usr/ --exclude-subdir
 rm -rf a.sh
 cmake --version
 ```
 
 And the `cmake --version` command will output message likes:
 ```
-cmake version 3.14.5
+cmake version 3.22.0
 CMake suite maintained and supported by Kitware (kitware.com/cmake).
 ```
 

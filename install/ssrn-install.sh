@@ -361,8 +361,8 @@ function install_build_tools() {
         rm -rf kernel-headers.rpm
     fi
 
-    curl https://cmake.org/files/v3.18/cmake-3.18.4-Linux-x86_64.sh -o cmake_pkg.sh
-    sh cmake_pkg.sh --prefix=/usr/ --exclude-subdir && rm -rf cmake_pkg.sh
+    wget --no-check-certificate https://cmake.org/files/v3.22/cmake-3.22.0-linux-x86_64.sh -O cmake_pkg.sh
+    bash cmake_pkg.sh --prefix=/usr/ --exclude-subdir && rm -rf cmake_pkg.sh
 }
 
 function build_ssr_native() {
