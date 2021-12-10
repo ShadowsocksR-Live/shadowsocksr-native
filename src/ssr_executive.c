@@ -661,7 +661,7 @@ tunnel_cipher_server_decrypt(struct tunnel_cipher_ctx *tc,
                 *obfs_receipt = obfs->server_encode(obfs, empty);
                 buffer_release(empty);
             }
-            buffer_reset(ret);
+            buffer_reset(ret, true);
             return ret;
         }
     } else {
@@ -727,12 +727,12 @@ bool pre_parse_header(struct buffer_t *data) {
             return false;
         }
 
-        buffer_shortened_to(data, hdr_len, len - hdr_len);
+        buffer_shortened_to(data, hdr_len, len - hdr_len, true);
         return true;
     }
     if (datatype == 0x81) {
         hdr_len = 1;
-        buffer_shortened_to(data, hdr_len, len - hdr_len);
+        buffer_shortened_to(data, hdr_len, len - hdr_len, true);
         return true;
     }
     if (datatype == 0x82) {
@@ -745,7 +745,7 @@ bool pre_parse_header(struct buffer_t *data) {
             // header too short, maybe wrong password or encryption method
             return false;
         }
-        buffer_shortened_to(data, hdr_len, len - hdr_len);
+        buffer_shortened_to(data, hdr_len, len - hdr_len, true);
         return true;
     }
     tmp = (~datatype);
@@ -765,12 +765,12 @@ bool pre_parse_header(struct buffer_t *data) {
         }
         start_pos = (size_t)(3 + (size_t)buffer[3]);
 
-        buffer_shortened_to(data, start_pos, data_size - (4 + start_pos));
+        buffer_shortened_to(data, start_pos, data_size - (4 + start_pos), true);
 
         if (data_size < origin_len) {
             size_t len2 = origin_len - data_size;
             buffer = buffer_get_data(data, &len);
-            buffer_concatenate(data, buffer + data_size, len2);
+            buffer_concatenate_raw(data, buffer + data_size, len2);
         }
         return true;
     }

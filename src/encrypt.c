@@ -22,6 +22,11 @@
 
 #include <stdint.h>
 #include <ctype.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
+#include <stddef.h>
+#include <stdbool.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -75,6 +80,8 @@ typedef mbedtls_md_info_t digest_type_t;
 #error Cipher Feedback mode a.k.a CFB not supported by your mbed TLS.
 #endif
 
+#else
+#error You have to use openssl or mbedtls, one of them, and can NOT both.
 #endif
 
 #include <sodium.h>
@@ -830,6 +837,8 @@ ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx
         size_t iv_len = 0;
         uint8_t *cipher_buffer=NULL; size_t cipher_len = 0;
         uint8_t *plain_buffer = NULL; size_t plain_len = buffer_get_length(plain);
+        enum ss_cipher_type method = env->enc_method;
+
         if (!ctx->init) {
             iv_len = (size_t)env->enc_iv_len;
         }
@@ -889,6 +898,7 @@ ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx
         free(cipher_buffer);
         free(plain_buffer);
         return 0;
+        (void)method;
     } else {
         if (env->enc_method == ss_cipher_table) {
             size_t plain_len = 0;
@@ -980,12 +990,16 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
         size_t iv_len = 0;
         bool success       = true;
         size_t cipher_len = 0;
-        const uint8_t *pcb = buffer_get_data(cipher, &cipher_len);
+        const uint8_t *pcb;
+        uint8_t *plain_buffer;
+        size_t plain_len;
+        uint8_t *cipher_buffer;
+        enum ss_cipher_type method = env->enc_method;
 
-        uint8_t *plain_buffer = (uint8_t *) calloc(max(cipher_len, capacity), sizeof(*plain_buffer));
-        size_t plain_len = cipher_len;
-
-        uint8_t *cipher_buffer = (uint8_t*) calloc(buffer_get_capacity(cipher), sizeof(*cipher_buffer));
+        pcb = buffer_get_data(cipher, &cipher_len);
+        plain_buffer = (uint8_t *) calloc(max(cipher_len, capacity), sizeof(*plain_buffer));
+        plain_len = cipher_len;
+        cipher_buffer = (uint8_t*) calloc(buffer_get_capacity(cipher), sizeof(*cipher_buffer));
         memmove(cipher_buffer, pcb, cipher_len);
 
         if (!ctx->init) {
@@ -1004,7 +1018,7 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
             ctx->counter = 0;
             ctx->init    = 1;
 
-            if (env->enc_method > ss_cipher_rc4) {
+            if (method > ss_cipher_rc4) {
                 if (cache_key_exist(env->iv_cache, (char *)iv, iv_len)) {
                     return -1;
                 } else {
@@ -1013,7 +1027,7 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
             }
         }
 
-        if (env->enc_method >= ss_cipher_salsa20) {
+        if (method >= ss_cipher_salsa20) {
             size_t padding = (size_t)(ctx->counter % SODIUM_BLOCK_SIZE);
             plain_buffer = (uint8_t *) realloc(plain_buffer, max((plain_len + padding) * 2, capacity));
 
@@ -1028,7 +1042,7 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
                                  ((uint64_t)cipher_len - iv_len + padding),
                                  (const uint8_t *)ctx->cipher_ctx.iv,
                                  ctx->counter / SODIUM_BLOCK_SIZE, env->enc_key,
-                                 env->enc_method);
+                                 method);
             ctx->counter += cipher_len - iv_len;
             if (padding) {
                 memmove(plain_buffer, plain_buffer + padding, plain_len);
@@ -1112,11 +1126,16 @@ struct enc_ctx *
 enc_ctx_new_instance(struct cipher_env_t *env, bool encrypt)
 {
     struct enc_ctx *ctx = (struct enc_ctx *)calloc(1, sizeof(struct enc_ctx));
-    sodium_memzero(ctx, sizeof(struct enc_ctx));
-    cipher_context_init(env, &ctx->cipher_ctx, encrypt);
+    enum ss_cipher_type method = env->enc_method;
+    if ((ss_cipher_none <= method) && (method <= ss_cipher_chacha20ietf)) {
+        sodium_memzero(ctx, sizeof(struct enc_ctx));
+        cipher_context_init(env, &ctx->cipher_ctx, encrypt);
 
-    if (encrypt) {
-        rand_bytes(ctx->cipher_ctx.iv, env->enc_iv_len);
+        if (encrypt) {
+            rand_bytes(ctx->cipher_ctx.iv, env->enc_iv_len);
+        }
+    } else {
+        assert(!"Invalid method!");
     }
     return ctx;
 }
@@ -1124,10 +1143,16 @@ enc_ctx_new_instance(struct cipher_env_t *env, bool encrypt)
 void
 enc_ctx_release_instance(struct cipher_env_t *env, struct enc_ctx *ctx)
 {
+    enum ss_cipher_type method;
     if (env==NULL || ctx==NULL) {
         return;
     }
-    cipher_context_release(env, &ctx->cipher_ctx);
+    method = env->enc_method;
+    if ((ss_cipher_none <= method) && (method <= ss_cipher_chacha20ietf)) {
+        cipher_context_release(env, &ctx->cipher_ctx);
+    } else {
+        assert(!"Invalid method!");
+    }
     free(ctx);
 }
 
@@ -1181,7 +1206,7 @@ enc_key_init(struct cipher_env_t *env, enum ss_cipher_type method, const char *p
     struct cipher_wrapper *cipher;
     const digest_type_t *md;
 
-    if (method < ss_cipher_none || method >= ss_cipher_max) {
+    if (method < ss_cipher_none || method > ss_cipher_chacha20ietf) {
         LOGE("%s", "enc_key_init(): Illegal method");
         return;
     }
@@ -1251,8 +1276,11 @@ cipher_env_new_instance(const char *pass, const char *method)
     enum ss_cipher_type m = ss_cipher_type_of_name(method);
     if (m <= ss_cipher_table) {
         enc_table_init(env, m, pass);
-    } else {
+    } else if ((ss_cipher_rc4 <= m) && (m <= ss_cipher_chacha20ietf)) {
         enc_key_init(env, m, pass);
+    } else {
+        assert(!"Invalid method!");
+        exit(EXIT_FAILURE);
     }
     env->enc_method = m;
     return env;
@@ -1265,14 +1293,18 @@ enum ss_cipher_type cipher_env_enc_method(const struct cipher_env_t *env) {
 void
 cipher_env_release(struct cipher_env_t *env)
 {
+    enum ss_cipher_type method;
     if (env == NULL) {
         return;
     }
-    if (env->enc_method <= ss_cipher_table) {
+    method = env->enc_method;
+    if (method <= ss_cipher_table) {
         safe_free(env->enc_table);
         safe_free(env->dec_table);
-    } else {
+    } else if ((ss_cipher_rc4 <= method) && (method <= ss_cipher_chacha20ietf)) {
         cache_delete(env->iv_cache, 0);
+    } else {
+        assert(!"something went wrong!");
     }
     free(env);
 }

@@ -374,7 +374,7 @@ static bool tunnel_tls_send_data_in_worker_thread(struct tls_cli_ctx *ctx) {
     } while (written < (int)len);
     result = true;
 __exit__:
-    buffer_reset(ctx->app_incoming_cache);
+    buffer_reset(ctx->app_incoming_cache, true);
     uv_mutex_unlock(ctx->mutex);
 
     return result;
@@ -385,7 +385,7 @@ static void tunnel_tls_send_data(struct tunnel_ctx *tunnel, const uint8_t *data,
     struct tls_cli_ctx *ctx = tunnel->tls_ctx;
 
     uv_mutex_lock(ctx->mutex);
-    buffer_concatenate(ctx->app_incoming_cache, data, size);
+    buffer_concatenate_raw(ctx->app_incoming_cache, data, size);
     uv_mutex_unlock(ctx->mutex);
 }
 
@@ -409,7 +409,7 @@ static void tls_cli_state_changed_notice_async_cb(uv_async_t *handle) {
             if (p && s) {
                 tunnel->tunnel_tls_on_data_received(tunnel, p, s);
             }
-            buffer_reset(ctx->data_cache);
+            buffer_reset(ctx->data_cache, true);
         }
         break;
     case tls_state_shutting_down:
@@ -443,7 +443,7 @@ static void tls_cli_after_cb(uv_work_t *req, int status) {
         if (s && p) {
             tunnel->tunnel_tls_on_data_received(tunnel, p, s);
         }
-        buffer_reset(ctx->data_cache);
+        buffer_reset(ctx->data_cache, true);
     }
     uv_close((uv_handle_t*) ctx->async, tls_async_close_cb);
 }
@@ -456,7 +456,7 @@ static void tls_cli_state_changed_async_send(struct tls_cli_ctx *ctx,
     uv_mutex_lock(ctx->mutex);
     ctx->state = state;
     if (buf && len) {
-        buffer_concatenate(ctx->data_cache, buf, len);
+        buffer_concatenate_raw(ctx->data_cache, buf, len);
     }
     uv_async_send(ctx->async);
     uv_mutex_unlock(ctx->mutex);

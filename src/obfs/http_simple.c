@@ -168,13 +168,13 @@ struct buffer_t * fake_request_data(const uint8_t *url_encoded_data) {
     index = (rand_integer() % (arr_size / 2)) * 2;
 
     ptr = request_path[index];
-    buffer_concatenate(ret, (const uint8_t *)ptr, strlen(ptr));
+    buffer_concatenate_raw(ret, (const uint8_t *)ptr, strlen(ptr));
 
     ptr = (const char *)url_encoded_data;
-    buffer_concatenate(ret, (const uint8_t *)ptr, strlen(ptr));
+    buffer_concatenate_raw(ret, (const uint8_t *)ptr, strlen(ptr));
 
     ptr = request_path[index + 1];
-    buffer_concatenate(ret, (const uint8_t *)ptr, strlen(ptr));
+    buffer_concatenate_raw(ret, (const uint8_t *)ptr, strlen(ptr));
 
     return ret;
 }
@@ -307,9 +307,9 @@ struct buffer_t * http_simple_client_decode(struct obfs_t *obfs, const struct bu
         data_begin += 4;
         local->has_recv_header = 1;
         outlength = buffer_get_length(result) - (data_begin - encryptdata);
-        buffer_shortened_to(result, (data_begin - encryptdata), outlength);
+        buffer_shortened_to(result, (data_begin - encryptdata), outlength, true);
     } else {
-        buffer_reset(result);
+        buffer_reset(result, true);
     }
     return result;
 }
@@ -321,7 +321,7 @@ struct buffer_t * http_simple_server_encode(struct obfs_t *obfs, const struct bu
     static const char *header2 = "\r\nServer: nginx\r\nVary: Accept-Encoding\r\n\r\n";
     do {
         if (local->has_sent_header) {
-            buffer_concatenate2(header, buf);
+            buffer_concatenate(header, buf);
             break;
         }
 
@@ -332,10 +332,10 @@ struct buffer_t * http_simple_server_encode(struct obfs_t *obfs, const struct bu
             char current[128] = { 0 };
             strftime(current, sizeof(current), "%a, %d %b %Y %H:%M:%S GMT", tmp);
 
-            buffer_concatenate(header, (uint8_t *)current, strlen(current));
+            buffer_concatenate_raw(header, (uint8_t *)current, strlen(current));
         }
-        buffer_concatenate(header, (const uint8_t *)header2, strlen(header2));
-        buffer_concatenate2(header, buf);
+        buffer_concatenate_raw(header, (const uint8_t *)header2, strlen(header2));
+        buffer_concatenate(header, buf);
 
         local->has_sent_header = true;
     } while (0);
@@ -373,25 +373,25 @@ struct buffer_t * http_simple_server_decode(struct obfs_t *obfs, const struct bu
         if (need_decrypt) { *need_decrypt = true; }
         if (need_feedback) { *need_feedback = false; }
         if (local->has_recv_header) {
-            buffer_concatenate2(ret, buf);
+            buffer_concatenate(ret, buf);
             break;
         }
 
         local->has_recv_header = true;
 
-        buffer_concatenate2(local->recv_buffer, buf);
+        buffer_concatenate(local->recv_buffer, buf);
         in_buf = buffer_clone(local->recv_buffer);
         if (buffer_get_length(in_buf) <= 10) {
             break;
         }
         if (match_http_header(in_buf) == false) {
             // logging.debug('http_simple: not match begin')
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             break;
         }
         if (buffer_get_length(in_buf) > 65536) {
             // logging.warn('http_simple: over size')
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             if (need_decrypt) { *need_decrypt = false; }
             break;
         }
@@ -412,7 +412,7 @@ struct buffer_t * http_simple_server_decode(struct obfs_t *obfs, const struct bu
 
         len = (buffer_get_data(in_buf, NULL) + buffer_get_length(in_buf) - real_data);
         if (len > 0) {
-            buffer_concatenate(ret, real_data, len);
+            buffer_concatenate_raw(ret, real_data, len);
         }
 
         if (buffer_get_length(ret) < 13) {

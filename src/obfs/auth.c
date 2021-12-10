@@ -323,7 +323,7 @@ auth_simple_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int data
     if (buffer_get_length(local->recv_buffer) + datalength > 16384) {
         return -1;
     }
-    buffer_concatenate(local->recv_buffer, (uint8_t *)plaindata, datalength);
+    buffer_concatenate_raw(local->recv_buffer, (uint8_t *)plaindata, datalength);
 
     out_buffer = (char*)calloc(buffer_get_length(local->recv_buffer), sizeof(char));
     buffer = out_buffer;
@@ -333,7 +333,7 @@ auth_simple_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int data
         size_t length = (size_t)ntohs(*(uint16_t *)(recv_buffer + 0)); // ((int)recv_buffer[0] << 8) | recv_buffer[1];
         if (length >= 8192 || length < 7) {
             free(out_buffer);
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             return -1;
         }
         if (length > buffer_get_length(local->recv_buffer)) {
@@ -342,13 +342,13 @@ auth_simple_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int data
         crc = (int) crc32_imp((unsigned char*)recv_buffer, length);
         if (crc != -1) {
             free(out_buffer);
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             return -1;
         }
         data_size = length - recv_buffer[2] - 6;
         memmove(buffer, recv_buffer + 2 + recv_buffer[2], data_size);
         buffer += data_size;
-        buffer_shortened_to(local->recv_buffer, length,  buffer_get_length(local->recv_buffer) - length);
+        buffer_shortened_to(local->recv_buffer, length,  buffer_get_length(local->recv_buffer) - length, true);
     }
     len = (int)(buffer - out_buffer);
     if ((int)*capacity < len) {
@@ -454,7 +454,7 @@ auth_sha1_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datale
     if (buffer_get_length(local->recv_buffer) + datalength > 16384) {
         return -1;
     }
-    buffer_concatenate(local->recv_buffer, (const uint8_t*)plaindata, datalength);
+    buffer_concatenate_raw(local->recv_buffer, (const uint8_t*)plaindata, datalength);
 
     out_buffer = (char*)calloc((size_t)buffer_get_length(local->recv_buffer), sizeof(char));
     buffer = out_buffer;
@@ -465,7 +465,7 @@ auth_sha1_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datale
         size_t length = (size_t)ntohs(*(uint16_t *)(recv_buffer + 0)); // ((int)recv_buffer[0] << 8) | recv_buffer[1];
         if (length >= 8192 || length < 7) {
             free(out_buffer);
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             return -1;
         }
         if (length > buffer_get_length(local->recv_buffer)) {
@@ -473,14 +473,14 @@ auth_sha1_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int datale
         }
         if (checkadler32((unsigned char*)recv_buffer, (unsigned int)length) == false) {
             free(out_buffer);
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             return -1;
         }
         pos = recv_buffer[2] + 2;
         data_size = length - pos - 4;
         memmove(buffer, recv_buffer + pos, data_size);
         buffer += data_size;
-        buffer_shortened_to(local->recv_buffer, length, buffer_get_length(local->recv_buffer)-length);
+        buffer_shortened_to(local->recv_buffer, length, buffer_get_length(local->recv_buffer)-length, true);
     }
     len = (int)(buffer - out_buffer);
     if ((int)*capacity < len) {
@@ -602,7 +602,7 @@ auth_sha1_v2_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int dat
     if (buffer_get_length(local->recv_buffer) + datalength > 16384) {
         return -1;
     }
-    buffer_concatenate(local->recv_buffer, (const uint8_t*)plaindata, datalength);
+    buffer_concatenate_raw(local->recv_buffer, (const uint8_t*)plaindata, datalength);
 
     out_buffer = (char*)calloc((size_t)buffer_get_length(local->recv_buffer), sizeof(char));
     buffer = out_buffer;
@@ -613,7 +613,7 @@ auth_sha1_v2_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int dat
         const uint8_t * recv_buffer = buffer_get_data(local->recv_buffer, NULL);
         size_t length = (size_t)ntohs(*(uint16_t *)(recv_buffer + 0)); //((int)recv_buffer[0] << 8) | recv_buffer[1];
         if (length >= 8192 || length < 7) {
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             error = 1;
             break;
         }
@@ -621,7 +621,7 @@ auth_sha1_v2_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int dat
             break;
         }
         if (checkadler32((unsigned char*)recv_buffer, length) == false) {
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             error = 1;
             break;
         }
@@ -634,7 +634,7 @@ auth_sha1_v2_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int dat
         data_size = length - pos - 4;
         memmove(buffer, recv_buffer + pos, data_size);
         buffer += data_size;
-        buffer_shortened_to(local->recv_buffer, length, buffer_get_length(local->recv_buffer) - length);
+        buffer_shortened_to(local->recv_buffer, length, buffer_get_length(local->recv_buffer) - length, true);
     }
     if (error == 0) {
         len = (int)(buffer - out_buffer);
@@ -768,7 +768,7 @@ auth_sha1_v4_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int dat
     if (buffer_get_length(local->recv_buffer) + datalength > 16384) {
         return -1;
     }
-    buffer_concatenate(local->recv_buffer, (const uint8_t*)plaindata, datalength);
+    buffer_concatenate_raw(local->recv_buffer, (const uint8_t*)plaindata, datalength);
 
     out_buffer = (char*)calloc((size_t)buffer_get_length(local->recv_buffer), sizeof(char));
     buffer = out_buffer;
@@ -780,13 +780,13 @@ auth_sha1_v4_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int dat
         size_t data_size;
         uint32_t crc_val = crc32_imp((unsigned char*)recv_buffer, 2);
         if ((((uint32_t)recv_buffer[3] << 8) | recv_buffer[2]) != (crc_val & 0xffff)) {
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             error = 1;
             break;
         }
         length = (size_t)ntohs(*(uint16_t *)(recv_buffer + 0)); // ((int)recv_buffer[0] << 8) | recv_buffer[1];
         if (length >= 8192 || length < 7) {
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             error = 1;
             break;
         }
@@ -794,7 +794,7 @@ auth_sha1_v4_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int dat
             break;
         }
         if (checkadler32((unsigned char*)recv_buffer, length) == false) {
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             error = 1;
             break;
         }
@@ -807,7 +807,7 @@ auth_sha1_v4_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int dat
         data_size = length - pos - 4;
         memmove(buffer, recv_buffer + pos, data_size);
         buffer += data_size;
-        buffer_shortened_to(local->recv_buffer, length, buffer_get_length(local->recv_buffer) - length);
+        buffer_shortened_to(local->recv_buffer, length, buffer_get_length(local->recv_buffer) - length, true);
     }
     if (error == 0) {
         len = (int)(buffer - out_buffer);
@@ -835,7 +835,7 @@ struct buffer_t * auth_sha1_v4_server_pre_encrypt(struct obfs_t *obfs, const str
         pack_len = auth_sha1_v4_pack_data((const char *) buffer_get_data(in_buf, NULL), local->unit_len, buffer);
         buffer += pack_len;
         ret_len += pack_len;
-        buffer_shortened_to(in_buf, local->unit_len, buffer_get_length(in_buf) - local->unit_len);
+        buffer_shortened_to(in_buf, local->unit_len, buffer_get_length(in_buf) - local->unit_len, true);
     }
     pack_len = auth_sha1_v4_pack_data((const char *)buffer_get_data(in_buf, NULL), buffer_get_length(in_buf), buffer);
     ret_len += pack_len;
@@ -852,7 +852,7 @@ struct buffer_t * auth_sha1_v4_server_post_decrypt(struct obfs_t *obfs, struct b
     bool sendback = false;
     struct buffer_t *out_buf = buffer_create(SSR_BUFF_SIZE);
     do {
-        buffer_concatenate2(local->recv_buffer, buf);
+        buffer_concatenate(local->recv_buffer, buf);
         if (local->has_recv_header == false) {
             const uint8_t *buffer = buffer_get_data(local->recv_buffer, NULL);
             struct buffer_t *crc_src;
@@ -871,8 +871,8 @@ struct buffer_t * auth_sha1_v4_server_post_decrypt(struct obfs_t *obfs, struct b
             }
 
             crc_src = buffer_create_from(buffer, 2);
-            buffer_concatenate(crc_src, (uint8_t *)local->salt, strlen(local->salt));
-            buffer_concatenate(crc_src, server_info->key, server_info->key_len);
+            buffer_concatenate_raw(crc_src, (uint8_t *)local->salt, strlen(local->salt));
+            buffer_concatenate_raw(crc_src, server_info->key, server_info->key_len);
             crc_val = crc32_imp((unsigned char*) buffer_get_data(crc_src, NULL), buffer_get_length(crc_src));
             buffer_release(crc_src);
 
@@ -922,11 +922,11 @@ struct buffer_t * auth_sha1_v4_server_post_decrypt(struct obfs_t *obfs, struct b
 
             //TODO: check client_id / connection_id to avoid `Replay Attacks`
 
-            buffer_shortened_to(out_buf, 12, buffer_get_length(out_buf) - 12);
+            buffer_shortened_to(out_buf, 12, buffer_get_length(out_buf) - 12, true);
             local->client_id = client_id;
             local->connection_id = connection_id;
 
-            buffer_shortened_to(local->recv_buffer, length, buffer_get_length(local->recv_buffer) - length);
+            buffer_shortened_to(local->recv_buffer, length, buffer_get_length(local->recv_buffer) - length, true);
 
             local->has_recv_header = true;
             sendback = true;
@@ -948,7 +948,7 @@ struct buffer_t * auth_sha1_v4_server_post_decrypt(struct obfs_t *obfs, struct b
             length = (size_t) ntohs(*((uint16_t *)(buffer + 0)));
             if (length >= 8192 || length < 7) {
                 // logging.info('auth_sha1_v4: over size')
-                buffer_reset(local->recv_buffer);
+                buffer_reset(local->recv_buffer, true);
                 buffer_release(out_buf); out_buf = NULL;
                 break;
             }
@@ -957,7 +957,7 @@ struct buffer_t * auth_sha1_v4_server_post_decrypt(struct obfs_t *obfs, struct b
             }
             if (checkadler32(buffer, length) == false) {
                 // logging.info('auth_sha1_v4: checksum error, data %s' % (binascii.hexlify(self.recv_buf[:length]),))
-                buffer_reset(local->recv_buffer);
+                buffer_reset(local->recv_buffer, true);
                 buffer_release(out_buf); out_buf = NULL;
                 break;
             }
@@ -967,13 +967,13 @@ struct buffer_t * auth_sha1_v4_server_post_decrypt(struct obfs_t *obfs, struct b
             } else {
                 pos = (size_t) ntohs(*((uint16_t *)(buffer + 5))) + 4;
             }
-            buffer_concatenate(out_buf, buffer + pos, length - 4 - pos);
+            buffer_concatenate_raw(out_buf, buffer + pos, length - 4 - pos);
 
             if (pos == (length - 4)) {
                 sendback = true;
             }
 
-            buffer_shortened_to(local->recv_buffer, length, buffer_get_length(local->recv_buffer) - length);
+            buffer_shortened_to(local->recv_buffer, length, buffer_get_length(local->recv_buffer) - length, true);
         }
     } while(0);
     if (need_feedback) { *need_feedback = sendback; }
@@ -1250,7 +1250,7 @@ auth_aes128_sha1_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int
     if (buffer_get_length(local->recv_buffer) + datalength > 16384) {
         return -1;
     }
-    buffer_concatenate(local->recv_buffer, (const uint8_t*)plaindata, datalength);
+    buffer_concatenate_raw(local->recv_buffer, (const uint8_t*)plaindata, datalength);
 
     {
         size_t local_key_len = 0;
@@ -1278,7 +1278,7 @@ auth_aes128_sha1_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int
             buffer_release(_key);
 
             if (memcmp(hash, recv_buffer + 2, 2)) {
-                buffer_reset(local->recv_buffer);
+                buffer_reset(local->recv_buffer, true);
                 error = 1;
                 break;
             }
@@ -1286,7 +1286,7 @@ auth_aes128_sha1_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int
 
         length = ((size_t)recv_buffer[1] << 8) + recv_buffer[0];
         if (length >= 8192 || length < 8) {
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             error = 1;
             break;
         }
@@ -1302,7 +1302,7 @@ auth_aes128_sha1_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int
             buffer_release(_msg);
             buffer_release(_key);
             if (memcmp(hash, recv_buffer + length - 4, 4)) {
-                buffer_reset(local->recv_buffer);
+                buffer_reset(local->recv_buffer, true);
                 error = 1;
                 break;
             }
@@ -1318,7 +1318,7 @@ auth_aes128_sha1_client_post_decrypt(struct obfs_t *obfs, char **pplaindata, int
         data_size = length - pos - 4;
         memmove(buffer, recv_buffer + pos, data_size);
         buffer += data_size;
-        buffer_shortened_to(local->recv_buffer, length, buffer_get_length(local->recv_buffer) - length);
+        buffer_shortened_to(local->recv_buffer, length, buffer_get_length(local->recv_buffer) - length, true);
     }
     if (error == 0) {
         len = (int)(buffer - out_buffer);
@@ -1350,7 +1350,7 @@ struct buffer_t * auth_aes128_sha1_server_pre_encrypt(struct obfs_t *obfs, const
     while (buffer_get_length(buf2) > unit_len) {
         pack_len = auth_aes128_sha1_pack_data(buffer_get_data(buf2, NULL), unit_len, ogn_data_len, buffer, obfs);
         buffer += pack_len;
-        buffer_shortened_to(buf2, unit_len, buffer_get_length(buf2) - unit_len);
+        buffer_shortened_to(buf2, unit_len, buffer_get_length(buf2) - unit_len, true);
     }
     if (buffer_get_length(buf2) > 0) {
         pack_len = auth_aes128_sha1_pack_data(buffer_get_data(buf2, NULL), buffer_get_length(buf2), ogn_data_len, buffer, obfs);
@@ -1380,11 +1380,11 @@ struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, stru
     size_t length;
     bool sendback = false;
     auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
-    buffer_concatenate2(local->recv_buffer, buf);
+    buffer_concatenate(local->recv_buffer, buf);
     out_buf = buffer_create(SSR_BUFF_SIZE);
 
     mac_key = buffer_create_from(server_info->recv_iv, server_info->recv_iv_len);
-    buffer_concatenate(mac_key, server_info->key, server_info->key_len);
+    buffer_concatenate_raw(mac_key, server_info->key, server_info->key_len);
 
     if (local->has_recv_header == false) {
         uint32_t utc_time;
@@ -1509,7 +1509,7 @@ struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, stru
             local->client_id = client_id;
             local->connection_id = connection_id;
         }
-        buffer_shortened_to(local->recv_buffer, length, buffer_get_length(local->recv_buffer) - length);
+        buffer_shortened_to(local->recv_buffer, length, buffer_get_length(local->recv_buffer) - length, true);
         local->has_recv_header = true;
         sendback = true;
     }
@@ -1518,7 +1518,7 @@ struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, stru
         size_t pos;
         uint32_t recv_id = (local->recv_id); // TODO: htonl
         buffer_replace(mac_key, local->user_key);
-        buffer_concatenate(mac_key, (uint8_t *)&recv_id, sizeof(recv_id));
+        buffer_concatenate_raw(mac_key, (uint8_t *)&recv_id, sizeof(recv_id));
         {
             struct buffer_t *_msg = buffer_create_from(buffer_get_data(local->recv_buffer, NULL), 2);
             local->hmac(sha1data, _msg, mac_key);
@@ -1531,7 +1531,7 @@ struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, stru
         length = (size_t) (*((uint16_t *)buffer_get_data(local->recv_buffer, NULL))); // TODO: ntohs
         if (length >= 8192 || length < 7) {
             // '%s: over size'
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             return auth_aes128_not_match_return(obfs, local->recv_buffer, need_feedback);
         }
         if (length > buffer_get_length(local->recv_buffer)) {
@@ -1544,7 +1544,7 @@ struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, stru
         }
         if (memcmp(sha1data, buffer_get_data(local->recv_buffer, NULL) + length-4, 4) != 0) {
             // '%s: checksum error, data %s'
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             return auth_aes128_not_match_return(obfs, local->recv_buffer, need_feedback);
         }
         local->recv_id += 1;
@@ -1554,8 +1554,8 @@ struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, stru
         } else {
             pos = (*(uint16_t *)(buffer_get_data(local->recv_buffer, NULL) + 5)) + 4; // TODO: ntohs
         }
-        buffer_concatenate(out_buf, buffer_get_data(local->recv_buffer, NULL) + pos, (length - 4) - pos);
-        buffer_shortened_to(local->recv_buffer, length, buffer_get_length(local->recv_buffer) - length);
+        buffer_concatenate_raw(out_buf, buffer_get_data(local->recv_buffer, NULL) + pos, (length - 4) - pos);
+        buffer_shortened_to(local->recv_buffer, length, buffer_get_length(local->recv_buffer) - length, true);
         if (pos == (length - 4)) {
             sendback = true;
         }

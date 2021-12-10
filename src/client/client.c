@@ -924,7 +924,7 @@ static void do_launch_streaming(struct tunnel_ctx* tunnel) {
         out_data = buffer_get_data(tmp, &out_data_len);
         tunnel_socket_ctx_write(tunnel, outgoing, out_data, out_data_len);
         buffer_release(tmp);
-        buffer_reset(ctx->first_client_pkg);
+        buffer_reset(ctx->first_client_pkg, true);
     }
 
     socket_ctx_read(incoming, false);
@@ -1100,7 +1100,7 @@ static void tunnel_tls_do_launch_streaming(struct tunnel_ctx* tunnel) {
         size_t out_data_len = 0;
         struct buffer_t* tmp = buffer_create(SSR_BUFF_SIZE);
         buffer_replace(tmp, ctx->first_client_pkg);
-        buffer_reset(ctx->first_client_pkg);
+        buffer_reset(ctx->first_client_pkg, true);
         if (ssr_ok != tunnel_cipher_client_encrypt(ctx->cipher, tmp)) {
             buffer_release(tmp);
             tunnel->tunnel_shutdown(tunnel);
@@ -1334,7 +1334,7 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
     }
     else if (ctx->stage == tunnel_stage_tls_streaming) {
 
-        buffer_concatenate(ctx->server_delivery_cache, data, size);
+        buffer_concatenate_raw(ctx->server_delivery_cache, data, size);
         do {
             ws_frame_info info = { WS_OPCODE_BINARY, 0, 0, 0, 0, 0 };
             struct buffer_t* tmp;
@@ -1347,7 +1347,7 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
             if (payload == NULL) {
                 break;
             }
-            buffer_shortened_to(ctx->server_delivery_cache, info.frame_size, buf_len - info.frame_size);
+            buffer_shortened_to(ctx->server_delivery_cache, info.frame_size, buf_len - info.frame_size, true);
 
             if (info.fin && info.masking == false && info.opcode == WS_OPCODE_CLOSE) {
                 ws_close_reason reason = WS_CLOSE_REASON_UNKNOWN;
@@ -1374,7 +1374,7 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
                 cstl_deque_push_back(ctx->udp_data_ctx->recv_deque, &t2, sizeof(struct buffer_t*));
             }
 
-            buffer_concatenate2(ctx->local_write_cache, tmp);
+            buffer_concatenate(ctx->local_write_cache, tmp);
 
             buffer_release(tmp);
             free(payload);
@@ -1407,7 +1407,7 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
                 cstl_deque_pop_front(ctx->udp_data_ctx->recv_deque);
             } while (true);
 
-            buffer_reset(ctx->local_write_cache);
+            buffer_reset(ctx->local_write_cache, true);
             return;
         }
 
@@ -1416,7 +1416,7 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
             const uint8_t* p = buffer_get_data(ctx->local_write_cache, &s);
             if (p && s) {
                 tunnel_socket_ctx_write(tunnel, tunnel->incoming, p, s);
-                buffer_reset(ctx->local_write_cache);
+                buffer_reset(ctx->local_write_cache, true);
             }
         }
     }

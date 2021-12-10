@@ -828,7 +828,7 @@ static void do_handle_client_feedback(struct tunnel_ctx *tunnel, struct socket_c
             break;
         }
 
-        buffer_concatenate2(ctx->init_pkg, result);
+        buffer_concatenate(ctx->init_pkg, result);
 
         if (proto_confirm) {
             tunnel_socket_ctx_write(tunnel, incoming, buffer_get_data(proto_confirm, NULL), buffer_get_length(proto_confirm));
@@ -887,7 +887,7 @@ static void do_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     }
 
     offset = socks5_address_size(s5addr);
-    buffer_shortened_to(init_pkg, offset, buffer_get_length(init_pkg) - offset);
+    buffer_shortened_to(init_pkg, offset, buffer_get_length(init_pkg) - offset, true);
 
     host = socks5_address_to_string(s5addr, &malloc, false);
 
@@ -1372,7 +1372,7 @@ static struct buffer_t * build_websocket_frame_from_raw(struct server_ctx *ctx, 
 static struct buffer_t * extract_data_from_assembled_websocket_frame(struct server_ctx *ctx, struct buffer_t *src) {
     struct tunnel_cipher_ctx *cipher_ctx = ctx->cipher;
     struct buffer_t *buf = buffer_create(SOCKET_DATA_BUFFER_SIZE);
-    buffer_concatenate2(ctx->client_delivery_cache, src);
+    buffer_concatenate(ctx->client_delivery_cache, src);
     do {
         ws_frame_info info = { WS_OPCODE_BINARY, 0, 0, WS_CLOSE_REASON_UNKNOWN, 0, 0 };
         uint8_t *payload;
@@ -1388,7 +1388,7 @@ static struct buffer_t * extract_data_from_assembled_websocket_frame(struct serv
         if (payload == NULL) {
             break;
         }
-        buffer_shortened_to(ctx->client_delivery_cache, info.frame_size, buf_len - info.frame_size);
+        buffer_shortened_to(ctx->client_delivery_cache, info.frame_size, buf_len - info.frame_size, true);
 
         pb = buffer_create_from(payload, info.payload_size);
         tmp = tunnel_cipher_server_decrypt(cipher_ctx, pb, &obfs_receipt, &proto_confirm);
@@ -1402,7 +1402,7 @@ static struct buffer_t * extract_data_from_assembled_websocket_frame(struct serv
             cstl_deque_push_back(ctx->udp_recv_deque, &t2, sizeof(struct buffer_t*));
         }
 
-        buffer_concatenate2(buf, tmp);
+        buffer_concatenate(buf, tmp);
 
         buffer_release(tmp);
         free(payload);

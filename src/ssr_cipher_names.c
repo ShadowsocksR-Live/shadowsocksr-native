@@ -8,6 +8,9 @@
 
 #include <ctype.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
 #include "ssr_cipher_names.h"
 
 #ifndef SIZEOF_ARRAY
@@ -43,6 +46,10 @@ ss_cipher_name_of_type(enum ss_cipher_type index)
         default:;  // Silence ss_cipher_max -Wswitch warning.
     }
 #undef SS_CIPHER_GEN
+
+    printf("Invalid cipher type: %d, something went wrong.", index);
+    assert(!"Something went wrong!");
+
     return NULL; // "Invalid index";
 }
 
@@ -64,7 +71,9 @@ enum ss_cipher_type ss_cipher_type_of_name(const char *name) {
             }
         }
         if (m >= ss_cipher_max) {
-            //LOGE("Invalid cipher name: %s, use rc4-md5 instead", name);
+            printf("Invalid cipher name: %s, please check your method and try again", name);
+            assert(!"exit...");
+            exit(EXIT_FAILURE);
             // m = ss_cipher_rc4_md5;
         }
     }

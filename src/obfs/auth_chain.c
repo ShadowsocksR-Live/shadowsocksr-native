@@ -328,8 +328,8 @@ struct buffer_t * auth_chain_a_rnd_data(struct obfs_t * obfs,
         if (rand_len > 0) {
             size_t start_pos = (size_t) get_rand_start_pos((int)rand_len, random);
             ret = buffer_create_from(rnd_data_buf, start_pos);
-            buffer_concatenate2(ret, buf);
-            buffer_concatenate(ret, rnd_data_buf + start_pos, rand_len - start_pos);
+            buffer_concatenate(ret, buf);
+            buffer_concatenate_raw(ret, rnd_data_buf + start_pos, rand_len - start_pos);
             break;
         } else {
             ret = buffer_clone(buf);
@@ -449,7 +449,7 @@ struct buffer_t * auth_chain_a_pack_server_data(struct obfs_t *obfs, const struc
 
     pack_id = local->pack_id; // TODO: htonl
     mac_key = buffer_clone(local->user_key);
-    buffer_concatenate(mac_key, (uint8_t *)&pack_id, sizeof(uint32_t));
+    buffer_concatenate_raw(mac_key, (uint8_t *)&pack_id, sizeof(uint32_t));
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
@@ -459,10 +459,10 @@ struct buffer_t * auth_chain_a_pack_server_data(struct obfs_t *obfs, const struc
 
     {
         uint16_t length3 = length; // TODO: htons
-        buffer_insert(data, 0, (uint8_t *)&length3, sizeof(length3));
+        buffer_insert_raw(data, 0, (uint8_t *)&length3, sizeof(length3));
     }
     ss_md5_hmac_with_key(local->last_server_hash, data, mac_key);
-    buffer_concatenate(data, local->last_server_hash, 2);
+    buffer_concatenate_raw(data, local->last_server_hash, 2);
 
     buffer_release(mac_key);
     buffer_release(in_buf);
@@ -643,7 +643,7 @@ ssize_t auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata,
     if (buffer_get_length(local->recv_buffer) + datalength > 16384) {
         return -1;
     }
-    buffer_concatenate(local->recv_buffer, (uint8_t *)plaindata, datalength);
+    buffer_concatenate_raw(local->recv_buffer, (uint8_t *)plaindata, datalength);
 
     key_len = buffer_get_length(local->user_key) + 4;
     key = (uint8_t*) calloc((size_t)key_len, sizeof(*key));
@@ -666,7 +666,7 @@ ssize_t auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata,
         rand_len = (int)get_server_rand_len(local, data_len);
         len = rand_len + data_len;
         if (len >= (SSR_BUFF_SIZE * 2)) {
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             error = 1;
             break;
         }
@@ -681,7 +681,7 @@ ssize_t auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata,
             buffer_release(_key);
         }
         if (memcmp(hash, recv_buffer + len - 2, 2)) {
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             error = 1;
             break;
         }
@@ -701,7 +701,7 @@ ssize_t auth_chain_a_client_post_decrypt(struct obfs_t *obfs, char **pplaindata,
         memcpy(local->last_server_hash, hash, 16);
         ++local->recv_id;
         buffer += out_len;
-        buffer_shortened_to(local->recv_buffer, len, buffer_get_length(local->recv_buffer) - len);
+        buffer_shortened_to(local->recv_buffer, len, buffer_get_length(local->recv_buffer) - len, true);
     }
     if (error == 0) {
         len = (int)(buffer - out_buffer);
@@ -727,7 +727,7 @@ struct buffer_t * auth_chain_a_server_pre_encrypt(struct obfs_t *obfs, const str
     if (local->pack_id == 1) {
         uint16_t tcp_mss = server_info->tcp_mss; // TODO: htons
         tmp_buf = buffer_create_from((const uint8_t *)&tcp_mss, sizeof(uint16_t));
-        buffer_concatenate2(tmp_buf, buf);
+        buffer_concatenate(tmp_buf, buf);
         local->unit_len = server_info->tcp_mss - local->client_over_head;
     } else {
         tmp_buf = buffer_clone(buf);
@@ -737,13 +737,13 @@ struct buffer_t * auth_chain_a_server_pre_encrypt(struct obfs_t *obfs, const str
 
         swap = auth_chain_a_pack_server_data(obfs, iter);
         buffer_release(iter);
-        buffer_concatenate2(ret, swap);
+        buffer_concatenate(ret, swap);
         buffer_release(swap);
 
-        buffer_shortened_to(tmp_buf, local->unit_len, buffer_get_length(tmp_buf) - local->unit_len);
+        buffer_shortened_to(tmp_buf, local->unit_len, buffer_get_length(tmp_buf) - local->unit_len, true);
     }
     swap = auth_chain_a_pack_server_data(obfs, tmp_buf);
-    buffer_concatenate2(ret, swap);
+    buffer_concatenate(ret, swap);
     buffer_release(swap);
 
     buffer_release(tmp_buf);
@@ -759,7 +759,7 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
 
     if (need_feedback) { *need_feedback = false; }
 
-    buffer_concatenate2(local->recv_buffer, buf);
+    buffer_concatenate(local->recv_buffer, buf);
 
     if (local->has_recv_header == false) {
         uint8_t md5data[16 + 1] = { 0 };
@@ -775,7 +775,7 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
         if (len>=12 || len==7 || len==8) {
             size_t recv_len = min(len, 12);
             struct buffer_t *mac_key = buffer_create_from(server_info->recv_iv, server_info->recv_iv_len);
-            buffer_concatenate(mac_key, server_info->key, server_info->key_len);
+            buffer_concatenate_raw(mac_key, server_info->key, server_info->key_len);
             {
                 struct buffer_t *_msg = buffer_create_from(buffer_get_data(local->recv_buffer, NULL), 4);
                 ss_md5_hmac_with_key(md5data, _msg, mac_key);
@@ -843,7 +843,7 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
             b64len1 = std_base64_encode(buffer_get_data(local->user_key, NULL), (size_t)buffer_get_length(local->user_key), (char*)password);
             b64len2 = std_base64_encode(local->last_client_hash, (size_t)sizeof(local->last_client_hash), (char*)(password + b64len1));
         }
-        buffer_shortened_to(local->recv_buffer, 36, buffer_get_length(local->recv_buffer) - 36);
+        buffer_shortened_to(local->recv_buffer, 36, buffer_get_length(local->recv_buffer) - 36, true);
         local->has_recv_header = true;
         if (need_feedback) { *need_feedback = true; }
 
@@ -863,7 +863,7 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
         uint8_t client_hash[16 + 1] = { 0 };
         size_t pos = 0;
         buffer_replace(mac_key2, local->user_key);
-        buffer_concatenate(mac_key2, (uint8_t *)&local->recv_id, 4); // TODO: htonl(local->recv_id);
+        buffer_concatenate_raw(mac_key2, (uint8_t *)&local->recv_id, 4); // TODO: htonl(local->recv_id);
 
         data_len = *((uint16_t *)buffer_get_data(local->recv_buffer, NULL)); // TODO: ntohs
 #pragma GCC diagnostic push
@@ -881,9 +881,9 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
         length = data_len + rand_len;
         if (length >= 4096) {
             // logging.info(self.no_compatible_method + ': over size')
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             if (local->recv_id == 0) {
-                buffer_reset(out_buf);
+                buffer_reset(out_buf, true);
             } else {
                 buffer_release(out_buf); out_buf = NULL;
             }
@@ -899,9 +899,9 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
         }
         if (memcmp(client_hash, buffer_get_data(local->recv_buffer, NULL)+length+2, 2) != 0) {
             // logging.info('%s: checksum error, data %s' % (self.no_compatible_method, binascii.hexlify(self.recv_buf[:length])))
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             if (local->recv_id == 0) {
-                buffer_reset(out_buf);
+                buffer_reset(out_buf, true);
             } else {
                 buffer_release(out_buf); out_buf = NULL;
             }
@@ -922,11 +922,11 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
             ss_decrypt_buffer(local->cipher, local->decrypt_ctx,
                 buffer_get_data(local->recv_buffer, NULL) + pos, (size_t)data_len, 
                 (uint8_t *)buffer, &out_len);
-            buffer_concatenate(out_buf, (uint8_t *)buffer, out_len);
+            buffer_concatenate_raw(out_buf, (uint8_t *)buffer, out_len);
             free(buffer);
         }
         memcpy(local->last_client_hash, client_hash, 16);
-        buffer_shortened_to(local->recv_buffer, length + 4, buffer_get_length(local->recv_buffer) - (length + 4));
+        buffer_shortened_to(local->recv_buffer, length + 4, buffer_get_length(local->recv_buffer) - (length + 4), true);
 
         if (data_len == 0) {
             if (need_feedback) { *need_feedback = true; }
