@@ -121,10 +121,17 @@ size_t buffer_get_length(const struct buffer_t *ptr) {
     return ptr ? ptr->len : 0;
 }
 
-const uint8_t * buffer_get_data(const struct buffer_t *ptr, size_t *length) {
-    if (length) {
-        *length = buffer_get_length(ptr);
+void buffer_set_lenth(struct buffer_t *ptr, size_t length, bool erase_invalid) {
+    if (ptr) {
+        buffer_realloc(ptr, length);
+        ptr->len = length;
+        if (ptr->buffer && erase_invalid) {
+            memset(ptr->buffer + ptr->len, 0, ptr->capacity - ptr->len);
+        }
     }
+}
+
+const uint8_t * buffer_get_data(const struct buffer_t *ptr) {
     return ptr ? ptr->buffer : NULL;
 }
 
@@ -151,13 +158,8 @@ int buffer_compare(const struct buffer_t *ptr1, const struct buffer_t *ptr2, siz
     }
 }
 
-void buffer_reset(struct buffer_t *ptr) {
-    if (ptr) {
-        ptr->len = 0;
-        if (ptr->buffer) {
-            memset(ptr->buffer, 0, ptr->capacity);
-        }
-    }
+void buffer_reset(struct buffer_t *ptr, bool erase_invalid) {
+    buffer_set_lenth(ptr, 0, erase_invalid);
 }
 
 struct buffer_t * buffer_clone(const struct buffer_t *ptr) {
@@ -231,7 +233,7 @@ void buffer_replace(struct buffer_t *dst, const struct buffer_t *src) {
         if (src) {
             buffer_store(dst, src->buffer, src->len);
         } else {
-            buffer_reset(dst);
+            buffer_reset(dst, true);
         }
     }
     /*
@@ -240,7 +242,7 @@ void buffer_replace(struct buffer_t *dst, const struct buffer_t *src) {
     */
 }
 
-void buffer_insert(struct buffer_t *ptr, size_t pos, const uint8_t *data, size_t size) {
+void buffer_insert_raw(struct buffer_t *ptr, size_t pos, const uint8_t *data, size_t size) {
     if (ptr==NULL || data==NULL || size==0) {
         return;
     }
@@ -253,14 +255,14 @@ void buffer_insert(struct buffer_t *ptr, size_t pos, const uint8_t *data, size_t
     ptr->len += size;
 }
 
-void buffer_insert2(struct buffer_t *ptr, size_t pos, const struct buffer_t *data) {
+void buffer_insert(struct buffer_t *ptr, size_t pos, const struct buffer_t *data) {
     if (ptr==NULL || data==NULL) {
         return;
     }
-    buffer_insert(ptr, pos, data->buffer, data->len);
+    buffer_insert_raw(ptr, pos, data->buffer, data->len);
 }
 
-size_t buffer_concatenate(struct buffer_t *ptr, const uint8_t *data, size_t size) {
+size_t buffer_concatenate_raw(struct buffer_t *ptr, const uint8_t *data, size_t size) {
     size_t result = buffer_realloc(ptr, ptr->len + size);
     memmove(ptr->buffer + ptr->len, data, size);
     ptr->len += size;
@@ -268,17 +270,19 @@ size_t buffer_concatenate(struct buffer_t *ptr, const uint8_t *data, size_t size
     return min(ptr->len, result);
 }
 
-size_t buffer_concatenate2(struct buffer_t *dst, const struct buffer_t *src) {
+size_t buffer_concatenate(struct buffer_t *dst, const struct buffer_t *src) {
     if (dst==NULL || src==NULL) { return 0; }
-    return buffer_concatenate(dst, src->buffer, src->len);
+    return buffer_concatenate_raw(dst, src->buffer, src->len);
 }
 
-void buffer_shortened_to(struct buffer_t *ptr, size_t begin, size_t len) {
+void buffer_shortened_to(struct buffer_t *ptr, size_t begin, size_t len, bool erase_invalid) {
     if (ptr && (begin <= ptr->len) && (len <= (ptr->len - begin))) {
         if (begin != 0) {
             memmove(ptr->buffer, ptr->buffer + begin, len);
         }
-        ptr->buffer[len] = 0;
+        if (erase_invalid && (ptr->capacity > len)) {
+            memset(ptr->buffer + len, 0, ptr->capacity - len);
+        }
         ptr->len = len;
     }
     check_memory_content(ptr);

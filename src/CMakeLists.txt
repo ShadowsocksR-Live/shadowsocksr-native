@@ -27,6 +27,10 @@ set(SOURCE_FILES_OBFS
         strtrim.h
         ssr_cipher_names.c
         ssr_cipher_names.h
+        aead.c
+        aead.h
+        ppbloom.c
+        ppbloom.h
         obfs/auth.c
         obfs/auth_chain.c
         obfs/base64.c
@@ -132,6 +136,7 @@ ENDIF(MSVC)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${LIBBLOOMDIR})
 include_directories(${LIBUVDIR}/include)
 include_directories(${libsodium_include_dirs})
 include_directories(${LIB_JSON_C_BIN_DIR}/..)
@@ -192,6 +197,7 @@ set (ss_lib_net
         ${ss_lib_common}
         mbedtls # /usr/local/lib/libcrypto.a # libcrypto.a # ${LIBCRYPTO} #
         sodium
+        bloom
         )
 
 if (WIN32)

@@ -168,20 +168,20 @@ struct buffer_t * fake_request_data(const uint8_t *url_encoded_data) {
     index = (rand_integer() % (arr_size / 2)) * 2;
 
     ptr = request_path[index];
-    buffer_concatenate(ret, (const uint8_t *)ptr, strlen(ptr));
+    buffer_concatenate_raw(ret, (const uint8_t *)ptr, strlen(ptr));
 
     ptr = (const char *)url_encoded_data;
-    buffer_concatenate(ret, (const uint8_t *)ptr, strlen(ptr));
+    buffer_concatenate_raw(ret, (const uint8_t *)ptr, strlen(ptr));
 
     ptr = request_path[index + 1];
-    buffer_concatenate(ret, (const uint8_t *)ptr, strlen(ptr));
+    buffer_concatenate_raw(ret, (const uint8_t *)ptr, strlen(ptr));
 
     return ret;
 }
 
 struct buffer_t * http_simple_client_encode(struct obfs_t *obfs, const struct buffer_t *buf) {
-    size_t datalength = 0;
-    const uint8_t *encryptdata = buffer_get_data(buf, &datalength);
+    size_t datalength = buffer_get_length(buf);
+    const uint8_t *encryptdata = buffer_get_data(buf);
     struct http_simple_local_data *local = (struct http_simple_local_data*)obfs->l_data;
     char hosts[(SSR_BUFF_SIZE / 2)];
     char * phost[128];
@@ -252,14 +252,14 @@ struct buffer_t * http_simple_client_encode(struct obfs_t *obfs, const struct bu
     } else {
         sprintf(hostport, "%s:%d", phost[host_num], obfs->server_info.port);
     }
-    fake_path = fake_request_data(buffer_get_data(local->encode_buffer, NULL));
+    fake_path = fake_request_data(buffer_get_data(local->encode_buffer));
 
     if (body_buffer) {
         sprintf(out_buffer,
             "GET /%s HTTP/1.1\r\n"
             "Host: %s\r\n"
             "%s\r\n\r\n",
-            (char *)buffer_get_data(fake_path, NULL),
+            (char *)buffer_get_data(fake_path),
             hostport,
             body_buffer);
     } else {
@@ -273,7 +273,7 @@ struct buffer_t * http_simple_client_encode(struct obfs_t *obfs, const struct bu
             "DNT: 1\r\n"
             "Connection: keep-alive\r\n"
             "\r\n",
-            (char *)buffer_get_data(fake_path, NULL),
+            (char *)buffer_get_data(fake_path),
             hostport,
             g_useragent[g_useragent_index]
             );
@@ -293,7 +293,7 @@ struct buffer_t * http_simple_client_encode(struct obfs_t *obfs, const struct bu
 
 struct buffer_t * http_simple_client_decode(struct obfs_t *obfs, const struct buffer_t *buf, bool *needsendback) {
     struct buffer_t *result = buffer_clone(buf);
-    const char *encryptdata = (const char *) buffer_get_data(result, NULL);
+    const char *encryptdata = (const char *) buffer_get_data(result);
     struct http_simple_local_data *local = (struct http_simple_local_data*)obfs->l_data;
     const char* data_begin;
 
@@ -307,9 +307,9 @@ struct buffer_t * http_simple_client_decode(struct obfs_t *obfs, const struct bu
         data_begin += 4;
         local->has_recv_header = 1;
         outlength = buffer_get_length(result) - (data_begin - encryptdata);
-        buffer_shortened_to(result, (data_begin - encryptdata), outlength);
+        buffer_shortened_to(result, (data_begin - encryptdata), outlength, true);
     } else {
-        buffer_reset(result);
+        buffer_reset(result, true);
     }
     return result;
 }
@@ -321,7 +321,7 @@ struct buffer_t * http_simple_server_encode(struct obfs_t *obfs, const struct bu
     static const char *header2 = "\r\nServer: nginx\r\nVary: Accept-Encoding\r\n\r\n";
     do {
         if (local->has_sent_header) {
-            buffer_concatenate2(header, buf);
+            buffer_concatenate(header, buf);
             break;
         }
 
@@ -332,10 +332,10 @@ struct buffer_t * http_simple_server_encode(struct obfs_t *obfs, const struct bu
             char current[128] = { 0 };
             strftime(current, sizeof(current), "%a, %d %b %Y %H:%M:%S GMT", tmp);
 
-            buffer_concatenate(header, (uint8_t *)current, strlen(current));
+            buffer_concatenate_raw(header, (uint8_t *)current, strlen(current));
         }
-        buffer_concatenate(header, (const uint8_t *)header2, strlen(header2));
-        buffer_concatenate2(header, buf);
+        buffer_concatenate_raw(header, (const uint8_t *)header2, strlen(header2));
+        buffer_concatenate(header, buf);
 
         local->has_sent_header = true;
     } while (0);
@@ -353,7 +353,7 @@ bool match_http_header(struct buffer_t *buf) {
         return result;
     }
     for (i=0; i< (int)(sizeof(header)/sizeof(header[0])); ++i) {
-        if (memcmp(header[i], buffer_get_data(buf, NULL), strlen(header[i])) == 0) {
+        if (memcmp(header[i], buffer_get_data(buf), strlen(header[i])) == 0) {
             result = true;
             break;
         }
@@ -373,29 +373,29 @@ struct buffer_t * http_simple_server_decode(struct obfs_t *obfs, const struct bu
         if (need_decrypt) { *need_decrypt = true; }
         if (need_feedback) { *need_feedback = false; }
         if (local->has_recv_header) {
-            buffer_concatenate2(ret, buf);
+            buffer_concatenate(ret, buf);
             break;
         }
 
         local->has_recv_header = true;
 
-        buffer_concatenate2(local->recv_buffer, buf);
+        buffer_concatenate(local->recv_buffer, buf);
         in_buf = buffer_clone(local->recv_buffer);
         if (buffer_get_length(in_buf) <= 10) {
             break;
         }
         if (match_http_header(in_buf) == false) {
             // logging.debug('http_simple: not match begin')
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             break;
         }
         if (buffer_get_length(in_buf) > 65536) {
             // logging.warn('http_simple: over size')
-            buffer_reset(local->recv_buffer);
+            buffer_reset(local->recv_buffer, true);
             if (need_decrypt) { *need_decrypt = false; }
             break;
         }
-        real_data = (uint8_t *) strstr((char *)buffer_get_data(in_buf, NULL), crlfcrlf);
+        real_data = (uint8_t *) strstr((char *)buffer_get_data(in_buf), crlfcrlf);
         if (real_data == NULL) {
             break;
         }
@@ -403,16 +403,16 @@ struct buffer_t * http_simple_server_decode(struct obfs_t *obfs, const struct bu
         real_data += strlen(crlfcrlf);
 
         buffer_release(ret);
-        ret = get_data_from_http_header(buffer_get_data(in_buf, NULL));
-        get_host_from_http_header(buffer_get_data(in_buf, NULL), host_port);
+        ret = get_data_from_http_header(buffer_get_data(in_buf));
+        get_host_from_http_header(buffer_get_data(in_buf), host_port);
 
         // TODO: check obfs_param
         // if host_port and self.server_info.obfs_param: 
         //     ....
 
-        len = (buffer_get_data(in_buf, NULL) + buffer_get_length(in_buf) - real_data);
+        len = (buffer_get_data(in_buf) + buffer_get_length(in_buf) - real_data);
         if (len > 0) {
-            buffer_concatenate(ret, real_data, len);
+            buffer_concatenate_raw(ret, real_data, len);
         }
 
         if (buffer_get_length(ret) < 13) {
@@ -441,8 +441,8 @@ void boundary(char result[])
 }
 
 struct buffer_t * http_post_client_encode(struct obfs_t *obfs, const struct buffer_t *buf) {
-    size_t datalength = 0;
-    const uint8_t *encryptdata = buffer_get_data(buf, &datalength);
+    size_t datalength = buffer_get_length(buf);
+    const uint8_t *encryptdata = buffer_get_data(buf);
     struct http_simple_local_data *local = (struct http_simple_local_data*)obfs->l_data;
     char hosts[(SSR_BUFF_SIZE / 2)];
     char * phost[128];
@@ -513,14 +513,14 @@ struct buffer_t * http_post_client_encode(struct obfs_t *obfs, const struct buff
         snprintf(hostport, sizeof(hostport), "%s:%d", phost[host_num], obfs->server_info.port);
     }
 
-    fake_path = fake_request_data(buffer_get_data(local->encode_buffer, NULL));
+    fake_path = fake_request_data(buffer_get_data(local->encode_buffer));
 
     if (body_buffer) {
         snprintf(out_buffer, SSR_BUFF_SIZE,
             "POST /%s HTTP/1.1\r\n"
             "Host: %s\r\n"
             "%s\r\n\r\n",
-            (char *)buffer_get_data(fake_path, NULL),
+            (char *)buffer_get_data(fake_path),
             hostport,
             body_buffer);
     } else {
@@ -537,7 +537,7 @@ struct buffer_t * http_post_client_encode(struct obfs_t *obfs, const struct buff
             "DNT: 1\r\n"
             "Connection: keep-alive\r\n"
             "\r\n",
-            (char *)buffer_get_data(fake_path, NULL),
+            (char *)buffer_get_data(fake_path),
             hostport,
             g_useragent[g_useragent_index],
             result

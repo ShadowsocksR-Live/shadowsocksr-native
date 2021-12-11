@@ -25,6 +25,9 @@
     <Filter Include="http-parser">
       <UniqueIdentifier>{5ff86971-510a-4e35-b862-c701e2446371}</UniqueIdentifier>
     </Filter>
+    <Filter Include="aead">
+      <UniqueIdentifier>{728f5495-c4df-4316-ab3c-4432fc6a280b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\encrypt.c">
@@ -137,6 +140,12 @@
     </ClCompile>
     <ClCompile Include="..\..\src\strtrim.c">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\aead.c">
+      <Filter>aead</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ppbloom.c">
+      <Filter>aead</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -262,6 +271,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\strtrim.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\aead.h">
+      <Filter>aead</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ppbloom.h">
+      <Filter>aead</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

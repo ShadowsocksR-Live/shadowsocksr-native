@@ -126,7 +126,7 @@ static void tls12_sha1_hmac(struct obfs_t *obfs,
     size_t key_size = obfs->server_info.key_len;
     uint8_t *key = (uint8_t*) calloc(key_size + id_size, sizeof(*key));
     memcpy(key, obfs->server_info.key, key_size);
-    memcpy(key + key_size, buffer_get_data(client_id, NULL), id_size);
+    memcpy(key + key_size, buffer_get_data(client_id), id_size);
     {
         struct buffer_t *_key = buffer_create_from(key, (key_size + id_size));
         ss_sha1_hmac_with_key(digest, msg, _key);
@@ -193,8 +193,8 @@ static struct buffer_t * _pack_data(const uint8_t *encryptdata, size_t len) {
 }
 
 struct buffer_t * tls12_ticket_auth_client_encode(struct obfs_t *obfs, const struct buffer_t *buf) {
-    size_t datalength = 0;
-    const uint8_t *encryptdata = buffer_get_data(buf, &datalength);
+    size_t datalength = buffer_get_length(buf);
+    const uint8_t *encryptdata = buffer_get_data(buf);
     struct tls12_ticket_auth_local_data *local = (struct tls12_ticket_auth_local_data*)obfs->l_data;
     struct tls12_ticket_auth_global_data *global = (struct tls12_ticket_auth_global_data*)obfs->server_info.g_data;
     struct buffer_t *result = NULL;
@@ -209,7 +209,7 @@ struct buffer_t * tls12_ticket_auth_client_encode(struct obfs_t *obfs, const str
             size_t len = (size_t)rand_integer() % 512 + 64;
             if (len > datalength - start) { len = datalength - start; }
             tmp = _pack_data(encryptdata + start, len);
-            buffer_concatenate2(result, tmp); buffer_release(tmp);
+            buffer_concatenate(result, tmp); buffer_release(tmp);
             start += len;
         }
         while (datalength - start > SSR_BUFF_SIZE) {
@@ -217,13 +217,13 @@ struct buffer_t * tls12_ticket_auth_client_encode(struct obfs_t *obfs, const str
             size_t len = (size_t)rand_integer() % 4096 + 100;
             if (len > datalength - start) { len = datalength - start; }
             tmp = _pack_data(encryptdata + start, len);
-            buffer_concatenate2(result, tmp); buffer_release(tmp);
+            buffer_concatenate(result, tmp); buffer_release(tmp);
             start += len;
         }
         if (datalength - start > 0) {
             struct buffer_t *tmp = NULL;
             tmp = _pack_data(encryptdata + start, datalength - start);
-            buffer_concatenate2(result, tmp); buffer_release(tmp);
+            buffer_concatenate(result, tmp); buffer_release(tmp);
         }
         return result;
     }
@@ -246,18 +246,18 @@ struct buffer_t * tls12_ticket_auth_client_encode(struct obfs_t *obfs, const str
             uint8_t hash[SHA1_BYTES + 1] = { 0 };
             struct buffer_t *client_id = buffer_create_from(global->local_client_id, 32);
             
-            buffer_concatenate(hmac_data, (uint8_t *)handshake_finish, handshake_finish_len);
+            buffer_concatenate_raw(hmac_data, (uint8_t *)handshake_finish, handshake_finish_len);
 
             len = htons((uint16_t)finish_len);
-            buffer_concatenate(hmac_data, (uint8_t *)&len, sizeof(len));
+            buffer_concatenate_raw(hmac_data, (uint8_t *)&len, sizeof(len));
 
             rand_bytes(rnd, finish_len - 10);
-            buffer_concatenate(hmac_data, rnd, finish_len - 10);
+            buffer_concatenate_raw(hmac_data, rnd, finish_len - 10);
             free(rnd);
 
             tls12_sha1_hmac(obfs, client_id, hmac_data, hash);
             buffer_release(client_id);
-            buffer_concatenate(hmac_data, hash, 10);
+            buffer_concatenate_raw(hmac_data, hash, 10);
 
             obj_list_insert(local->data_sent_buffer, 0, &hmac_data, sizeof(hmac_data));
 
@@ -268,7 +268,7 @@ struct buffer_t * tls12_ticket_auth_client_encode(struct obfs_t *obfs, const str
             size_t index = 0;
             for (index=0; index<count; ++index) {
                 struct buffer_t *data = *(struct buffer_t **)obj_list_element_at(local->data_sent_buffer, index);
-                buffer_concatenate2(result, data);
+                buffer_concatenate(result, data);
             }
             obj_list_clear(local->data_sent_buffer);
         }
@@ -300,12 +300,12 @@ struct buffer_t * tls12_ticket_auth_client_encode(struct obfs_t *obfs, const str
         tls12_ticket_pack_auth_data(obfs, client_id, rnd);
         rnd[32] = 32;
 
-        buffer_concatenate(result, rnd, 32 + 1);
-        buffer_concatenate2(result, client_id);
+        buffer_concatenate_raw(result, rnd, 32 + 1);
+        buffer_concatenate(result, client_id);
         buffer_release(client_id);
-        buffer_concatenate(result, (uint8_t *)tls_data0, tls_data0_len);
+        buffer_concatenate_raw(result, (uint8_t *)tls_data0, tls_data0_len);
 
-        buffer_concatenate(ext_buf, (uint8_t *)tls_data1, tls_data1_len);
+        buffer_concatenate_raw(ext_buf, (uint8_t *)tls_data1, tls_data1_len);
 
         if (obfs->server_info.param && strlen(obfs->server_info.param) > 0) {
             param = obfs->server_info.param;
@@ -323,46 +323,46 @@ struct buffer_t * tls12_ticket_auth_client_encode(struct obfs_t *obfs, const str
         }
         host_num = (size_t)rand_integer() % host_num;
         sni = tls12_ticket_auth_sni(phost[host_num]);
-        buffer_concatenate2(ext_buf, sni); // <====
+        buffer_concatenate(ext_buf, sni); // <====
         free(hosts);
         buffer_release(sni);
 
-        buffer_concatenate(ext_buf, (uint8_t *)tls_data2, tls_data2_len);
+        buffer_concatenate_raw(ext_buf, (uint8_t *)tls_data2, tls_data2_len);
         {
             size_t ticket_size = (32 + rand_integer() % (196 - 32)) * 2;
             uint16_t size = htons((uint16_t)ticket_size);
             uint8_t *ticket = (uint8_t *)calloc(ticket_size + 1, sizeof(*ticket));
 
             rand_bytes(ticket, ticket_size);
-            buffer_concatenate(ext_buf, (uint8_t *)&size, sizeof(size));
-            buffer_concatenate(ext_buf, ticket, ticket_size);
+            buffer_concatenate_raw(ext_buf, (uint8_t *)&size, sizeof(size));
+            buffer_concatenate_raw(ext_buf, ticket, ticket_size);
 
             free(ticket);
         }
-        buffer_concatenate(ext_buf, (uint8_t *)tls_data3, tls_data3_len);
+        buffer_concatenate_raw(ext_buf, (uint8_t *)tls_data3, tls_data3_len);
         temp = htons((uint16_t) buffer_get_length(ext_buf));
-        buffer_insert(ext_buf, 0, (uint8_t *)&temp, sizeof(temp));
+        buffer_insert_raw(ext_buf, 0, (uint8_t *)&temp, sizeof(temp));
 
-        buffer_concatenate2(result, ext_buf);
+        buffer_concatenate(result, ext_buf);
 
         buffer_release(ext_buf);
 
         // client version
-        buffer_insert2(result, 0, local->tls_version);
+        buffer_insert(result, 0, local->tls_version);
 
         // length
         temp = htons((uint16_t) buffer_get_length(result));
-        buffer_insert(result, 0, (uint8_t *)&temp, sizeof(temp));
+        buffer_insert_raw(result, 0, (uint8_t *)&temp, sizeof(temp));
 
         // client hello
-        buffer_insert(result, 0, (uint8_t *)"\x01\x00", 2);
+        buffer_insert_raw(result, 0, (uint8_t *)"\x01\x00", 2);
 
         // length
         temp = htons((uint16_t) buffer_get_length(result));
-        buffer_insert(result, 0, (uint8_t *)&temp, sizeof(temp));
+        buffer_insert_raw(result, 0, (uint8_t *)&temp, sizeof(temp));
 
         // TLS handshake and version
-        buffer_insert(result, 0, (uint8_t *)"\x16\x03\x01", 3);
+        buffer_insert_raw(result, 0, (uint8_t *)"\x16\x03\x01", 3);
 
         local->handshake_status |= 1;
 
@@ -376,29 +376,29 @@ struct buffer_t * tls12_ticket_auth_client_decode(struct obfs_t *obfs, const str
     struct tls12_ticket_auth_global_data *global = (struct tls12_ticket_auth_global_data*)obfs->server_info.g_data;
 
     *needsendback = false;
-    buffer_concatenate2(local->recv_buffer, buf);
+    buffer_concatenate(local->recv_buffer, buf);
 
     if ((local->handshake_status & 8) == 8) {
         while (buffer_get_length(local->recv_buffer) > 5) {
             size_t size;
-            if (buffer_get_data(local->recv_buffer, NULL)[0] != 0x17) {
+            if (buffer_get_data(local->recv_buffer)[0] != 0x17) {
                 buffer_release(result); result = NULL;
                 return result;
             }
-            size = (size_t)ntohs(*((uint16_t *)(buffer_get_data(local->recv_buffer, NULL) + 3)));
+            size = (size_t)ntohs(*((uint16_t *)(buffer_get_data(local->recv_buffer) + 3)));
             if (size + 5 > buffer_get_length(local->recv_buffer)) {
                 break;
             }
-            buffer_concatenate(result, buffer_get_data(local->recv_buffer, NULL) + 5, size);
-            buffer_shortened_to(local->recv_buffer, 5 + size, buffer_get_length(local->recv_buffer) - (5 + size));
+            buffer_concatenate_raw(result, buffer_get_data(local->recv_buffer) + 5, size);
+            buffer_shortened_to(local->recv_buffer, 5 + size, buffer_get_length(local->recv_buffer) - (5 + size), true);
         }
         return result;
     }
     if (buffer_get_length(local->recv_buffer) < 11 + 32 + 1 + 32) {
-        buffer_reset(result);
+        buffer_reset(result, true);
         return result;
     } else {
-        const uint8_t *encryptdata = buffer_get_data(local->recv_buffer, NULL);
+        const uint8_t *encryptdata = buffer_get_data(local->recv_buffer);
         uint8_t hash[SHA1_BYTES] = { 0 };
         size_t headerlength = 0;
         {
@@ -422,7 +422,7 @@ struct buffer_t * tls12_ticket_auth_client_decode(struct obfs_t *obfs, const str
         }
         headerlength = buffer_get_length(local->recv_buffer);
         if (memcmp(encryptdata + buffer_get_length(local->recv_buffer) - 10, hash, OBFS_HMAC_SHA1_LEN) != 0) {
-            const uint8_t *iter = buffer_get_data(local->recv_buffer, NULL);
+            const uint8_t *iter = buffer_get_data(local->recv_buffer);
             headerlength = 0;
             while(headerlength < buffer_get_length(local->recv_buffer) && 
                 (iter[headerlength]==0x14 || iter[headerlength]==0x16))
@@ -450,7 +450,7 @@ struct buffer_t * tls12_ticket_auth_client_decode(struct obfs_t *obfs, const str
                 }
             }
         }
-        buffer_shortened_to(local->recv_buffer, headerlength, buffer_get_length(local->recv_buffer) - headerlength);
+        buffer_shortened_to(local->recv_buffer, headerlength, buffer_get_length(local->recv_buffer) - headerlength, true);
 
         local->handshake_status |= 8;
 
@@ -489,20 +489,20 @@ struct buffer_t * tls12_ticket_auth_server_encode(struct obfs_t *obfs, const str
 #pragma GCC diagnostic pop
             size2 = htons((uint16_t)size);
 
-            buffer_concatenate(ret, (uint8_t *)"\x17", 1);
-            buffer_concatenate2(ret, local->tls_version);
-            buffer_concatenate(ret, (uint8_t *)&size2, sizeof(size2));
-            buffer_concatenate(ret, buffer_get_data(input, NULL), size);
+            buffer_concatenate_raw(ret, (uint8_t *)"\x17", 1);
+            buffer_concatenate(ret, local->tls_version);
+            buffer_concatenate_raw(ret, (uint8_t *)&size2, sizeof(size2));
+            buffer_concatenate_raw(ret, buffer_get_data(input), size);
 
-            buffer_shortened_to(input, size, buffer_get_length(input) - size);
+            buffer_shortened_to(input, size, buffer_get_length(input) - size, true);
         }
         if (buffer_get_length(input) > 0) {
             size2 = htons((uint16_t)buffer_get_length(input));
 
-            buffer_concatenate(ret, (uint8_t *)"\x17", 1);
-            buffer_concatenate2(ret, local->tls_version);
-            buffer_concatenate(ret, (uint8_t *)&size2, sizeof(size2));
-            buffer_concatenate(ret, buffer_get_data(input, NULL), buffer_get_length(input));
+            buffer_concatenate_raw(ret, (uint8_t *)"\x17", 1);
+            buffer_concatenate(ret, local->tls_version);
+            buffer_concatenate_raw(ret, (uint8_t *)&size2, sizeof(size2));
+            buffer_concatenate_raw(ret, buffer_get_data(input), buffer_get_length(input));
         }
         buffer_release(input);
 
@@ -520,26 +520,26 @@ struct buffer_t * tls12_ticket_auth_server_encode(struct obfs_t *obfs, const str
 
         // data = self.tls_version + self.pack_auth_data(self.client_id) + b"\x20" + self.client_id + binascii.unhexlify(b"c02f000005ff01000100")
         chunk1 = buffer_create(SSR_BUFF_SIZE);
-        buffer_concatenate2(chunk1, local->tls_version);
-        buffer_concatenate(chunk1, auth_data, sizeof(auth_data));
-        buffer_concatenate(chunk1, (uint8_t *) "\x20", 1);
-        buffer_concatenate2(chunk1, local->client_id);
-        buffer_concatenate(chunk1, (uint8_t *) "\xc0\x2f\x00\x00\x05\xff\x01\x00\x01\x00", 10);
+        buffer_concatenate(chunk1, local->tls_version);
+        buffer_concatenate_raw(chunk1, auth_data, sizeof(auth_data));
+        buffer_concatenate_raw(chunk1, (uint8_t *) "\x20", 1);
+        buffer_concatenate(chunk1, local->client_id);
+        buffer_concatenate_raw(chunk1, (uint8_t *) "\xc0\x2f\x00\x00\x05\xff\x01\x00\x01\x00", 10);
 
         // data = b"\x02\x00" + struct.pack('>H', len(data)) + data #server hello
         chunk2 = buffer_create(SSR_BUFF_SIZE);
-        buffer_concatenate(chunk2, (uint8_t *)"\x02\x00", 2);
+        buffer_concatenate_raw(chunk2, (uint8_t *)"\x02\x00", 2);
         size2 = htons((uint16_t)buffer_get_length(chunk1));
-        buffer_concatenate(chunk2, (uint8_t *)&size2, sizeof(size2));
-        buffer_concatenate2(chunk2, chunk1);
+        buffer_concatenate_raw(chunk2, (uint8_t *)&size2, sizeof(size2));
+        buffer_concatenate(chunk2, chunk1);
 
         // data = b"\x16" + self.tls_version + struct.pack('>H', len(data)) + data
         data = buffer_create(SSR_BUFF_SIZE);
-        buffer_concatenate(data, (uint8_t *)"\x16", 1);
-        buffer_concatenate2(data, local->tls_version);
+        buffer_concatenate_raw(data, (uint8_t *)"\x16", 1);
+        buffer_concatenate(data, local->tls_version);
         size2 = htons((uint16_t)buffer_get_length(chunk2));
-        buffer_concatenate(data, (uint8_t *)&size2, sizeof(size2));
-        buffer_concatenate2(data, chunk2);
+        buffer_concatenate_raw(data, (uint8_t *)&size2, sizeof(size2));
+        buffer_concatenate(data, chunk2);
 
         srand((unsigned int)time((time_t *)NULL));
 
@@ -554,40 +554,40 @@ struct buffer_t * tls12_ticket_auth_server_encode(struct obfs_t *obfs, const str
             size3 = htons((uint16_t)size);
 
             // data += b"\x16" + self.tls_version + ticket #New session ticket
-            buffer_concatenate(data, (uint8_t *)"\x16", 1);
-            buffer_concatenate2(data, local->tls_version);
+            buffer_concatenate_raw(data, (uint8_t *)"\x16", 1);
+            buffer_concatenate(data, local->tls_version);
 
             // ticket = struct.pack('>H', len(ticket) + 4) + b"\x04\x00" + struct.pack('>H', len(ticket)) + ticket
-            buffer_concatenate(data, (uint8_t *)&size2, sizeof(size2));
-            buffer_concatenate(data, (uint8_t *)"\x04\x00", 2);
-            buffer_concatenate(data, (uint8_t *)&size3, sizeof(size3));
-            buffer_concatenate(data, (uint8_t *)rand_buf, size);
+            buffer_concatenate_raw(data, (uint8_t *)&size2, sizeof(size2));
+            buffer_concatenate_raw(data, (uint8_t *)"\x04\x00", 2);
+            buffer_concatenate_raw(data, (uint8_t *)&size3, sizeof(size3));
+            buffer_concatenate_raw(data, (uint8_t *)rand_buf, size);
         }
 
         // data += b"\x14" + self.tls_version + b"\x00\x01\x01" #ChangeCipherSpec
-        buffer_concatenate(data, (uint8_t *)"\x14", 1);
-        buffer_concatenate2(data, local->tls_version);
-        buffer_concatenate(data, (uint8_t *)"\x00\x01\x01", 3);
+        buffer_concatenate_raw(data, (uint8_t *)"\x14", 1);
+        buffer_concatenate(data, local->tls_version);
+        buffer_concatenate_raw(data, (uint8_t *)"\x00\x01\x01", 3);
 
         // data += b"\x16" + self.tls_version + struct.pack('>H', finish_len) + os.urandom(finish_len - 10) #Finished
         size2 = (uint16_t)((rand_integer() % 8) + 32);
         rand_bytes(rand_buf, (int)(size2 - 10));
         size3 = htons(size2);
-        buffer_concatenate(data, (uint8_t *)"\x16", 1);
-        buffer_concatenate2(data, local->tls_version);
-        buffer_concatenate(data, (uint8_t *)&size3, sizeof(size3));
-        buffer_concatenate(data, (uint8_t *)rand_buf, (size_t)(size2 - 10));
+        buffer_concatenate_raw(data, (uint8_t *)"\x16", 1);
+        buffer_concatenate(data, local->tls_version);
+        buffer_concatenate_raw(data, (uint8_t *)&size3, sizeof(size3));
+        buffer_concatenate_raw(data, (uint8_t *)rand_buf, (size_t)(size2 - 10));
 
         // data += hmac.new(self.server_info.key + self.client_id, data, hashlib.sha1).digest()[:10]
         {
             uint8_t sha1[SHA1_BYTES + 1] = { 0 };
             tls12_sha1_hmac(obfs, local->client_id, data, sha1);
-            buffer_concatenate(data, sha1, OBFS_HMAC_SHA1_LEN);
+            buffer_concatenate_raw(data, sha1, OBFS_HMAC_SHA1_LEN);
         }
 
         if (buf && buffer_get_length(buf)) {
             struct buffer_t *tmp = tls12_ticket_auth_server_encode(obfs, buf);
-            buffer_concatenate2(data, tmp);
+            buffer_concatenate(data, tmp);
             buffer_release(tmp);
         }
 
@@ -639,9 +639,9 @@ struct buffer_t * tls12_ticket_auth_server_decode(struct obfs_t *obfs, const str
     }
     if ((local->handshake_status & 4) == 4) {
         result = buffer_create(SSR_BUFF_SIZE);
-        buffer_concatenate2(local->recv_buffer, buf);
+        buffer_concatenate(local->recv_buffer, buf);
         while (buffer_get_length(local->recv_buffer) > 5) {
-            const uint8_t *beginning = buffer_get_data(local->recv_buffer, NULL);
+            const uint8_t *beginning = buffer_get_data(local->recv_buffer);
             size_t size = 0;
             size_t thunk_size = 0;
             if (memcmp(beginning, "\x17\x03\x03", 3) != 0) {
@@ -653,9 +653,9 @@ struct buffer_t * tls12_ticket_auth_server_decode(struct obfs_t *obfs, const str
             if (buffer_get_length(local->recv_buffer) < thunk_size) {
                 break;
             }
-            buffer_concatenate(result, beginning + 5, size);
+            buffer_concatenate_raw(result, beginning + 5, size);
 
-            buffer_shortened_to(local->recv_buffer, thunk_size, buffer_get_length(local->recv_buffer) - thunk_size);
+            buffer_shortened_to(local->recv_buffer, thunk_size, buffer_get_length(local->recv_buffer) - thunk_size, true);
          }
         return result;
     }
@@ -666,7 +666,7 @@ struct buffer_t * tls12_ticket_auth_server_decode(struct obfs_t *obfs, const str
         size_t verify_len = 0;
         struct buffer_t *swap = buffer_create(SSR_BUFF_SIZE);
 
-        buffer_concatenate2(local->recv_buffer, buf);
+        buffer_concatenate(local->recv_buffer, buf);
         verify = buffer_clone(local->recv_buffer);
 
         if (buffer_get_length(local->recv_buffer) < 11) {
@@ -676,13 +676,13 @@ struct buffer_t * tls12_ticket_auth_server_decode(struct obfs_t *obfs, const str
         }
 
         // ChangeCipherSpec: b"\x14" + tls_version + b"\x00\x01\x01"
-        buffer_reset(swap);
+        buffer_reset(swap, true);
         {
             struct buffer_t *const_buff1 = buffer_create_from((const uint8_t *)"\x14", 1);
             struct buffer_t *const_buff2 = buffer_create_from((const uint8_t *)"\x00\x01\x01", 3);
-            buffer_concatenate2(swap, const_buff1);
-            buffer_concatenate2(swap, local->tls_version);
-            buffer_concatenate2(swap, const_buff2);
+            buffer_concatenate(swap, const_buff1);
+            buffer_concatenate(swap, local->tls_version);
+            buffer_concatenate(swap, const_buff2);
             buffer_release(const_buff1);
             buffer_release(const_buff2);
         }
@@ -692,20 +692,20 @@ struct buffer_t * tls12_ticket_auth_server_decode(struct obfs_t *obfs, const str
             return NULL;
         }
 
-        buf_ptr2 = buffer_get_data(local->recv_buffer, NULL) + buffer_get_length(swap); // buf = buf[6:]
+        buf_ptr2 = buffer_get_data(local->recv_buffer) + buffer_get_length(swap); // buf = buf[6:]
 
         // Finished: b"\x16" + tls_version + b"\x00"
-        buffer_reset(swap);
+        buffer_reset(swap, true);
         {
             struct buffer_t *const_buff1 = buffer_create_from((const uint8_t *)"\x16", 1);
             struct buffer_t *const_buff2 = buffer_create_from((const uint8_t *)"\x00", 1);
-            buffer_concatenate2(swap, const_buff1);
-            buffer_concatenate2(swap, local->tls_version);
-            buffer_concatenate2(swap, const_buff2);
+            buffer_concatenate(swap, const_buff1);
+            buffer_concatenate(swap, local->tls_version);
+            buffer_concatenate(swap, const_buff2);
             buffer_release(const_buff1);
             buffer_release(const_buff2);
         }
-        if (memcmp(buf_ptr2, buffer_get_data(swap, NULL), buffer_get_length(swap)) != 0) {
+        if (memcmp(buf_ptr2, buffer_get_data(swap), buffer_get_length(swap)) != 0) {
             buffer_release(verify);
             buffer_release(swap);
             return NULL;
@@ -720,18 +720,18 @@ struct buffer_t * tls12_ticket_auth_server_decode(struct obfs_t *obfs, const str
             return buffer_create(1);
         }
         {
-            struct buffer_t *pMsg = buffer_create_from(buffer_get_data(verify, NULL), verify_len);
+            struct buffer_t *pMsg = buffer_create_from(buffer_get_data(verify), verify_len);
             tls12_sha1_hmac(obfs, local->client_id, pMsg, hash);
             buffer_release(pMsg);
         }
-        if (memcmp(hash, buffer_get_data(verify, NULL)+verify_len, OBFS_HMAC_SHA1_LEN) != 0) {
+        if (memcmp(hash, buffer_get_data(verify)+verify_len, OBFS_HMAC_SHA1_LEN) != 0) {
             buffer_release(verify);
             buffer_release(swap);
             return NULL;
         }
 
         verify_len = verify_len + OBFS_HMAC_SHA1_LEN;
-        buffer_store(local->recv_buffer, buffer_get_data(verify, NULL) + verify_len, buffer_get_length(verify) - verify_len);
+        buffer_store(local->recv_buffer, buffer_get_data(verify) + verify_len, buffer_get_length(verify) - verify_len);
 
         buffer_release(verify);
         buffer_release(swap);
@@ -749,7 +749,7 @@ struct buffer_t * tls12_ticket_auth_server_decode(struct obfs_t *obfs, const str
         uint32_t time_dif = 0;
 
         (void)time_dif;
-        buffer_concatenate2(local->recv_buffer, buf);
+        buffer_concatenate(local->recv_buffer, buf);
         buf_copy = buffer_clone(local->recv_buffer);
         ogn_buf = buffer_clone(local->recv_buffer);
         if (buffer_get_length(buf_copy) < 3) {
@@ -758,57 +758,57 @@ struct buffer_t * tls12_ticket_auth_server_decode(struct obfs_t *obfs, const str
             result = buffer_clone(local->empty_buf);
             break;
         }
-        if (memcmp(buffer_get_data(buf_copy, NULL), "\x16\x03\x01", 3) != 0) {
+        if (memcmp(buffer_get_data(buf_copy), "\x16\x03\x01", 3) != 0) {
             result = decode_error_return(obfs, ogn_buf, need_decrypt, need_feedback);
             break;
         }
-        buffer_shortened_to(buf_copy, 3, buffer_get_length(buf_copy) - 3);
-        header_len = (size_t) ntohs(*((uint16_t *)buffer_get_data(buf_copy, NULL)));
+        buffer_shortened_to(buf_copy, 3, buffer_get_length(buf_copy) - 3, true);
+        header_len = (size_t) ntohs(*((uint16_t *)buffer_get_data(buf_copy)));
         if (header_len > (buffer_get_length(buf_copy) - sizeof(uint16_t))) {
             if (need_decrypt) { *need_decrypt = false; }
             if (need_feedback) { *need_feedback = false; }
             result = buffer_clone(local->empty_buf);
             break;
         }
-        buffer_shortened_to(local->recv_buffer, header_len+5, buffer_get_length(local->recv_buffer) - (header_len + 5));
+        buffer_shortened_to(local->recv_buffer, header_len+5, buffer_get_length(local->recv_buffer) - (header_len + 5), true);
         local->handshake_status = 1;
-        buffer_shortened_to(buf_copy, 2, header_len);
-        if (memcmp(buffer_get_data(buf_copy, NULL), "\x01\x00", 2) != 0) {
+        buffer_shortened_to(buf_copy, 2, header_len, true);
+        if (memcmp(buffer_get_data(buf_copy), "\x01\x00", 2) != 0) {
             // logging.info("tls_auth not client hello message")
             result = decode_error_return(obfs, ogn_buf, need_decrypt, need_feedback);
             break;
         }
-        buffer_shortened_to(buf_copy, 2, buffer_get_length(buf_copy) - 2);
-        msg_size = (size_t) ntohs(*((uint16_t *)buffer_get_data(buf_copy, NULL)));
+        buffer_shortened_to(buf_copy, 2, buffer_get_length(buf_copy) - 2, true);
+        msg_size = (size_t) ntohs(*((uint16_t *)buffer_get_data(buf_copy)));
         if (msg_size != buffer_get_length(buf_copy) - 2) {
             // logging.info("tls_auth wrong message size")
             result = decode_error_return(obfs, ogn_buf, need_decrypt, need_feedback);
             break;
         }
-        buffer_shortened_to(buf_copy, 2, buffer_get_length(buf_copy) - 2);
-        if (memcmp(buffer_get_data(buf_copy, NULL), buffer_get_data(local->tls_version, NULL), 2) != 0) {
+        buffer_shortened_to(buf_copy, 2, buffer_get_length(buf_copy) - 2, true);
+        if (memcmp(buffer_get_data(buf_copy), buffer_get_data(local->tls_version), 2) != 0) {
             // logging.info("tls_auth wrong tls version")
             result = decode_error_return(obfs, ogn_buf, need_decrypt, need_feedback);
             break;
         }
-        buffer_shortened_to(buf_copy, 2, buffer_get_length(buf_copy) - 2);
-        verifyid = buffer_create_from(buffer_get_data(buf_copy, NULL), 32);
-        buffer_shortened_to(buf_copy, 32, buffer_get_length(buf_copy) - 32);
-        sessionid_len = (size_t) buffer_get_data(buf_copy, NULL)[0];
+        buffer_shortened_to(buf_copy, 2, buffer_get_length(buf_copy) - 2, true);
+        verifyid = buffer_create_from(buffer_get_data(buf_copy), 32);
+        buffer_shortened_to(buf_copy, 32, buffer_get_length(buf_copy) - 32, true);
+        sessionid_len = (size_t) buffer_get_data(buf_copy)[0];
         if (sessionid_len < 32) {
             // logging.info("tls_auth wrong sessionid_len")
             result = decode_error_return(obfs, ogn_buf, need_decrypt, need_feedback);
             break;
         }
-        sessionid = buffer_create_from(buffer_get_data(buf_copy, NULL) + 1, sessionid_len);
-        buffer_shortened_to(buf_copy, sessionid_len + 1, buffer_get_length(buf_copy) - (sessionid_len + 1));
+        sessionid = buffer_create_from(buffer_get_data(buf_copy) + 1, sessionid_len);
+        buffer_shortened_to(buf_copy, sessionid_len + 1, buffer_get_length(buf_copy) - (sessionid_len + 1), true);
         buffer_replace(local->client_id, sessionid);
         {
-            struct buffer_t *pMsg = buffer_create_from(buffer_get_data(verifyid, NULL), 22);
+            struct buffer_t *pMsg = buffer_create_from(buffer_get_data(verifyid), 22);
             tls12_sha1_hmac(obfs, local->client_id, pMsg, sha1);
             buffer_release(pMsg);
         }
-        utc_time = (uint32_t) ntohl(*(uint32_t *)buffer_get_data(verifyid, NULL));
+        utc_time = (uint32_t) ntohl(*(uint32_t *)buffer_get_data(verifyid));
         time_dif = (uint32_t)(time(NULL) & 0xffffffff) - utc_time;
         //if (obfs->server.param) {
         //    // self.max_time_dif = int(self.server_info.obfs_param)
@@ -818,7 +818,7 @@ struct buffer_t * tls12_ticket_auth_server_decode(struct obfs_t *obfs, const str
         //        or common.int32(utc_time - self.server_info.data.startup_time) < -self.max_time_dif / 2):
         //    logging.info("tls_auth wrong time")
         //    return self.decode_error_return(ogn_buf)
-        if (memcmp(sha1, buffer_get_data(verifyid, NULL)+22, 10) != 0) {
+        if (memcmp(sha1, buffer_get_data(verifyid)+22, 10) != 0) {
             // logging.info("tls_auth wrong sha1")
             result = decode_error_return(obfs, ogn_buf, need_decrypt, need_feedback);
             break;

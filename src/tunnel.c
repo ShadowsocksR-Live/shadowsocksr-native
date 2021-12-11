@@ -599,6 +599,11 @@ static void tunnel_socket_ctx_on_read_cb(struct socket_ctx* socket, int status, 
         }
         socket->buf = NULL;
 
+        if (tunnel->tunnel_is_terminated(tunnel)) {
+            tunnel_dump_error_info(tunnel, socket, "unexpect tunnel terminated.");
+            break;
+        }
+
         if (tunnel->tunnel_is_in_streaming(tunnel) && socket->check_timeout) {
             socket_ctx_timer_start(socket);
         }

@@ -29,6 +29,7 @@ include ( configure )
 configure_file ( ${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h )
 ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
+add_subdirectory(depends/libbloom)
 add_subdirectory(depends/libsodium)
 add_subdirectory(depends/libuv)
 add_subdirectory(depends/json-c)

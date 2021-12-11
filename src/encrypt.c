@@ -22,6 +22,11 @@
 
 #include <stdint.h>
 #include <ctype.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
+#include <stddef.h>
+#include <stdbool.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -75,6 +80,8 @@ typedef mbedtls_md_info_t digest_type_t;
 #error Cipher Feedback mode a.k.a CFB not supported by your mbed TLS.
 #endif
 
+#else
+#error You have to use openssl or mbedtls, one of them, and can NOT both.
 #endif
 
 #include <sodium.h>
@@ -88,6 +95,8 @@ typedef mbedtls_md_info_t digest_type_t;
 #include "ssrutils.h"
 #include "ssrbuffer.h"
 
+#include "aead.h"
+
 #define OFFSET_ROL(p, o) ((uint64_t)(*(p + o)) << (8 * o))
 
 struct cipher_env_t {
@@ -98,6 +107,7 @@ struct cipher_env_t {
     int enc_iv_len;
     enum ss_cipher_type enc_method;
     struct cache *iv_cache;
+    struct aead_cipher_t *aead_cipher;
 };
 
 struct cipher_wrapper {
@@ -115,6 +125,7 @@ struct enc_ctx {
     uint8_t init;
     uint64_t counter;
     struct cipher_ctx_t cipher_ctx;
+    struct aead_cipher_ctx_t *aead_cipher_ctx;
 };
 
 #ifdef USE_CRYPTO_MBEDTLS
@@ -143,6 +154,11 @@ struct enc_ctx {
     V(ss_cipher_salsa20,            "salsa20"               )   \
     V(ss_cipher_chacha20,           "chacha20"              )   \
     V(ss_cipher_chacha20ietf,       "chacha20-ietf"         )   \
+    V(ss_cipher_aes_128_gcm,        "AES-128-GCM"           )   \
+    V(ss_cipher_aes_192_gcm,        "AES-192-GCM"           )   \
+    V(ss_cipher_aes_256_gcm,        "AES-256-GCM"           )   \
+    V(ss_cipher_chacha20_ietf_poly1305,  "chacha20-ietf-poly1305")  \
+    V(ss_cipher_xchacha20_ietf_poly1305, "xchacha20-ietf-poly1305") \
 
 static const char *
 ss_mbedtls_cipher_name_by_type(enum ss_cipher_type index)
@@ -663,10 +679,10 @@ ss_md5_hmac_with_key(uint8_t auth[MD5_BYTES], const struct buffer_t *msg, const 
 #if defined(USE_CRYPTO_OPENSSL)
     HMAC(EVP_md5(), key->buffer, key->len, (unsigned char *)msg->buffer, (size_t)msg->len, (unsigned char *)hash, NULL);
 #elif defined(USE_CRYPTO_MBEDTLS)
-    size_t  key_len = 0;
-    const uint8_t *key_buf = buffer_get_data(key, &key_len);
-    size_t msg_len = 0;
-    const uint8_t *msg_buf = buffer_get_data(msg, &msg_len);
+    size_t  key_len = buffer_get_length(key);
+    const uint8_t *key_buf = buffer_get_data(key);
+    size_t msg_len = buffer_get_length(msg);
+    const uint8_t *msg_buf = buffer_get_data(msg);
     mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_MD5), key_buf, key_len, (uint8_t *)msg_buf, msg_len, (uint8_t *)hash);
 #endif
     memcpy(auth, hash, MD5_BYTES);
@@ -695,10 +711,10 @@ ss_sha1_hmac_with_key(uint8_t auth[SHA1_BYTES], const struct buffer_t *msg, cons
 #if defined(USE_CRYPTO_OPENSSL)
     HMAC(EVP_sha1(), key->buffer, key->len, msg->buffer, msg->len, hash, NULL);
 #elif defined(USE_CRYPTO_MBEDTLS)
-    size_t key_len = 0;
-    const uint8_t *key_buf = buffer_get_data(key, &key_len);
-    size_t msg_len = 0;
-    const uint8_t *msg_buf = buffer_get_data(msg, &msg_len);
+    size_t key_len = buffer_get_length(key);
+    const uint8_t *key_buf = buffer_get_data(key);
+    size_t msg_len = buffer_get_length(msg);
+    const uint8_t *msg_buf = buffer_get_data(msg);
     mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), key_buf, key_len, msg_buf, msg_len, hash);
 #endif
     memcpy(auth, hash, SHA1_BYTES);
@@ -763,8 +779,17 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
         uint8_t *cipher_buffer = NULL; size_t cipher_len = 0;
         struct cipher_ctx_t cipher_ctx;
         uint8_t iv[MAX_IV_LENGTH];
-        size_t plain_len = 0;
-        const uint8_t *plain_buffer = buffer_get_data(plain, &plain_len);
+        size_t plain_len = buffer_get_length(plain);
+        const uint8_t *plain_buffer = buffer_get_data(plain);
+
+        if ((ss_cipher_aes_128_gcm <= method) && (method <= ss_cipher_xchacha20_ietf_poly1305)) {
+            struct aead_buffer_t *alt = convert_buffer_t_to_ss_buffer_t(plain);
+            int res = aead_encrypt_all(alt, env->aead_cipher, capacity);
+            assert(res == CRYPTO_OK);
+            buffer_store(plain, ss_buffer_get_data(alt), ss_buffer_get_length(alt));
+            bfree(alt, 1);
+            return res;
+        }
 
         cipher_context_init(env, &cipher_ctx, 1);
 
@@ -808,8 +833,8 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
         return 0;
     } else {
         if (env->enc_method == ss_cipher_table) {
-            size_t plain_len = 0;
-            uint8_t *plain_buffer = (uint8_t*) buffer_get_data(plain, &plain_len);
+            size_t plain_len = buffer_get_length(plain);
+            uint8_t *plain_buffer = (uint8_t*) buffer_get_data(plain);
             uint8_t *begin = plain_buffer;
             uint8_t *ptr   = plain_buffer;
             while (ptr < begin + plain_len) {
@@ -830,12 +855,23 @@ ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx
         size_t iv_len = 0;
         uint8_t *cipher_buffer=NULL; size_t cipher_len = 0;
         uint8_t *plain_buffer = NULL; size_t plain_len = buffer_get_length(plain);
+        enum ss_cipher_type method = env->enc_method;
+
+        if ((ss_cipher_aes_128_gcm <= method) && (method <= ss_cipher_xchacha20_ietf_poly1305)) {
+            struct aead_buffer_t *alt = convert_buffer_t_to_ss_buffer_t(plain);
+            int res = aead_encrypt(alt, ctx->aead_cipher_ctx, capacity);
+            assert(res == CRYPTO_OK);
+            buffer_store(plain, ss_buffer_get_data(alt), ss_buffer_get_length(alt));
+            bfree(alt, 1);
+            return res;
+        }
+
         if (!ctx->init) {
             iv_len = (size_t)env->enc_iv_len;
         }
 
         plain_buffer = (uint8_t *) calloc(buffer_get_capacity(plain), sizeof(*plain_buffer));
-        memmove(plain_buffer, buffer_get_data(plain, NULL), plain_len);
+        memmove(plain_buffer, buffer_get_data(plain), plain_len);
 
         cipher_buffer = (uint8_t *) calloc(max(iv_len + plain_len, capacity), sizeof(*cipher_buffer));
         cipher_len = plain_len;
@@ -889,10 +925,11 @@ ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx
         free(cipher_buffer);
         free(plain_buffer);
         return 0;
+        (void)method;
     } else {
         if (env->enc_method == ss_cipher_table) {
-            size_t plain_len = 0;
-            uint8_t *plain_buffer = (uint8_t*) buffer_get_data(plain, &plain_len);
+            size_t plain_len = buffer_get_length(plain);
+            uint8_t *plain_buffer = (uint8_t*) buffer_get_data(plain);
             uint8_t *begin = plain_buffer;
             uint8_t *ptr   = plain_buffer;
             while (ptr < begin + plain_len) {
@@ -908,14 +945,24 @@ int
 ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacity)
 {
     enum ss_cipher_type method = env->enc_method;
+
+    if ((ss_cipher_aes_128_gcm <= method) && (method <= ss_cipher_xchacha20_ietf_poly1305)) {
+        struct aead_buffer_t *alt = convert_buffer_t_to_ss_buffer_t(cipher);
+        int res = aead_decrypt_all(alt, env->aead_cipher, capacity);
+        assert(res == CRYPTO_OK);
+        buffer_store(cipher, ss_buffer_get_data(alt), ss_buffer_get_length(alt));
+        bfree(alt, 1);
+        return res;
+    }
+
     if (method > ss_cipher_table) {
         size_t iv_len = (size_t)env->enc_iv_len;
         bool success       = true;
         struct cipher_ctx_t cipher_ctx;
         uint8_t *plain_buffer; size_t plain_len;
         uint8_t iv[MAX_IV_LENGTH];
-        size_t cipher_len;
-        const uint8_t *cipher_buffer = buffer_get_data(cipher, &cipher_len);
+        size_t cipher_len = buffer_get_length(cipher);
+        const uint8_t *cipher_buffer = buffer_get_data(cipher);
 
         if (cipher_len <= iv_len) {
             return -1;
@@ -959,8 +1006,8 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
         return 0;
     } else {
         if (method == ss_cipher_table) {
-            size_t cipher_len;
-            uint8_t *cipher_buffer = (uint8_t *) buffer_get_data(cipher, &cipher_len);
+            size_t cipher_len = buffer_get_length(cipher);
+            uint8_t *cipher_buffer = (uint8_t *) buffer_get_data(cipher);
             uint8_t *begin = cipher_buffer;
             uint8_t *ptr   = cipher_buffer;
             while (ptr < begin + cipher_len) {
@@ -980,12 +1027,35 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
         size_t iv_len = 0;
         bool success       = true;
         size_t cipher_len = 0;
-        const uint8_t *pcb = buffer_get_data(cipher, &cipher_len);
+        const uint8_t *pcb;
+        uint8_t *plain_buffer;
+        size_t plain_len;
+        uint8_t *cipher_buffer;
+        enum ss_cipher_type method = env->enc_method;
 
-        uint8_t *plain_buffer = (uint8_t *) calloc(max(cipher_len, capacity), sizeof(*plain_buffer));
-        size_t plain_len = cipher_len;
+        if ((ss_cipher_aes_128_gcm <= method) && (method <= ss_cipher_xchacha20_ietf_poly1305)) {
+            struct buffer_t *origin = buffer_clone(cipher);
+            struct aead_buffer_t *alt = convert_buffer_t_to_ss_buffer_t(cipher);
+            int res = aead_decrypt(alt, ctx->aead_cipher_ctx, capacity);
+            buffer_store(cipher, ss_buffer_get_data(alt), ss_buffer_get_length(alt));
+            bfree(alt, 1);
+            if (res == CRYPTO_NEED_MORE) {
+                if (buffer_compare(origin, cipher, buffer_get_length(cipher)) == 0) {
+                    buffer_reset(cipher, true);
+                    res = CRYPTO_OK;
+                } else {
+                    assert(0);
+                }
+            }
+            buffer_release(origin);
+            return res;
+        }
 
-        uint8_t *cipher_buffer = (uint8_t*) calloc(buffer_get_capacity(cipher), sizeof(*cipher_buffer));
+        pcb = buffer_get_data(cipher);
+        cipher_len = buffer_get_length(cipher);
+        plain_buffer = (uint8_t *) calloc(max(cipher_len, capacity), sizeof(*plain_buffer));
+        plain_len = cipher_len;
+        cipher_buffer = (uint8_t*) calloc(buffer_get_capacity(cipher), sizeof(*cipher_buffer));
         memmove(cipher_buffer, pcb, cipher_len);
 
         if (!ctx->init) {
@@ -1004,7 +1074,7 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
             ctx->counter = 0;
             ctx->init    = 1;
 
-            if (env->enc_method > ss_cipher_rc4) {
+            if (method > ss_cipher_rc4) {
                 if (cache_key_exist(env->iv_cache, (char *)iv, iv_len)) {
                     return -1;
                 } else {
@@ -1013,7 +1083,7 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
             }
         }
 
-        if (env->enc_method >= ss_cipher_salsa20) {
+        if (method >= ss_cipher_salsa20) {
             size_t padding = (size_t)(ctx->counter % SODIUM_BLOCK_SIZE);
             plain_buffer = (uint8_t *) realloc(plain_buffer, max((plain_len + padding) * 2, capacity));
 
@@ -1028,7 +1098,7 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
                                  ((uint64_t)cipher_len - iv_len + padding),
                                  (const uint8_t *)ctx->cipher_ctx.iv,
                                  ctx->counter / SODIUM_BLOCK_SIZE, env->enc_key,
-                                 env->enc_method);
+                                 method);
             ctx->counter += cipher_len - iv_len;
             if (padding) {
                 memmove(plain_buffer, plain_buffer + padding, plain_len);
@@ -1057,8 +1127,8 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
         return 0;
     } else {
         if(env->enc_method == ss_cipher_table) {
-            size_t cipher_len;
-            uint8_t *cipher_buffer = (uint8_t *) buffer_get_data(cipher, &cipher_len);
+            size_t cipher_len = buffer_get_length(cipher);
+            uint8_t *cipher_buffer = (uint8_t *) buffer_get_data(cipher);
             uint8_t *begin = cipher_buffer;
             uint8_t *ptr   = cipher_buffer;
             while (ptr < begin + cipher_len) {
@@ -1078,8 +1148,8 @@ ss_encrypt_buffer(struct cipher_env_t *env, struct enc_ctx *ctx, const uint8_t *
     buffer_store(cipher, (uint8_t*)in, in_size);
     s = ss_encrypt(env, cipher, ctx, in_size + 32);
     if (s == 0) {
-        size_t cipher_len = 0;
-        const uint8_t *p = buffer_get_data(cipher, &cipher_len);
+        size_t cipher_len = buffer_get_length(cipher);
+        const uint8_t *p = buffer_get_data(cipher);
          *out_size = cipher_len;
         memcpy(out, p, cipher_len);
     }
@@ -1095,8 +1165,8 @@ ss_decrypt_buffer(struct cipher_env_t *env, struct enc_ctx *ctx, const uint8_t *
     buffer_store(cipher_text, (uint8_t *)in, in_size);
     s = ss_decrypt(env, cipher_text, ctx, in_size + 32);
     if (s == 0) {
-        size_t len = 0;
-        const uint8_t *buffer = buffer_get_data(cipher_text, &len);
+        size_t len = buffer_get_length(cipher_text);
+        const uint8_t *buffer = buffer_get_data(cipher_text);
         *out_size = len;
         memcpy(out, buffer, len);
     }
@@ -1112,11 +1182,18 @@ struct enc_ctx *
 enc_ctx_new_instance(struct cipher_env_t *env, bool encrypt)
 {
     struct enc_ctx *ctx = (struct enc_ctx *)calloc(1, sizeof(struct enc_ctx));
-    sodium_memzero(ctx, sizeof(struct enc_ctx));
-    cipher_context_init(env, &ctx->cipher_ctx, encrypt);
+    enum ss_cipher_type method = env->enc_method;
+    if ((ss_cipher_none <= method) && (method <= ss_cipher_chacha20ietf)) {
+        sodium_memzero(ctx, sizeof(struct enc_ctx));
+        cipher_context_init(env, &ctx->cipher_ctx, encrypt);
 
-    if (encrypt) {
-        rand_bytes(ctx->cipher_ctx.iv, env->enc_iv_len);
+        if (encrypt) {
+            rand_bytes(ctx->cipher_ctx.iv, env->enc_iv_len);
+        }
+    } else if ((ss_cipher_aes_128_gcm <= method) && (method <= ss_cipher_xchacha20_ietf_poly1305)) {
+        ctx->aead_cipher_ctx = create_aead_cipher_ctx(env->aead_cipher, encrypt ? 1 : 0);
+    } else {
+        assert(!"Invalid method!");
     }
     return ctx;
 }
@@ -1124,10 +1201,18 @@ enc_ctx_new_instance(struct cipher_env_t *env, bool encrypt)
 void
 enc_ctx_release_instance(struct cipher_env_t *env, struct enc_ctx *ctx)
 {
+    enum ss_cipher_type method;
     if (env==NULL || ctx==NULL) {
         return;
     }
-    cipher_context_release(env, &ctx->cipher_ctx);
+    method = env->enc_method;
+    if ((ss_cipher_none <= method) && (method <= ss_cipher_chacha20ietf)) {
+        cipher_context_release(env, &ctx->cipher_ctx);
+    } else if ((ss_cipher_aes_128_gcm <= method) && (method <= ss_cipher_xchacha20_ietf_poly1305)) {
+        aead_ctx_release(ctx->aead_cipher_ctx, 1);
+    } else {
+        assert(!"Invalid method!");
+    }
     free(ctx);
 }
 
@@ -1181,7 +1266,7 @@ enc_key_init(struct cipher_env_t *env, enum ss_cipher_type method, const char *p
     struct cipher_wrapper *cipher;
     const digest_type_t *md;
 
-    if (method < ss_cipher_none || method >= ss_cipher_max) {
+    if (method < ss_cipher_none || method > ss_cipher_chacha20ietf) {
         LOGE("%s", "enc_key_init(): Illegal method");
         return;
     }
@@ -1251,8 +1336,13 @@ cipher_env_new_instance(const char *pass, const char *method)
     enum ss_cipher_type m = ss_cipher_type_of_name(method);
     if (m <= ss_cipher_table) {
         enc_table_init(env, m, pass);
-    } else {
+    } else if ((ss_cipher_rc4 <= m) && (m <= ss_cipher_chacha20ietf)) {
         enc_key_init(env, m, pass);
+    } else if ((ss_cipher_aes_128_gcm <= m) && (m <= ss_cipher_xchacha20_ietf_poly1305)) {
+        env->aead_cipher = aead_init(pass, NULL, method); // TODO: add `key` logic.
+    } else {
+        assert(!"Invalid method!");
+        exit(EXIT_FAILURE);
     }
     env->enc_method = m;
     return env;
@@ -1265,14 +1355,20 @@ enum ss_cipher_type cipher_env_enc_method(const struct cipher_env_t *env) {
 void
 cipher_env_release(struct cipher_env_t *env)
 {
+    enum ss_cipher_type method;
     if (env == NULL) {
         return;
     }
-    if (env->enc_method <= ss_cipher_table) {
+    method = env->enc_method;
+    if (method <= ss_cipher_table) {
         safe_free(env->enc_table);
         safe_free(env->dec_table);
-    } else {
+    } else if ((ss_cipher_rc4 <= method) && (method <= ss_cipher_chacha20ietf)) {
         cache_delete(env->iv_cache, 0);
+    } else if ((ss_cipher_aes_128_gcm <= method) && (method <= ss_cipher_xchacha20_ietf_poly1305)) {
+        aead_cipher_destroy(env->aead_cipher);
+    } else {
+        assert(!"something went wrong!");
     }
     free(env);
 }
@@ -1280,8 +1376,8 @@ cipher_env_release(struct cipher_env_t *env)
 struct buffer_t * cipher_simple_update_data(const char *key, const char *method, bool encrypt, const struct buffer_t *data) {
     struct cipher_env_t *cipher = cipher_env_new_instance(key, method);
     struct enc_ctx *ctx = enc_ctx_new_instance(cipher, encrypt);
-    size_t data_len = 0;
-    const uint8_t *data_buffer = buffer_get_data(data, &data_len);
+    size_t data_len = buffer_get_length(data);
+    const uint8_t *data_buffer = buffer_get_data(data);
     struct buffer_t *out_buffer = NULL;
     uint8_t *out_p = (uint8_t *) calloc(data_len + 32, sizeof(*out_p));
     size_t out_len = 0;
