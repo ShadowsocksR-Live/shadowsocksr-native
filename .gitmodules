@@ -22,3 +22,7 @@
 	path = depends/uv-mbed
 	url = https://github.com/ShadowsocksR-Live/uv-mbed.git
 	branch = master
+[submodule "depends/libbloom"]
+	path = depends/libbloom
+	url = https://github.com/ShadowsocksR-Live/libbloom.git
+	branch = master

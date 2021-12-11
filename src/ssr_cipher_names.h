@@ -40,6 +40,11 @@
     V(20, ss_cipher_salsa20,           "salsa20",           8, 32)             \
     V(21, ss_cipher_chacha20,          "chacha20",          8, 32)             \
     V(22, ss_cipher_chacha20ietf,      "chacha20-ietf",    12, 32)             \
+    V(23, ss_cipher_aes_128_gcm,       "aes-128-gcm",       0,  0)             \
+    V(24, ss_cipher_aes_192_gcm,       "aes-192-gcm",       0,  0)             \
+    V(25, ss_cipher_aes_256_gcm,       "aes-256-gcm",       0,  0)             \
+    V(26, ss_cipher_chacha20_ietf_poly1305,  "chacha20-ietf-poly1305",  0, 0)  \
+    V(27, ss_cipher_xchacha20_ietf_poly1305, "xchacha20-ietf-poly1305", 0, 0)  \
 
 typedef enum ss_cipher_type {
 #define SS_CIPHER_GEN(code, name, text, iv_size, key_size) name = (code),
