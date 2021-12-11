@@ -677,7 +677,7 @@ tunnel_cipher_server_decrypt(struct tunnel_cipher_ctx *tc,
         */
         if (protocol && protocol->server_info.recv_iv[0] == 0) {
             size_t iv_len = protocol->server_info.iv_len;
-            memmove(protocol->server_info.recv_iv, buffer_get_data(ret, NULL), iv_len);
+            memmove(protocol->server_info.recv_iv, buffer_get_data(ret), iv_len);
             protocol->server_info.recv_iv_len = iv_len;
         }
 
@@ -707,8 +707,8 @@ bool pre_parse_header(struct buffer_t *data) {
     uint8_t tmp;
     size_t rand_data_size = 0;
     size_t hdr_len = 0;
-    size_t len = 0;
-    const uint8_t *buffer = buffer_get_data(data, &len);
+    size_t len = buffer_get_length(data);
+    const uint8_t *buffer = buffer_get_data(data);
 
     if (data==NULL || buffer==NULL || len==0) {
         return false;
@@ -769,7 +769,8 @@ bool pre_parse_header(struct buffer_t *data) {
 
         if (data_size < origin_len) {
             size_t len2 = origin_len - data_size;
-            buffer = buffer_get_data(data, &len);
+            buffer = buffer_get_data(data);
+            len = buffer_get_length(data);
             buffer_concatenate_raw(data, buffer + data_size, len2);
         }
         return true;

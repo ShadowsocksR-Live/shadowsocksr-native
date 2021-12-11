@@ -131,10 +131,7 @@ void buffer_set_lenth(struct buffer_t *ptr, size_t length, bool erase_invalid) {
     }
 }
 
-const uint8_t * buffer_get_data(const struct buffer_t *ptr, size_t *length) {
-    if (length) {
-        *length = buffer_get_length(ptr);
-    }
+const uint8_t * buffer_get_data(const struct buffer_t *ptr) {
     return ptr ? ptr->buffer : NULL;
 }
 

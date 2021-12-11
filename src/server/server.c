@@ -665,7 +665,7 @@ static bool is_legal_header(const struct buffer_t *buf) {
         if (buf == NULL) {
             break;
         }
-        addr_type = (enum SOCKS5_ADDRTYPE) buffer_get_data(buf, NULL)[0];
+        addr_type = (enum SOCKS5_ADDRTYPE) buffer_get_data(buf)[0];
         switch (addr_type) {
         case SOCKS5_ADDRTYPE_IPV4:
         case SOCKS5_ADDRTYPE_DOMAINNAME:
@@ -681,7 +681,7 @@ static bool is_legal_header(const struct buffer_t *buf) {
 
 static bool is_header_complete(const struct buffer_t *buf) {
     struct socks5_address addr = { {{0}}, 0, SOCKS5_ADDRTYPE_INVALID };
-    return socks5_address_parse(buffer_get_data(buf, NULL), buffer_get_length(buf), &addr);
+    return socks5_address_parse(buffer_get_data(buf), buffer_get_length(buf), &addr);
 }
 
 static size_t _get_read_size(struct tunnel_ctx *tunnel, struct socket_ctx *socket, size_t suggested_size) {
@@ -732,7 +732,7 @@ static void do_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *incomi
 
         if (obfs_receipt) {
             ASSERT(proto_confirm == NULL);
-            tunnel_socket_ctx_write(tunnel, incoming, buffer_get_data(obfs_receipt, NULL), buffer_get_length(obfs_receipt));
+            tunnel_socket_ctx_write(tunnel, incoming, buffer_get_data(obfs_receipt), buffer_get_length(obfs_receipt));
             ctx->stage = tunnel_stage_obfs_receipt_done;
             break;
         }
@@ -746,7 +746,7 @@ static void do_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *incomi
 
         if (proto_confirm) {
             ASSERT(obfs_receipt == NULL);
-            tunnel_socket_ctx_write(tunnel, incoming, buffer_get_data(proto_confirm, NULL), buffer_get_length(proto_confirm));
+            tunnel_socket_ctx_write(tunnel, incoming, buffer_get_data(proto_confirm), buffer_get_length(proto_confirm));
             ctx->stage = tunnel_stage_protocol_confirm_done;
             break;
         }
@@ -785,7 +785,7 @@ static void do_prepare_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socke
 
         info = protocol ? protocol->get_server_info(protocol) : (obfs ? obfs->get_server_info(obfs) : NULL);
         if (info) {
-            info->head_len = (int) get_s5_head_size(buffer_get_data(init_pkg, NULL), buffer_get_length(init_pkg), 30);
+            info->head_len = (int) get_s5_head_size(buffer_get_data(init_pkg), buffer_get_length(init_pkg), 30);
             ctx->_overhead = info->overhead;
             ctx->_recv_buffer_size = info->buffer_size;
         }
@@ -831,7 +831,7 @@ static void do_handle_client_feedback(struct tunnel_ctx *tunnel, struct socket_c
         buffer_concatenate(ctx->init_pkg, result);
 
         if (proto_confirm) {
-            tunnel_socket_ctx_write(tunnel, incoming, buffer_get_data(proto_confirm, NULL), buffer_get_length(proto_confirm));
+            tunnel_socket_ctx_write(tunnel, incoming, buffer_get_data(proto_confirm), buffer_get_length(proto_confirm));
             ctx->stage = tunnel_stage_protocol_confirm_done;
             break;
         }
@@ -880,7 +880,7 @@ static void do_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     // get remote addr and port
     s5addr = tunnel->desired_addr;
     memset(s5addr, 0, sizeof(*s5addr));
-    if (socks5_address_parse(buffer_get_data(init_pkg, NULL), buffer_get_length(init_pkg), s5addr) == false) {
+    if (socks5_address_parse(buffer_get_data(init_pkg), buffer_get_length(init_pkg), s5addr) == false) {
         // report_addr(server->fd, MALFORMED);
         tunnel->tunnel_shutdown(tunnel);
         return;
@@ -1009,8 +1009,8 @@ static void do_connect_host_done(struct tunnel_ctx *tunnel, struct socket_ctx *s
     }
 
     if (outgoing->result == 0) {
-        size_t len = 0;
-        const uint8_t *data = buffer_get_data(ctx->init_pkg, &len);
+        size_t len = buffer_get_length(ctx->init_pkg);
+        const uint8_t *data = buffer_get_data(ctx->init_pkg);
         if (len > 0) {
             tunnel_socket_ctx_write(tunnel, outgoing, data, len);
             ctx->stage = tunnel_stage_launch_streaming;
@@ -1058,7 +1058,7 @@ void udp_remote_on_data_arrived(struct udp_remote_ctx_t *remote_ctx, const uint8
     struct socket_ctx *socket = tunnel->incoming;
     struct buffer_t *src = buffer_create_from(data, len);
     struct buffer_t *dst = build_websocket_frame_from_raw(ctx, src);
-    tunnel_socket_ctx_write(tunnel, socket, buffer_get_data(dst, NULL), buffer_get_length(dst));
+    tunnel_socket_ctx_write(tunnel, socket, buffer_get_data(dst), buffer_get_length(dst));
     buffer_release(src);
     buffer_release(dst);
     (void)remote_ctx;
@@ -1143,8 +1143,8 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
         if (udp_field != NULL) {
             uv_loop_t *loop = socket->handle.tcp.loop;
             struct socks5_address target_addr = { {{0}}, 0, SOCKS5_ADDRTYPE_INVALID };
-            size_t data_len = 0, p_len = 0;
-            const uint8_t *data_p = buffer_get_data(result, &data_len);
+            size_t data_len = buffer_get_length(result), p_len = 0;
+            const uint8_t *data_p = buffer_get_data(result);
             struct udp_remote_ctx_t *udp_ctx;
             uint8_t* addr_p;
 
@@ -1292,8 +1292,8 @@ static void do_udp_launch_streaming(struct tunnel_ctx *tunnel, struct socket_ctx
     }
 
     {
-        size_t p_len = 0;
-        const uint8_t *p = buffer_get_data(ctx->init_pkg, &p_len);
+        size_t p_len = buffer_get_length(ctx->init_pkg);
+        const uint8_t *p = buffer_get_data(ctx->init_pkg);
         udp_remote_send_data(ctx->udp_relay, p, p_len);
     }
 
@@ -1334,7 +1334,8 @@ static void tunnel_udp_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *s
             }
             tmp = *((struct buffer_t**)udp_pkg);
 
-            p = buffer_get_data(tmp, &p_len);
+            p = buffer_get_data(tmp);
+            p_len = buffer_get_length(tmp);
             udp_remote_send_data(ctx->udp_relay, p, p_len);
 
             cstl_deque_pop_front(ctx->udp_recv_deque);
@@ -1361,7 +1362,7 @@ static struct buffer_t * build_websocket_frame_from_raw(struct server_ctx *ctx, 
     } else {
         ws_frame_binary_continuous(false, &info);
     }
-    frame = websocket_build_frame(&info, buffer_get_data(tmp, NULL), buffer_get_length(tmp), &malloc);
+    frame = websocket_build_frame(&info, buffer_get_data(tmp), buffer_get_length(tmp), &malloc);
     buf = buffer_create_from(frame, info.frame_size);
     free(frame);
     buffer_release(tmp);
@@ -1382,7 +1383,8 @@ static struct buffer_t * extract_data_from_assembled_websocket_frame(struct serv
         struct buffer_t *obfs_receipt = NULL;
         struct buffer_t *proto_confirm = NULL;
 
-        buf_data = buffer_get_data(ctx->client_delivery_cache, &buf_len);
+        buf_data = buffer_get_data(ctx->client_delivery_cache);
+        buf_len = buffer_get_length(ctx->client_delivery_cache);
 
         payload = websocket_retrieve_payload(buf_data, buf_len, &malloc, &info);
         if (payload == NULL) {
@@ -1450,8 +1452,8 @@ static uint8_t* tunnel_extract_data(struct tunnel_ctx* tunnel, struct socket_ctx
     }
 
     if (buf) {
-        size_t len = 0;
-        const uint8_t *p = buffer_get_data(buf, &len);
+        size_t len = buffer_get_length(buf);
+        const uint8_t *p = buffer_get_data(buf);
         *size = len;
         result = (uint8_t *)allocator(len + 1);
         memcpy(result, p, len);

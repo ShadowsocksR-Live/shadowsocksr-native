@@ -672,8 +672,8 @@ static void do_common_connet_remote_server(struct tunnel_ctx* tunnel) {
         struct server_info_t* info;
         info = protocol ? protocol->get_server_info(protocol) : (obfs ? obfs->get_server_info(obfs) : NULL);
         if (info) {
-            size_t s0 = 0;
-            const uint8_t* p0 = buffer_get_data(ctx->init_pkg, &s0);
+            size_t s0 = buffer_get_length(ctx->init_pkg);
+            const uint8_t* p0 = buffer_get_data(ctx->init_pkg);
             info->buffer_size = SSR_BUFF_SIZE;
             info->head_len = (int)get_s5_head_size(p0, s0, 30);
         }
@@ -790,7 +790,8 @@ static void do_ssr_send_auth_package_to_server(struct tunnel_ctx* tunnel) {
 
         _do_protect_socket(tunnel, uv_stream_fd(&outgoing->handle.tcp));
 
-        out_data = buffer_get_data(tmp, &out_data_len);
+        out_data = buffer_get_data(tmp);
+        out_data_len = buffer_get_length(tmp);
         tunnel_socket_ctx_write(tunnel, outgoing, out_data, out_data_len);
         buffer_release(tmp);
 
@@ -859,7 +860,7 @@ static bool do_ssr_receipt_for_feedback(struct tunnel_ctx* tunnel) {
     ASSERT(buffer_get_length(buf) == 0);
 
     if (feedback) {
-        tunnel_socket_ctx_write(tunnel, outgoing, buffer_get_data(feedback, NULL), buffer_get_length(feedback));
+        tunnel_socket_ctx_write(tunnel, outgoing, buffer_get_data(feedback), buffer_get_length(feedback));
         ctx->stage = tunnel_stage_ssr_receipt_to_server_sent;
         buffer_release(feedback);
         done = true;
@@ -921,7 +922,8 @@ static void do_launch_streaming(struct tunnel_ctx* tunnel) {
             tunnel->tunnel_shutdown(tunnel);
             return;
         }
-        out_data = buffer_get_data(tmp, &out_data_len);
+        out_data = buffer_get_data(tmp);
+        out_data_len = buffer_get_length(tmp);
         tunnel_socket_ctx_write(tunnel, outgoing, out_data, out_data_len);
         buffer_release(tmp);
         buffer_reset(ctx->first_client_pkg, true);
@@ -1009,7 +1011,7 @@ static uint8_t* tunnel_extract_data(struct tunnel_ctx* tunnel, struct socket_ctx
         size_t len = buffer_get_length(buf);
         *size = len;
         result = (uint8_t*)allocator(len + 1);
-        memcpy(result, buffer_get_data(buf, NULL), len);
+        memcpy(result, buffer_get_data(buf), len);
         result[len] = 0;
     }
 
@@ -1106,7 +1108,8 @@ static void tunnel_tls_do_launch_streaming(struct tunnel_ctx* tunnel) {
             tunnel->tunnel_shutdown(tunnel);
             return;
         }
-        out_data = buffer_get_data(tmp, &out_data_len);
+        out_data = buffer_get_data(tmp);
+        out_data_len = buffer_get_length(tmp);
         tls_cli_send_websocket_data(ctx, out_data, out_data_len);
         buffer_release(tmp);
 
@@ -1207,8 +1210,8 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
             unsigned short domain_port = config->remote_port;
             uint8_t* buf = NULL;
             size_t len = 0;
-            size_t typ_len = 0;
-            const uint8_t* typ = buffer_get_data(tmp, &typ_len);
+            size_t typ_len = buffer_get_length(tmp);
+            const uint8_t* typ = buffer_get_data(tmp);
             char* key = websocket_generate_sec_websocket_key(&malloc);
             string_safe_assign(&ctx->sec_websocket_key, key);
             free(key);
@@ -1318,7 +1321,8 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
                     tmp = *((struct buffer_t**)udp_pkg);
 
                     tunnel_cipher_client_encrypt(ctx->cipher, tmp);
-                    p = buffer_get_data(tmp, &size);
+                    p = buffer_get_data(tmp);
+                    size = buffer_get_length(tmp);
                     tls_cli_send_websocket_data(ctx, p, size);
 
                     cstl_deque_pop_front(ctx->udp_data_ctx->send_deque);
@@ -1340,8 +1344,8 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
             struct buffer_t* tmp;
             enum ssr_error e;
             struct buffer_t* feedback = NULL;
-            size_t buf_len = 0;
-            const uint8_t* buf_data = buffer_get_data(ctx->server_delivery_cache, &buf_len);
+            size_t buf_len = buffer_get_length(ctx->server_delivery_cache);
+            const uint8_t* buf_data = buffer_get_data(ctx->server_delivery_cache);
             uint8_t* payload = websocket_retrieve_payload(buf_data, buf_len, &malloc, &info);
             (void)e;
             if (payload == NULL) {
@@ -1401,7 +1405,8 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
                 }
                 tmp = *((struct buffer_t**)udp_pkg);
 
-                p = buffer_get_data(tmp, &s);
+                p = buffer_get_data(tmp);
+                s = buffer_get_length(tmp);
                 udp_relay_send_data(ctx->udp_data_ctx->udp_ctx, &ctx->udp_data_ctx->src_addr, p, s);
 
                 cstl_deque_pop_front(ctx->udp_data_ctx->recv_deque);
@@ -1412,8 +1417,8 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
         }
 
         {
-            size_t s = 0;
-            const uint8_t* p = buffer_get_data(ctx->local_write_cache, &s);
+            size_t s = buffer_get_length(ctx->local_write_cache);
+            const uint8_t* p = buffer_get_data(ctx->local_write_cache);
             if (p && s) {
                 tunnel_socket_ctx_write(tunnel, tunnel->incoming, p, s);
                 buffer_reset(ctx->local_write_cache, true);
@@ -1526,8 +1531,8 @@ void udp_on_recv_data(struct udp_listener_ctx_t* udp_ctx, const union sockaddr_u
     struct server_config* config = env->config;
     struct tunnel_ctx* tunnel = NULL;
     struct client_ctx* ctx = NULL;
-    size_t data_len = 0, frag_number = 0;
-    const uint8_t* data_p = buffer_get_data(data, &data_len);
+    size_t data_len = buffer_get_length(data), frag_number = 0;
+    const uint8_t* data_p = buffer_get_data(data);
     struct udp_data_context* query_data;
     const uint8_t* raw_p = NULL; size_t raw_len = 0;
     struct buffer_t* out_ref;
@@ -1561,7 +1566,7 @@ void udp_on_recv_data(struct udp_listener_ctx_t* udp_ctx, const union sockaddr_u
             if (ssr_ok != tunnel_cipher_client_encrypt(ctx->cipher, out_ref)) {
                 tunnel->tunnel_shutdown(tunnel);
             } else {
-                size_t len = 0; const uint8_t* p = buffer_get_data(out_ref, &len);
+                size_t len = buffer_get_length(out_ref); const uint8_t* p = buffer_get_data(out_ref);
                 tls_cli_send_websocket_data(ctx, p, len);
             }
             buffer_release(out_ref);

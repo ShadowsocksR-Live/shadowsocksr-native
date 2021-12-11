@@ -849,9 +849,9 @@ aead_key_init(int method, const char *pass, const char *key)
     if (bloom_ref_count++ == 0) {
         // Initialize NONCE bloom filter
 #ifdef MODULE_LOCAL
-        ppbloom_init(BF_NUM_ENTRIES_FOR_CLIENT, BF_ERROR_RATE_FOR_CLIENT);
+        ppbloom_init((int)BF_NUM_ENTRIES_FOR_CLIENT, BF_ERROR_RATE_FOR_CLIENT);
 #else
-        ppbloom_init(BF_NUM_ENTRIES_FOR_SERVER, BF_ERROR_RATE_FOR_SERVER);
+        ppbloom_init((int)BF_NUM_ENTRIES_FOR_SERVER, BF_ERROR_RATE_FOR_SERVER);
 #endif
     }
 
@@ -1230,7 +1230,7 @@ struct aead_buffer_t* convert_buffer_t_to_ss_buffer_t(struct buffer_t *origin) {
     struct aead_buffer_t* res = (struct aead_buffer_t*) calloc(1, sizeof(*res));
     balloc(res, buffer_get_capacity(origin));
     res->len = buffer_get_length(origin);
-    memcpy(res->data, buffer_get_data(origin, NULL), res->len);
+    memcpy(res->data, buffer_get_data(origin), res->len);
     return res;
 }
 
