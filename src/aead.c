@@ -119,7 +119,7 @@ struct aead_cipher_ctx_t {
 #include <assert.h>
 
 #include <sodium.h>
-#ifndef __MINGW32__
+#if !defined(__MINGW32__) && !defined(_MSC_VER)
 #include <arpa/inet.h>
 #endif
 
