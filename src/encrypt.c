@@ -524,12 +524,11 @@ get_digest_type(const char *digest)
 }
 
 void
-cipher_context_init(struct cipher_env_t *env, struct cipher_ctx_t *ctx, bool encrypt)
+cipher_context_init(enum ss_cipher_type method, struct cipher_ctx_t *ctx, bool encrypt)
 {
     const cipher_core_t *cipher;
     const char *cipherName;
     cipher_core_ctx_t *core_ctx;
-    enum ss_cipher_type method = env->enc_method;
 
     (void)encrypt;
     if (method >= ss_cipher_salsa20) {
@@ -641,16 +640,15 @@ cipher_context_set_iv(struct cipher_env_t *env, struct cipher_ctx_t *ctx, uint8_
 }
 
 void
-cipher_context_release(struct cipher_env_t *env, struct cipher_ctx_t *ctx)
+cipher_context_release(struct cipher_ctx_t *ctx)
 {
-    if (env->enc_method >= ss_cipher_salsa20) {
-        return;
-    }
 #if defined(USE_CRYPTO_OPENSSL)
     EVP_CIPHER_CTX_free(ctx->core_ctx);
 #elif defined(USE_CRYPTO_MBEDTLS)
-    mbedtls_cipher_free(ctx->core_ctx);
-    safe_free(ctx->core_ctx);
+    if (ctx && ctx->core_ctx) {
+        mbedtls_cipher_free(ctx->core_ctx);
+        safe_free(ctx->core_ctx);
+    }
 #endif
 }
 
@@ -791,7 +789,7 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
             return res;
         }
 
-        cipher_context_init(env, &cipher_ctx, 1);
+        cipher_context_init(env->enc_method, &cipher_ctx, 1);
 
         iv_len = (size_t) env->enc_iv_len;
         success = true;
@@ -815,7 +813,7 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
         }
 
         if (!success) {
-            cipher_context_release(env, &cipher_ctx);
+            cipher_context_release(&cipher_ctx);
             free(cipher_buffer);
             return -1;
         }
@@ -825,7 +823,7 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
         dump("CIPHER", cipher_buffer + iv_len, (int)cipher_len);
 #endif
 
-        cipher_context_release(env, &cipher_ctx);
+        cipher_context_release(&cipher_ctx);
 
         buffer_store(plain, cipher_buffer, iv_len + cipher_len);
 
@@ -968,7 +966,7 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
             return -1;
         }
 
-        cipher_context_init(env, &cipher_ctx, 0);
+        cipher_context_init(env->enc_method, &cipher_ctx, 0);
 
         plain_buffer = (uint8_t *) calloc(max(cipher_len, capacity), sizeof(*plain_buffer));
         plain_len = cipher_len - iv_len;
@@ -988,7 +986,7 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
         }
 
         if (!success) {
-            cipher_context_release(env, &cipher_ctx);
+            cipher_context_release(&cipher_ctx);
             free(plain_buffer);
             return -1;
         }
@@ -998,7 +996,7 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
         dump("CIPHER", cipher_buffer + iv_len, (int)(cipher_len - iv_len));
 #endif
 
-        cipher_context_release(env, &cipher_ctx);
+        cipher_context_release(&cipher_ctx);
 
         buffer_store(cipher, plain_buffer, plain_len);
 
@@ -1185,7 +1183,7 @@ enc_ctx_new_instance(struct cipher_env_t *env, bool encrypt)
     enum ss_cipher_type method = env->enc_method;
     if ((ss_cipher_none <= method) && (method <= ss_cipher_chacha20ietf)) {
         sodium_memzero(ctx, sizeof(struct enc_ctx));
-        cipher_context_init(env, &ctx->cipher_ctx, encrypt);
+        cipher_context_init(method, &ctx->cipher_ctx, encrypt);
 
         if (encrypt) {
             rand_bytes(ctx->cipher_ctx.iv, env->enc_iv_len);
@@ -1207,7 +1205,7 @@ enc_ctx_release_instance(struct cipher_env_t *env, struct enc_ctx *ctx)
     }
     method = env->enc_method;
     if ((ss_cipher_none <= method) && (method <= ss_cipher_chacha20ietf)) {
-        cipher_context_release(env, &ctx->cipher_ctx);
+        cipher_context_release(&ctx->cipher_ctx);
     } else if ((ss_cipher_aes_128_gcm <= method) && (method <= ss_cipher_xchacha20_ietf_poly1305)) {
         aead_ctx_release(ctx->aead_cipher_ctx, 1);
     } else {
@@ -1261,7 +1259,7 @@ enc_table_init(struct cipher_env_t * env, enum ss_cipher_type method, const char
 }
 
 void
-enc_key_init(struct cipher_env_t *env, enum ss_cipher_type method, const char *pass)
+enc_key_init(enum ss_cipher_type method, const char *pass, struct cipher_env_t* env)
 {
     struct cipher_wrapper *cipher;
     const digest_type_t *md;
@@ -1270,9 +1268,6 @@ enc_key_init(struct cipher_env_t *env, enum ss_cipher_type method, const char *p
         LOGE("%s", "enc_key_init(): Illegal method");
         return;
     }
-
-    // Initialize cache
-    cache_create(&env->iv_cache, 256, NULL);
 
 #if defined(USE_CRYPTO_OPENSSL)
     OpenSSL_add_all_algorithms();
@@ -1325,7 +1320,6 @@ enc_key_init(struct cipher_env_t *env, enum ss_cipher_type method, const char *p
     } else {
         env->enc_iv_len = cipher_iv_size(cipher);
     }
-    env->enc_method = method;
     free(cipher);
 }
 
@@ -1337,7 +1331,8 @@ cipher_env_new_instance(const char *pass, const char *method)
     if (m <= ss_cipher_table) {
         enc_table_init(env, m, pass);
     } else if ((ss_cipher_rc4 <= m) && (m <= ss_cipher_chacha20ietf)) {
-        enc_key_init(env, m, pass);
+        cache_create(&env->iv_cache, 256, NULL); // Initialize cache
+        enc_key_init(m, pass, env);
     } else if ((ss_cipher_aes_128_gcm <= m) && (m <= ss_cipher_xchacha20_ietf_poly1305)) {
         env->aead_cipher = aead_init(pass, NULL, method); // TODO: add `key` logic.
     } else {

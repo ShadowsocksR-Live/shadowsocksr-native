@@ -422,7 +422,7 @@ aead_cipher_ctx_init(struct aead_cipher_ctx_t *cipher_ctx, int method, int enc)
     const char *ciphername;
     const cipher_kt_t *cipher;
     if (method < AES128GCM || method >= AEAD_CIPHER_NUM) {
-        LOGE("%s", "cipher_context_init(): Illegal method");
+        LOGE("%s", "aead_cipher_ctx_init(): Illegal method");
         return;
     }
 
