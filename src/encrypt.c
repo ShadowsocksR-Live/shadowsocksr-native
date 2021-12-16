@@ -783,7 +783,7 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
         const uint8_t *plain_buffer = buffer_get_data(plain);
 
         if ((ss_cipher_aes_128_gcm <= method) && (method <= ss_cipher_xchacha20_ietf_poly1305)) {
-            struct aead_buffer_t *alt = convert_buffer_t_to_ss_buffer_t(plain);
+            struct aead_buffer_t *alt = convert_buffer_t_to_aead_buffer_t(plain);
             int res = aead_encrypt_all(alt, env->aead_cipher, capacity);
             assert(res == CRYPTO_OK);
             buffer_store(plain, ss_buffer_get_data(alt), ss_buffer_get_length(alt));
@@ -858,7 +858,7 @@ ss_encrypt(struct cipher_env_t *env, struct buffer_t *plain, struct enc_ctx *ctx
         enum ss_cipher_type method = env->enc_method;
 
         if ((ss_cipher_aes_128_gcm <= method) && (method <= ss_cipher_xchacha20_ietf_poly1305)) {
-            struct aead_buffer_t *alt = convert_buffer_t_to_ss_buffer_t(plain);
+            struct aead_buffer_t *alt = convert_buffer_t_to_aead_buffer_t(plain);
             int res = aead_encrypt(alt, ctx->aead_cipher_ctx, capacity);
             assert(res == CRYPTO_OK);
             buffer_store(plain, ss_buffer_get_data(alt), ss_buffer_get_length(alt));
@@ -947,7 +947,7 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
     enum ss_cipher_type method = env->enc_method;
 
     if ((ss_cipher_aes_128_gcm <= method) && (method <= ss_cipher_xchacha20_ietf_poly1305)) {
-        struct aead_buffer_t *alt = convert_buffer_t_to_ss_buffer_t(cipher);
+        struct aead_buffer_t *alt = convert_buffer_t_to_aead_buffer_t(cipher);
         int res = aead_decrypt_all(alt, env->aead_cipher, capacity);
         assert(res == CRYPTO_OK);
         buffer_store(cipher, ss_buffer_get_data(alt), ss_buffer_get_length(alt));
@@ -1035,7 +1035,7 @@ ss_decrypt(struct cipher_env_t *env, struct buffer_t *cipher, struct enc_ctx *ct
 
         if ((ss_cipher_aes_128_gcm <= method) && (method <= ss_cipher_xchacha20_ietf_poly1305)) {
             struct buffer_t *origin = buffer_clone(cipher);
-            struct aead_buffer_t *alt = convert_buffer_t_to_ss_buffer_t(cipher);
+            struct aead_buffer_t *alt = convert_buffer_t_to_aead_buffer_t(cipher);
             int res = aead_decrypt(alt, ctx->aead_cipher_ctx, capacity);
             buffer_store(cipher, ss_buffer_get_data(alt), ss_buffer_get_length(alt));
             bfree(alt, 1);
