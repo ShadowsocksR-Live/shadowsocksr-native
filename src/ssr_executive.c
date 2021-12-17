@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <assert.h>
 
 // for ntohs
 #if defined(WIN32) || defined(_WIN32)
