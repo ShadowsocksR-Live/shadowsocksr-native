@@ -158,9 +158,14 @@ void config_release(struct server_config *cf) {
 // Since the obfuscation operation in SSRoT is redundant, we remove it.
 //
 void config_ssrot_revision(struct server_config* config) {
+    enum ss_cipher_type method;
     if (config == NULL) {
         return;
     }
+
+    method = ss_cipher_type_of_name(config->method);
+    assert(method != ss_cipher_max);
+
     if (config->over_tls_enable) {
         string_safe_assign(&config->obfs, ssr_obfs_name_of_type(ssr_obfs_plain));
         // don't support protocol recently.
@@ -168,6 +173,12 @@ void config_ssrot_revision(struct server_config* config) {
     } else {
         // support UDP in SSRoT only.
         config->udp = false;
+
+        if (ss_cipher_aes_128_gcm <= method && method <= ss_cipher_xchacha20_ietf_poly1305 ) {
+            // AEAD and SSR are not compatible. So we downgraded it to SS
+            string_safe_assign(&config->obfs, ssr_obfs_name_of_type(ssr_obfs_plain));
+            string_safe_assign(&config->protocol, ssr_protocol_name_of_type(ssr_protocol_origin));
+        }
     }
 }
 
@@ -676,6 +687,7 @@ tunnel_cipher_server_decrypt(struct tunnel_cipher_ctx *tc,
         }
         */
         if (protocol && protocol->server_info.recv_iv[0] == 0) {
+            // This code block makes the compatibility of AEAD and SSR very difficult.
             size_t iv_len = protocol->server_info.iv_len;
             memmove(protocol->server_info.recv_iv, buffer_get_data(ret), iv_len);
             protocol->server_info.recv_iv_len = iv_len;
