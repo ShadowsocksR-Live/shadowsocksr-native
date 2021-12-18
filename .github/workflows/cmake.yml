@@ -6,8 +6,8 @@ on:
   pull_request:
     branches: [ master ]
 
-env:
-  CFLAGS: "-Wall -pedantic"
+# env:
+#  CFLAGS: "-Wall -pedantic"
 
 jobs:
   build:
