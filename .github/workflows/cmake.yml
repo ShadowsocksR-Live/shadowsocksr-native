@@ -7,8 +7,7 @@ on:
     branches: [ master ]
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: ${{ matrix.build }}
+  CFLAGS: "-Wall -pedantic"
 
 jobs:
   build:
@@ -18,6 +17,9 @@ jobs:
         build: [Release, Debug]
 
     runs-on: ${{ matrix.os }}
+
+    env:
+      BUILD_TYPE: ${{ matrix.build }}
 
     steps:
     - uses: actions/checkout@v2
