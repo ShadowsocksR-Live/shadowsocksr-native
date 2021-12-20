@@ -99,6 +99,6 @@ struct buffer_t;
 
 size_t ss_buffer_get_length(struct aead_buffer_t *buf);
 const uint8_t* ss_buffer_get_data(struct aead_buffer_t *buf);
-struct aead_buffer_t* convert_buffer_t_to_ss_buffer_t(struct buffer_t *origin);
+struct aead_buffer_t* convert_buffer_t_to_aead_buffer_t(struct buffer_t *origin);
 
 #endif // __SS_AEAD_H__

@@ -469,7 +469,8 @@ static void do_handshake(struct tunnel_ctx* tunnel) {
     ASSERT(incoming->wrstate == socket_state_stop);
 
     if (incoming->result < 0) {
-        pr_err("read error: %s", uv_strerror((int)incoming->result));
+        char buff[256] = { 0 };
+        pr_err("read error: %s", uv_strerror_r((int)incoming->result, buff, sizeof(buff)));
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
@@ -524,7 +525,8 @@ static void do_wait_client_app_s5_request(struct tunnel_ctx* tunnel) {
     ASSERT(incoming->wrstate == socket_state_stop);
 
     if (incoming->result < 0) {
-        pr_err("write error: %s", uv_strerror((int)incoming->result));
+        char buff[256] = { 0 };
+        pr_err("write error: %s", uv_strerror_r((int)incoming->result, buff, sizeof(buff)));
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
@@ -550,7 +552,8 @@ static void do_parse_s5_request_from_client_app(struct tunnel_ctx* tunnel) {
     ASSERT(outgoing->wrstate == socket_state_stop);
 
     if (incoming->result < 0) {
-        pr_err("read error: %s", uv_strerror((int)incoming->result));
+        char buff[256] = { 0 };
+        pr_err("read error: %s", uv_strerror_r((int)incoming->result, buff, sizeof(buff)));
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
@@ -713,9 +716,10 @@ static void do_resolve_ssr_server_host_aftercare(struct tunnel_ctx* tunnel) {
     ASSERT(outgoing->wrstate == socket_state_stop);
 
     if (outgoing->result < 0) {
+        char buff[256] = { 0 };
         /* TODO Escape control characters in parser->daddr. */
         pr_err("lookup error for \"%s\": %s", config->remote_host,
-            uv_strerror((int)outgoing->result));
+            uv_strerror_r((int)outgoing->result, buff, sizeof(buff)));
         /* Send back a 'Host unreachable' reply. */
         tunnel_socket_ctx_write(tunnel, incoming, "\5\4\0\1\0\0\0\0\0\0", 10);
         ctx->stage = tunnel_stage_kill;
@@ -761,7 +765,8 @@ static void do_connect_ssr_server(struct tunnel_ctx* tunnel) {
 
     err = socket_ctx_connect(outgoing);
     if (err != 0) {
-        pr_err("connect error: %s", uv_strerror(err));
+        char buff[256] = { 0 };
+        pr_err("connect error: %s", uv_strerror_r(err, buff, sizeof(buff)));
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
@@ -820,7 +825,8 @@ static void do_ssr_waiting_server_feedback(struct tunnel_ctx* tunnel) {
     ASSERT(outgoing->wrstate == socket_state_stop);
 
     if (outgoing->result < 0) {
-        pr_err("write error: %s", uv_strerror((int)outgoing->result));
+        char buff[256] = { 0 };
+        pr_err("write error: %s", uv_strerror_r((int)outgoing->result, buff, sizeof(buff)));
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
@@ -849,7 +855,8 @@ static bool do_ssr_receipt_for_feedback(struct tunnel_ctx* tunnel) {
     ASSERT(outgoing->wrstate == socket_state_stop);
 
     if (outgoing->result < 0) {
-        pr_err("read error: %s", uv_strerror((int)outgoing->result));
+        char buff[256] = { 0 };
+        pr_err("read error: %s", uv_strerror_r((int)outgoing->result, buff, sizeof(buff)));
         tunnel->tunnel_shutdown(tunnel);
         return done;
     }
@@ -907,7 +914,8 @@ static void do_launch_streaming(struct tunnel_ctx* tunnel) {
     ASSERT(outgoing->wrstate == socket_state_stop);
 
     if (incoming->result < 0) {
-        pr_err("write error: %s", uv_strerror((int)incoming->result));
+        char buff[256] = { 0 };
+        pr_err("write error: %s", uv_strerror_r((int)incoming->result, buff, sizeof(buff)));
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
@@ -1095,7 +1103,8 @@ static void tunnel_tls_do_launch_streaming(struct tunnel_ctx* tunnel) {
     ASSERT(incoming->wrstate == socket_state_stop);
 
     if (incoming->result < 0) {
-        PRINT_ERR("[TLS] write error: %s", uv_strerror((int)incoming->result));
+        char buff[256] = { 0 };
+        PRINT_ERR("[TLS] write error: %s", uv_strerror_r((int)incoming->result, buff, sizeof(buff)));
         tunnel->tunnel_shutdown(tunnel);
     } else {
         const uint8_t* out_data = NULL;
@@ -1179,7 +1188,8 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
 
     if (status < 0) {
         char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc, true);
-        pr_err("[TLS] connecting \"%s\" failed: %d: %s", tmp, status, uv_strerror(status));
+        char buff[256] = { 0 };
+        pr_err("[TLS] connecting \"%s\" failed: %d: %s", tmp, status, uv_strerror_r(status, buff, sizeof(buff)));
         free(tmp);
 
         tunnel->tunnel_shutdown(tunnel);
@@ -1253,7 +1263,8 @@ static void tls_cli_on_write_done(struct tls_cli_ctx* tls_cli, int status, void*
     assert(ctx->tls_ctx == tls_cli);
     if (status < 0) {
         char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc, true);
-        pr_err("[TLS] write \"%s\" failed: %d: %s", tmp, status, uv_strerror(status));
+        char buff[256] = { 0 };
+        pr_err("[TLS] write \"%s\" failed: %d: %s", tmp, status, uv_strerror_r(status, buff, sizeof(buff)));
         free(tmp);
 
         tunnel->tunnel_shutdown(tunnel);
@@ -1280,7 +1291,8 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
         if (status == UV_EOF) {
             (void)tmp; // pr_warn("connection with %s:%d closed abnormally.", tmp, port);
         } else {
-            pr_err("[TLS] read on %s error %ld: %s", tmp, (long)status, uv_strerror((int)status));
+            char buff[256] = { 0 };
+            pr_err("[TLS] read on %s error %ld: %s", tmp, (long)status, uv_strerror_r((int)status, buff, sizeof(buff)));
         }
         free(tmp);
 

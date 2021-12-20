@@ -240,6 +240,7 @@ static int ssr_server_run_loop(struct server_config *config, bool force_quit) {
     loop->data = state->env;
 
     {
+        char buff[256] = { 0 };
         union sockaddr_universal addr = { {0} };
         int error;
         uv_tcp_t *listener = (uv_tcp_t *) calloc(1, sizeof(uv_tcp_t));
@@ -252,7 +253,7 @@ static int ssr_server_run_loop(struct server_config *config, bool force_quit) {
         }
         error = uv_tcp_bind(listener, &addr.addr, 0);
         if (error != 0) {
-            PRINT_ERR("uv_tcp_bind: %s", uv_strerror(error));
+            PRINT_ERR("uv_tcp_bind: %s", uv_strerror_r(error, buff, sizeof(buff)));
             return error;
         }
 
@@ -260,7 +261,7 @@ static int ssr_server_run_loop(struct server_config *config, bool force_quit) {
 
         if (error != 0) {
             char* addr_str = universal_address_to_string(&addr, &malloc, true);
-            PRINT_ERR("Error on listening \"%s\": %s.\n", addr_str, uv_strerror(error));
+            PRINT_ERR("Error on listening \"%s\": %s.\n", addr_str, uv_strerror_r(error, buff, sizeof(buff)));
             free(addr_str);
             return error;
         }
@@ -282,7 +283,8 @@ static int ssr_server_run_loop(struct server_config *config, bool force_quit) {
 
     r = uv_run(loop, UV_RUN_DEFAULT);
     if (r != 0) {
-        pr_err("uv_run: %s", uv_strerror(r));
+        char buff[256] = { 0 };
+        pr_err("uv_run: %s", uv_strerror_r(r, buff, sizeof(buff)));
     }
 
     if (uv_loop_close(loop) != 0) {
@@ -816,7 +818,8 @@ static void do_handle_client_feedback(struct tunnel_ctx *tunnel, struct socket_c
         ASSERT(incoming == tunnel->incoming);
 
         if (incoming->result < 0) {
-            pr_err("write error: %s", uv_strerror((int)incoming->result));
+            char buff[256] = { 0 };
+            pr_err("write error: %s", uv_strerror_r((int)incoming->result, buff, sizeof(buff)));
             tunnel->tunnel_shutdown(tunnel);
             break;
         }
@@ -964,9 +967,10 @@ static void do_connect_host_start(struct tunnel_ctx *tunnel, struct socket_ctx *
 
     addr = socks5_address_to_string(tunnel->desired_addr, &malloc, true);
     if (err != 0) {
+        char buff[256] = { 0 };
         u_short sa_family = socket->addr.addr.sa_family;
         char* sf = (sa_family == AF_INET) ? "IPv4" : ((sa_family == AF_INET6) ? "IPv6" : "unknown");
-        pr_err("connect \"%s\" (%s) error: %s", addr, sf, uv_strerror(err));
+        pr_err("connect \"%s\" (%s) error: %s", addr, sf, uv_strerror_r(err, buff, sizeof(buff)));
 
         {
             char* host = socks5_address_to_string(tunnel->desired_addr, &malloc, false);
@@ -1030,6 +1034,7 @@ static void do_launch_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *so
     struct server_ctx *ctx = (struct server_ctx *) tunnel->data;
     struct socket_ctx *incoming;
     struct socket_ctx *outgoing;
+    char buff[256] = { 0 };
 
     incoming = tunnel->incoming;
     outgoing = tunnel->outgoing;
@@ -1042,7 +1047,7 @@ static void do_launch_streaming(struct tunnel_ctx *tunnel, struct socket_ctx *so
     outgoing->wrstate = socket_state_stop;
 
     if (outgoing->result < 0) {
-        pr_err("write error: %s", uv_strerror((int)outgoing->result));
+        pr_err("write error: %s", uv_strerror_r((int)outgoing->result, buff, sizeof(buff)));
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
@@ -1227,7 +1232,8 @@ static void do_tls_launch_streaming(struct tunnel_ctx *tunnel, struct socket_ctx
     ASSERT(outgoing->wrstate == socket_state_stop);
 
     if (incoming->result < 0) {
-        pr_err("write error: %s", uv_strerror((int)incoming->result));
+        char buff[256] = { 0 };
+        pr_err("write error: %s", uv_strerror_r((int)incoming->result, buff, sizeof(buff)));
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
@@ -1274,6 +1280,7 @@ static void do_udp_launch_streaming(struct tunnel_ctx *tunnel, struct socket_ctx
     struct server_config *config = ctx->env->config;
     struct socket_ctx *incoming = tunnel->incoming;
     struct socket_ctx *outgoing = tunnel->outgoing;
+    char buff[256] = { 0 };
 
     ASSERT(config->over_tls_enable); (void)config;
 
@@ -1286,7 +1293,7 @@ static void do_udp_launch_streaming(struct tunnel_ctx *tunnel, struct socket_ctx
     ASSERT(ctx->udp_relay);
 
     if (incoming->result < 0) {
-        pr_err("write error: %s", uv_strerror((int)incoming->result));
+        pr_err("write error: %s", uv_strerror_r((int)incoming->result, buff, sizeof(buff)));
         tunnel->tunnel_shutdown(tunnel);
         return;
     }

@@ -422,7 +422,7 @@ aead_cipher_ctx_init(struct aead_cipher_ctx_t *cipher_ctx, int method, int enc)
     const char *ciphername;
     const cipher_kt_t *cipher;
     if (method < AES128GCM || method >= AEAD_CIPHER_NUM) {
-        LOGE("%s", "cipher_context_init(): Illegal method");
+        LOGE("%s", "aead_cipher_ctx_init(): Illegal method");
         return;
     }
 
@@ -1226,7 +1226,7 @@ const uint8_t* ss_buffer_get_data(struct aead_buffer_t *buf) {
 }
 
 #include "ssrbuffer.h"
-struct aead_buffer_t* convert_buffer_t_to_ss_buffer_t(struct buffer_t *origin) {
+struct aead_buffer_t* convert_buffer_t_to_aead_buffer_t(struct buffer_t *origin) {
     struct aead_buffer_t* res = (struct aead_buffer_t*) calloc(1, sizeof(*res));
     balloc(res, buffer_get_capacity(origin));
     res->len = buffer_get_length(origin);

@@ -98,7 +98,7 @@ void string_safe_assign(char **target, const char *value);
 #define DEFAULT_SSROT_PATH    "/abcd1234/"
 
 #if !defined(TCP_BUF_SIZE_MAX)
-#define TCP_BUF_SIZE_MAX 32 * 1024
+#define TCP_BUF_SIZE_MAX (16 * 1024 - 1) // 16383 (0x3FFF) Bytes, equals to the max chunk size
 #endif
 
 struct server_config * config_create(void);

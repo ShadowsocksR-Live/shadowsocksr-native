@@ -81,6 +81,7 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
     struct ssr_client_state *state;
     int err;
     uv_getaddrinfo_t *req;
+    char buff[256] = { 0 };
 
     config_ssrot_revision(cf);
 
@@ -108,7 +109,7 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
 
     err = uv_getaddrinfo(loop, req, getaddrinfo_done_cb, cf->listen_host, NULL, &hints);
     if (err != 0) {
-        pr_err("getaddrinfo: %s", uv_strerror(err));
+        pr_err("getaddrinfo: %s", uv_strerror_r(err, buff, sizeof(buff)));
         if (state->feedback_state) {
             state->error_code = err;
             state->feedback_state(state, state->ptr);
@@ -132,7 +133,8 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
     /* Start the event loop.  Control continues in getaddrinfo_done_cb(). */
     err = uv_run(loop, UV_RUN_DEFAULT);
     if (err != 0) {
-        pr_err("uv_run: %s", uv_strerror(err));
+        char buff[256] = { 0 };
+        pr_err("uv_run: %s", uv_strerror_r(err, buff, sizeof(buff)));
     }
 
     if (uv_loop_close(loop) != 0) {
@@ -273,7 +275,8 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
     free(req);
 
     if (status < 0) {
-        pr_err("getaddrinfo(\"%s\"): %s", cf->listen_host, uv_strerror(status));
+        char buff[256] = { 0 };
+        pr_err("getaddrinfo(\"%s\"): %s", cf->listen_host, uv_strerror_r(status, buff, sizeof(buff)));
         uv_freeaddrinfo(addrs);
         if (state->feedback_state) {
             state->error_code = status;
@@ -347,7 +350,8 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
         }
 
         if (err != 0) {
-            pr_err("%s(\"%s:%hu\"): %s", what, addrbuf, cf->listen_port, uv_strerror(err));
+            char buff[256] = { 0 };
+            pr_err("%s(\"%s:%hu\"): %s", what, addrbuf, cf->listen_port, uv_strerror_r(err, buff, sizeof(buff)));
             ssr_run_loop_shutdown(state);
             break;
         }

@@ -21,6 +21,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "uv-mbed", "..\depends\uv-mb
 		{44EA013F-AD0F-4D53-8E06-0B4EF26F4B65} = {44EA013F-AD0F-4D53-8E06-0B4EF26F4B65}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bloom", "..\depends\libbloom\win32\bloom.vcxproj", "{FCBB48D0-3186-4EC7-A2D9-C54A2BCF0B85}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -69,6 +71,14 @@ Global
 		{E683C8F1-3C3F-4B5D-B60E-87D792D21002}.Release|Win32.Build.0 = Release|Win32
 		{E683C8F1-3C3F-4B5D-B60E-87D792D21002}.Release|x64.ActiveCfg = Release|x64
 		{E683C8F1-3C3F-4B5D-B60E-87D792D21002}.Release|x64.Build.0 = Release|x64
+		{FCBB48D0-3186-4EC7-A2D9-C54A2BCF0B85}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FCBB48D0-3186-4EC7-A2D9-C54A2BCF0B85}.Debug|Win32.Build.0 = Debug|Win32
+		{FCBB48D0-3186-4EC7-A2D9-C54A2BCF0B85}.Debug|x64.ActiveCfg = Debug|x64
+		{FCBB48D0-3186-4EC7-A2D9-C54A2BCF0B85}.Debug|x64.Build.0 = Debug|x64
+		{FCBB48D0-3186-4EC7-A2D9-C54A2BCF0B85}.Release|Win32.ActiveCfg = Release|Win32
+		{FCBB48D0-3186-4EC7-A2D9-C54A2BCF0B85}.Release|Win32.Build.0 = Release|Win32
+		{FCBB48D0-3186-4EC7-A2D9-C54A2BCF0B85}.Release|x64.ActiveCfg = Release|x64
+		{FCBB48D0-3186-4EC7-A2D9-C54A2BCF0B85}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

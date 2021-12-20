@@ -152,7 +152,8 @@ int udp_create_remote_socket(bool ipv6, uv_loop_t *loop, uv_udp_t *udp) {
     }
     err = uv_udp_bind(udp, &addr.addr, 0);
     if (err != 0) {
-        LOGE("[UDP] udp_create_remote_socket: %s\n", uv_strerror(err));
+        char buff[256] = { 0 };
+        LOGE("[UDP] udp_create_remote_socket: %s\n", uv_strerror_r(err, buff, sizeof(buff)));
     }
     return err;
 }
@@ -196,11 +197,12 @@ udp_create_local_listener(const char *host, uint16_t port, uv_loop_t *loop, uv_u
     }
 
     for (/*rp = result*/; rp != NULL; rp = rp->ai_next) {
+        char buff[256] = { 0 };
         int r = uv_udp_bind(udp, rp->ai_addr, UV_UDP_REUSEADDR);
         if (r == 0) {
             break;
         }
-        LOGE("[UDP] udp_create_local_listener: %s\n", uv_strerror(r));
+        LOGE("[UDP] udp_create_local_listener: %s\n", uv_strerror_r(r, buff, sizeof(buff)));
     }
 
     if (rp == NULL) {

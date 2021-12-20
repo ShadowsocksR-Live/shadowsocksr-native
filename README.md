@@ -74,6 +74,8 @@ refer to the [Wiki page](https://github.com/shadowsocksr-live/shadowsocksr-nativ
 | camellia-128-cfb | camellia-192-cfb | camellia-256-cfb ||||
 | bf-cfb | cast5-cfb | des-cfb | idea-cfb | rc2-cfb | seed-cfb |
 | salsa20 | chacha20 | chacha20-ietf ||||
+| | | | | | | 
+| aes-128-gcm | aes-192-gcm | aes-256-gcm | chacha20-ietf-poly1305 | xchacha20-ietf-poly1305 ||
 
 
 ## Protocols & obfuscators
