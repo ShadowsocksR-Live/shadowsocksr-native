@@ -52,19 +52,28 @@ bool tls_cli_is_closing(struct tls_cli_ctx* ctx) {
 
 static void _mbed_connect_done_cb(uv_mbed_t* mbed, int status, void* p);
 static void _uv_mbed_tcp_connect_established_cb(uv_mbed_t* mbed, void* p);
+static void _mbed_close_done_cb(uv_mbed_t* mbed, void* p);
 
 struct tls_cli_ctx* tls_client_launch(uv_loop_t* loop, const char* domain, const char* ip_addr, int port, uint64_t timeout_msec) {
+    int status;
     struct tls_cli_ctx* ctx = (struct tls_cli_ctx*)calloc(1, sizeof(*ctx));
     ctx->mbed = uv_mbed_init(loop, domain, ctx, 0);
 
     tls_cli_ctx_add_ref(ctx); // for the holder.
 
     tls_cli_ctx_add_ref(ctx); // for connect.
-    uv_mbed_connect(ctx->mbed, ip_addr, port, timeout_msec, _mbed_connect_done_cb, ctx);
+    status = uv_mbed_connect(ctx->mbed, ip_addr, port, timeout_msec, _mbed_connect_done_cb, ctx);
 
     // this call purpose is for Android protect socket only.
     uv_mbed_set_tcp_connect_established_callback(ctx->mbed, &_uv_mbed_tcp_connect_established_cb, ctx);
 
+    if (status < 0) {
+        tls_cli_ctx_add_ref(ctx); // for uv_mbed_close call
+        uv_mbed_close(ctx->mbed, _mbed_close_done_cb, ctx);
+
+        tls_cli_ctx_release(ctx); // release the holder reference
+        ctx = NULL;
+    }
     return ctx;
 }
 

@@ -644,12 +644,14 @@ static struct tls_cli_ctx* tls_client_creator(struct client_ctx* ctx, struct ser
     struct tunnel_ctx* tunnel = ctx->tunnel;
     struct tls_cli_ctx* tls_cli = tls_client_launch(tunnel->loop, config->over_tls_server_domain,
         config->remote_host, config->remote_port, config->connect_timeout_ms);
-    tls_client_set_tcp_connect_callback(tls_cli, _tls_cli_tcp_conn_cb, ctx);
-    tls_cli_set_on_connection_established_callback(tls_cli, tls_cli_on_connection_established, ctx);
-    tls_cli_set_on_write_done_callback(tls_cli, tls_cli_on_write_done, ctx);
-    tls_cli_set_on_data_received_callback(tls_cli, tls_cli_on_data_received, ctx);
+    if (tls_cli) {
+        tls_client_set_tcp_connect_callback(tls_cli, _tls_cli_tcp_conn_cb, ctx);
+        tls_cli_set_on_connection_established_callback(tls_cli, tls_cli_on_connection_established, ctx);
+        tls_cli_set_on_write_done_callback(tls_cli, tls_cli_on_write_done, ctx);
+        tls_cli_set_on_data_received_callback(tls_cli, tls_cli_on_data_received, ctx);
 
-    tunnel_ctx_add_ref(tunnel);
+        tunnel_ctx_add_ref(tunnel);
+    }
 
     return tls_cli;
 }
@@ -687,6 +689,11 @@ static void do_common_connet_remote_server(struct tunnel_ctx* tunnel) {
     if (config->over_tls_enable) {
         ctx->stage = tunnel_stage_tls_connecting;
         ctx->tls_ctx = tls_client_creator(ctx, config);
+        if (ctx->tls_ctx == NULL) {
+            outgoing->result = UV_ENETUNREACH;
+            tunnel_dump_error_info(tunnel, outgoing, "connect failed");
+            tunnel->tunnel_shutdown(tunnel);
+        }
         return;
     }
     else {
