@@ -324,7 +324,7 @@ struct server_config * decode_shadowsocks(const char *text) {
 struct server_config * decode_ssr(const char *text) {
     struct server_config *config = NULL;
     unsigned char *swap_buf = NULL;
-    char *plain_text, *basic, *optional, *base64pass, *obfs, *method, *protocol, *port, *host, *iter;
+    char *plain_text = NULL, *basic, *optional, *base64pass, *obfs, *method, *protocol, *port, *host, *iter;
     
     do {
         size_t hdr_len;
@@ -427,7 +427,7 @@ struct server_config * decode_ssr(const char *text) {
                 int i=0, n;
                 *value++ = 0;
                 
-                for (i=0; i<sizeof(params)/sizeof(params[0]); ++i) {
+                for (i=0; i< (int) (sizeof(params)/sizeof(params[0])); ++i) {
                     if (strcmp(params[i], key) != 0) {
                         continue;
                     }
