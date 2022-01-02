@@ -65,6 +65,8 @@ set(SOURCE_FILES_CLIENT
         client/s5.h
         ssr_executive.c
         ssr_executive.h
+        ssr_qr_code.c
+        ssr_qr_code.h
         config_json.c
         config_json.h
         sockaddr_universal.h
@@ -141,6 +143,7 @@ include_directories(${LIBUVDIR}/include)
 include_directories(${libsodium_include_dirs})
 include_directories(${LIB_JSON_C_BIN_DIR}/..)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../depends/http-parser)
+include_directories(${URI_ENCODE_DIR})
 
 if(USE_CRYPTO_MBEDTLS)
     include_directories(${MBEDTLS_ROOT_DIR}/include)
@@ -209,7 +212,7 @@ if(ANDROID)
     set_target_properties(ssr-client PROPERTIES PREFIX "lib" SUFFIX ".so")
 endif()
 
-target_link_libraries(ssr-client ${ss_lib_net} uv-mbed)
+target_link_libraries(ssr-client ${ss_lib_net} uv-mbed uri-encode)
 target_link_libraries(ssr-server ${ss_lib_net})
 
 install(TARGETS ssr-server ssr-client

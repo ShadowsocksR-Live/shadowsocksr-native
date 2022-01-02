@@ -169,6 +169,10 @@
 		B69D2A41277493C60016B09B /* MurmurHash2.c in Sources */ = {isa = PBXBuildFile; fileRef = B69D2A3A277493C60016B09B /* MurmurHash2.c */; };
 		B69D2A42277493C60016B09B /* bloom.h in Headers */ = {isa = PBXBuildFile; fileRef = B69D2A3B277493C60016B09B /* bloom.h */; };
 		B69D2A43277493C60016B09B /* bloom.h in Headers */ = {isa = PBXBuildFile; fileRef = B69D2A3B277493C60016B09B /* bloom.h */; };
+		B6DEB0002781DBC400AE6896 /* uri_encode.c in Sources */ = {isa = PBXBuildFile; fileRef = B6DEAFFE2781DBC400AE6896 /* uri_encode.c */; };
+		B6DEB0012781DBC400AE6896 /* uri_encode.c in Sources */ = {isa = PBXBuildFile; fileRef = B6DEAFFE2781DBC400AE6896 /* uri_encode.c */; };
+		B6DEB0022781DBC400AE6896 /* uri_encode.h in Headers */ = {isa = PBXBuildFile; fileRef = B6DEAFFF2781DBC400AE6896 /* uri_encode.h */; };
+		B6DEB0032781DBC400AE6896 /* uri_encode.h in Headers */ = {isa = PBXBuildFile; fileRef = B6DEAFFF2781DBC400AE6896 /* uri_encode.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -345,6 +349,8 @@
 		B69D2A39277493C50016B09B /* bloom.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bloom.c; path = ../depends/libbloom/bloom.c; sourceTree = "<group>"; };
 		B69D2A3A277493C60016B09B /* MurmurHash2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = MurmurHash2.c; path = ../depends/libbloom/murmur2/MurmurHash2.c; sourceTree = "<group>"; };
 		B69D2A3B277493C60016B09B /* bloom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bloom.h; path = ../depends/libbloom/bloom.h; sourceTree = "<group>"; };
+		B6DEAFFE2781DBC400AE6896 /* uri_encode.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = uri_encode.c; path = "../depends/uri-encode/src/uri_encode.c"; sourceTree = "<group>"; };
+		B6DEAFFF2781DBC400AE6896 /* uri_encode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = uri_encode.h; path = "../depends/uri-encode/src/uri_encode.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -503,6 +509,7 @@
 		3A57A5FD206F9D44002F1F2D = {
 			isa = PBXGroup;
 			children = (
+				B690A2752781DB7200196860 /* uri-encode */,
 				B69D2A2B277493380016B09B /* aead */,
 				3A300B04206FF42E00ABE7C2 /* libuv.xcodeproj */,
 				3A300AFD206FF41B00ABE7C2 /* libsodium.xcodeproj */,
@@ -545,6 +552,15 @@
 				3A6C0BFD2304108C00FFF1D9 /* uv-mbed.c */,
 			);
 			name = "uv-mbed";
+			sourceTree = "<group>";
+		};
+		B690A2752781DB7200196860 /* uri-encode */ = {
+			isa = PBXGroup;
+			children = (
+				B6DEAFFE2781DBC400AE6896 /* uri_encode.c */,
+				B6DEAFFF2781DBC400AE6896 /* uri_encode.h */,
+			);
+			name = "uri-encode";
 			sourceTree = "<group>";
 		};
 		B69D2A2B277493380016B09B /* aead */ = {
@@ -600,6 +616,7 @@
 				3A300B76206FFA0A00ABE7C2 /* ssrutils.h in Headers */,
 				3A31839A22F869EE00E7D266 /* http_parser_wrapper.h in Headers */,
 				3A300B39206FF54000ABE7C2 /* auth_chain.h in Headers */,
+				B6DEB0022781DBC400AE6896 /* uri_encode.h in Headers */,
 				3A95CC0B2070D26100E507E3 /* udprelay.h in Headers */,
 				3A300B69206FF69D00ABE7C2 /* ssr_cipher_names.h in Headers */,
 				3A300B45206FF58300ABE7C2 /* s5.h in Headers */,
@@ -648,6 +665,7 @@
 				3A95CBB12070C8D000E507E3 /* ssr_cipher_names.h in Headers */,
 				3A31839B22F869EE00E7D266 /* http_parser_wrapper.h in Headers */,
 				3A95CBCC2070C92200E507E3 /* cstl_lib.h in Headers */,
+				B6DEB0032781DBC400AE6896 /* uri_encode.h in Headers */,
 				3A95CBB52070C8FD00E507E3 /* cache.h in Headers */,
 				3A95CC0C2070D26100E507E3 /* udprelay.h in Headers */,
 				3A95CBCE2070C92200E507E3 /* http_simple.h in Headers */,
@@ -839,6 +857,7 @@
 				3A300B6E206FF77E00ABE7C2 /* ssrbuffer.c in Sources */,
 				3A31839822F869EE00E7D266 /* http_parser.c in Sources */,
 				3A96C7502590825000CE40A7 /* strtrim.c in Sources */,
+				B6DEB0002781DBC400AE6896 /* uri_encode.c in Sources */,
 				3A425B4E25346B0200EE3AC5 /* exe_file_path.c in Sources */,
 				3A95CC092070D26100E507E3 /* udprelay.c in Sources */,
 				3A300B68206FF69D00ABE7C2 /* ssr_cipher_names.c in Sources */,
@@ -883,6 +902,7 @@
 				3A95CBD12070C92200E507E3 /* obfsutil.c in Sources */,
 				3A31839922F869EE00E7D266 /* http_parser.c in Sources */,
 				3A96C7512590825000CE40A7 /* strtrim.c in Sources */,
+				B6DEB0012781DBC400AE6896 /* uri_encode.c in Sources */,
 				3A425B4F25346B0200EE3AC5 /* exe_file_path.c in Sources */,
 				3A95CC0A2070D26100E507E3 /* udprelay.c in Sources */,
 				3A95CBBD2070C90C00E507E3 /* sockaddr_universal.c in Sources */,

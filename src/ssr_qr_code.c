@@ -5,6 +5,9 @@
 #include "obfs.h" // for SSR_BUFF_SIZE
 #include <uri_encode.h>
 #include <stdbool.h>
+#if !defined(_MSC_VER)
+#include <ctype.h> // for isdigit
+#endif
 
 static const char *ss_header = "ss://";
 static const char *ssr_header = "ssr://";
@@ -21,7 +24,7 @@ static const char *ot_path = "ot_path";
 char *generate_shadowsocks_uri(const struct server_config *config, void*(*alloc_fn)(size_t size));
 
 char * ssr_qr_code_encode(const struct server_config *config, void*(*alloc_fn)(size_t size)) {
-    unsigned char *base64_buf;
+    char *base64_buf;
     char *basic;
     char *optional;
     char *result;
@@ -49,7 +52,7 @@ char * ssr_qr_code_encode(const struct server_config *config, void*(*alloc_fn)(s
 
     // ssr://base64(host:port:protocol:method:obfs:base64pass/?obfsparam=base64param&protoparam=base64param&remarks=base64remarks&group=base64group&udpport=0&uot=0&ot_enable=0&ot_domain=base64domain&ot_path=base64path)
 
-    base64_buf = (unsigned char *)calloc(SSR_BUFF_SIZE, sizeof(base64_buf[0]));
+    base64_buf = (char *)calloc(SSR_BUFF_SIZE, sizeof(base64_buf[0]));
 
     basic = (char *)calloc(SSR_BUFF_SIZE, sizeof(basic[0]));
 
@@ -248,9 +251,9 @@ struct server_config * decode_shadowsocks(const char *text) {
             method = plain_text;
         } else {
 
-        len = (int) url_safe_base64_decode_len((unsigned char *)contents);
+        len = (int) url_safe_base64_decode_len(contents);
         plain_text = (char *) calloc(len+1, sizeof(plain_text[0]));
-        url_safe_base64_decode((const unsigned char *)contents, (unsigned char *)plain_text);
+        url_safe_base64_decode(contents, (unsigned char *)plain_text);
         
         method = plain_text;
 
@@ -347,9 +350,9 @@ struct server_config * decode_ssr(const char *text) {
         }
         text = text + hdr_len;
         
-        len = (int) url_safe_base64_decode_len((unsigned char *)text);
+        len = (int) url_safe_base64_decode_len(text);
         plain_text = (char *) calloc(len+1, sizeof(plain_text[0]));
-        url_safe_base64_decode((const unsigned char *)text, (unsigned char *)plain_text);
+        url_safe_base64_decode(text, (unsigned char *)plain_text);
         
         basic = plain_text;
         
@@ -402,7 +405,7 @@ struct server_config * decode_ssr(const char *text) {
         string_safe_assign(&config->protocol, protocol);
         string_safe_assign(&config->method, method);
         string_safe_assign(&config->obfs, obfs);
-        url_safe_base64_decode((unsigned char *)base64pass, swap_buf);
+        url_safe_base64_decode(base64pass, swap_buf);
         string_safe_assign(&config->password, (char *)swap_buf);
 
         if (optional==NULL || strlen(optional)==0) {
@@ -430,15 +433,15 @@ struct server_config * decode_ssr(const char *text) {
                     }
                     switch (i) {
                         case 0:
-                            url_safe_base64_decode((unsigned char *)value, swap_buf);
+                            url_safe_base64_decode(value, swap_buf);
                             string_safe_assign(&config->obfs_param, (char *)swap_buf);
                             break;
                         case 1:
-                            url_safe_base64_decode((unsigned char *)value, swap_buf);
+                            url_safe_base64_decode(value, swap_buf);
                             string_safe_assign(&config->protocol_param, (char *)swap_buf);
                             break;
                         case 2:
-                            url_safe_base64_decode((unsigned char *)value, swap_buf);
+                            url_safe_base64_decode(value, swap_buf);
                             string_safe_assign(&config->remarks, (char *)swap_buf);
                             break;
                         case 3:
@@ -455,11 +458,11 @@ struct server_config * decode_ssr(const char *text) {
                             config->over_tls_enable = n ? true : false;
                             break;
                         case 7:
-                            url_safe_base64_decode((unsigned char *)value, swap_buf);
+                            url_safe_base64_decode(value, swap_buf);
                             string_safe_assign(&config->over_tls_server_domain, (char *)swap_buf);
                             break;
                         case 8:
-                            url_safe_base64_decode((unsigned char *)value, swap_buf);
+                            url_safe_base64_decode(value, swap_buf);
                             string_safe_assign(&config->over_tls_path, (char *)swap_buf);
                             break;
                         default:

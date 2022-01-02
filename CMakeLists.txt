@@ -34,6 +34,7 @@ add_subdirectory(depends/libsodium)
 add_subdirectory(depends/libuv)
 add_subdirectory(depends/json-c)
 add_subdirectory(depends/uv-mbed/win32)
+add_subdirectory(depends/uri-encode)
 
 include_directories( ${CMAKE_CURRENT_BINARY_DIR} )
 
