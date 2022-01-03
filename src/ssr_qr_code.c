@@ -45,7 +45,8 @@ char * ssr_qr_code_encode(const struct server_config *config, void*(*alloc_fn)(s
     }
 
     if (ssr_protocol_type_of_name(config->protocol) == ssr_protocol_origin &&
-        ssr_obfs_type_of_name(config->obfs) == ssr_obfs_plain)
+        ssr_obfs_type_of_name(config->obfs) == ssr_obfs_plain &&
+        config->over_tls_enable == false)
     {
         return generate_shadowsocks_uri(config, alloc_fn);
     }
@@ -123,7 +124,8 @@ char *generate_shadowsocks_uri(const struct server_config *config, void*(*alloc_
     size_t len;
     char *userinfo, *userinfo_b64, *uri_remarks = NULL, *res;
     if (ssr_protocol_type_of_name(config->protocol) != ssr_protocol_origin ||
-        ssr_obfs_type_of_name(config->obfs) != ssr_obfs_plain)
+        ssr_obfs_type_of_name(config->obfs) != ssr_obfs_plain ||
+        config->over_tls_enable != false)
     {
         return NULL;
     }
