@@ -40,7 +40,7 @@
 #include "ssrbuffer.h"
 #include "obfs.h"
 #include "crc32.h"
-#include "cstl_lib.h"
+#include <c_lib.h>
 #include "strtrim.h"
 
 const char * ssr_strerror(enum ssr_error err) {

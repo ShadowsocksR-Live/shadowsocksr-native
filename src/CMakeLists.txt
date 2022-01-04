@@ -35,7 +35,6 @@ set(SOURCE_FILES_OBFS
         obfs/auth_chain.c
         obfs/base64.c
         obfs/crc32.c
-        obfs/cstl_lib.c
         obfs/http_simple.c
         obfs/obfs.c
         obfs/obfsutil.c
@@ -144,6 +143,7 @@ include_directories(${libsodium_include_dirs})
 include_directories(${LIB_JSON_C_BIN_DIR}/..)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../depends/http-parser)
 include_directories(${URI_ENCODE_DIR})
+include_directories(${CSTL_ROOT_DIR}/inc)
 
 if(USE_CRYPTO_MBEDTLS)
     include_directories(${MBEDTLS_ROOT_DIR}/include)
@@ -189,6 +189,7 @@ set_target_properties(ssr-server PROPERTIES COMPILE_DEFINITIONS MODULE_REMOTE)
 set (ss_lib_common
         json-c
         uv_a
+        cstl
         )
 
 if (MSVC)

@@ -3,7 +3,7 @@
 #include <assert.h>
 
 #include "ip_addr_cache.h"
-#include "cstl_lib.h"
+#include <c_lib.h>
 #include "sockaddr_universal.h"
 
 struct ip_addr_cache {

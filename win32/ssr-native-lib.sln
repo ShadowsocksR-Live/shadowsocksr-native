@@ -27,6 +27,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bloom", "..\depends\libbloo
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "uri-encode", "..\depends\uri-encode\msvc\uri-encode.vcxproj", "{14BB53E2-B04A-AA3D-6191-62DA3932F09E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cstl", "..\depends\cstl\msvc\cstl.vcxproj", "{475DE074-DA8E-3E95-929A-5D73E659170A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -91,6 +93,14 @@ Global
 		{14BB53E2-B04A-AA3D-6191-62DA3932F09E}.Release|Win32.Build.0 = Release|Win32
 		{14BB53E2-B04A-AA3D-6191-62DA3932F09E}.Release|x64.ActiveCfg = Release|x64
 		{14BB53E2-B04A-AA3D-6191-62DA3932F09E}.Release|x64.Build.0 = Release|x64
+		{475DE074-DA8E-3E95-929A-5D73E659170A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{475DE074-DA8E-3E95-929A-5D73E659170A}.Debug|Win32.Build.0 = Debug|Win32
+		{475DE074-DA8E-3E95-929A-5D73E659170A}.Debug|x64.ActiveCfg = Debug|x64
+		{475DE074-DA8E-3E95-929A-5D73E659170A}.Debug|x64.Build.0 = Debug|x64
+		{475DE074-DA8E-3E95-929A-5D73E659170A}.Release|Win32.ActiveCfg = Release|Win32
+		{475DE074-DA8E-3E95-929A-5D73E659170A}.Release|Win32.Build.0 = Release|Win32
+		{475DE074-DA8E-3E95-929A-5D73E659170A}.Release|x64.ActiveCfg = Release|x64
+		{475DE074-DA8E-3E95-929A-5D73E659170A}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

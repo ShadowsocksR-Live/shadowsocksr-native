@@ -87,9 +87,6 @@
     <ClCompile Include="..\..\src\ssr_cipher_names.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\obfs\cstl_lib.c">
-      <Filter>obfs</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ssr_executive.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -205,9 +202,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ssr_cipher_names.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\obfs\cstl_lib.h">
-      <Filter>obfs</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ssr_executive.h">
       <Filter>Source Files</Filter>
