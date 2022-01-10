@@ -366,7 +366,10 @@ function install_build_tools() {
         rm -rf kernel-headers.rpm
     fi
 
-    wget --no-check-certificate https://cmake.org/files/v3.22/cmake-3.22.0-linux-x86_64.sh -O cmake_pkg.sh
+    # CPU Architecture: x86_64 aarch64
+    local CPU_ARCH=$(lscpu | grep Architecture | awk '{print $2}')
+
+    wget --no-check-certificate https://cmake.org/files/v3.22/cmake-3.22.1-linux-${CPU_ARCH}.sh -O cmake_pkg.sh
     bash cmake_pkg.sh --prefix=/usr/ --exclude-subdir && rm -rf cmake_pkg.sh
 }
 
