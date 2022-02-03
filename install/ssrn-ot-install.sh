@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #==========================================================
-#   System Request: Debian 7+ / Ubuntu 14.04+ / Centos 6+
+#   System Request: Debian 7+ / Ubuntu 14.04+ / Centos 7+
 #   Author: ssrlive
 #   Dscription: ShadowsocksR over TLS onekey
 #   Version: 1.0.0
@@ -319,6 +319,7 @@ EOF
     fi
 
     systemctl stop ${cron_name}
+    sleep 2
     rm -rf tmp_info
     crontab -l > tmp_info
     echo "0 0 1 * * ${site_cert_dir}/renew_cert.sh >/dev/null 2>&1" >> tmp_info && crontab tmp_info && rm -rf tmp_info
