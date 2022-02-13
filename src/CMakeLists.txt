@@ -155,20 +155,13 @@ if (MSVC)
     list ( APPEND SOURCE_FILES_SERVER ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/getopt.c ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/getopt_long.c ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/strncasecmp.c )
 endif(MSVC)
 
-if (!APPLE)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
-endif()
-
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_definitions(-Wall -Werror -ggdb3 -std=c99 -Wextra -pedantic)
     add_definitions("-D_DEFAULT_SOURCE -D_GNU_SOURCE")
 endif()
 
-if (UNIX)
-if (APPLE)
-else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -static-libstdc++ -static-libgcc")
-endif()
+if (UNIX AND (NOT APPLE))
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread -static-libstdc++ -static-libgcc")
 endif()
 
 add_definitions(-DUDP_RELAY_ENABLE)
