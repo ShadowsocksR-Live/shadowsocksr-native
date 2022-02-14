@@ -983,7 +983,7 @@ crypto_hkdf_extract(const struct mbedtls_md_info_t *md, const unsigned char *sal
     size_t hash_len;
     unsigned char null_salt[MBEDTLS_MD_MAX_SIZE] = { '\0' };
 
-    if (salt_len < 0) {
+    if ((int)salt_len < 0) {
         return CRYPTO_ERROR;
     }
 
