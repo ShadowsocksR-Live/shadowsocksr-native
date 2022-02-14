@@ -34,7 +34,7 @@
 # define INET6_ADDRSTRLEN 63
 #endif
 
-struct udp_listener_ctx_t;
+struct client_ssrot_udp_listener_ctx;
 
 struct listener_t {
     uv_tcp_t *tcp_server;
@@ -68,7 +68,7 @@ struct ssr_client_state {
     int error_code;
 };
 
-extern void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_universal *src_addr, const struct buffer_t *data, void*p);
+extern void udp_on_recv_data(struct client_ssrot_udp_listener_ctx *udp_ctx, const union sockaddr_universal *src_addr, const struct buffer_t *data, void*p);
 
 static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrinfo *addrs);
 static void listen_incoming_connection_cb(uv_stream_t *server, int status);
@@ -210,7 +210,7 @@ void _ssr_run_loop_shutdown(struct ssr_client_state* state) {
     if (state->listeners && state->listener_count) {
         size_t n = 0;
         for (n = 0; n < (size_t) state->listener_count; ++n) {
-            struct udp_listener_ctx_t *udp_server;
+            struct client_ssrot_udp_listener_ctx *udp_server;
             struct listener_t *listener = state->listeners + n;
 
             uv_tcp_t *tcp_server = listener->tcp_server;
@@ -218,7 +218,7 @@ void _ssr_run_loop_shutdown(struct ssr_client_state* state) {
                 uv_close((uv_handle_t *)tcp_server, tcp_close_done_cb);
             }
 
-            udp_server = (struct udp_listener_ctx_t*)listener->udp_server;
+            udp_server = (struct client_ssrot_udp_listener_ctx*)listener->udp_server;
             if (udp_server) {
                 client_tls_udprelay_shutdown(udp_server);
             }
@@ -368,7 +368,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
             union sockaddr_universal remote_addr = { {0} };
             universal_address_from_string(cf->remote_host, cf->remote_port, true, &remote_addr);
             {
-                struct udp_listener_ctx_t *udp_server = client_tls_udprelay_begin(loop, cf->listen_host, port, &remote_addr);
+                struct client_ssrot_udp_listener_ctx *udp_server = client_tls_udprelay_begin(loop, cf->listen_host, port, &remote_addr);
                 udp_relay_set_udp_on_recv_data_callback(udp_server, &udp_on_recv_data, NULL);
                 listener->udp_server = (void*)udp_server;
             }

@@ -63,7 +63,7 @@ struct udp_data_context {
     struct cstl_deque* recv_deque;
 
     struct client_ctx* owner; // __weak_ptr
-    struct udp_listener_ctx_t* udp_ctx; // __weak_ptr
+    struct client_ssrot_udp_listener_ctx* udp_ctx; // __weak_ptr
 };
 
 struct udp_data_context* udp_data_context_create(void);
@@ -1544,7 +1544,7 @@ static void _do_find_upd_tunnel(struct cstl_set* set, const void* obj, bool* sto
     (void)set;
 }
 
-void udp_on_recv_data(struct udp_listener_ctx_t* udp_ctx, const union sockaddr_universal* src_addr, const struct buffer_t* data, void* p) {
+void udp_on_recv_data(struct client_ssrot_udp_listener_ctx* udp_ctx, const union sockaddr_universal* src_addr, const struct buffer_t* data, void* p) {
     uv_loop_t* loop = udp_relay_context_get_loop(udp_ctx);
     struct server_env_t* env = (struct server_env_t*)loop->data;
     struct server_config* config = env->config;

@@ -27,7 +27,7 @@
 #include <stdbool.h>
 
 struct ss_host_port;
-struct udp_listener_ctx_t;
+struct client_ssrot_udp_listener_ctx;
 struct cipher_env_t;
 union sockaddr_universal;
 struct socks5_address;
@@ -45,15 +45,15 @@ typedef void(*udp_remote_dying_callback)(struct udp_remote_ctx_t *ctx, void*p);
 void udp_remote_set_dying_callback(struct udp_remote_ctx_t *ctx, udp_remote_dying_callback callback, void*p);
 void udp_remote_destroy(struct udp_remote_ctx_t *ctx);
 
-struct udp_listener_ctx_t *
+struct client_ssrot_udp_listener_ctx *
 client_tls_udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
     const union sockaddr_universal *remote_addr);
 
-void client_tls_udprelay_shutdown(struct udp_listener_ctx_t *server_ctx);
+void client_tls_udprelay_shutdown(struct client_ssrot_udp_listener_ctx *server_ctx);
 
-typedef void (*udp_on_recv_data_callback)(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_universal *src_addr, const struct buffer_t *data, void*p);
-void udp_relay_set_udp_on_recv_data_callback(struct udp_listener_ctx_t *udp_ctx, udp_on_recv_data_callback callback, void*p);
-uv_loop_t * udp_relay_context_get_loop(struct udp_listener_ctx_t *udp_ctx);
-void udp_relay_send_data(struct udp_listener_ctx_t* udp_ctx, union sockaddr_universal* addr, const uint8_t* data, size_t len);
+typedef void (*udp_on_recv_data_callback)(struct client_ssrot_udp_listener_ctx *udp_ctx, const union sockaddr_universal *src_addr, const struct buffer_t *data, void*p);
+void udp_relay_set_udp_on_recv_data_callback(struct client_ssrot_udp_listener_ctx *udp_ctx, udp_on_recv_data_callback callback, void*p);
+uv_loop_t * udp_relay_context_get_loop(struct client_ssrot_udp_listener_ctx *udp_ctx);
+void udp_relay_send_data(struct client_ssrot_udp_listener_ctx* udp_ctx, union sockaddr_universal* addr, const uint8_t* data, size_t len);
 
 #endif // _UDPRELAY_H

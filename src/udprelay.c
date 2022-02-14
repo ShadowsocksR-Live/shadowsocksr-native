@@ -88,7 +88,7 @@
 
 #define DEFAULT_PACKET_SIZE MAX_UDP_PACKET_SIZE // 1492 - 1 - 28 - 2 - 64 = 1397, the default MTU for UDP relay
 
-struct udp_listener_ctx_t {
+struct client_ssrot_udp_listener_ctx {
     uv_udp_t udp;
     union sockaddr_universal remote_addr;
     udp_on_recv_data_callback udp_on_recv_data;
@@ -365,7 +365,7 @@ static void udp_tls_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_b
     struct server_config* config = env->config;
 
     union sockaddr_universal addr_u = { {0} };
-    struct udp_listener_ctx_t *server_ctx;
+    struct client_ssrot_udp_listener_ctx *server_ctx;
     struct buffer_t *data = NULL;
     do {
         if (config->over_tls_enable == false) {
@@ -373,7 +373,7 @@ static void udp_tls_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_b
             break;
         }
 
-        server_ctx = CONTAINER_OF(handle, struct udp_listener_ctx_t, udp);
+        server_ctx = CONTAINER_OF(handle, struct client_ssrot_udp_listener_ctx, udp);
         if (server_ctx == NULL) {
             ASSERT(false);
             break;
@@ -410,17 +410,17 @@ static void udp_tls_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_b
     buffer_release(data);
 }
 
-struct udp_listener_ctx_t *
+struct client_ssrot_udp_listener_ctx *
 client_tls_udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
     const union sockaddr_universal *remote_addr)
 {
-    struct udp_listener_ctx_t *server_ctx;
+    struct client_ssrot_udp_listener_ctx *server_ctx;
     int serverfd;
 
     // ////////////////////////////////////////////////
     // Setup server context
 
-    server_ctx = (struct udp_listener_ctx_t *)calloc(1, sizeof(struct udp_listener_ctx_t));
+    server_ctx = (struct client_ssrot_udp_listener_ctx *)calloc(1, sizeof(struct client_ssrot_udp_listener_ctx));
 
     // Bind to port
     serverfd = udp_create_listener(server_host, server_port, loop, &server_ctx->udp);
@@ -436,37 +436,37 @@ client_tls_udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t ser
 }
 
 static void udp_local_listener_close_done_cb(uv_handle_t* handle) {
-    struct udp_listener_ctx_t *server_ctx = CONTAINER_OF(handle, struct udp_listener_ctx_t, udp);
+    struct client_ssrot_udp_listener_ctx *server_ctx = CONTAINER_OF(handle, struct client_ssrot_udp_listener_ctx, udp);
     free(server_ctx);
 }
 
-void client_tls_udprelay_shutdown(struct udp_listener_ctx_t *server_ctx) {
+void client_tls_udprelay_shutdown(struct client_ssrot_udp_listener_ctx *server_ctx) {
     if (server_ctx == NULL) {
         return;
     }
     uv_close((uv_handle_t *)&server_ctx->udp, udp_local_listener_close_done_cb);
 }
 
-void udp_relay_set_udp_on_recv_data_callback(struct udp_listener_ctx_t *udp_ctx, udp_on_recv_data_callback callback, void*p) {
+void udp_relay_set_udp_on_recv_data_callback(struct client_ssrot_udp_listener_ctx *udp_ctx, udp_on_recv_data_callback callback, void*p) {
     if (udp_ctx) {
         udp_ctx->udp_on_recv_data = callback;
         udp_ctx->recv_p = p;
     }
 }
 
-uv_loop_t * udp_relay_context_get_loop(struct udp_listener_ctx_t *udp_ctx) {
+uv_loop_t * udp_relay_context_get_loop(struct client_ssrot_udp_listener_ctx *udp_ctx) {
     return udp_ctx->udp.loop;
 }
 
 void udp_relay_sent_cb(uv_udp_send_t* req, int status) {
-    struct udp_listener_ctx_t* udp_ctx = CONTAINER_OF(req->handle, struct udp_listener_ctx_t, udp);
+    struct client_ssrot_udp_listener_ctx* udp_ctx = CONTAINER_OF(req->handle, struct client_ssrot_udp_listener_ctx, udp);
     uint8_t *dup_data = (uint8_t*)req->data;
     free(dup_data);
     free(req);
     (void)status; (void)udp_ctx;
 }
 
-void udp_relay_send_data(struct udp_listener_ctx_t *udp_ctx, union sockaddr_universal *addr, const uint8_t *data, size_t len) {
+void udp_relay_send_data(struct client_ssrot_udp_listener_ctx *udp_ctx, union sockaddr_universal *addr, const uint8_t *data, size_t len) {
     uv_udp_send_t* send_req;
     uint8_t* dup_data;
     uv_buf_t sndbuf;
