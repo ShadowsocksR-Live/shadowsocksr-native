@@ -175,7 +175,7 @@ int udp_create_listener(const char *host, uint16_t port, uv_loop_t *loop, uv_udp
         if (r == 0) {
             break;
         }
-        LOGE("[UDP] %s: %s\n", __FUNCTION__, uv_strerror_r(r, buff, sizeof(buff)));
+        LOGE("[UDP] create udp listener: %s\n", uv_strerror_r(r, buff, sizeof(buff)));
     }
 
     if (rp == NULL) {
