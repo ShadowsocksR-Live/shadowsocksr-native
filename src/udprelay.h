@@ -46,10 +46,10 @@ void udp_remote_set_dying_callback(struct udp_remote_ctx_t *ctx, udp_remote_dyin
 void udp_remote_destroy(struct udp_remote_ctx_t *ctx);
 
 struct client_ssrot_udp_listener_ctx *
-client_tls_udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
+client_ssrot_udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
     const union sockaddr_universal *remote_addr);
 
-void client_tls_udprelay_shutdown(struct client_ssrot_udp_listener_ctx *server_ctx);
+void client_ssrot_udprelay_shutdown(struct client_ssrot_udp_listener_ctx *server_ctx);
 
 typedef void (*udp_on_recv_data_callback)(struct client_ssrot_udp_listener_ctx *udp_ctx, const union sockaddr_universal *src_addr, const struct buffer_t *data, void*p);
 void udp_relay_set_udp_on_recv_data_callback(struct client_ssrot_udp_listener_ctx *udp_ctx, udp_on_recv_data_callback callback, void*p);

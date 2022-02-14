@@ -220,7 +220,7 @@ void _ssr_run_loop_shutdown(struct ssr_client_state* state) {
 
             udp_server = (struct client_ssrot_udp_listener_ctx*)listener->udp_server;
             if (udp_server) {
-                client_tls_udprelay_shutdown(udp_server);
+                client_ssrot_udprelay_shutdown(udp_server);
             }
         }
     }
@@ -368,7 +368,7 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
             union sockaddr_universal remote_addr = { {0} };
             universal_address_from_string(cf->remote_host, cf->remote_port, true, &remote_addr);
             {
-                struct client_ssrot_udp_listener_ctx *udp_server = client_tls_udprelay_begin(loop, cf->listen_host, port, &remote_addr);
+                struct client_ssrot_udp_listener_ctx *udp_server = client_ssrot_udprelay_begin(loop, cf->listen_host, port, &remote_addr);
                 udp_relay_set_udp_on_recv_data_callback(udp_server, &udp_on_recv_data, NULL);
                 listener->udp_server = (void*)udp_server;
             }

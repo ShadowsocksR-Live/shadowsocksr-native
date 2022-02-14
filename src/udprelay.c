@@ -411,7 +411,7 @@ static void udp_tls_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_b
 }
 
 struct client_ssrot_udp_listener_ctx *
-client_tls_udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
+client_ssrot_udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
     const union sockaddr_universal *remote_addr)
 {
     struct client_ssrot_udp_listener_ctx *server_ctx;
@@ -440,7 +440,7 @@ static void udp_local_listener_close_done_cb(uv_handle_t* handle) {
     free(server_ctx);
 }
 
-void client_tls_udprelay_shutdown(struct client_ssrot_udp_listener_ctx *server_ctx) {
+void client_ssrot_udprelay_shutdown(struct client_ssrot_udp_listener_ctx *server_ctx) {
     if (server_ctx == NULL) {
         return;
     }
