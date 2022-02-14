@@ -91,8 +91,6 @@
 struct udp_listener_ctx_t {
     uv_udp_t udp;
     union sockaddr_universal remote_addr;
-    struct cipher_env_t *cipher_env;
-
     udp_on_recv_data_callback udp_on_recv_data;
     void* recv_p;
 };
@@ -413,8 +411,8 @@ static void udp_tls_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_b
 }
 
 struct udp_listener_ctx_t *
-udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
-    const union sockaddr_universal *remote_addr, struct cipher_env_t *cipher_env)
+client_tls_udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
+    const union sockaddr_universal *remote_addr)
 {
     struct udp_listener_ctx_t *server_ctx;
     int serverfd;
@@ -430,7 +428,6 @@ udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
         FATAL("[UDP] bind() error");
     }
 
-    server_ctx->cipher_env = cipher_env;
     server_ctx->remote_addr     = *remote_addr;
 
     uv_udp_recv_start(&server_ctx->udp, udp_uv_alloc_buffer, udp_tls_listener_recv_cb);
@@ -443,7 +440,7 @@ static void udp_local_listener_close_done_cb(uv_handle_t* handle) {
     free(server_ctx);
 }
 
-void udprelay_shutdown(struct udp_listener_ctx_t *server_ctx) {
+void client_tls_udprelay_shutdown(struct udp_listener_ctx_t *server_ctx) {
     if (server_ctx == NULL) {
         return;
     }

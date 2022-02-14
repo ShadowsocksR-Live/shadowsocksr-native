@@ -38,7 +38,7 @@ struct udp_listener_ctx_t;
 
 struct listener_t {
     uv_tcp_t *tcp_server;
-    struct udp_listener_ctx_t *udp_server;
+    void *udp_server;
 };
 
 enum running_state {
@@ -218,9 +218,9 @@ void _ssr_run_loop_shutdown(struct ssr_client_state* state) {
                 uv_close((uv_handle_t *)tcp_server, tcp_close_done_cb);
             }
 
-            udp_server = listener->udp_server;
+            udp_server = (struct udp_listener_ctx_t*)listener->udp_server;
             if (udp_server) {
-                udprelay_shutdown(udp_server);
+                client_tls_udprelay_shutdown(udp_server);
             }
         }
     }
@@ -367,10 +367,11 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
         if (cf->udp) {
             union sockaddr_universal remote_addr = { {0} };
             universal_address_from_string(cf->remote_host, cf->remote_port, true, &remote_addr);
-
-            listener->udp_server = udprelay_begin(loop, cf->listen_host, port, &remote_addr, state->env->cipher);
-
-            udp_relay_set_udp_on_recv_data_callback(listener->udp_server, &udp_on_recv_data, NULL);
+            {
+                struct udp_listener_ctx_t *udp_server = client_tls_udprelay_begin(loop, cf->listen_host, port, &remote_addr);
+                udp_relay_set_udp_on_recv_data_callback(udp_server, &udp_on_recv_data, NULL);
+                listener->udp_server = (void*)udp_server;
+            }
         }
 
         n += 1;
