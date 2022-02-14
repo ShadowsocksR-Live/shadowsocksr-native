@@ -34,6 +34,8 @@ struct socks5_address;
 struct buffer_t;
 struct udp_remote_ctx_t;
 
+int udp_create_listener(const char *host, uint16_t port, uv_loop_t *loop, uv_udp_t *udp);
+
 typedef void(*udp_remote_data_arrived_callback)(struct udp_remote_ctx_t *remote_ctx, const uint8_t*data, size_t len, void*p);
 struct udp_remote_ctx_t * udp_remote_launch_begin(uv_loop_t* loop, uint64_t timeout, const struct socks5_address *dst_addr);
 void udp_remote_set_data_arrived_callback(struct udp_remote_ctx_t *ctx, udp_remote_data_arrived_callback callback, void*p);

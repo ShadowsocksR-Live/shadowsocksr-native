@@ -121,8 +121,8 @@ static size_t packet_size                            = DEFAULT_PACKET_SIZE;
 
 static void udp_uv_alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
     char *tmp = (char *) calloc(suggested_size, sizeof(char));
-    (void)handle;
     *buf = uv_buf_init(tmp, (unsigned int)suggested_size);
+    (void)handle;
 }
 
 static void udp_uv_release_buffer(uv_buf_t *buf) {
@@ -133,34 +133,7 @@ static void udp_uv_release_buffer(uv_buf_t *buf) {
     buf->len = 0;
 }
 
-int udp_create_remote_socket(bool ipv6, uv_loop_t *loop, uv_udp_t *udp) {
-    int err = 0;
-    union sockaddr_universal addr = { {0} };
-
-    uv_udp_init(loop, udp);
-
-    if (ipv6) {
-        // Try to bind IPv6 first
-        addr.addr6.sin6_family = AF_INET6;
-        addr.addr6.sin6_addr   = in6addr_any;
-        addr.addr6.sin6_port   = 0;
-    } else {
-        // Or else bind to IPv4
-        addr.addr4.sin_family      = AF_INET;
-        addr.addr4.sin_addr.s_addr = INADDR_ANY;
-        addr.addr4.sin_port        = 0;
-    }
-    err = uv_udp_bind(udp, &addr.addr, 0);
-    if (err != 0) {
-        char buff[256] = { 0 };
-        LOGE("[UDP] udp_create_remote_socket: %s\n", uv_strerror_r(err, buff, sizeof(buff)));
-    }
-    return err;
-}
-
-static int
-udp_create_local_listener(const char *host, uint16_t port, uv_loop_t *loop, uv_udp_t *udp)
-{
+int udp_create_listener(const char *host, uint16_t port, uv_loop_t *loop, uv_udp_t *udp) {
     struct addrinfo *result = NULL, *rp, *ipv4v6bindall;
     int s, server_sock = 0;
     char str_port[32] = { 0 };
@@ -202,7 +175,7 @@ udp_create_local_listener(const char *host, uint16_t port, uv_loop_t *loop, uv_u
         if (r == 0) {
             break;
         }
-        LOGE("[UDP] udp_create_local_listener: %s\n", uv_strerror_r(r, buff, sizeof(buff)));
+        LOGE("[UDP] %s: %s\n", __FUNCTION__, uv_strerror_r(r, buff, sizeof(buff)));
     }
 
     if (rp == NULL) {
@@ -337,7 +310,7 @@ struct udp_remote_ctx_t * udp_remote_launch_begin(uv_loop_t* loop, uint64_t time
     udp->data = remote_ctx;
 
     socks5_address_to_universal(dst_addr, true, &u_dst_addr);
-    uv_udp_bind(udp, &u_dst_addr.addr, 0);
+    uv_udp_bind(udp, &u_dst_addr.addr, 0); // FIXME: something went wrong.
     uv_udp_recv_start(udp, udp_uv_alloc_buffer, udp_remote_recv_cb);
 
     timer = &remote_ctx->rmt_expire;
@@ -452,7 +425,7 @@ udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
     server_ctx = (struct udp_listener_ctx_t *)calloc(1, sizeof(struct udp_listener_ctx_t));
 
     // Bind to port
-    serverfd = udp_create_local_listener(server_host, server_port, loop, &server_ctx->udp);
+    serverfd = udp_create_listener(server_host, server_port, loop, &server_ctx->udp);
     if (serverfd < 0) {
         FATAL("[UDP] bind() error");
     }
