@@ -789,7 +789,7 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
             return res;
         }
 
-        cipher_context_init(env->enc_method, &cipher_ctx, 1);
+        cipher_context_init(method, &cipher_ctx, 1);
 
         iv_len = (size_t) env->enc_iv_len;
         success = true;
@@ -830,7 +830,7 @@ ss_encrypt_all(struct cipher_env_t *env, struct buffer_t *plain, size_t capacity
         free(cipher_buffer);
         return 0;
     } else {
-        if (env->enc_method == ss_cipher_table) {
+        if (method == ss_cipher_table) {
             size_t plain_len = buffer_get_length(plain);
             uint8_t *plain_buffer = (uint8_t*) buffer_get_data(plain);
             uint8_t *begin = plain_buffer;
