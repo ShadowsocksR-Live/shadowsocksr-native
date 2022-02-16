@@ -45,6 +45,8 @@ struct buffer_t * tls12_ticket_auth_server_pre_encrypt(struct obfs_t *obfs, cons
 struct buffer_t * tls12_ticket_auth_server_encode(struct obfs_t *obfs, const struct buffer_t *buf);
 struct buffer_t * tls12_ticket_auth_server_decode(struct obfs_t *obfs, const struct buffer_t *buf, bool *need_decrypt, bool *need_feedback);
 struct buffer_t * tls12_ticket_auth_server_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, bool *need_feedback);
+bool tls12_ticket_auth_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf);
+bool tls12_ticket_auth_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *uid);
 
 static void free_element(void* ptr) {
     struct buffer_t *p = *((struct buffer_t**)ptr);
@@ -93,6 +95,8 @@ struct obfs_t * tls12_ticket_auth_new_obfs(void) {
     obfs->server_encode = tls12_ticket_auth_server_encode;
     obfs->server_decode = tls12_ticket_auth_server_decode;
     obfs->server_post_decrypt = tls12_ticket_auth_server_post_decrypt;
+    obfs->server_udp_pre_encrypt = generic_server_udp_pre_encrypt;
+    obfs->server_udp_post_decrypt = generic_server_udp_post_decrypt;
 
     obfs->l_data = calloc(1, sizeof(struct tls12_ticket_auth_local_data));
     tls12_ticket_auth_local_data_init((struct tls12_ticket_auth_local_data *)obfs->l_data);
@@ -483,10 +487,14 @@ struct buffer_t * tls12_ticket_auth_server_encode(struct obfs_t *obfs, const str
         struct buffer_t *input = buffer_clone(buf);
         while (buffer_get_length(input) > SSR_BUFF_SIZE) {
             rand_bytes(rand_buf, 2);
+#if !defined(_MSC_VER)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#endif // _MSC_VER
             size = min((size_t)ntohs(*((uint16_t *)rand_buf)) % 4096 + 100, buffer_get_length(input));
+#if !defined(_MSC_VER)
 #pragma GCC diagnostic pop
+#endif // _MSC_VER
             size2 = htons((uint16_t)size);
 
             buffer_concatenate_raw(ret, (uint8_t *)"\x17", 1);
@@ -545,10 +553,14 @@ struct buffer_t * tls12_ticket_auth_server_encode(struct obfs_t *obfs, const str
 
         if ((rand_integer() % 8) < 1) {
             rand_bytes(rand_buf, 2);
+#if !defined(_MSC_VER)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#endif // _MSC_VER
             size = (size_t)((ntohs(*((uint16_t *)rand_buf)) % 164) * 2 + 64);
+#if !defined(_MSC_VER)
 #pragma GCC diagnostic pop
+#endif // _MSC_VER
             rand_bytes(rand_buf, (int)size);
             size2 = htons((uint16_t)(size + 4));
             size3 = htons((uint16_t)size);
@@ -850,6 +862,16 @@ struct buffer_t * tls12_ticket_auth_server_decode(struct obfs_t *obfs, const str
 struct buffer_t * tls12_ticket_auth_server_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, bool *need_feedback) {
     // TODO : need implementation future.
     return generic_server_post_decrypt(obfs, buf, need_feedback);
+}
+
+bool tls12_ticket_auth_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf) {
+    // TODO : need implementation future.
+    return generic_server_udp_pre_encrypt(obfs, buf);
+}
+
+bool tls12_ticket_auth_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *uid) {
+    // TODO : need implementation future.
+    return generic_server_udp_post_decrypt(obfs, buf, uid);
 }
 
 //============================= tls1.2_ticket_fastauth ==================================

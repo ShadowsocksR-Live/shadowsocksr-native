@@ -57,6 +57,7 @@ set(SOURCE_FILES_CLIENT
         ssrutils.h
         udprelay.c
         udprelay.h
+        udp_ssr_client.c
         client/defs.h
         client/listener.c
         client/main.c

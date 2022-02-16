@@ -168,13 +168,10 @@ void config_ssrot_revision(struct server_config* config) {
     assert(method != ss_cipher_max);
 
     if (config->over_tls_enable) {
+        // SSRoT don't support protocol and obfs features, downgrade to SS with TLS.
         string_safe_assign(&config->obfs, ssr_obfs_name_of_type(ssr_obfs_plain));
-        // don't support protocol recently.
         string_safe_assign(&config->protocol, ssr_protocol_name_of_type(ssr_protocol_origin));
     } else {
-        // support UDP in SSRoT only.
-        config->udp = false;
-
         if (ss_cipher_aes_128_gcm <= method && method <= ss_cipher_xchacha20_ietf_poly1305 ) {
             // AEAD and SSR are not compatible. So we downgraded it to SS
             string_safe_assign(&config->obfs, ssr_obfs_name_of_type(ssr_obfs_plain));
