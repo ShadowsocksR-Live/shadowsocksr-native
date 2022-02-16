@@ -1442,7 +1442,7 @@ ssize_t auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplainda
     outlength = datalength + rand_len + 8;
 
     std_base64_encode(buffer_get_data(local->user_key), (int)buffer_get_length(local->user_key), password);
-    std_base64_encode(hash, 16, (unsigned char *)(password + strlen(password)));
+    std_base64_encode(hash, 16, password + strlen(password));
 
     {
 #if 1
@@ -1518,8 +1518,8 @@ ssize_t auth_chain_a_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaind
     rand_len = (int)udp_get_rand_len(&local->random_server, hash);
     outlength = datalength - rand_len - 8;
 
-    std_base64_encode(buffer_get_data(local->user_key), (int)buffer_get_length(local->user_key), (unsigned char *)password);
-    std_base64_encode(hash, 16, (unsigned char *)(password + strlen(password)));
+    std_base64_encode(buffer_get_data(local->user_key), (int)buffer_get_length(local->user_key), password);
+    std_base64_encode(hash, 16, password + strlen(password));
 
     {
 #if 1
