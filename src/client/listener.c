@@ -208,19 +208,21 @@ void _ssr_run_loop_shutdown(struct ssr_client_state* state) {
     uv_close((uv_handle_t*)state->exit_flag_timer, NULL);
 
     if (state->listeners && state->listener_count) {
+        bool is_ssrot = state->env->config->over_tls_enable;
         size_t n = 0;
         for (n = 0; n < (size_t) state->listener_count; ++n) {
-            struct client_ssrot_udp_listener_ctx *udp_server;
             struct listener_t *listener = state->listeners + n;
+            void *udp_server = listener->udp_server;
 
             uv_tcp_t *tcp_server = listener->tcp_server;
             if (tcp_server) {
                 uv_close((uv_handle_t *)tcp_server, tcp_close_done_cb);
             }
 
-            udp_server = (struct client_ssrot_udp_listener_ctx*)listener->udp_server;
-            if (udp_server) {
-                client_ssrot_udprelay_shutdown(udp_server);
+            if (is_ssrot) {
+                client_ssrot_udprelay_shutdown((struct client_ssrot_udp_listener_ctx*)udp_server);
+            } else {
+                client_udprelay_shutdown((struct client_udp_listener_ctx *)udp_server);
             }
         }
     }
@@ -367,10 +369,15 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
         if (cf->udp) {
             union sockaddr_universal remote_addr = { {0} };
             universal_address_from_string(cf->remote_host, cf->remote_port, true, &remote_addr);
-            {
-                struct client_ssrot_udp_listener_ctx *udp_server = client_ssrot_udprelay_begin(loop, cf->listen_host, port, &remote_addr);
+            if (cf->over_tls_enable) {
+                struct client_ssrot_udp_listener_ctx *udp_server = 
+                    client_ssrot_udprelay_begin(loop, cf->listen_host, port, &remote_addr);
                 udp_relay_set_udp_on_recv_data_callback(udp_server, &udp_on_recv_data, NULL);
                 listener->udp_server = (void*)udp_server;
+            } else {
+                listener->udp_server = (void *)
+                    client_udprelay_begin(loop, cf->listen_host, port, &remote_addr,
+                    state->env->cipher, 0, (int)cf->udp_timeout, cf->protocol, cf->protocol_param);
             }
         }
 

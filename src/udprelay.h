@@ -56,4 +56,21 @@ void udp_relay_set_udp_on_recv_data_callback(struct client_ssrot_udp_listener_ct
 uv_loop_t * udp_relay_context_get_loop(struct client_ssrot_udp_listener_ctx *udp_ctx);
 void udp_relay_send_data(struct client_ssrot_udp_listener_ctx* udp_ctx, union sockaddr_universal* addr, const uint8_t* data, size_t len);
 
+void udp_uv_alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf);
+void udp_uv_release_buffer(uv_buf_t *buf);
+
+size_t
+udprelay_parse_header(const uint8_t *buf, size_t buf_len,
+    char *host, char *port, struct sockaddr_storage *storage);
+char * get_addr_str(const struct sockaddr *sa, char* buf, size_t buf_len);
+
+struct client_udp_listener_ctx;
+
+struct client_udp_listener_ctx *
+client_udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
+    const union sockaddr_universal *remote_addr, struct cipher_env_t *cipher_env,
+    int mtu, int timeout,
+    const char *protocol, const char *protocol_param);
+void client_udprelay_shutdown(struct client_udp_listener_ctx *listener_ctx);
+
 #endif // _UDPRELAY_H

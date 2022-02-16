@@ -117,18 +117,142 @@ static void udp_remote_reset_timer(struct udp_remote_ctx_t *remote_ctx);
 
 static size_t packet_size                            = DEFAULT_PACKET_SIZE;
 
-static void udp_uv_alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
+void udp_uv_alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
     char *tmp = (char *) calloc(suggested_size, sizeof(char));
     *buf = uv_buf_init(tmp, (unsigned int)suggested_size);
     (void)handle;
 }
 
-static void udp_uv_release_buffer(uv_buf_t *buf) {
+void udp_uv_release_buffer(uv_buf_t *buf) {
+    if (buf == NULL) {
+        return;
+    }
     if (buf->base) {
         free(buf->base);
         buf->base = NULL;
     }
     buf->len = 0;
+}
+
+size_t
+udprelay_parse_header(const uint8_t *buf, size_t buf_len,
+    char *host, char *port, struct sockaddr_storage *storage)
+{
+    const uint8_t addr_type = *(uint8_t *)buf;
+    size_t offset = 1;
+
+    // get remote addr and port
+    if ((addr_type & ADDRTYPE_MASK) == SOCKS5_ADDRTYPE_IPV4) {
+        // IP V4
+        size_t in_addr_len = sizeof(struct in_addr);
+        if (buf_len >= in_addr_len + 3) {
+            if (storage != NULL) {
+                struct sockaddr_in *addr = (struct sockaddr_in *)storage;
+                addr->sin_family = AF_INET;
+                addr->sin_addr   = *(struct in_addr *)(buf + offset);
+                addr->sin_port   = *(uint16_t *)(buf + offset + in_addr_len);
+            }
+            if (host != NULL) {
+                uv_inet_ntop(AF_INET, (const void *)(buf + offset),
+                    host, INET_ADDRSTRLEN);
+            }
+            offset += in_addr_len;
+        }
+    } else if ((addr_type & ADDRTYPE_MASK) == SOCKS5_ADDRTYPE_DOMAINNAME) {
+        // Domain name
+        uint8_t name_len = *(uint8_t *)(buf + offset);
+        if ((size_t)(name_len + 4) <= buf_len) {
+            if (storage != NULL) {
+                char tmp[257] = { 0 };
+                union sockaddr_universal addr_u = { {0} };
+                memcpy(tmp, buf + offset + 1, name_len);
+
+                if (universal_address_from_string(tmp, 80, true, &addr_u) == 0) {
+                    if (addr_u.addr4.sin_family == AF_INET) {
+                        struct sockaddr_in *addr = (struct sockaddr_in *)storage;
+                        addr->sin_addr = addr_u.addr4.sin_addr;
+                        addr->sin_port   = *(uint16_t *)(buf + offset + 1 + name_len);
+                        addr->sin_family = AF_INET;
+                    } else if (addr_u.addr6.sin6_family == AF_INET6) {
+                        struct sockaddr_in6 *addr = (struct sockaddr_in6 *)storage;
+                        addr->sin6_addr = addr_u.addr6.sin6_addr;
+                        addr->sin6_port   = *(uint16_t *)(buf + offset + 1 + name_len);
+                        addr->sin6_family = AF_INET6;
+                    }
+                }
+            }
+            if (host != NULL) {
+                memcpy(host, buf + offset + 1, name_len);
+            }
+            offset += 1 + name_len;
+        }
+    } else if ((addr_type & ADDRTYPE_MASK) == SOCKS5_ADDRTYPE_IPV6) {
+        // IP V6
+        size_t in6_addr_len = sizeof(struct in6_addr);
+        if (buf_len >= in6_addr_len + 3) {
+            if (storage != NULL) {
+                struct sockaddr_in6 *addr = (struct sockaddr_in6 *)storage;
+                addr->sin6_family = AF_INET6;
+                addr->sin6_addr   = *(struct in6_addr *)(buf + offset);
+                addr->sin6_port   = *(uint16_t *)(buf + offset + in6_addr_len);
+            }
+            if (host != NULL) {
+                uv_inet_ntop(AF_INET6, (const void *)(buf + offset),
+                    host, INET6_ADDRSTRLEN);
+            }
+            offset += (int)in6_addr_len;
+        }
+    }
+
+    if (offset == 1) {
+        LOGE("[udp] invalid header with addr type %d", addr_type);
+        return 0;
+    }
+
+    if (port != NULL) {
+        sprintf(port, "%d", ntohs(*(uint16_t *)(buf + offset)));
+    }
+    offset += 2;
+
+    return offset;
+}
+
+char * get_addr_str(const struct sockaddr *sa, char* buf, size_t buf_len) {
+    char addr[INET6_ADDRSTRLEN] = { 0 };
+    char port[PORTSTRLEN]       = { 0 };
+    uint16_t p;
+    size_t addr_len;
+    size_t port_len;
+
+    ASSERT(buf && buf_len >= SS_ADDRSTRLEN);
+
+    memset(buf, 0, buf_len);
+    switch (sa->sa_family) {
+    case AF_INET:
+        uv_inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr),
+            addr, INET_ADDRSTRLEN);
+        p = ntohs(((struct sockaddr_in *)sa)->sin_port);
+        sprintf(port, "%d", p);
+        break;
+
+    case AF_INET6:
+        uv_inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr),
+            addr, INET6_ADDRSTRLEN);
+        p = ntohs(((struct sockaddr_in *)sa)->sin_port);
+        sprintf(port, "%d", p);
+        break;
+
+    default:
+        strncpy(buf, "Unknown AF", SS_ADDRSTRLEN);
+    }
+
+    addr_len = strlen(addr);
+    port_len = strlen(port);
+    memcpy(buf, addr, addr_len);
+    memcpy(buf + addr_len + 1, port, port_len);
+    buf[addr_len] = ':';
+
+    return buf;
 }
 
 int udp_create_listener(const char *host, uint16_t port, uv_loop_t *loop, uv_udp_t *udp) {
