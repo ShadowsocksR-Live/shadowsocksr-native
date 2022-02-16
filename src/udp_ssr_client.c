@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifndef __MINGW32__
+#if !defined(__MINGW32__) && !defined(_WIN32)
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>
@@ -22,7 +22,7 @@
 #include "config.h"
 #endif
 
-#if defined(HAVE_SYS_IOCTL_H) && defined(HAVE_NET_IF_H) && defined(__linux__) && !defined(_MSC_VER)
+#if defined(HAVE_SYS_IOCTL_H) && defined(HAVE_NET_IF_H) && defined(__linux__)
 #include <net/if.h>
 #include <sys/ioctl.h>
 #define SET_INTERFACE
