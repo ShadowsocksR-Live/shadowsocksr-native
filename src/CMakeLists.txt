@@ -110,7 +110,6 @@ set(SOURCE_FILES_SERVER
         ssrbuffer.h
         encrypt.c
         udprelay.c
-        udp_ssr_client.c
         cache.c
         ip_addr_cache.c
         ip_addr_cache.h

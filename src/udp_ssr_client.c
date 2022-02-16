@@ -22,7 +22,7 @@
 #include "config.h"
 #endif
 
-#if defined(HAVE_SYS_IOCTL_H) && defined(HAVE_NET_IF_H) && defined(__linux__)
+#if defined(HAVE_SYS_IOCTL_H) && defined(HAVE_NET_IF_H) && defined(__linux__) && !defined(_MSC_VER)
 #include <net/if.h>
 #include <sys/ioctl.h>
 #define SET_INTERFACE
