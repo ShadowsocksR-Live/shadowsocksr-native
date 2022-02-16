@@ -299,7 +299,7 @@ static void
 client_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvbuf, const struct sockaddr* addr, unsigned flags)
 {
     struct client_udp_listener_ctx *listener_ctx;
-    struct buffer_t *buf;
+    struct buffer_t *buf = NULL;
     unsigned int offset;
     uint8_t frag = 0;
 
