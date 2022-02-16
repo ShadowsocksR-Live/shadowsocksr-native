@@ -84,8 +84,8 @@ static void udp_remote_ctx_free_internal(struct client_udp_remote_ctx *ctx) {
     free(ctx);
 }
 
-static REF_COUNT_ADD_REF_IMPL(client_udp_remote_ctx);
-static REF_COUNT_RELEASE_IMPL(client_udp_remote_ctx, udp_remote_ctx_free_internal);
+static REF_COUNT_ADD_REF_IMPL(client_udp_remote_ctx)
+static REF_COUNT_RELEASE_IMPL(client_udp_remote_ctx, udp_remote_ctx_free_internal)
 
 
 static void client_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const struct sockaddr* addr, unsigned flags);
@@ -171,6 +171,12 @@ void client_udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* 
         ASSERT(remote_ctx);
         ASSERT(remote_ctx == handle->data);
         listener_ctx = remote_ctx->listener_ctx;
+
+        if (addr) {
+            union sockaddr_universal rmt_addr = *((union sockaddr_universal*)addr);
+            ASSERT(memcmp(&listener_ctx->server_addr, &rmt_addr, sizeof(rmt_addr)) == 0);
+            (void)addr; (void)flags; (void)rmt_addr;
+        }
 
         uv_timer_stop(&remote_ctx->rmt_expire);
 
@@ -444,6 +450,7 @@ client_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
     if (nead_more_action == false) {
         buffer_release(buf);
     }
+    (void)flags;
 }
 
 static void client_udp_listener_close_cb(uv_handle_t* handle) {
