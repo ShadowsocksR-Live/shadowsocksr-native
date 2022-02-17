@@ -125,7 +125,7 @@ static void client_udp_remote_ctx_shutdown(struct client_udp_remote_ctx *remote_
         client_udp_remote_ctx_add_ref(remote_ctx);
     }
 
-    pr_info("[udp] session %s ==> %s stoped",
+    pr_info("[udp] session %s <== %s stoped",
         get_addr_str(&remote_ctx->incoming_addr.addr, tmp1, sizeof(tmp1)),
         get_addr_str(&remote_ctx->target_addr.addr, tmp2, sizeof(tmp2)));
 
