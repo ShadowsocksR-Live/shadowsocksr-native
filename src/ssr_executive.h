@@ -84,6 +84,7 @@ void string_safe_assign(char **target, const char *value);
 #define MILLISECONDS_PER_SECOND 1000  // Milliseconds per second
 
 #define DEFAULT_BIND_HOST     "127.0.0.1"
+#define DEFAULT_BIND_PUBLIC_HOST    "0.0.0.0"
 #define DEFAULT_BIND_PORT     1080
 #define DEFAULT_IDLE_TIMEOUT  (60 * MILLISECONDS_PER_SECOND)
 #define DEFAULT_CONNECT_TIMEOUT  (6 * MILLISECONDS_PER_SECOND)

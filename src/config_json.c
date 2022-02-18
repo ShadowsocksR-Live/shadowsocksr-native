@@ -99,6 +99,8 @@ struct server_config* parse_config_file(bool is_server, const char* file)
     struct server_config* config = config_create();
     do {
         struct json_object_iter iter = { NULL };
+        bool svr_setting = false;
+        unsigned short svr_listen_port = 0;
 
         jso = json_object_from_file(file);
         if (jso == NULL) {
@@ -174,6 +176,11 @@ struct server_config* parse_config_file(bool is_server, const char* file)
                     config->listen_port = obj_int;
                     continue;
                 }
+            } else {
+                if (json_iter_extract_int("server_port", &iter, &obj_int)) {
+                    svr_listen_port = obj_int;
+                    continue;
+                }
             }
 
             if (json_iter_extract_object("server_settings", &iter, &obj_obj)) {
@@ -193,6 +200,7 @@ struct server_config* parse_config_file(bool is_server, const char* file)
                         continue;
                     }
                 }
+                svr_setting = true;
                 continue;
             }
 
@@ -250,6 +258,13 @@ struct server_config* parse_config_file(bool is_server, const char* file)
                 continue;
             }
         }
+
+        if (is_server && !svr_setting && (svr_listen_port != 0)) {
+            // "server_settings" item is missing.
+            config->listen_port = svr_listen_port;
+            string_safe_assign(&config->listen_host, DEFAULT_BIND_PUBLIC_HOST);
+        }
+
         result = true;
     } while (0);
     if (jso) {
