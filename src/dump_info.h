@@ -19,15 +19,24 @@ void pr_info(const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(1, 2);
 void pr_warn(const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(1, 2);
 void pr_err(const char *fmt, ...) ATTRIBUTE_FORMAT_PRINTF(1, 2);
 
+#if !defined(__FILENAME__)
+#include <string.h>
+#if defined(_MSC_VER) && defined(WIN32)
+#define __FILENAME__ (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
+#else
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#endif
+#endif
+
 #if !defined(NDEBUG)
 #define PRINT_INFO(format, ...) \
-    do { pr_info("%s : %d\t" format, __FILE__, __LINE__, ## __VA_ARGS__); } while (0)
+    do { pr_info("%s : %d\t" format, __FILENAME__, __LINE__, ## __VA_ARGS__); } while (0)
 
 #define PRINT_WARN(format, ...) \
-    do { pr_warn("%s : %d\t" format, __FILE__, __LINE__, ## __VA_ARGS__); } while (0)
+    do { pr_warn("%s : %d\t" format, __FILENAME__, __LINE__, ## __VA_ARGS__); } while (0)
 
 #define PRINT_ERR(format, ...) \
-    do { pr_err("%s : %d\t" format, __FILE__, __LINE__, ## __VA_ARGS__); } while (0)
+    do { pr_err("%s : %d\t" format, __FILENAME__, __LINE__, ## __VA_ARGS__); } while (0)
 #else
 #define PRINT_INFO(format, ...)
 #define PRINT_ERR(format, ...)
