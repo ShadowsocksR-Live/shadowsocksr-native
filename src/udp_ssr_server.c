@@ -135,7 +135,7 @@ static void server_udp_remote_timeout_cb(uv_timer_t* handle) {
     struct server_udp_remote_ctx *remote_ctx;
     remote_ctx = CONTAINER_OF(handle, struct server_udp_remote_ctx, rmt_expire);
 
-    pr_info("%s", "[udp] connection timeout, shutting down");
+    pr_info("[udp] %s connection timeout, shutting down", __FUNCTION__);
 
     server_udp_remote_ctx_shutdown(remote_ctx);
 }
@@ -253,10 +253,10 @@ static void server_udp_send_done_cb(uv_udp_send_t* req, int status) {
 static void server_udp_remote_restart_timer(struct server_udp_remote_ctx *remote_ctx) {
     uv_timer_t *timer = &remote_ctx->rmt_expire;
     uv_timer_stop(timer);
-    uv_timer_start(timer, server_udp_remote_timeout_cb, remote_ctx->timeout, 0);
+    uv_timer_start(timer, timer->timer_cb, remote_ctx->timeout, 0);
 }
 
-struct server_udp_remote_ctx * create_server_udp_remote(uv_loop_t* loop, uint64_t timeout) {
+struct server_udp_remote_ctx * create_server_udp_remote(uv_loop_t* loop, uint64_t timeout, uv_timer_cb cb) {
     uv_udp_t *udp = NULL;
     uv_timer_t *timer;
 
@@ -271,6 +271,8 @@ struct server_udp_remote_ctx * create_server_udp_remote(uv_loop_t* loop, uint64_
     timer = &remote_ctx->rmt_expire;
     uv_timer_init(loop, timer);
     timer->data = remote_ctx;
+    uv_timer_start(timer, cb, remote_ctx->timeout, 0);
+    uv_timer_stop(timer);
 
     return remote_ctx;
 }
@@ -355,10 +357,13 @@ server_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
 
         // SSR beg
         if (listener_ctx->protocol_plugin) {
-            struct obfs_t *protocol_plugin = listener_ctx->protocol_plugin;
-            if (protocol_plugin->server_udp_post_decrypt) {
+            struct obfs_t *protoc = listener_ctx->protocol_plugin;
+            if (protoc->server_udp_post_decrypt) {
                 uint32_t uid = 0;
-                protocol_plugin->server_udp_post_decrypt(protocol_plugin, buf, &uid);
+                if (protoc->server_udp_post_decrypt(protoc, buf, &uid) == false) {
+                    pr_err("[udp] %s error in SSR decrypt", __FUNCTION__);
+                    break;
+                }
             }
         }
         //SSR end
@@ -384,7 +389,7 @@ server_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
             uv_udp_send_t *req;
             char tmp1[SS_ADDRSTRLEN] = { 0 }, tmp2[SS_ADDRSTRLEN] = { 0 };
 
-            remote_ctx = create_server_udp_remote(loop, listener_ctx->timeout);
+            remote_ctx = create_server_udp_remote(loop, listener_ctx->timeout, server_udp_remote_timeout_cb);
             server_udp_remote_ctx_add_ref(remote_ctx);
             remote_ctx->listener_ctx = listener_ctx;
             remote_ctx->incoming_addr.addr = *addr;
