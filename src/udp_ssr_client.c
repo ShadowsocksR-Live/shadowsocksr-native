@@ -133,10 +133,13 @@ static void client_udp_remote_ctx_shutdown(struct client_udp_remote_ctx *remote_
 }
 
 static void client_udp_remote_timeout_cb(uv_timer_t* handle) {
+    char tmp1[SS_ADDRSTRLEN] = { 0 }, tmp2[SS_ADDRSTRLEN] = { 0 };
     struct client_udp_remote_ctx *remote_ctx;
     remote_ctx = CONTAINER_OF(handle, struct client_udp_remote_ctx, rmt_expire);
 
-    pr_info("%s", "[udp] connection timeout, shutting down");
+    pr_err("[udp] %s connection %s ==> %s timeout, shutting down", __FUNCTION__,
+        get_addr_str(&remote_ctx->incoming_addr.addr, tmp1, sizeof(tmp1)),
+        get_addr_str(&remote_ctx->target_addr.addr, tmp2, sizeof(tmp2)));
 
     client_udp_remote_ctx_shutdown(remote_ctx);
 }
