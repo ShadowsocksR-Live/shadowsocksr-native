@@ -981,29 +981,41 @@ bool auth_chain_a_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *b
 #define AUTH_DATA_LEN 7
     struct server_info_t *server_info = (struct server_info_t *)&obfs->server_info;
     struct auth_chain_a_context *local = (struct auth_chain_a_context*)obfs->l_data;
-    struct buffer_t *user_key, *mac_key, *out_buf;
+    struct buffer_t *user_key, *mac_key, *msg1, *out_buf;
     uint8_t authdata[AUTH_DATA_LEN + 1] = { 0 };
-    uint8_t md5data[MD5_BYTES + 1] = { 0 };
+    uint8_t md5data[MD5_BYTES + 1] = { 0 }, md5data2[MD5_BYTES + 1] = { 0 };
     size_t rand_len;
+    uint8_t *rand_data;
 
     user_key = buffer_create_from(server_info->key, server_info->key_len);
     rand_bytes(authdata, AUTH_DATA_LEN);
     mac_key = buffer_create_from(server_info->key, server_info->key_len);
-    {
-        struct buffer_t *msg1 = buffer_create_from(authdata, AUTH_DATA_LEN);
-        ss_md5_hmac_with_key(md5data, msg1, mac_key);
-        buffer_release(msg1);
-    }
-    rand_len = (int) udp_get_rand_len(&local->random_client, md5data);
+
+    msg1 = buffer_create_from(authdata, AUTH_DATA_LEN);
+    ss_md5_hmac_with_key(md5data, msg1, mac_key);
+    buffer_release(msg1);
+
+    rand_len = (int) udp_get_rand_len(&local->random_server, md5data);
 
     out_buf = auth_chain_a_encryptor(true, "rc4", user_key, md5data, buf);
+
+    rand_data = (uint8_t *)calloc(rand_len + 1, sizeof(*rand_data));
+    rand_bytes(rand_data, rand_len);
+
+    buffer_replace(buf, out_buf);
+    buffer_concatenate_raw(buf, rand_data, rand_len);
+    buffer_concatenate_raw(buf, authdata, AUTH_DATA_LEN);
+
+    ss_md5_hmac_with_key(md5data2, buf, user_key);
+    buffer_concatenate_raw(buf, md5data2, 1);
 
     buffer_release(out_buf);
     buffer_release(mac_key);
     buffer_release(user_key);
+    free(rand_data);
 
     (void)uid;
-    return false;
+    return true;
 }
 
 //
@@ -1011,22 +1023,23 @@ bool auth_chain_a_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *b
 //
 bool auth_chain_a_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *puid) {
     struct server_info_t *server_info = (struct server_info_t *)&obfs->server_info;
-    struct buffer_t *mac_key = buffer_create_from(server_info->key, server_info->key_len);
+    struct buffer_t *mac_key, *msg1, *user_key = NULL;
     const uint8_t *buf_data = buffer_get_data(buf);
-    size_t buf_len = buffer_get_length(buf);
-    uint8_t md5data[MD5_BYTES + 1] = { 0 };
-    struct buffer_t *msg1 = buffer_create_from(buf_data + buf_len - 8, 3);
+    size_t buf_len, i;
+    uint8_t md5data[MD5_BYTES + 1] = { 0 }, md5data2[MD5_BYTES + 1] = { 0 };
     uint8_t uid[4] = { 0 };
-    size_t i;
-    struct buffer_t *user_key = NULL;
-    uint8_t md5data2[MD5_BYTES + 1] = { 0 };
     struct buffer_t *msg2 = NULL;
     struct auth_chain_a_context *local = (struct auth_chain_a_context*)obfs->l_data;
     size_t rand_len;
 
     assert(puid);
 
+    mac_key = buffer_create_from(server_info->key, server_info->key_len);
+    buf_len = buffer_get_length(buf);
+
+    msg1 = buffer_create_from(buf_data + buf_len - 8, 3);
     ss_md5_hmac_with_key(md5data, msg1, mac_key);
+    buffer_release(msg1);
 
     for (i = 0; i < 4; ++i) {
         uid[i] = ((uint8_t) buf_data[buf_len - 5 + i]) ^ md5data[i];
@@ -1035,16 +1048,21 @@ bool auth_chain_a_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *
     memset(uid, 0, sizeof(uid));
     user_key = buffer_clone(mac_key);
 
-    msg2 = buffer_create_from(buf_data + buf_len - 8, 3);
+    msg2 = buffer_create_from(buf_data, buf_len - 1);
     ss_md5_hmac_with_key(md5data2, msg2, user_key);
+    buffer_release(msg2);
+    if (md5data2[0] != buf_data[buf_len-1]) {
+        *puid = 0;
+        return false;
+    }
 
-    rand_len = (int) udp_get_rand_len(&local->random_client, md5data2);
+    rand_len = (int) udp_get_rand_len(&local->random_server, md5data);
 
     {
         size_t outlength = buf_len - rand_len - 8;
-        struct buffer_t *in_obj = buffer_create_from(buf_data, outlength);
+        struct buffer_t *ret, *in_obj = buffer_create_from(buf_data, outlength);
 
-        struct buffer_t *ret = auth_chain_a_encryptor(false, "rc4", user_key, md5data2, in_obj);
+        ret = auth_chain_a_encryptor(false, "rc4", user_key, md5data, in_obj);
 
         buffer_reset(buf, true);
         buffer_replace(buf, ret);
@@ -1053,13 +1071,11 @@ bool auth_chain_a_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *
         buffer_release(in_obj);
     }
 
-    buffer_release(msg2);
     buffer_release(user_key);
-    buffer_release(msg1);
     buffer_release(mac_key);
 
     memcpy(puid, uid, 4);
-    return 0;
+    return true;
 }
 
 //============================= auth_chain_b ==================================
