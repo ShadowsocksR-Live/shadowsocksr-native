@@ -76,7 +76,7 @@ struct obfs_t {
     struct buffer_t * (*server_encode)(struct obfs_t *obfs, const struct buffer_t *buf);
     struct buffer_t * (*server_decode)(struct obfs_t *obfs, const struct buffer_t *buf, bool *need_decrypt, bool *need_feedback);
 
-    bool (*server_udp_pre_encrypt)(struct obfs_t *obfs, struct buffer_t *buf);
+    bool (*server_udp_pre_encrypt)(struct obfs_t *obfs, struct buffer_t *buf, uint32_t uid);
     bool (*server_udp_post_decrypt)(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *uid);
 };
 
@@ -98,7 +98,7 @@ struct buffer_t * generic_server_encode(struct obfs_t *obfs, const struct buffer
 struct buffer_t * generic_server_decode(struct obfs_t *obfs, const struct buffer_t *buf, bool *need_decrypt, bool *need_feedback);
 struct buffer_t * generic_server_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, bool *need_feedback);
 
-bool generic_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf);
+bool generic_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t uid);
 bool generic_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *uid);
 
 #if (defined(_MSC_VER) && (_MSC_VER < 1800))

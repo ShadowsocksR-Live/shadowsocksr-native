@@ -24,7 +24,7 @@ ssize_t auth_chain_a_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaind
 
 struct buffer_t * auth_chain_a_server_pre_encrypt(struct obfs_t *obfs, const struct buffer_t *buf);
 struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, bool *need_feedback);
-bool auth_chain_a_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf);
+bool auth_chain_a_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t uid);
 bool auth_chain_a_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *uid);
 
 #if defined(_MSC_VER) && (_MSC_VER < 1800)
@@ -956,7 +956,10 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
     return out_buf;
 }
 
-bool auth_chain_a_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf) {
+//
+// https://github.com/ShadowsocksR-Live/shadowsocksr/blob/b3cf97c44e0b7023354b961c0e447470b53e1f8f/shadowsocks/obfsplugin/auth_chain.py#L596-L612
+//
+bool auth_chain_a_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t uid) {
     assert(!"TODO : need implementation future.");
     (void)obfs; (void)buf;
     return false;
@@ -993,9 +996,9 @@ bool auth_chain_a_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *
     // else:
     //     uid = None
     //     if not self.server_info.users:
-    //         user_key = self.server_info.key // <- FIXME: adopted this line only
+    //       user_key = self.server_info.key // <- FIXME: adopted this line only
     //     else:
-    //        user_key = self.server_info.recv_iv
+    //       user_key = self.server_info.recv_iv
     //
     memset(uid, 0, sizeof(uid));
     user_key = buffer_clone(mac_key);

@@ -211,8 +211,8 @@ void obfs_instance_destroy(struct obfs_t *plugin) {
     }
 }
 
-bool generic_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf) {
-    (void)obfs; (void)buf;
+bool generic_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t uid) {
+    (void)obfs; (void)buf; (void)uid;
     return true;
 }
 

@@ -186,7 +186,7 @@ void server_udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* 
         if (listener_ctx->protocol_plugin) {
             struct obfs_t *protoc = listener_ctx->protocol_plugin;
             if (protoc->server_udp_pre_encrypt) {
-                if (protoc->server_udp_pre_encrypt(protoc, buf) == false) {
+                if (protoc->server_udp_pre_encrypt(protoc, buf, 0) == false) {
                     pr_err("[udp] %s SSR protocol_plugin error", __FUNCTION__);
                     break;
                 }

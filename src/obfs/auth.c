@@ -1671,9 +1671,9 @@ auth_aes128_sha1_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaindata,
     return (ssize_t)(datalength - 4);
 }
 
-bool auth_aes128_sha1_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf) {
+bool auth_aes128_sha1_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t uid) {
     assert(!"TODO : need implementation future.");
-    return generic_server_udp_pre_encrypt(obfs, buf);
+    return generic_server_udp_pre_encrypt(obfs, buf, uid);
 }
 
 bool auth_aes128_sha1_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *uid) {
