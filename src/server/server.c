@@ -40,6 +40,8 @@ struct ssr_server_state {
 
     uv_tcp_t *tcp_listener;
     struct ip_addr_cache *resolved_ip_cache;
+
+    struct server_udp_listener_ctx *udp_listener;
 };
 
 #define TUNNEL_STAGE_MAP(V)                                                             \
@@ -267,6 +269,14 @@ static int ssr_server_run_loop(struct server_config *config, bool force_quit) {
         }
         state->tcp_listener = listener;
 
+        if ((config->over_tls_enable == false) && config->udp) {
+            state->udp_listener = server_udprelay_begin(loop,
+                config->listen_host, config->listen_port,
+                state->env->cipher,
+                0, (int)config->udp_timeout,
+                config->protocol, config->protocol_param);
+        }
+
         state->resolved_ip_cache = ip_addr_cache_create(IP_CACHE_EXPIRE_INTERVAL_MIN);
     }
 
@@ -343,6 +353,10 @@ void ssr_server_shutdown(struct ssr_server_state *state) {
 
     if (state->tcp_listener) {
         uv_close((uv_handle_t *)state->tcp_listener, listener_close_done_cb);
+    }
+
+    if (state->udp_listener) {
+        server_udprelay_shutdown(state->udp_listener);
     }
 
     server_shutdown(state->env);

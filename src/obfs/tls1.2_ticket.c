@@ -95,8 +95,8 @@ struct obfs_t * tls12_ticket_auth_new_obfs(void) {
     obfs->server_encode = tls12_ticket_auth_server_encode;
     obfs->server_decode = tls12_ticket_auth_server_decode;
     obfs->server_post_decrypt = tls12_ticket_auth_server_post_decrypt;
-    obfs->server_udp_pre_encrypt = generic_server_udp_pre_encrypt;
-    obfs->server_udp_post_decrypt = generic_server_udp_post_decrypt;
+    obfs->server_udp_pre_encrypt = NULL;
+    obfs->server_udp_post_decrypt = NULL;
 
     obfs->l_data = calloc(1, sizeof(struct tls12_ticket_auth_local_data));
     tls12_ticket_auth_local_data_init((struct tls12_ticket_auth_local_data *)obfs->l_data);

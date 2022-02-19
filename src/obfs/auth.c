@@ -184,8 +184,8 @@ struct obfs_t * auth_aes128_md5_new_obfs(void) {
     obfs->server_encode = generic_server_encode;
     obfs->server_decode = generic_server_decode;
     obfs->server_post_decrypt = auth_aes128_sha1_server_post_decrypt;
-    obfs->server_udp_pre_encrypt = generic_server_udp_pre_encrypt;
-    obfs->server_udp_post_decrypt = generic_server_udp_post_decrypt;
+    obfs->server_udp_pre_encrypt = auth_aes128_sha1_server_udp_pre_encrypt;
+    obfs->server_udp_post_decrypt = auth_aes128_sha1_server_udp_post_decrypt;
 
     l_data = auth_simple_local_data_init();
     l_data->hmac = ss_md5_hmac_with_key;
@@ -1672,11 +1672,11 @@ auth_aes128_sha1_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaindata,
 }
 
 bool auth_aes128_sha1_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf) {
-    // TODO : need implementation future.
+    assert(!"TODO : need implementation future.");
     return generic_server_udp_pre_encrypt(obfs, buf);
 }
 
 bool auth_aes128_sha1_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *uid) {
-    // TODO : need implementation future.
+    assert(!"TODO : need implementation future.");
     return generic_server_udp_post_decrypt(obfs, buf, uid);
 }
