@@ -956,15 +956,59 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
     return out_buf;
 }
 
+struct buffer_t *
+auth_chain_a_encryptor(bool encrypt,
+    const char *method,
+    const struct buffer_t *user_key,
+    uint8_t md5data[MD5_BYTES],
+    const struct buffer_t *orig_data
+    )
+{
+    struct buffer_t *ret;
+    size_t user_key_len = buffer_get_length(user_key);
+    char *mixed_key = (char *) calloc((user_key_len + MD5_BYTES) * 3, sizeof(mixed_key));
+    std_base64_encode(buffer_get_data(user_key), user_key_len, mixed_key);
+    std_base64_encode(md5data, MD5_BYTES, mixed_key + strlen(mixed_key));
+    ret = cipher_simple_update_data(mixed_key, method, encrypt, orig_data);
+    free(mixed_key);
+    return ret;
+}
+
 //
 // https://github.com/ShadowsocksR-Live/shadowsocksr/blob/b3cf97c44e0b7023354b961c0e447470b53e1f8f/shadowsocks/obfsplugin/auth_chain.py#L596-L612
 //
 bool auth_chain_a_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t uid) {
-    assert(!"TODO : need implementation future.");
-    (void)obfs; (void)buf;
+#define AUTH_DATA_LEN 7
+    struct server_info_t *server_info = (struct server_info_t *)&obfs->server_info;
+    struct auth_chain_a_context *local = (struct auth_chain_a_context*)obfs->l_data;
+    struct buffer_t *user_key, *mac_key, *out_buf;
+    uint8_t authdata[AUTH_DATA_LEN + 1] = { 0 };
+    uint8_t md5data[MD5_BYTES + 1] = { 0 };
+    size_t rand_len;
+
+    user_key = buffer_create_from(server_info->key, server_info->key_len);
+    rand_bytes(authdata, AUTH_DATA_LEN);
+    mac_key = buffer_create_from(server_info->key, server_info->key_len);
+    {
+        struct buffer_t *msg1 = buffer_create_from(authdata, AUTH_DATA_LEN);
+        ss_md5_hmac_with_key(md5data, msg1, mac_key);
+        buffer_release(msg1);
+    }
+    rand_len = (int) udp_get_rand_len(&local->random_client, md5data);
+
+    out_buf = auth_chain_a_encryptor(true, "rc4", user_key, md5data, buf);
+
+    buffer_release(out_buf);
+    buffer_release(mac_key);
+    buffer_release(user_key);
+
+    (void)uid;
     return false;
 }
 
+//
+// https://github.com/ShadowsocksR-Live/shadowsocksr/blob/b3cf97c44e0b7023354b961c0e447470b53e1f8f/shadowsocks/obfsplugin/auth_chain.py#L614-L632
+//
 bool auth_chain_a_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *puid) {
     struct server_info_t *server_info = (struct server_info_t *)&obfs->server_info;
     struct buffer_t *mac_key = buffer_create_from(server_info->key, server_info->key_len);
@@ -988,18 +1032,6 @@ bool auth_chain_a_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *
         uid[i] = ((uint8_t) buf_data[buf_len - 5 + i]) ^ md5data[i];
     }
 
-    //
-    // https://github.com/ShadowsocksR-Live/shadowsocksr/blob/b3cf97c44e0b7023354b961c0e447470b53e1f8f/shadowsocks/obfsplugin/auth_chain.py#L619-L626
-    //
-    // if uid in self.server_info.users:
-    //     user_key = self.server_info.users[uid]
-    // else:
-    //     uid = None
-    //     if not self.server_info.users:
-    //       user_key = self.server_info.key // <- FIXME: adopted this line only
-    //     else:
-    //       user_key = self.server_info.recv_iv
-    //
     memset(uid, 0, sizeof(uid));
     user_key = buffer_clone(mac_key);
 
@@ -1009,14 +1041,10 @@ bool auth_chain_a_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *
     rand_len = (int) udp_get_rand_len(&local->random_client, md5data2);
 
     {
-        struct buffer_t *in_obj, *ret;
         size_t outlength = buf_len - rand_len - 8;
-        char mix_key[256] = { 0 };
-        std_base64_encode(buffer_get_data(user_key), buffer_get_length(user_key), mix_key);
-        std_base64_encode(md5data2, MD5_BYTES, mix_key + strlen(mix_key));
+        struct buffer_t *in_obj = buffer_create_from(buf_data, outlength);
 
-        in_obj = buffer_create_from(buf_data, outlength);
-        ret = cipher_simple_update_data(mix_key, "rc4", false, in_obj);
+        struct buffer_t *ret = auth_chain_a_encryptor(false, "rc4", user_key, md5data2, in_obj);
 
         buffer_reset(buf, true);
         buffer_replace(buf, ret);
