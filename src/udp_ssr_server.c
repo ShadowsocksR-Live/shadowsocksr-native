@@ -401,7 +401,7 @@ server_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
 
             cstl_set_container_add(listener_ctx->connections, remote_ctx);
 
-            pr_info("[udp] session %s ==> %s (size: %d) starting",
+            pr_info("[udp] session %s ==> %s (size: %ld) starting",
                 get_addr_str(addr, tmp1, sizeof(tmp1)),
                 get_addr_str(&target_addr.addr, tmp2, sizeof(tmp2)),
                 buffer_get_length(buf));
