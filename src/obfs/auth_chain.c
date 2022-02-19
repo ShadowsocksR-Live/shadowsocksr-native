@@ -958,6 +958,7 @@ struct buffer_t * auth_chain_a_server_post_decrypt(struct obfs_t *obfs, struct b
 
 bool auth_chain_a_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf) {
     assert(!"TODO : need implementation future.");
+    (void)obfs; (void)buf;
     return false;
 }
 

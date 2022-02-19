@@ -176,33 +176,33 @@ void server_udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* 
         uv_timer_stop(&remote_ctx->rmt_expire);
 
         if (nread <= 0) {
-            pr_err("%s recv remote data error", __FUNCTION__);
+            pr_err("[udp] %s recv remote data error", __FUNCTION__);
             break;
         }
 
         buf = buffer_create_from((const uint8_t *) uvbuf->base, (size_t)nread);
-        buffer_realloc(buf, (size_t)nread*2);
 
         //SSR beg
         if (listener_ctx->protocol_plugin) {
             struct obfs_t *protoc = listener_ctx->protocol_plugin;
             if (protoc->server_udp_pre_encrypt) {
                 if (protoc->server_udp_pre_encrypt(protoc, buf) == false) {
-                    pr_err("%s SSR encrypt error", __FUNCTION__);
+                    pr_err("[udp] %s SSR protocol_plugin error", __FUNCTION__);
                     break;
                 }
             }
         }
         // SSR end
 
-        err = ss_encrypt_all(listener_ctx->cipher_env, buf, (size_t)nread*2);
-        if (err) {
-            // drop the packet silently
+        if (buffer_get_length(buf) == 0) {
+            pr_err("[udp] %s received datagram is empty", __FUNCTION__);
             break;
         }
 
-        if (buffer_get_length(buf) == 0) {
-            pr_err("%s", "received datagram is empty");
+        err = ss_encrypt_all(listener_ctx->cipher_env, buf, buffer_get_length(buf));
+        if (err) {
+            // drop the packet silently
+            pr_err("[udp] %s SS encrypt error", __FUNCTION__);
             break;
         }
 
@@ -210,7 +210,7 @@ void server_udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* 
         final_len = buffer_get_length(buf);
         addr_header_len = udprelay_parse_header(final_data, final_len, NULL, NULL, NULL);
         if (addr_header_len == 0) {
-            pr_err("%s", "[udp] error in parse header");
+            pr_err("[udp] %s error in parse header", __FUNCTION__);
             break;
         }
 
