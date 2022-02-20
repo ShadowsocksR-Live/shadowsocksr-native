@@ -1594,7 +1594,7 @@ ssize_t
 auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *obfs, uint8_t **pplaindata, size_t datalength, size_t* capacity)
 {
     size_t outlength;
-    char *plaindata = *pplaindata;
+    uint8_t *plaindata = *pplaindata;
     auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
     uint8_t * out_buffer = (uint8_t *)calloc((datalength + 8), sizeof(uint8_t));
 
@@ -1636,7 +1636,7 @@ auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *obfs, uint8_t **pplaindat
     }
 
     if (*capacity < outlength) {
-        *pplaindata = (char*)realloc(*pplaindata, *capacity = (outlength * 2));
+        *pplaindata = (uint8_t*)realloc(*pplaindata, *capacity = (outlength * 2));
         plaindata = *pplaindata;
     }
     memmove(plaindata, out_buffer, outlength);
@@ -1647,7 +1647,7 @@ auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *obfs, uint8_t **pplaindat
 ssize_t
 auth_aes128_sha1_client_udp_post_decrypt(struct obfs_t *obfs, uint8_t **pplaindata, size_t datalength, size_t* capacity)
 {
-    char *plaindata;
+    uint8_t *plaindata;
     auth_simple_local_data *local;
     uint8_t hash[SHA1_BYTES + 1] = { 0 };
 
