@@ -1591,7 +1591,7 @@ struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, stru
 }
 
 ssize_t
-auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplaindata, size_t datalength, size_t* capacity)
+auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *obfs, uint8_t **pplaindata, size_t datalength, size_t* capacity)
 {
     size_t outlength;
     char *plaindata = *pplaindata;
@@ -1645,7 +1645,7 @@ auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplaindata, 
 }
 
 ssize_t
-auth_aes128_sha1_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaindata, size_t datalength, size_t* capacity)
+auth_aes128_sha1_client_udp_post_decrypt(struct obfs_t *obfs, uint8_t **pplaindata, size_t datalength, size_t* capacity)
 {
     char *plaindata;
     auth_simple_local_data *local;
