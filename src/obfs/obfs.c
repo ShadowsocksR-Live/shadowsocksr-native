@@ -212,11 +212,13 @@ void obfs_instance_destroy(struct obfs_t *plugin) {
 }
 
 bool generic_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t uid) {
+    assert(!"generic_server_udp_pre_encrypt");
     (void)obfs; (void)buf; (void)uid;
     return true;
 }
 
 bool generic_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *uid) {
+    assert(!"generic_server_udp_post_decrypt");
     (void)obfs; (void)buf;
     if (uid) { *uid = 0; }
     return true;

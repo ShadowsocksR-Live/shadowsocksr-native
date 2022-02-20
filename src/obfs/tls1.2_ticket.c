@@ -45,8 +45,6 @@ struct buffer_t * tls12_ticket_auth_server_pre_encrypt(struct obfs_t *obfs, cons
 struct buffer_t * tls12_ticket_auth_server_encode(struct obfs_t *obfs, const struct buffer_t *buf);
 struct buffer_t * tls12_ticket_auth_server_decode(struct obfs_t *obfs, const struct buffer_t *buf, bool *need_decrypt, bool *need_feedback);
 struct buffer_t * tls12_ticket_auth_server_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, bool *need_feedback);
-bool tls12_ticket_auth_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t uid);
-bool tls12_ticket_auth_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *uid);
 
 static void free_element(void* ptr) {
     struct buffer_t *p = *((struct buffer_t**)ptr);
@@ -862,15 +860,6 @@ struct buffer_t * tls12_ticket_auth_server_decode(struct obfs_t *obfs, const str
 struct buffer_t * tls12_ticket_auth_server_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, bool *need_feedback) {
     // TODO : need implementation future.
     return generic_server_post_decrypt(obfs, buf, need_feedback);
-}
-
-bool tls12_ticket_auth_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t uid) {
-    return generic_server_udp_pre_encrypt(obfs, buf, uid);
-}
-
-bool tls12_ticket_auth_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *uid) {
-    // TODO : need implementation future.
-    return generic_server_udp_post_decrypt(obfs, buf, uid);
 }
 
 //============================= tls1.2_ticket_fastauth ==================================
