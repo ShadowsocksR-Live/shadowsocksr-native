@@ -326,21 +326,22 @@ client_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
         listener_ctx = CONTAINER_OF(handle, struct client_udp_listener_ctx, udp);
         ASSERT(listener_ctx);
 
-        buf = buffer_create(max((size_t)buf_size, (size_t)nread));
-
         offset = 0;
 
         if (nread <= 0) {
             // error on recv
             // simply drop that packet
-            pr_err("%s", "[udp] client__udp_listener_recv_cb");
+            if (nread < 0) {
+                pr_err("[udp] %s recv incoming data error", __FUNCTION__);
+            }
             break;
         } else if (nread > (ssize_t) packet_size) {
-            pr_err("%s", "[udp] client__udp_listener_recv_cb fragmentation");
+            pr_err("[udp] %s recv incoming data fragmentation, dropping", __FUNCTION__);
             break;
         }
 
-        buffer_store(buf, (uint8_t *)uvbuf->base, nread);
+        buf = buffer_create(max((size_t)buf_size, (size_t)nread));
+        buffer_store(buf, (uint8_t *)uvbuf->base, (size_t)nread);
 
         /*
          * SOCKS5 UDP Request / Response
@@ -369,14 +370,20 @@ client_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
             size_t addr_header_len   = 0;
             size_t len = buffer_get_length(buf);
             const uint8_t *buffer = buffer_get_data(buf);
+            char port[32] = { 0 };
 
             frag = *(uint8_t *)(buffer + 2);
             offset += 3;
 
             addr_header_len = udprelay_parse_header((buffer + offset), len - offset,
-                NULL, NULL, &target_addr.addr_stor);
+                NULL, port, &target_addr.addr_stor);
             if (addr_header_len == 0) {
                 // error in parse header
+                break;
+            }
+
+            if (strcmp(port, "5353") == 0) {
+                pr_err("[udp] %s do nothing with mDNS service (port 5353), dropped.", __FUNCTION__);
                 break;
             }
         }
