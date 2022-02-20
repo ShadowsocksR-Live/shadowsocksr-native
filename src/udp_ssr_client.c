@@ -394,7 +394,7 @@ client_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
             if (protocol_plugin->client_udp_pre_encrypt) {
                 size_t len = 0, capacity = 0;
                 uint8_t *buffer = (uint8_t *) buffer_raw_clone(buf, &malloc, &len, &capacity);
-                len = (size_t) protocol_plugin->client_udp_pre_encrypt(protocol_plugin, (char **)&buffer, len, &capacity);
+                len = (size_t) protocol_plugin->client_udp_pre_encrypt(protocol_plugin, &buffer, len, &capacity);
                 buffer_store(buf, buffer, len);
                 free(buffer);
             }
