@@ -64,6 +64,7 @@ udprelay_parse_header(const uint8_t *buf, size_t buf_len,
     char *host, char *port, struct sockaddr_storage *storage);
 char * get_addr_str(const struct sockaddr *sa, char* buf, size_t buf_len);
 
+
 struct client_udp_listener_ctx;
 
 struct client_udp_listener_ctx *
@@ -72,5 +73,15 @@ client_udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_
     int mtu, int timeout,
     const char *protocol, const char *protocol_param);
 void client_udprelay_shutdown(struct client_udp_listener_ctx *listener_ctx);
+
+
+struct server_udp_listener_ctx;
+
+struct server_udp_listener_ctx *
+server_udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
+    struct cipher_env_t *cipher_env,
+    int mtu, int timeout,
+    const char *protocol, const char *protocol_param);
+void server_udprelay_shutdown(struct server_udp_listener_ctx *listener_ctx);
 
 #endif // _UDPRELAY_H

@@ -184,8 +184,8 @@ struct obfs_t * auth_aes128_md5_new_obfs(void) {
     obfs->server_encode = generic_server_encode;
     obfs->server_decode = generic_server_decode;
     obfs->server_post_decrypt = auth_aes128_sha1_server_post_decrypt;
-    obfs->server_udp_pre_encrypt = generic_server_udp_pre_encrypt;
-    obfs->server_udp_post_decrypt = generic_server_udp_post_decrypt;
+    obfs->server_udp_pre_encrypt = auth_aes128_sha1_server_udp_pre_encrypt;
+    obfs->server_udp_post_decrypt = auth_aes128_sha1_server_udp_post_decrypt;
 
     l_data = auth_simple_local_data_init();
     l_data->hmac = ss_md5_hmac_with_key;
@@ -1591,10 +1591,10 @@ struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, stru
 }
 
 ssize_t
-auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplaindata, size_t datalength, size_t* capacity)
+auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *obfs, uint8_t **pplaindata, size_t datalength, size_t* capacity)
 {
     size_t outlength;
-    char *plaindata = *pplaindata;
+    uint8_t *plaindata = *pplaindata;
     auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
     uint8_t * out_buffer = (uint8_t *)calloc((datalength + 8), sizeof(uint8_t));
 
@@ -1636,7 +1636,7 @@ auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplaindata, 
     }
 
     if (*capacity < outlength) {
-        *pplaindata = (char*)realloc(*pplaindata, *capacity = (outlength * 2));
+        *pplaindata = (uint8_t*)realloc(*pplaindata, *capacity = (outlength * 2));
         plaindata = *pplaindata;
     }
     memmove(plaindata, out_buffer, outlength);
@@ -1645,9 +1645,9 @@ auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *obfs, char **pplaindata, 
 }
 
 ssize_t
-auth_aes128_sha1_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaindata, size_t datalength, size_t* capacity)
+auth_aes128_sha1_client_udp_post_decrypt(struct obfs_t *obfs, uint8_t **pplaindata, size_t datalength, size_t* capacity)
 {
-    char *plaindata;
+    uint8_t *plaindata;
     auth_simple_local_data *local;
     uint8_t hash[SHA1_BYTES + 1] = { 0 };
 
@@ -1671,12 +1671,52 @@ auth_aes128_sha1_client_udp_post_decrypt(struct obfs_t *obfs, char **pplaindata,
     return (ssize_t)(datalength - 4);
 }
 
-bool auth_aes128_sha1_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf) {
-    // TODO : need implementation future.
-    return generic_server_udp_pre_encrypt(obfs, buf);
+bool auth_aes128_sha1_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t uid) {
+    struct server_info_t *server_info = &obfs->server_info;
+    auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
+    struct buffer_t *user_key;
+    uint8_t hash[SHA1_BYTES] = { 0 };
+
+    user_key = buffer_create_from(server_info->key, server_info->key_len);
+    local->hmac(hash, buf, user_key);
+    buffer_release(user_key);
+
+    buffer_concatenate_raw(buf, hash, 4);
+
+    (void)uid;
+    return true;
 }
 
+//
+// https://github.com/ShadowsocksR-Live/shadowsocksr/blob/b3cf97c44e0b7023354b961c0e447470b53e1f8f/shadowsocks/obfsplugin/auth.py#L774-L786
+//
 bool auth_aes128_sha1_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *uid) {
-    // TODO : need implementation future.
-    return generic_server_udp_post_decrypt(obfs, buf, uid);
+    struct server_info_t *server_info = &obfs->server_info;
+    auth_simple_local_data *local = (auth_simple_local_data*)obfs->l_data;
+    struct buffer_t *user_key, *msg;
+    uint8_t hash[SHA1_BYTES] = { 0 }, *buf_data;
+    size_t buf_len;
+
+    buf_data = (uint8_t*) buffer_get_data(buf);
+    buf_len = buffer_get_length(buf);
+
+    if (uid) {
+        memcpy((uint8_t*)uid, buf_data + buf_len - 8, 4);
+        *uid = 0;
+    }
+
+    user_key = buffer_create_from(server_info->key, server_info->key_len);
+    msg = buffer_create_from(buf_data, buf_len - 4);
+    local->hmac(hash, msg, user_key);
+    buffer_release(msg);
+    buffer_release(user_key);
+
+    if (memcmp(hash, buf_data + buf_len - 4, 4) != 0) {
+        buffer_reset(buf, true);
+        return false;
+    }
+
+    buffer_set_lenth(buf, buf_len - 8, true);
+
+    return true;
 }

@@ -956,9 +956,9 @@ ss_decrypt_all(struct cipher_env_t *env, struct buffer_t *cipher, size_t capacit
     if (method > ss_cipher_table) {
         size_t iv_len = (size_t)env->enc_iv_len;
         bool success       = true;
-        struct cipher_ctx_t cipher_ctx;
+        struct cipher_ctx_t cipher_ctx = { 0, {0} };
         uint8_t *plain_buffer; size_t plain_len;
-        uint8_t iv[MAX_IV_LENGTH];
+        uint8_t iv[MAX_IV_LENGTH + 1] = { 0 };
         size_t cipher_len = buffer_get_length(cipher);
         const uint8_t *cipher_buffer = buffer_get_data(cipher);
 
