@@ -179,7 +179,9 @@ void server_udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* 
         uv_timer_stop(&remote_ctx->rmt_expire);
 
         if (nread <= 0) {
-            pr_err("[udp] %s recv remote data error", __FUNCTION__);
+            if (nread < 0) {
+                pr_err("[udp] %s recv remote data error", __FUNCTION__);
+            }
             break;
         }
 
@@ -312,7 +314,9 @@ server_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
         if (nread <= 0) {
             // error on recv
             // simply drop that packet
-            pr_err("[udp] %s error for zero size incoming data", __FUNCTION__);
+            if (nread < 0) {
+                pr_err("[udp] %s recv incoming data error", __FUNCTION__);
+            }
             break;
         } else if (nread > (ssize_t) packet_size) {
             pr_err("[udp] %s fragmentation", __FUNCTION__);
