@@ -182,10 +182,15 @@ extern int use_syslog;
 
 #endif
 
+#define FATAL(error_msg)            \
+    do {                            \
+        LOGE("%s", (error_msg));    \
+        exit(-1);                   \
+    } while (0)
+
 char *ss_itoa(int i);
 int ss_isnumeric(const char *s);
 int run_as(const char *user);
-void FATAL(const char *msg);
 void daemonize(const char *path);
 char *ss_strndup(const char *s, size_t n);
 char *ss_strdup(const char *s);
