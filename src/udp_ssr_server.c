@@ -298,6 +298,7 @@ static void find_matching_connection(struct cstl_set *set, const void *obj, bool
             *stop = true;
         }
     }
+    (void)set;
 }
 
 static void 
