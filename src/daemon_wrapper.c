@@ -18,6 +18,7 @@
 
 // #pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"") // no console window
 #pragma comment(lib, "Shell32.lib")
+#pragma comment(lib, "Ole32.lib")
 #endif
 
 

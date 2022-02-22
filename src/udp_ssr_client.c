@@ -91,7 +91,7 @@ static REF_COUNT_RELEASE_IMPL(client_udp_remote_ctx, udp_remote_ctx_free_interna
 static void client_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const struct sockaddr* addr, unsigned flags);
 static void client_udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf0, const struct sockaddr* addr, unsigned flags);
 static void client_udp_remote_timeout_cb(uv_timer_t* handle);
-static void client_udp_remote_restart_timer(struct client_udp_remote_ctx *remote_ctx);
+static void common_restart_timer(uv_timer_t *timer, uint64_t timeout);
 
 static size_t packet_size = DEFAULT_PACKET_SIZE;
 static size_t buf_size = DEFAULT_PACKET_SIZE * 2;
@@ -125,7 +125,7 @@ static void client_udp_remote_ctx_shutdown(struct client_udp_remote_ctx *remote_
         client_udp_remote_ctx_add_ref(remote_ctx);
     }
 
-    pr_info("[udp] session %s <== %s stoped",
+    pr_info("[udp] session %s <=> %s has nothing to do, shutting down",
         get_addr_str(&remote_ctx->incoming_addr.addr, tmp1, sizeof(tmp1)),
         get_addr_str(&remote_ctx->target_addr.addr, tmp2, sizeof(tmp2)));
 
@@ -133,13 +133,8 @@ static void client_udp_remote_ctx_shutdown(struct client_udp_remote_ctx *remote_
 }
 
 static void client_udp_remote_timeout_cb(uv_timer_t* handle) {
-    char tmp1[SS_ADDRSTRLEN] = { 0 }, tmp2[SS_ADDRSTRLEN] = { 0 };
     struct client_udp_remote_ctx *remote_ctx;
     remote_ctx = CONTAINER_OF(handle, struct client_udp_remote_ctx, rmt_expire);
-
-    pr_err("[udp] %s connection %s ==> %s timeout, shutting down", __FUNCTION__,
-        get_addr_str(&remote_ctx->incoming_addr.addr, tmp1, sizeof(tmp1)),
-        get_addr_str(&remote_ctx->target_addr.addr, tmp2, sizeof(tmp2)));
 
     client_udp_remote_ctx_shutdown(remote_ctx);
 }
@@ -155,7 +150,6 @@ static void client_udp_request_incoming_cb(uv_udp_send_t* req, int status) {
 
     free(req);
 
-    client_udp_remote_ctx_shutdown(remote_ctx);
     (void)listener_udp;
     (void)status;
 }
@@ -167,7 +161,6 @@ void client_udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* 
     size_t addr_header_len, final_len;
     const uint8_t *final_data;
     int err;
-    bool nead_more_action = false;
 
     do {
         remote_ctx = CONTAINER_OF(handle, struct client_udp_remote_ctx, rmt_udp);
@@ -176,9 +169,8 @@ void client_udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* 
         listener_ctx = remote_ctx->listener_ctx;
 
         if (addr) {
-            union sockaddr_universal rmt_addr = *((union sockaddr_universal*)addr);
-            ASSERT(memcmp(&listener_ctx->server_addr, &rmt_addr, sizeof(rmt_addr)) == 0);
-            (void)addr; (void)flags; (void)rmt_addr;
+            ASSERT(memcmp(&listener_ctx->server_addr, addr, sizeof(*addr)) == 0);
+            (void)addr; (void)flags;
         }
 
         uv_timer_stop(&remote_ctx->rmt_expire);
@@ -252,15 +244,12 @@ void client_udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* 
             remote_ctx->request_data = udp_data;
             send_req->data = remote_ctx;
             uv_udp_send(send_req, listener_udp, &sndbuf, 1, &incoming_addr->addr, client_udp_request_incoming_cb);
-
-            nead_more_action = true;
         }
     } while (0);
     udp_uv_release_buffer((uv_buf_t *)uvbuf);
     buffer_release(buf);
-    if (nead_more_action == false) {
-        client_udp_remote_ctx_shutdown(remote_ctx);
-    }
+
+    common_restart_timer(&remote_ctx->rmt_expire, remote_ctx->timeout);
 }
 
 static void client_udp_send_done_cb(uv_udp_send_t* req, int status) {
@@ -270,13 +259,16 @@ static void client_udp_send_done_cb(uv_udp_send_t* req, int status) {
     (void)status;
 }
 
-static void client_udp_remote_restart_timer(struct client_udp_remote_ctx *remote_ctx) {
-    uv_timer_t *timer = &remote_ctx->rmt_expire;
+static void common_restart_timer(uv_timer_t *timer, uint64_t timeout) {
+    assert(timer);
+    assert(timer->timer_cb != NULL);
+    assert(timeout > 0);
     uv_timer_stop(timer);
-    uv_timer_start(timer, client_udp_remote_timeout_cb, remote_ctx->timeout, 0);
+    uv_timer_start(timer, timer->timer_cb, timeout, 0);
 }
 
-struct client_udp_remote_ctx * create_client_udp_remote(uv_loop_t* loop, uint64_t timeout) {
+struct client_udp_remote_ctx *
+create_client_udp_remote(uv_loop_t* loop, uint64_t timeout, uv_timer_cb cb) {
     uv_udp_t *udp = NULL;
     uv_timer_t *timer;
 
@@ -291,10 +283,31 @@ struct client_udp_remote_ctx * create_client_udp_remote(uv_loop_t* loop, uint64_
     timer = &remote_ctx->rmt_expire;
     uv_timer_init(loop, timer);
     timer->data = remote_ctx;
+    uv_timer_start(timer, cb, remote_ctx->timeout, 0);
+    uv_timer_stop(timer);
 
     return remote_ctx;
 }
 
+struct matching_connect {
+    union sockaddr_universal incoming_addr;
+    union sockaddr_universal target_addr;
+    struct client_udp_remote_ctx *remote_ctx;
+};
+
+static void find_matching_connection(struct cstl_set *set, const void *obj, bool *stop, void *p) {
+    struct matching_connect *match = (struct matching_connect *)p;
+    struct client_udp_remote_ctx *remote_ctx = (struct client_udp_remote_ctx *)obj;
+    if (memcmp(&match->incoming_addr, &remote_ctx->incoming_addr, sizeof(match->incoming_addr)) == 0 &&
+        memcmp(&match->target_addr, &remote_ctx->target_addr, sizeof(match->target_addr)) == 0)
+    {
+        match->remote_ctx = remote_ctx;
+        if (stop) {
+            *stop = true;
+        }
+    }
+    (void)set;
+}
 
 // http://docs.libuv.org/en/v1.x/udp.html#c.uv_udp_recv_cb
 
@@ -329,8 +342,7 @@ client_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
         offset = 0;
 
         if (nread <= 0) {
-            // error on recv
-            // simply drop that packet
+            // error on recv, simply drop that packet
             if (nread < 0) {
                 pr_err("[udp] %s recv incoming data error", __FUNCTION__);
             }
@@ -429,12 +441,28 @@ client_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
             uv_buf_t tmp;
             uv_udp_send_t *req;
             char tmp1[SS_ADDRSTRLEN], tmp2[SS_ADDRSTRLEN];
+            struct matching_connect match = { {{0}}, {{0}}, 0 };
 
-            remote_ctx = create_client_udp_remote(loop, listener_ctx->timeout);
-            client_udp_remote_ctx_add_ref(remote_ctx);
-            remote_ctx->listener_ctx = listener_ctx;
-            remote_ctx->incoming_addr.addr = *addr;
-            remote_ctx->target_addr = target_addr;
+            match.incoming_addr.addr = *addr;
+            match.target_addr = target_addr;
+            cstl_set_container_traverse(listener_ctx->connections, &find_matching_connection, &match);
+            remote_ctx = match.remote_ctx;
+
+            pr_info(remote_ctx ? "[udp] session %s <=> %s reused" : "[udp] session %s <=> %s starting",
+                get_addr_str(addr, tmp1, sizeof(tmp1)),
+                get_addr_str(&target_addr.addr, tmp2, sizeof(tmp2)));
+
+            if (remote_ctx == NULL) {
+                remote_ctx = create_client_udp_remote(loop, listener_ctx->timeout, client_udp_remote_timeout_cb);
+                client_udp_remote_ctx_add_ref(remote_ctx);
+                remote_ctx->listener_ctx = listener_ctx;
+                remote_ctx->incoming_addr.addr = *addr;
+                remote_ctx->target_addr = target_addr;
+
+                uv_udp_recv_start(&remote_ctx->rmt_udp, udp_uv_alloc_buffer, client_udp_remote_recv_cb);
+
+                cstl_set_container_add(listener_ctx->connections, remote_ctx);
+            }
 
             req = (uv_udp_send_t *)calloc(1, sizeof(uv_udp_send_t));
             req->data = buf;
@@ -442,14 +470,7 @@ client_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
             tmp = uv_buf_init((char *)buffer_get_data(buf), (unsigned int)buffer_get_length(buf));
             uv_udp_send(req, &remote_ctx->rmt_udp, &tmp, 1, server_addr, client_udp_send_done_cb);
 
-            uv_udp_recv_start(&remote_ctx->rmt_udp, udp_uv_alloc_buffer, client_udp_remote_recv_cb);
-            client_udp_remote_restart_timer(remote_ctx);
-
-            cstl_set_container_add(listener_ctx->connections, remote_ctx);
-
-            pr_info("[udp] session %s ==> %s starting",
-                get_addr_str(addr, tmp1, sizeof(tmp1)),
-                get_addr_str(&target_addr.addr, tmp2, sizeof(tmp2)));
+            common_restart_timer(&remote_ctx->rmt_expire, remote_ctx->timeout);
 
             nead_more_action = true;
         }
