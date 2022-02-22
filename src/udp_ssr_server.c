@@ -413,7 +413,7 @@ server_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
             uv_buf_t tmp;
             uv_udp_send_t *req;
             char tmp1[SS_ADDRSTRLEN] = { 0 }, tmp2[SS_ADDRSTRLEN] = { 0 };
-            struct matching_connect match = { {0} };
+            struct matching_connect match = { {{0}}, {{0}}, 0 };
 
             match.incoming_addr.addr = *addr;
             match.target_addr = target_addr;
