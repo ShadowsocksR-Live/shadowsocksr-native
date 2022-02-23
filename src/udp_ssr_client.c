@@ -161,6 +161,7 @@ void client_udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* 
     size_t addr_header_len, final_len;
     const uint8_t *final_data;
     int err;
+    char tmp1[SS_ADDRSTRLEN], tmp2[SS_ADDRSTRLEN];
 
     do {
         remote_ctx = CONTAINER_OF(handle, struct client_udp_remote_ctx, rmt_udp);
@@ -182,6 +183,11 @@ void client_udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* 
 
         buf = buffer_create_from((const uint8_t *) uvbuf->base, (size_t)nread);
         buffer_realloc(buf, (size_t)nread*2);
+
+        pr_info("[udp] session %s <=> %s recv remote data length %ld",
+            get_addr_str(&remote_ctx->incoming_addr.addr, tmp1, sizeof(tmp1)),
+            get_addr_str(&remote_ctx->target_addr.addr, tmp2, sizeof(tmp2)),
+            buffer_get_length(buf));
 
         err = ss_decrypt_all(listener_ctx->cipher_env, buf, (size_t)nread*2);
         if (err) {
@@ -424,7 +430,7 @@ client_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
         }
 
         if (buffer_get_length(buf) > packet_size) {
-            LOGE("%s", "[udp] client__udp_listener_recv_cb fragmentation");
+            pr_err("[udp] %s fragmentation", __FUNCTION__);
             break;
         }
 #ifdef ANDROID
@@ -445,9 +451,9 @@ client_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
             cstl_set_container_traverse(listener_ctx->connections, &find_matching_connection, &match);
             remote_ctx = match.remote_ctx;
 
-            pr_info(remote_ctx ? "[udp] session %s <=> %s reused" : "[udp] session %s <=> %s starting",
+            pr_info(remote_ctx ? "[udp] session %s <=> %s reused, data length %ld" : "[udp] session %s <=> %s starting, data length %ld",
                 get_addr_str(addr, tmp1, sizeof(tmp1)),
-                get_addr_str(&target_addr.addr, tmp2, sizeof(tmp2)));
+                get_addr_str(&target_addr.addr, tmp2, sizeof(tmp2)), (size_t)nread);
 
             if (remote_ctx == NULL) {
                 remote_ctx = create_client_udp_remote(loop, listener_ctx->timeout, client_udp_remote_timeout_cb);

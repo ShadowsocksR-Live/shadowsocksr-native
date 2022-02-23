@@ -161,6 +161,7 @@ void server_udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* 
     const uint8_t *final_data;
     int err;
     bool nead_more_action = false;
+    char tmp1[SS_ADDRSTRLEN], tmp2[SS_ADDRSTRLEN];
 
     do {
         remote_ctx = CONTAINER_OF(handle, struct server_udp_remote_ctx, rmt_udp);
@@ -181,6 +182,11 @@ void server_udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* 
         }
 
         buf = buffer_create_from((const uint8_t *) uvbuf->base, (size_t)nread);
+
+        pr_info("[udp] session %s <=> %s recv remote data length %ld",
+            get_addr_str(&remote_ctx->incoming_addr.addr, tmp1, sizeof(tmp1)),
+            get_addr_str(&remote_ctx->target_addr.addr, tmp2, sizeof(tmp2)),
+            buffer_get_length(buf));
 
         {
             uint8_t *p;
@@ -339,7 +345,7 @@ server_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
             break;
         }
 
-        buffer_store(buf, (uint8_t *)uvbuf->base, nread);
+        buffer_store(buf, (uint8_t *)uvbuf->base, (size_t)nread);
 
         /*
          * SOCKS5 UDP Request / Response
@@ -418,9 +424,9 @@ server_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
             cstl_set_container_traverse(listener_ctx->connections, &find_matching_connection, &match);
             remote_ctx = match.remote_ctx;
 
-            pr_info(remote_ctx ? "[udp] session %s <=> %s reused" : "[udp] session %s <=> %s starting",
+            pr_info(remote_ctx ? "[udp] session %s <=> %s reused, data length %ld" : "[udp] session %s <=> %s starting, data length %ld",
                 get_addr_str(addr, tmp1, sizeof(tmp1)),
-                get_addr_str(&target_addr.addr, tmp2, sizeof(tmp2)));
+                get_addr_str(&target_addr.addr, tmp2, sizeof(tmp2)), (size_t)nread);
 
             if (remote_ctx == NULL) {
                 remote_ctx = create_server_udp_remote(loop, listener_ctx->timeout, server_udp_remote_timeout_cb);
