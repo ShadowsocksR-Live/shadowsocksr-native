@@ -173,8 +173,6 @@ void server_udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* 
             (void)addr; (void)flags;
         }
 
-        uv_timer_stop(&remote_ctx->rmt_expire);
-
         if (nread <= 0) {
             if (nread < 0) {
                 pr_err("[udp] %s recv remote data error", __FUNCTION__);
@@ -275,8 +273,7 @@ struct server_udp_remote_ctx * create_server_udp_remote(uv_loop_t* loop, uint64_
     timer = &remote_ctx->rmt_expire;
     uv_timer_init(loop, timer);
     timer->data = remote_ctx;
-    uv_timer_start(timer, cb, remote_ctx->timeout, 0);
-    uv_timer_stop(timer);
+    timer->timer_cb = cb;
 
     return remote_ctx;
 }

@@ -173,8 +173,6 @@ void client_udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* 
             (void)addr; (void)flags;
         }
 
-        uv_timer_stop(&remote_ctx->rmt_expire);
-
         if (nread == 0) {
             break;
         }
@@ -283,8 +281,7 @@ create_client_udp_remote(uv_loop_t* loop, uint64_t timeout, uv_timer_cb cb) {
     timer = &remote_ctx->rmt_expire;
     uv_timer_init(loop, timer);
     timer->data = remote_ctx;
-    uv_timer_start(timer, cb, remote_ctx->timeout, 0);
-    uv_timer_stop(timer);
+    timer->timer_cb = cb;
 
     return remote_ctx;
 }
