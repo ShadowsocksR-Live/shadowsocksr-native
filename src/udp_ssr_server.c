@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <c_stl_lib.h>
 
 #if !defined(__MINGW32__) && !defined(_WIN32)
 #include <arpa/inet.h>
@@ -290,7 +291,7 @@ struct matching_connect {
     struct server_udp_remote_ctx *remote_ctx;
 };
 
-static void find_matching_connection(struct cstl_set *set, const void *obj, bool *stop, void *p) {
+static void find_matching_connection(struct cstl_set *set, const void *obj, cstl_bool *stop, void *p) {
     struct matching_connect *match = (struct matching_connect *)p;
     struct server_udp_remote_ctx *remote_ctx = (struct server_udp_remote_ctx *)obj;
     if (memcmp(&match->incoming_addr, &remote_ctx->incoming_addr, sizeof(match->incoming_addr)) == 0 &&
@@ -298,7 +299,7 @@ static void find_matching_connection(struct cstl_set *set, const void *obj, bool
     {
         match->remote_ctx = remote_ctx;
         if (stop) {
-            *stop = true;
+            *stop = cstl_true;
         }
     }
     (void)set;
@@ -464,7 +465,7 @@ server_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
 
 static void server_udp_listener_close_cb(uv_handle_t* handle) {
     struct server_udp_listener_ctx *ctx = CONTAINER_OF(handle, struct server_udp_listener_ctx, udp);
-    cstl_set_container_destroy(ctx->connections);
+    cstl_set_delete(ctx->connections);
 
     // SSR beg
     if (ctx->protocol_plugin) {
@@ -477,7 +478,7 @@ static void server_udp_listener_close_cb(uv_handle_t* handle) {
     free(ctx);
 }
 
-static void connection_release(struct cstl_set *set, const void *obj, bool *stop, void *p) {
+static void connection_release(struct cstl_set *set, const void *obj, cstl_bool *stop, void *p) {
     (void)set; (void)obj; (void)stop; (void)p;
     server_udp_remote_ctx_shutdown((struct server_udp_remote_ctx *)obj);
 }
@@ -516,7 +517,7 @@ server_udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_
 
     listener_ctx->cipher_env = cipher_env;
     listener_ctx->timeout = max(timeout, MIN_UDP_TIMEOUT);
-    listener_ctx->connections = cstl_set_container_create(tunnel_ctx_compare_for_c_set, NULL);
+    listener_ctx->connections = cstl_set_new(tunnel_ctx_compare_for_c_set, NULL);
 
     //SSR beg
     listener_ctx->protocol_plugin = protocol_instance_create(protocol);

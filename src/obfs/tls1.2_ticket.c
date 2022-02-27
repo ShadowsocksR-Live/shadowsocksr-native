@@ -4,6 +4,7 @@
 #include <time.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <c_stl_lib.h>
 #if defined(WIN32) || defined(_WIN32)
 #include <winsock2.h>
 #else
@@ -65,7 +66,7 @@ static void tls12_ticket_auth_local_data_init(struct tls12_ticket_auth_local_dat
     local->max_time_dif = 60 * 60 *24; // time dif (second) setting
     local->send_id = 0;
     local->fastauth = false;
-    local->data_sent_buffer = obj_list_create(compare_element, free_element);
+    local->data_sent_buffer = cstl_list_new(free_element, compare_element);
     local->empty_buf = buffer_create_from((const uint8_t *)"", 0);
     local->tls_version = buffer_create_from((const uint8_t *)"\x03\x03", 2);
 }
@@ -114,7 +115,7 @@ void tls12_ticket_auth_dispose(struct obfs_t *obfs) {
     buffer_release(local->send_buffer);
     buffer_release(local->recv_buffer);
     buffer_release(local->client_id);
-    obj_list_destroy(local->data_sent_buffer);
+    cstl_list_destroy(local->data_sent_buffer);
     free(local);
     dispose_obfs(obfs);
 }
@@ -231,8 +232,8 @@ struct buffer_t * tls12_ticket_auth_client_encode(struct obfs_t *obfs, const str
     }
     if (datalength > 0) {
         struct buffer_t *tmp = _pack_data(encryptdata, datalength);
-        size_t pos = obj_list_size(local->data_sent_buffer);
-        obj_list_insert(local->data_sent_buffer, pos, &tmp, sizeof(tmp));
+        size_t pos = cstl_list_size(local->data_sent_buffer);
+        cstl_list_insert(local->data_sent_buffer, pos, &tmp, sizeof(tmp));
     }
     if ((local->handshake_status & 3) != 0) {
         if ((local->handshake_status & 2) == 0) {
@@ -261,18 +262,18 @@ struct buffer_t * tls12_ticket_auth_client_encode(struct obfs_t *obfs, const str
             buffer_release(client_id);
             buffer_concatenate_raw(hmac_data, hash, 10);
 
-            obj_list_insert(local->data_sent_buffer, 0, &hmac_data, sizeof(hmac_data));
+            cstl_list_insert(local->data_sent_buffer, 0, &hmac_data, sizeof(hmac_data));
 
             local->handshake_status |= 2;
         }
         if (datalength==0 || local->fastauth) {
-            size_t count = obj_list_size(local->data_sent_buffer);
+            size_t count = cstl_list_size(local->data_sent_buffer);
             size_t index = 0;
             for (index=0; index<count; ++index) {
-                struct buffer_t *data = *(struct buffer_t **)obj_list_element_at(local->data_sent_buffer, index);
+                struct buffer_t *data = *(struct buffer_t **)cstl_list_element_at(local->data_sent_buffer, index);
                 buffer_concatenate(result, data);
             }
-            obj_list_clear(local->data_sent_buffer);
+            cstl_list_clear(local->data_sent_buffer);
         }
         if (datalength == 0) {
             local->handshake_status |= 4;
