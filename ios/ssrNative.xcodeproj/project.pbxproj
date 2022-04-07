@@ -201,6 +201,8 @@
 		B69D2A41277493C60016B09B /* MurmurHash2.c in Sources */ = {isa = PBXBuildFile; fileRef = B69D2A3A277493C60016B09B /* MurmurHash2.c */; };
 		B69D2A42277493C60016B09B /* bloom.h in Headers */ = {isa = PBXBuildFile; fileRef = B69D2A3B277493C60016B09B /* bloom.h */; };
 		B69D2A43277493C60016B09B /* bloom.h in Headers */ = {isa = PBXBuildFile; fileRef = B69D2A3B277493C60016B09B /* bloom.h */; };
+		B6B7882627FEA5D0006A0CE9 /* udp_ssr_client.c in Sources */ = {isa = PBXBuildFile; fileRef = B6B7882527FEA5D0006A0CE9 /* udp_ssr_client.c */; };
+		B6B7882727FEA876006A0CE9 /* udp_ssr_client.c in Sources */ = {isa = PBXBuildFile; fileRef = B6B7882527FEA5D0006A0CE9 /* udp_ssr_client.c */; };
 		B6DEB0002781DBC400AE6896 /* uri_encode.c in Sources */ = {isa = PBXBuildFile; fileRef = B6DEAFFE2781DBC400AE6896 /* uri_encode.c */; };
 		B6DEB0012781DBC400AE6896 /* uri_encode.c in Sources */ = {isa = PBXBuildFile; fileRef = B6DEAFFE2781DBC400AE6896 /* uri_encode.c */; };
 		B6DEB0022781DBC400AE6896 /* uri_encode.h in Headers */ = {isa = PBXBuildFile; fileRef = B6DEAFFF2781DBC400AE6896 /* uri_encode.h */; };
@@ -397,6 +399,7 @@
 		B69D2A39277493C50016B09B /* bloom.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bloom.c; path = ../depends/libbloom/bloom.c; sourceTree = "<group>"; };
 		B69D2A3A277493C60016B09B /* MurmurHash2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = MurmurHash2.c; path = ../depends/libbloom/murmur2/MurmurHash2.c; sourceTree = "<group>"; };
 		B69D2A3B277493C60016B09B /* bloom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bloom.h; path = ../depends/libbloom/bloom.h; sourceTree = "<group>"; };
+		B6B7882527FEA5D0006A0CE9 /* udp_ssr_client.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = udp_ssr_client.c; path = ../src/udp_ssr_client.c; sourceTree = "<group>"; };
 		B6DEAFFE2781DBC400AE6896 /* uri_encode.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = uri_encode.c; path = "../depends/uri-encode/src/uri_encode.c"; sourceTree = "<group>"; };
 		B6DEAFFF2781DBC400AE6896 /* uri_encode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = uri_encode.h; path = "../depends/uri-encode/src/uri_encode.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -502,6 +505,7 @@
 		3A300B4C206FF5EA00ABE7C2 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				B6B7882527FEA5D0006A0CE9 /* udp_ssr_client.c */,
 				3A27FF91229979F200CFAD25 /* dump_info.c */,
 				3A27FF92229979F300CFAD25 /* dump_info.h */,
 				3A27FF69229974A100CFAD25 /* text_in_color.c */,
@@ -933,6 +937,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B6B7882627FEA5D0006A0CE9 /* udp_ssr_client.c in Sources */,
 				B677194E278462CA0054EF9B /* c_map.c in Sources */,
 				3A300B66206FF69D00ABE7C2 /* sockaddr_universal.c in Sources */,
 				B6771946278462CA0054EF9B /* c_algorithms.c in Sources */,
@@ -1010,6 +1015,7 @@
 				3A95CBD72070C92C00E507E3 /* client.c in Sources */,
 				B69D2A41277493C60016B09B /* MurmurHash2.c in Sources */,
 				3A6C0C042304108C00FFF1D9 /* bio.c in Sources */,
+				B6B7882727FEA876006A0CE9 /* udp_ssr_client.c in Sources */,
 				3A95CBBC2070C90C00E507E3 /* ssrbuffer.c in Sources */,
 				3A31839D22F869EE00E7D266 /* http_parser_wrapper.c in Sources */,
 				B6771955278462CA0054EF9B /* c_array.c in Sources */,
@@ -1211,6 +1217,7 @@
 					../depends/libsodium/ssrbuild/include,
 					../depends/mbedtls/include,
 					"../depends/uv-mbed/include",
+					../depends/cstl/inc,
 				);
 				INFOPLIST_FILE = ssrNative/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
@@ -1246,6 +1253,7 @@
 					../depends/libsodium/ssrbuild/include,
 					../depends/mbedtls/include,
 					"../depends/uv-mbed/include",
+					../depends/cstl/inc,
 				);
 				INFOPLIST_FILE = ssrNative/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
