@@ -436,7 +436,7 @@ client_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
         }
 #ifdef ANDROID
         if (log_tx_rx) {
-            tx += buf->len;
+            tx += buffer_get_length(buf);
         }
 #endif
         {
