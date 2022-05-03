@@ -98,7 +98,7 @@ struct server_config* parse_config_file(bool is_server, const char* file)
     json_object *jso = NULL;
     struct server_config* config = config_create();
     do {
-        struct json_object_iter iter = { NULL };
+        struct json_object_iter iter;
         bool svr_setting = false;
         unsigned short svr_listen_port = 0;
 
@@ -106,6 +106,7 @@ struct server_config* parse_config_file(bool is_server, const char* file)
         if (jso == NULL) {
             break;
         }
+        memset(&iter, 0, sizeof(iter));
         json_object_object_foreachC(jso, iter) {
             int obj_int = 0;
             bool obj_bool = false;
@@ -184,10 +185,11 @@ struct server_config* parse_config_file(bool is_server, const char* file)
             }
 
             if (json_iter_extract_object("server_settings", &iter, &obj_obj)) {
-                struct json_object_iter iter2 = { NULL };
+                struct json_object_iter iter2;
                 if (is_server == false) {
                     continue;
                 }
+                memset(&iter2, 0, sizeof(iter2));
                 json_object_object_foreachC(obj_obj, iter2) {
                     const char *obj_str2 = NULL;
 
@@ -205,10 +207,11 @@ struct server_config* parse_config_file(bool is_server, const char* file)
             }
 
             if (json_iter_extract_object("client_settings", &iter, &obj_obj)) {
-                struct json_object_iter iter2 = {NULL};
+                struct json_object_iter iter2;
                 if (is_server) {
                     continue;
                 }
+                memset(&iter2, 0, sizeof(iter2));
                 json_object_object_foreachC(obj_obj, iter2) {
                     const char *obj_str2 = NULL;
 
@@ -233,7 +236,8 @@ struct server_config* parse_config_file(bool is_server, const char* file)
             }
 
             if (json_iter_extract_object("over_tls_settings", &iter, &obj_obj)) {
-                struct json_object_iter iter2 = { NULL };
+                struct json_object_iter iter2;
+                memset(&iter2, 0, sizeof(iter2));
                 json_object_object_foreachC(obj_obj, iter2) {
                     const char *obj_str2 = NULL;
                     obj_bool = false;
