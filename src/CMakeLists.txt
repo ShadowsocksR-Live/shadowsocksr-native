@@ -10,10 +10,6 @@ if (MSVC)
     add_definitions("-DMBEDTLS_API")
 endif()
 
-if(ANDROID)
-include_directories(${LIB_ANCILLARY_DIR})
-endif()
-
 set(SOURCE_FILES_SNI
         shadowsocks.h
         socks5.h
@@ -169,8 +165,14 @@ endif()
 add_definitions(-DUDP_RELAY_ENABLE)
 
 if(ANDROID)
+    include_directories(${LIB_ANCILLARY_DIR})
+
     LIST(APPEND SOURCE_FILES_CLIENT android.c)
-endif()
+    add_executable(ssr-client ${SOURCE_FILES_CLIENT})
+    set_target_properties(ssr-client PROPERTIES COMPILE_DEFINITIONS MODULE_LOCAL)
+    set_target_properties(ssr-client PROPERTIES PREFIX "lib" SUFFIX ".so")
+    target_link_libraries(ssr-client ancillary json-c uv_a cstl mbedtls sodium bloom m log uv-mbed uri-encode)
+else()
 
 add_executable(ssr-client ${SOURCE_FILES_CLIENT})
 add_executable(ssr-server ${SOURCE_FILES_SERVER})
@@ -203,11 +205,6 @@ if (WIN32)
     list ( APPEND ss_lib_net Ws2_32 )
 endif()
 
-if(ANDROID)
-    LIST(APPEND ss_lib_net ancillary log)
-    set_target_properties(ssr-client PROPERTIES PREFIX "lib" SUFFIX ".so")
-endif()
-
 target_link_libraries(ssr-client ${ss_lib_net} uv-mbed uri-encode)
 target_link_libraries(ssr-server ${ss_lib_net})
 
@@ -221,3 +218,4 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
     # target_compile_definitions(ssr-server PUBLIC __AUTO_EXIT__=1 __AUTO_EXIT_TIMEOUT__=10000)
 endif()
 
+endif()

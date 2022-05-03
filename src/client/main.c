@@ -100,8 +100,16 @@ int main(int argc, char * const argv[]) {
     int err = -1;
 
     #if (defined(__unix__) || defined(__linux__)) && !defined(__mips)
+    #if __ANDROID__
+    struct sigaction sa_pipe;
+    memset(&sa_pipe, 0, sizeof(sa_pipe));
+    sigemptyset(&sa_pipe.sa_mask);
+    sa_pipe.sa_handler = &sighandler;
+    sigaction(SIGPIPE, &sa_pipe, NULL);
+    #else
     struct sigaction sa = { {&sighandler}, {{0}}, 0, NULL };
     sigaction(SIGPIPE, &sa, NULL);
+    #endif
     #endif // defined(__unix__) || defined(__linux__)
 
     dead_loop_impl(argc, argv);
