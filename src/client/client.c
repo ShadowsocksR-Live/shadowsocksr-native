@@ -561,7 +561,7 @@ static void do_parse_s5_request_from_client_app(struct tunnel_ctx* tunnel) {
     data = (uint8_t*)incoming->buf->base;
     size = (size_t)incoming->result;
 
-    socks5_address_parse(data + 3, size - 3, tunnel->desired_addr);
+    socks5_address_parse(data + 3, size - 3, tunnel->desired_addr, NULL);
 
     result = s5_parse(parser, &data, &size);
     if (result == s5_result_need_more) {

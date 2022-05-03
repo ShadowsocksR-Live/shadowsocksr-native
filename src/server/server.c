@@ -697,7 +697,7 @@ static bool is_legal_header(const struct buffer_t *buf) {
 
 static bool is_header_complete(const struct buffer_t *buf) {
     struct socks5_address addr = { {{0}}, 0, SOCKS5_ADDRTYPE_INVALID };
-    return socks5_address_parse(buffer_get_data(buf), buffer_get_length(buf), &addr);
+    return socks5_address_parse(buffer_get_data(buf), buffer_get_length(buf), &addr, NULL);
 }
 
 static size_t _get_read_size(struct tunnel_ctx *tunnel, struct socket_ctx *socket, size_t suggested_size) {
@@ -897,7 +897,7 @@ static void do_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     // get remote addr and port
     s5addr = tunnel->desired_addr;
     memset(s5addr, 0, sizeof(*s5addr));
-    if (socks5_address_parse(buffer_get_data(init_pkg), buffer_get_length(init_pkg), s5addr) == false) {
+    if (socks5_address_parse(buffer_get_data(init_pkg), buffer_get_length(init_pkg), s5addr, NULL) == false) {
         // report_addr(server->fd, MALFORMED);
         tunnel->tunnel_shutdown(tunnel);
         return;
@@ -1170,7 +1170,7 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
             buffer_store(ctx->init_pkg, data_p, data_len);
 
             addr_p = url_safe_base64_decode_alloc(udp_field, &malloc, &p_len);
-            if (socks5_address_parse(addr_p, p_len, &target_addr) == false) {
+            if (socks5_address_parse(addr_p, p_len, &target_addr, NULL) == false) {
                 free(addr_p);
                 do_normal_response(tunnel);
                 break;
