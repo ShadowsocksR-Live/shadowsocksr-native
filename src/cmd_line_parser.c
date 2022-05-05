@@ -23,6 +23,7 @@ struct cmd_line_info * cmd_line_info_create(int argc, char * const argv[]) {
 
     info->force_quit_delay_ms = 3000; // TODO: add force_quit_delay_ms command argument.
 
+    optind = 1; /* Important, from getopt.h file */
     while (-1 != (opt = getopt_long(argc, argv, "c:S:Vdfh", long_options, &option_index))) {
         switch (opt) {
         case 0:

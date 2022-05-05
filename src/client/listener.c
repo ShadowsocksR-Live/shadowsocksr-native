@@ -145,6 +145,10 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
         }
     }
 
+#ifndef __ANDROID__
+    uv_library_shutdown();
+#endif
+
     ssr_cipher_env_release(state->env);
 
     if (state->listeners) {
