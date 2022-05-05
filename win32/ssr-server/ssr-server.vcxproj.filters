@@ -212,10 +212,10 @@
     <ClInclude Include="..\include\unistd.h">
       <Filter>getopt</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\getopt.h">
+    <ClInclude Include="..\src\getopt.h">
       <Filter>getopt</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\getopt_long.h">
+    <ClInclude Include="..\src\getopt_long.h">
       <Filter>getopt</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\sockaddr_universal.h">

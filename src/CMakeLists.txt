@@ -130,7 +130,7 @@ set(SOURCE_FILES_SERVER
 include_directories(obfs)
 include_directories(client)
 IF(MSVC)
-  include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../win32/include )
+  include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../win32/include ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src )
 ENDIF(MSVC)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
