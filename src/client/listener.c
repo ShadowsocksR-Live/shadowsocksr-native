@@ -73,7 +73,7 @@ extern void udp_on_recv_data(struct client_ssrot_udp_listener_ctx *udp_ctx, cons
 static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrinfo *addrs);
 static void listen_incoming_connection_cb(uv_stream_t *server, int status);
 static void signal_quit(uv_signal_t* handle, int signum);
-static void idler_watcher_cb(uv_timer_t* handle);
+static void timer_quit_watcher_cb(uv_timer_t* handle);
 
 int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ssr_client_state *state, void *p), void *p) {
     uv_loop_t * loop = NULL;
@@ -128,7 +128,7 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
 
     state->exit_flag_timer = (uv_timer_t*) calloc(1, sizeof(uv_timer_t));
     uv_timer_init(loop, state->exit_flag_timer);
-    uv_timer_start(state->exit_flag_timer, idler_watcher_cb, 0, 500);
+    uv_timer_start(state->exit_flag_timer, timer_quit_watcher_cb, 0, 500);
 
     /* Start the event loop.  Control continues in getaddrinfo_done_cb(). */
     err = uv_run(loop, UV_RUN_DEFAULT);
@@ -145,9 +145,7 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
         }
     }
 
-#ifndef __ANDROID__
-    uv_library_shutdown();
-#endif
+    /* uv_library_shutdown(); */
 
     ssr_cipher_env_release(state->env);
 
@@ -422,7 +420,7 @@ static void signal_quit(uv_signal_t* handle, int signum) {
     }
 }
 
-static void idler_watcher_cb(uv_timer_t* handle) {
+static void timer_quit_watcher_cb(uv_timer_t* handle) {
     struct server_env_t* env;
     struct ssr_client_state* state;
     ASSERT(handle);
