@@ -89,6 +89,7 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
     uv_loop_init(loop);
 
     state = (struct ssr_client_state *) calloc(1, sizeof(*state));
+    state->running_state_flag = running_state_living;
     state->force_quit_delay_ms = 3000;
     state->listeners = NULL;
     state->env = ssr_cipher_env_create(cf, state);
