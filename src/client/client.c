@@ -205,7 +205,7 @@ struct tunnel_ctx* client_tunnel_initialize(uv_tcp_t* lx, unsigned int idle_time
 static void client_tunnel_connecting_print_info(struct tunnel_ctx* tunnel) {
     struct client_ctx* ctx = (struct client_ctx*)tunnel->data;
     char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc, true);
-    const char* udp = ctx->udp_data_ctx ? "[UDP]" : "";
+    const char* udp = ctx->udp_data_ctx ? "[udp]" : "";
 #if defined(__PRINT_INFO__)
     pr_info("++++ connecting %s \"%s\" ... ++++", udp, tmp);
 #endif
@@ -216,7 +216,7 @@ static void client_tunnel_connecting_print_info(struct tunnel_ctx* tunnel) {
 static void client_tunnel_shutdown_print_info(struct tunnel_ctx* tunnel, bool success) {
     struct client_ctx* ctx = (struct client_ctx*)tunnel->data;
     char* tmp = socks5_address_to_string(tunnel->desired_addr, &malloc, true);
-    const char* udp = (ctx->stage == tunnel_stage_s5_udp_accoc || ctx->udp_data_ctx) ? "[UDP]" : "";
+    const char* udp = (ctx->stage == tunnel_stage_s5_udp_accoc || ctx->udp_data_ctx) ? "[udp]" : "";
     if (!success) {
 #if defined(__PRINT_INFO__)
         pr_err("---- disconnected %s \"%s\" with failed. ---", udp, tmp);
@@ -1563,12 +1563,12 @@ void udp_on_recv_data(struct client_ssrot_udp_listener_ctx* udp_ctx, const union
 
     raw_p = s5_parse_upd_package(data_p, data_len, &query_data->target_addr, &frag_number, &raw_len);
     if (frag_number != 0) {
-        pr_err("%s", "[UDP] We don't process fragmented UDP packages and just drop them.");
+        pr_err("%s", "[udp] We don't process fragmented UDP packages and just drop them.");
         udp_data_context_destroy(query_data);
         return;
     }
     if (query_data->target_addr.addr_type == SOCKS5_ADDRTYPE_INVALID) {
-        pr_err("%s", "[UDP] target address invalid");
+        pr_err("%s", "[udp] target address invalid");
         udp_data_context_destroy(query_data);
         return;
     }
