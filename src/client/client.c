@@ -75,6 +75,7 @@ struct client_ctx {
     struct tunnel_cipher_ctx* cipher;
     struct buffer_t* target_address_pkg;
     struct buffer_t* first_client_pkg;
+    bool round_trip_saving_shortcut;
     struct s5_ctx* parser; /* The SOCKS protocol parser. */
     enum tunnel_stage stage;
     void (*original_tunnel_shutdown)(struct tunnel_ctx* tunnel); /* ptr holder */
@@ -327,7 +328,11 @@ static void tunnel_ssr_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* 
     case tunnel_stage_handshake_replied:
         ASSERT(incoming->wrstate == socket_state_done);
         incoming->wrstate = socket_state_stop;
+        if (ctx->round_trip_saving_shortcut) {
+            do_socks5_reply_success(tunnel);
+        } else {
             do_wait_client_app_s5_request(tunnel);
+        }
         break;
     case tunnel_stage_s5_request_from_client_app:
         ASSERT(incoming->rdstate == socket_state_done);
@@ -342,12 +347,23 @@ static void tunnel_ssr_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* 
     case tunnel_stage_s5_response_done:
         ASSERT(incoming->wrstate == socket_state_done);
         incoming->wrstate = socket_state_stop;
+        if (buffer_get_length(ctx->first_client_pkg) > 0) {
+            do_common_connet_remote_server(tunnel);
+        } else {
             socket_ctx_read(incoming, true);
             ctx->stage = tunnel_stage_client_first_pkg;
+        }
         break;
     case tunnel_stage_client_first_pkg:
         ASSERT(incoming->rdstate == socket_state_done);
         incoming->rdstate = socket_state_stop;
+
+        {
+            uint8_t* data = (uint8_t*)incoming->buf->base;
+            size_t size = (size_t)incoming->result;
+            buffer_store(ctx->first_client_pkg, data, size);
+        }
+
         do_common_connet_remote_server(tunnel);
         break;
     case tunnel_stage_resolve_ssr_server_host_done:
@@ -418,7 +434,11 @@ static void tunnel_tls_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* 
     case tunnel_stage_handshake_replied:
         ASSERT(incoming->wrstate == socket_state_done);
         incoming->wrstate = socket_state_stop;
+        if (ctx->round_trip_saving_shortcut) {
+            do_socks5_reply_success(tunnel);
+        } else {
             do_wait_client_app_s5_request(tunnel);
+        }
         break;
     case tunnel_stage_s5_request_from_client_app:
         ASSERT(incoming->rdstate == socket_state_done);
@@ -433,12 +453,23 @@ static void tunnel_tls_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* 
     case tunnel_stage_s5_response_done:
         ASSERT(incoming->wrstate == socket_state_done);
         incoming->wrstate = socket_state_stop;
+        if (buffer_get_length(ctx->first_client_pkg) > 0) {
+            do_common_connet_remote_server(tunnel);
+        } else {
             socket_ctx_read(incoming, true);
             ctx->stage = tunnel_stage_client_first_pkg;
+        }
         break;
     case tunnel_stage_client_first_pkg:
         ASSERT(incoming->rdstate == socket_state_done);
         incoming->rdstate = socket_state_stop;
+
+        {
+            uint8_t* data = (uint8_t*)incoming->buf->base;
+            size_t size = (size_t)incoming->result;
+            buffer_store(ctx->first_client_pkg, data, size);
+        }
+
         do_common_connet_remote_server(tunnel);
         break;
     case tunnel_stage_auth_completion_done:
@@ -485,16 +516,6 @@ static void do_s5_handshake(struct tunnel_ctx* tunnel) {
         return;
     }
 
-    if (size != 0) {
-        /* Could allow a round-trip saving shortcut here if the requested auth
-        * method is s5_auth_none (provided unauthenticated traffic is allowed.)
-        * Requires client support however.
-        */
-        pr_err("junk in handshake");
-        tunnel->tunnel_shutdown(tunnel);
-        return;
-    }
-
     if (result != s5_result_auth_select) {
         pr_err("handshake error: %s", str_s5_result(result));
         tunnel->tunnel_shutdown(tunnel);
@@ -504,6 +525,44 @@ static void do_s5_handshake(struct tunnel_ctx* tunnel) {
     methods = s5_get_auth_methods(parser);
     if ((methods & s5_auth_none) && can_auth_none(tunnel)) {
         s5_select_auth(parser, s5_auth_none);
+
+        if (size > 0) {
+            /* A round-trip saving shortcut here if the requested auth method is s5_auth_none */
+
+            socks5_address_parse(data + 3, size - 3, tunnel->desired_addr, NULL);
+
+            result = s5_parse(parser, &data, &size);
+            if (result == s5_result_need_more) {
+                pr_err("%s", "junk in handshake");
+                tunnel->tunnel_shutdown(tunnel);
+                return;
+            }
+            if (result != s5_result_exec_cmd) {
+                pr_err("request error: %s", str_s5_result(result));
+                tunnel->tunnel_shutdown(tunnel);
+                return;
+            }
+
+            if (s5_get_cmd(parser) != s5_cmd_tcp_connect) {
+                pr_err("%s", "connect command only, not support bind / udp_assoc.");
+                tunnel->tunnel_shutdown(tunnel);
+                return;
+            }
+            if (tunnel->desired_addr->addr.ipv4.s_addr == 0 &&
+                tunnel->desired_addr->addr_type == SOCKS5_ADDRTYPE_IPV4) {
+                pr_err("%s", "zero target address, dropped.");
+                tunnel->tunnel_shutdown(tunnel);
+                return;
+            }
+            if (size > 0) {
+                buffer_store(ctx->first_client_pkg, data, size);
+            }
+            ctx->round_trip_saving_shortcut = true;
+            pr_info("%s", "socks5 handshake round-trip saving shortcut");
+        } else {
+            pr_info("%s", "socks5 handshake normal style called");
+        }
+
         tunnel_socket_ctx_write(tunnel, incoming, "\5\0", 2); /* No auth required. */
         ctx->stage = tunnel_stage_handshake_replied;
         return;
@@ -572,7 +631,11 @@ static void do_parse_s5_request_from_client_app(struct tunnel_ctx* tunnel) {
     }
 
     if (size != 0) {
-        pr_err("junk in request %u", (unsigned)size);
+        const char *info = "Not supported yet";
+        if (buffer_get_length(ctx->first_client_pkg)) {
+            info = "Weird incoming data";
+        }
+        pr_err("junk in request, size = %u, reason = \"%s\"", (unsigned)size, info);
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
@@ -658,20 +721,15 @@ static struct tls_cli_ctx* tls_client_creator(struct client_ctx* ctx, struct ser
 }
 
 static void do_common_connet_remote_server(struct tunnel_ctx* tunnel) {
-    struct socket_ctx* incoming = tunnel->incoming;
     struct socket_ctx* outgoing = tunnel->outgoing;
     struct client_ctx* ctx = (struct client_ctx*)tunnel->data;
     struct s5_ctx* parser = ctx->parser;
     struct server_env_t* env = ctx->env;
     struct server_config* config = env->config;
-    uint8_t* data = (uint8_t*)incoming->buf->base;
-    size_t size = (size_t)incoming->result;
     struct buffer_t* target_address = address_package_from_s5_parser(parser);
 
     buffer_replace(ctx->target_address_pkg, target_address);
     ctx->cipher = tunnel_cipher_create(ctx->env, 1452);
-
-    buffer_store(ctx->first_client_pkg, data, size);
 
     {
         struct obfs_t* protocol = ctx->cipher->protocol;
@@ -803,8 +861,6 @@ static void do_ssr_send_auth_package_to_server(struct tunnel_ctx* tunnel) {
             tunnel->tunnel_shutdown(tunnel);
             return;
         }
-
-        _do_protect_socket(tunnel, uv_stream_fd(&outgoing->handle.tcp));
 
         out_data = buffer_get_data(tmp);
         out_data_len = buffer_get_length(tmp);
