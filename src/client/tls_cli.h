@@ -22,8 +22,8 @@ void tls_client_send_data(struct tls_cli_ctx* ctx, const uint8_t* data, size_t s
 typedef void (*tls_cli_on_shutting_down_cb)(struct tls_cli_ctx* ctx, void* p);
 void tls_client_shutdown(struct tls_cli_ctx* ctx, tls_cli_on_shutting_down_cb cb, void* p);
 
-typedef void (*tls_cli_tcp_conn_cb)(struct tls_cli_ctx* cli, void* p);
-void tls_client_set_tcp_connect_callback(struct tls_cli_ctx* cli, tls_cli_tcp_conn_cb cb, void* p);
+typedef void (*tls_cli_tcp_socket_created_cb)(struct tls_cli_ctx* cli, void* p);
+void tls_cli_set_tcp_socket_created_callback(struct tls_cli_ctx* cli, tls_cli_tcp_socket_created_cb cb, void* p);
 
 typedef void (*tls_cli_on_connection_established_cb)(struct tls_cli_ctx* tls_cli, int status, void* p);
 void tls_cli_set_on_connection_established_callback(struct tls_cli_ctx* tls_cli, tls_cli_on_connection_established_cb cb, void* p);

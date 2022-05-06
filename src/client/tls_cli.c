@@ -13,8 +13,8 @@ struct tls_cli_ctx {
 
     REF_COUNT_MEMBER;
 
-    tls_cli_tcp_conn_cb tls_tcp_conn_cb;
-    void* tls_tcp_conn_cb_p;
+    tls_cli_tcp_socket_created_cb socket_created;
+    void* socket_created_p;
 
     tls_cli_on_connection_established_cb on_connection_established;
     void* on_connection_established_p;
@@ -51,7 +51,7 @@ bool tls_cli_is_closing(struct tls_cli_ctx* ctx) {
 }
 
 static void _mbed_connect_done_cb(uv_mbed_t* mbed, int status, void* p);
-static void _uv_mbed_tcp_connect_established_cb(uv_mbed_t* mbed, void* p);
+static void _uv_mbed_socket_created_cb(uv_mbed_t* mbed, void* p);
 static void _mbed_close_done_cb(uv_mbed_t* mbed, void* p);
 
 struct tls_cli_ctx* tls_client_launch(uv_loop_t* loop, const char* domain, const char* ip_addr, int port, uint64_t timeout_msec) {
@@ -65,7 +65,7 @@ struct tls_cli_ctx* tls_client_launch(uv_loop_t* loop, const char* domain, const
     status = uv_mbed_connect(ctx->mbed, ip_addr, port, timeout_msec, _mbed_connect_done_cb, ctx);
 
     // this call purpose is for Android protect socket only.
-    uv_mbed_set_tcp_connect_established_callback(ctx->mbed, &_uv_mbed_tcp_connect_established_cb, ctx);
+    uv_mbed_set_tcp_socket_created_callback(ctx->mbed, &_uv_mbed_socket_created_cb, ctx);
 
     if (status < 0) {
         tls_cli_ctx_add_ref(ctx); // for uv_mbed_close call
@@ -77,11 +77,11 @@ struct tls_cli_ctx* tls_client_launch(uv_loop_t* loop, const char* domain, const
     return ctx;
 }
 
-static void _uv_mbed_tcp_connect_established_cb(uv_mbed_t* mbed, void* p) {
+static void _uv_mbed_socket_created_cb(uv_mbed_t* mbed, void* p) {
     struct tls_cli_ctx* ctx = (struct tls_cli_ctx*)p;
     assert(ctx->mbed == mbed);
-    if (ctx->tls_tcp_conn_cb) {
-        ctx->tls_tcp_conn_cb(ctx, ctx->tls_tcp_conn_cb_p);
+    if (ctx->socket_created) {
+        ctx->socket_created(ctx, ctx->socket_created_p);
     }
     (void)mbed;
 }
@@ -161,10 +161,10 @@ void tls_client_shutdown(struct tls_cli_ctx* ctx, tls_cli_on_shutting_down_cb cb
     }
 }
 
-void tls_client_set_tcp_connect_callback(struct tls_cli_ctx* cli, tls_cli_tcp_conn_cb cb, void* p) {
+void tls_cli_set_tcp_socket_created_callback(struct tls_cli_ctx* cli, tls_cli_tcp_socket_created_cb cb, void* p) {
     if (cli) {
-        cli->tls_tcp_conn_cb = cb;
-        cli->tls_tcp_conn_cb_p = p;
+        cli->socket_created = cb;
+        cli->socket_created_p = p;
     }
 }
 

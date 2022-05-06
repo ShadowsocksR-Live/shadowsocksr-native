@@ -627,7 +627,7 @@ static void do_parse_s5_request_from_client_app(struct tunnel_ctx* tunnel) {
 static void _do_protect_socket(struct tunnel_ctx* tunnel, uv_os_sock_t fd) {
 #if ANDROID
     if (protect_socket(fd) == -1) {
-        LOGE("protect_socket");
+        LOGE("protect socket failed");
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
@@ -635,7 +635,7 @@ static void _do_protect_socket(struct tunnel_ctx* tunnel, uv_os_sock_t fd) {
     (void)tunnel; (void)fd;
 }
 
-static void _tls_cli_tcp_conn_cb(struct tls_cli_ctx* cli, void* p) {
+static void _tls_cli_socket_created(struct tls_cli_ctx* cli, void* p) {
     struct client_ctx* ctx = (struct client_ctx*)p;
     struct tunnel_ctx* tunnel = ctx->tunnel;
     _do_protect_socket(tunnel, tls_client_get_tcp_fd(cli));
@@ -646,7 +646,7 @@ static struct tls_cli_ctx* tls_client_creator(struct client_ctx* ctx, struct ser
     struct tls_cli_ctx* tls_cli = tls_client_launch(tunnel->loop, config->over_tls_server_domain,
         config->remote_host, config->remote_port, config->connect_timeout_ms);
     if (tls_cli) {
-        tls_client_set_tcp_connect_callback(tls_cli, _tls_cli_tcp_conn_cb, ctx);
+        tls_cli_set_tcp_socket_created_callback(tls_cli, _tls_cli_socket_created, ctx);
         tls_cli_set_on_connection_established_callback(tls_cli, tls_cli_on_connection_established, ctx);
         tls_cli_set_on_write_done_callback(tls_cli, tls_cli_on_write_done, ctx);
         tls_cli_set_on_data_received_callback(tls_cli, tls_cli_on_data_received, ctx);
