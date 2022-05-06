@@ -523,7 +523,7 @@ client_udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_
     const char *protocol, const char *protocol_param)
 {
     struct client_udp_listener_ctx *listener_ctx;
-    struct server_info_t server_info = { {0}, 0, 0, 0, {0}, 0, {0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, };
+    struct server_info_t server_info;
 
     // Initialize MTU
     if (mtu > 0) {
@@ -531,7 +531,7 @@ client_udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_
         buf_size    = packet_size * 2;
     }
 
-    (void)server_info; (void)protocol; (void)protocol_param;
+    memset(&server_info, 0, sizeof(server_info));
 
     listener_ctx = (struct client_udp_listener_ctx *)calloc(1, sizeof(*listener_ctx));
 

@@ -300,12 +300,12 @@ int udp_create_listener(const char *host, uint16_t port, uv_loop_t *loop, uv_udp
         LOGE("[udp] create udp listener: %s\n", uv_strerror_r(r, buff, sizeof(buff)));
     }
 
+    freeaddrinfo(result);
+
     if (rp == NULL) {
         LOGE("%s", "[udp] cannot bind");
         return -1;
     }
-
-    freeaddrinfo(result);
 
     return server_sock;
 }
