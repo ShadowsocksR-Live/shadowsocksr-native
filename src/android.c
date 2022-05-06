@@ -47,9 +47,7 @@
 #include "ssrutils.h"
 #include "utils.h"
 
-int
-protect_socket(int fd)
-{
+int protect_socket(int fd) {
     int sock;
     struct sockaddr_un addr;
 
@@ -94,12 +92,22 @@ protect_socket(int fd)
     return ret;
 }
 
-extern char *stat_path;
+static char status_file_path[512] = { 0 };
+
+void set_traffic_status_file_path(const char *path) {
+    if (path) {
+        strncpy(status_file_path, path, sizeof(status_file_path));
+    }
+}
+
+const char * get_traffic_status_file_path(void) {
+    return status_file_path;
+}
 
 int
 send_traffic_stat(uint64_t tx, uint64_t rx)
 {
-    if (!stat_path) return 0;
+    if (strlen(get_traffic_status_file_path()) == 0) return 0;
     int sock;
     struct sockaddr_un addr;
 
@@ -117,7 +125,7 @@ send_traffic_stat(uint64_t tx, uint64_t rx)
 
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, stat_path, sizeof(addr.sun_path) - 1);
+    strncpy(addr.sun_path, get_traffic_status_file_path(), sizeof(addr.sun_path) - 1);
 
     if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
         LOGE("[android] connect() failed for stat_path: %s (socket fd = %d)\n",
