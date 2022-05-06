@@ -109,7 +109,7 @@ REF_COUNT_RELEASE_DECL(client_ctx); // client_ctx_release
 static struct buffer_t* initial_package_create(const struct s5_ctx* parser);
 static void tunnel_ssr_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
 static void tunnel_tls_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* socket);
-static void do_handshake(struct tunnel_ctx* tunnel);
+static void do_s5_handshake(struct tunnel_ctx* tunnel);
 static void do_wait_client_app_s5_request(struct tunnel_ctx* tunnel);
 static void do_parse_s5_request_from_client_app(struct tunnel_ctx* tunnel);
 static void do_common_connet_remote_server(struct tunnel_ctx* tunnel);
@@ -321,12 +321,12 @@ static void tunnel_ssr_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* 
     case tunnel_stage_handshake:
         ASSERT(incoming->rdstate == socket_state_done);
         incoming->rdstate = socket_state_stop;
-        do_handshake(tunnel);
+        do_s5_handshake(tunnel);
         break;
     case tunnel_stage_handshake_replied:
         ASSERT(incoming->wrstate == socket_state_done);
         incoming->wrstate = socket_state_stop;
-        do_wait_client_app_s5_request(tunnel);
+            do_wait_client_app_s5_request(tunnel);
         break;
     case tunnel_stage_s5_request_from_client_app:
         ASSERT(incoming->rdstate == socket_state_done);
@@ -412,7 +412,7 @@ static void tunnel_tls_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* 
     case tunnel_stage_handshake:
         ASSERT(incoming->rdstate == socket_state_done);
         incoming->rdstate = socket_state_stop;
-        do_handshake(tunnel);
+        do_s5_handshake(tunnel);
         break;
     case tunnel_stage_handshake_replied:
         ASSERT(incoming->wrstate == socket_state_done);
@@ -456,7 +456,7 @@ static void tunnel_tls_dispatcher(struct tunnel_ctx* tunnel, struct socket_ctx* 
     }
 }
 
-static void do_handshake(struct tunnel_ctx* tunnel) {
+static void do_s5_handshake(struct tunnel_ctx* tunnel) {
     enum s5_auth_method methods;
     struct socket_ctx* incoming = tunnel->incoming;
     struct client_ctx* ctx = (struct client_ctx*)tunnel->data;
