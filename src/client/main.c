@@ -46,7 +46,17 @@ uint64_t last  = 0;
 
 #include "ssrutils.h"
 static void dump_info_callback(int dump_level, const char* info, void* p) {
-    LOGI("dump_level = %d, info = %s", dump_level, info);
+    switch (dump_level) {
+    case 0:
+        LOGI("%s", info);
+        break;
+    case 1:
+        LOGW("%s", info);
+        break;
+    default:
+        LOGE("%s", info);
+        break;
+    }
     (void)p;
 }
 

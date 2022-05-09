@@ -42,6 +42,9 @@
 #define LOGI(format, ...)                                                \
     ((void)__android_log_print(ANDROID_LOG_DEBUG, "ssrDroid", \
                                (format), ## __VA_ARGS__))
+#define LOGW(format, ...)                                    \
+    ((void)__android_log_print(ANDROID_LOG_WARN, "ssrDroid", \
+                               (format), ## __VA_ARGS__))
 #define LOGE(format, ...)                                                \
     ((void)__android_log_print(ANDROID_LOG_ERROR, "ssrDroid", \
                                (format), ## __VA_ARGS__))

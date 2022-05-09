@@ -128,7 +128,11 @@ static void pr_do(FILE *stream, dump_level level, const char *fmt, va_list ap) {
 #undef DUMP_LEVEL_ENUM
 
     if (info_callback) {
+#if __ANDROID__
+        sprintf(p, "%s  %s\n", label, fmtbuf);
+#else
         sprintf(p, "%s %s %s  %s\n", get_app_name(), date_time, label, fmtbuf);
+#endif
         info_callback((int)level, p, info_callback_p);
     } else {
         fprintf(stream, "%s %s %s  ", get_app_name(), date_time, label);

@@ -690,7 +690,7 @@ static void do_parse_s5_request_from_client_app(struct tunnel_ctx* tunnel) {
 static void _do_protect_socket(struct tunnel_ctx* tunnel, uv_os_sock_t fd) {
 #if ANDROID
     if (protect_socket(fd) == -1) {
-        LOGE("protect socket failed");
+        pr_err("protect socket %d failed", fd);
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
