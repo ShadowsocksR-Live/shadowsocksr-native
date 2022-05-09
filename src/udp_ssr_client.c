@@ -272,6 +272,21 @@ static void common_restart_timer(uv_timer_t *timer, uint64_t timeout) {
     uv_timer_start(timer, timer->timer_cb, timeout, 0);
 }
 
+static void android_udp_protect_socket(uv_udp_t* handle, void* p) {
+#if __ANDROID__
+    uv_os_fd_t fd = -1;
+    if (uv_fileno((uv_handle_t *)handle, &fd) != 0) {
+        pr_err("%s", "[udp] can not retrieve socket fd");
+        return;
+    }
+    if (protect_socket(fd) < 0) {
+        pr_err("%s", "[udp] protect socket failed");
+        return;
+    }
+#endif
+    (void)handle; (void)p;
+}
+
 struct client_udp_remote_ctx *
 create_client_udp_remote(uv_loop_t* loop, uint64_t timeout, uv_timer_cb cb) {
     uv_udp_t *udp = NULL;
@@ -282,6 +297,9 @@ create_client_udp_remote(uv_loop_t* loop, uint64_t timeout, uv_timer_cb cb) {
     remote_ctx->timeout = timeout;
 
     udp = &remote_ctx->rmt_udp;
+
+    uv_set_udp_socket_created_cb(udp, android_udp_protect_socket, remote_ctx);
+
     uv_udp_init(loop, udp);
     udp->data = remote_ctx;
 
@@ -441,7 +459,7 @@ client_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
 #endif
         {
             const struct sockaddr *server_addr = &listener_ctx->server_addr.addr;
-            struct client_udp_remote_ctx *remote_ctx;
+            struct client_udp_remote_ctx *remote_ctx = NULL;
             uv_buf_t tmp;
             uv_udp_send_t *req;
             char tmp1[SS_ADDRSTRLEN], tmp2[SS_ADDRSTRLEN];

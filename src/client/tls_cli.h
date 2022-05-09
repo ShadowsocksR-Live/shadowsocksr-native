@@ -15,7 +15,8 @@ bool tls_cli_is_closing(struct tls_cli_ctx* ctx);
 REF_COUNT_ADD_REF_DECL(tls_cli_ctx); // tls_cli_ctx_add_ref
 REF_COUNT_RELEASE_DECL(tls_cli_ctx); // tls_cli_ctx_release
 
-struct tls_cli_ctx* tls_client_launch(uv_loop_t* loop, const char* domain, const char* ip_addr, int port, uint64_t timeout_msec);
+struct tls_cli_ctx* tls_client_allocate(uv_loop_t* loop, const char* domain);
+int tls_client_launch(struct tls_cli_ctx* ctx, const char* ip_addr, int port, uint64_t timeout_msec);
 
 void tls_client_send_data(struct tls_cli_ctx* ctx, const uint8_t* data, size_t size);
 

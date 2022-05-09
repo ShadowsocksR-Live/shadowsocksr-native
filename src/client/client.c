@@ -706,14 +706,21 @@ static void _tls_cli_socket_created(struct tls_cli_ctx* cli, void* p) {
 
 static struct tls_cli_ctx* tls_client_creator(struct client_ctx* ctx, struct server_config* config) {
     struct tunnel_ctx* tunnel = ctx->tunnel;
-    struct tls_cli_ctx* tls_cli = tls_client_launch(tunnel->loop, config->over_tls_server_domain,
-        config->remote_host, config->remote_port, config->connect_timeout_ms);
-    if (tls_cli) {
+    struct tls_cli_ctx* tls_cli;
+    int status;
+    tls_cli = tls_client_allocate(tunnel->loop, config->over_tls_server_domain);
+    ASSERT(tls_cli);
+    {
         tls_cli_set_tcp_socket_created_callback(tls_cli, _tls_cli_socket_created, ctx);
         tls_cli_set_on_connection_established_callback(tls_cli, tls_cli_on_connection_established, ctx);
         tls_cli_set_on_write_done_callback(tls_cli, tls_cli_on_write_done, ctx);
         tls_cli_set_on_data_received_callback(tls_cli, tls_cli_on_data_received, ctx);
-
+    }
+    status = tls_client_launch(tls_cli, config->remote_host, config->remote_port, config->connect_timeout_ms);
+    if (status < 0) {
+        tls_cli_ctx_release(tls_cli); // release the holder reference
+        tls_cli = NULL;
+    } else {
         tunnel_ctx_add_ref(tunnel);
     }
 
@@ -810,6 +817,11 @@ static void do_resolve_ssr_server_host_aftercare(struct tunnel_ctx* tunnel) {
     do_connect_ssr_server(tunnel);
 }
 
+static void _android_protect_socket(uv_tcp_t* handle, void *p) {
+    struct tunnel_ctx* tunnel = (struct tunnel_ctx*)p;
+    _do_protect_socket(tunnel, uv_stream_fd(handle));
+}
+
 /* Assumes that cx->outgoing.t.sa contains a valid AF_INET/AF_INET6 address. */
 static void do_connect_ssr_server(struct tunnel_ctx* tunnel) {
     struct client_ctx* ctx = (struct client_ctx*)tunnel->data;
@@ -831,6 +843,8 @@ static void do_connect_ssr_server(struct tunnel_ctx* tunnel) {
         ctx->stage = tunnel_stage_kill;
         return;
     }
+
+    uv_set_tcp_socket_created_cb(&outgoing->handle.tcp, &_android_protect_socket, tunnel);
 
     err = socket_ctx_connect(outgoing);
     if (err != 0) {
