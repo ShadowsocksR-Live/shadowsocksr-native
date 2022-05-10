@@ -218,9 +218,7 @@ void client_udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* 
         }
 
 #if __ANDROID__
-        if (log_tx_rx) {
-            rx += (uint64_t) nread;
-        }
+        traffic_status_update(0, (uint64_t) nread);
 #endif
 
         final_data = buffer_get_data(buf);
@@ -453,9 +451,7 @@ client_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
             break;
         }
 #ifdef ANDROID
-        if (log_tx_rx) {
-            tx += buffer_get_length(buf);
-        }
+        traffic_status_update((uint64_t)buffer_get_length(buf), 0);
 #endif
         {
             const struct sockaddr *server_addr = &listener_ctx->server_addr.addr;

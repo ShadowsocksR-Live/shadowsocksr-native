@@ -39,10 +39,6 @@
 #endif
 
 #if ANDROID
-int log_tx_rx  = 0;
-uint64_t tx    = 0;
-uint64_t rx    = 0;
-uint64_t last  = 0;
 
 #include "ssrutils.h"
 static void dump_info_callback(int dump_level, const char* info, void* p) {
@@ -180,7 +176,7 @@ int main(int argc, char * const argv[]) {
         }
 
 #if ANDROID
-        log_tx_rx  = cmds->log_tx_rx;
+        set_flag_of_log_tx_rx(cmds->log_tx_rx);
         set_traffic_status_file_path(cmds->stat_path);
 #endif
 

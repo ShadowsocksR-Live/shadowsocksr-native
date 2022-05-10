@@ -30,12 +30,13 @@
 #include <unistd.h>
 
 #include <errno.h>
+
+#if __ANDROID__
+
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-
-#if ANDROID
 
 #include <sys/un.h>
 #include <ancillary.h>
@@ -154,4 +155,27 @@ send_traffic_stat(uint64_t tx, uint64_t rx)
     return ret;
 }
 
-#endif // ANDROID
+int log_tx_rx  = 0;
+uint64_t tx    = 0;
+uint64_t rx    = 0;
+uint64_t last  = 0;
+
+void set_flag_of_log_tx_rx(int log) {
+    log_tx_rx = log;
+}
+
+#include <uv.h>
+
+void traffic_status_update(uint64_t delta_tx, uint64_t delta_rx) {
+    tx += delta_tx;
+    rx += delta_rx;
+    if (log_tx_rx) {
+        uint64_t _now = uv_hrtime();
+        if (_now - last > 1000) {
+            send_traffic_stat(tx, rx);
+            last = _now;
+        }
+    }
+}
+
+#endif // __ANDROID__

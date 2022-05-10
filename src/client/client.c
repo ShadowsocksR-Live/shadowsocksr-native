@@ -92,18 +92,6 @@ struct client_ctx {
     struct udp_data_context* udp_data_ctx;
 };
 
-#if ANDROID
-static void stat_update_cb(void) {
-    if (log_tx_rx) {
-        uint64_t _now = uv_hrtime();
-        if (_now - last > 1000) {
-            send_traffic_stat(tx, rx);
-            last = _now;
-        }
-    }
-}
-#endif
-
 REF_COUNT_ADD_REF_DECL(client_ctx); // client_ctx_add_ref
 REF_COUNT_RELEASE_DECL(client_ctx); // client_ctx_release
 
@@ -1047,13 +1035,10 @@ static void tunnel_ssr_client_streaming(struct tunnel_ctx* tunnel, struct socket
     }
 
 #if ANDROID
-    if (log_tx_rx) {
-        if (current_socket == tunnel->incoming) {
-            tx += len;
-        } else {
-            rx += len;
-        }
-        stat_update_cb();
+    if (current_socket == tunnel->incoming) {
+        traffic_status_update((uint64_t)len, 0);
+    } else {
+        traffic_status_update(0, (uint64_t)len);
     }
 #endif
 
@@ -1234,10 +1219,7 @@ void tunnel_tls_client_incoming_streaming(struct tunnel_ctx* tunnel, struct sock
             buf = tunnel->tunnel_extract_data(tunnel, socket, &malloc, &len);
 
 #if ANDROID
-            if (log_tx_rx) {
-                tx += len;
-            }
-            stat_update_cb();
+            traffic_status_update((uint64_t)len, 0);
 #endif
 
             if (buf /* && size > 0 */) {
@@ -1476,9 +1458,7 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
         } while (true);
 
 #if ANDROID
-        if (log_tx_rx) {
-            rx += buffer_get_length(ctx->local_write_cache);
-        }
+        traffic_status_update(0, (uint64_t)buffer_get_length(ctx->local_write_cache));
 #endif
 
         if ((buffer_get_length(ctx->local_write_cache) == 0) && ctx->tls_is_eof) {
