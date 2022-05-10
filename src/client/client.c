@@ -1480,6 +1480,14 @@ static void tls_cli_on_data_received(struct tls_cli_ctx* tls_cli, int status, co
                 s = buffer_get_length(tmp);
                 udp_relay_send_data(ctx->udp_data_ctx->udp_ctx, &ctx->udp_data_ctx->src_addr, p, s);
 
+                {
+                    char* src = universal_address_to_string(&ctx->udp_data_ctx->src_addr, &malloc, true);
+                    char* tmp = socks5_address_to_string(&ctx->udp_data_ctx->target_addr, &malloc, true);
+                    pr_info("[udp] %s <== %s write back received data length = %ld", src, tmp, (long)s);
+                    free(tmp);
+                    free(src);
+                }
+
                 cstl_deque_pop_front(ctx->udp_data_ctx->recv_deque);
             } while (true);
 
@@ -1626,6 +1634,14 @@ void udp_on_recv_data(struct client_ssrot_udp_listener_ctx* udp_ctx, const union
     }
 
     out_ref = buffer_create_from(raw_p, raw_len);
+
+    {
+        char* src = universal_address_to_string(&query_data->src_addr, &malloc, true);
+        char* tmp = socks5_address_to_string(&query_data->target_addr, &malloc, true);
+        pr_info("[udp] %s ==> %s incoming data from lower-level app, length = %ld", src, tmp, (long)data_len);
+        free(tmp);
+        free(src);
+    }
 
     cstl_set_container_traverse(env->tunnel_set, &_do_find_upd_tunnel, query_data);
     if (query_data->owner) {
