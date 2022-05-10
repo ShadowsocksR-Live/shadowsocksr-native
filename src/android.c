@@ -39,7 +39,7 @@
 #include <netinet/tcp.h>
 
 #include <sys/un.h>
-#include <ancillary.h>
+#include <jni.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -47,6 +47,10 @@
 
 #include "ssrutils.h"
 #include "utils.h"
+
+#if 0
+
+#include <ancillary.h>
 
 int protect_socket(int fd) {
     int sock;
@@ -92,6 +96,106 @@ int protect_socket(int fd) {
     close(sock);
     return ret;
 }
+
+#else
+
+#include <assert.h>
+#include <ssr_client_api.h>
+int main(int argc, char * const argv[]);
+
+JNIEXPORT jint JNICALL
+Java_com_github_shadowsocks_bg_SsrClientWrapper_runSsrClient(JNIEnv *env, jclass clazz,
+                                                             jobject cmd) {
+    int result = -1;
+    jclass alCls = NULL;
+    do {
+        alCls = (*env)->FindClass(env, "java/util/ArrayList");
+        if (alCls == NULL) {
+            break;
+        }
+        jmethodID alGetId = (*env)->GetMethodID(env, alCls, "get", "(I)Ljava/lang/Object;");
+        jmethodID alSizeId = (*env)->GetMethodID(env, alCls, "size", "()I");
+        if (alGetId == NULL || alSizeId == NULL) {
+            break;
+        }
+
+        int arrayCount = (int) ((*env)->CallIntMethod(env, cmd, alSizeId));
+        if (arrayCount <= 0) {
+            break;
+        }
+
+        char ** argv = NULL;
+        argv = (char **) calloc(arrayCount, sizeof(char*));
+        if (argv == NULL) {
+            break;
+        }
+
+        for (int index = 0; index < arrayCount; ++index) {
+            jobject obj = (*env)->CallObjectMethod(env, cmd, alGetId, index);
+            assert(obj);
+            const char *cid = (*env)->GetStringUTFChars(env, obj, NULL);
+            assert(cid);
+
+            argv[index] = strdup(cid);
+            assert(argv[index]);
+            (*env)->DeleteLocalRef(env, obj);
+        }
+
+        result = main(arrayCount, argv);
+
+        for (int index = 0; index < arrayCount; ++index) {
+            free(argv[index]);
+            argv[index] = NULL;
+        }
+        free(argv);
+        argv = NULL;
+    } while (false);
+
+    if (alCls) {
+        (*env)->DeleteLocalRef(env, alCls);
+    }
+    (void)clazz;
+    return result;
+}
+
+JNIEXPORT jint JNICALL
+Java_com_github_shadowsocks_bg_SsrClientWrapper_stopSsrClient(JNIEnv *env, jclass clazz) {
+    extern struct ssr_client_state *g_state;
+    if (g_state) {
+        state_set_force_quit(g_state, true, 500);
+        ssr_run_loop_shutdown(g_state);
+        usleep(800);
+    }
+    (void)env;
+    (void)clazz;
+    return 0;
+}
+
+#include <dlfcn.h>
+#include <fake-dlfcn.h>
+
+int protect_socket(int fd) {
+#define LIB_NETD_CLIENT_SO "libnetd_client.so"
+    typedef int (*PFN_protectFromVpn)(int socketFd) ;
+    static PFN_protectFromVpn protectFromVpn = NULL;
+    if (protectFromVpn == NULL) {
+        struct fake_dl_ctx *handle = fake_dlopen(SYSTEM_LIB_PATH LIB_NETD_CLIENT_SO, RTLD_NOW);
+        if (!handle) {
+            assert(!"cannot load " LIB_NETD_CLIENT_SO);
+            return -1;
+        }
+        protectFromVpn = (PFN_protectFromVpn) fake_dlsym(handle, "protectFromVpn");
+        fake_dlclose(handle);
+        if (!protectFromVpn) {
+            assert(!"required function protectFromVpn missing in " LIB_NETD_CLIENT_SO);
+            return -1;
+        }
+        LOGI("%s", "==== protectFromVpn catched from " LIB_NETD_CLIENT_SO "! ====\n");
+    }
+    return protectFromVpn(fd);
+}
+
+#endif
 
 static char status_file_path[512] = { 0 };
 

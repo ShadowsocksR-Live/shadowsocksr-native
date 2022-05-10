@@ -165,13 +165,32 @@ endif()
 add_definitions(-DUDP_RELAY_ENABLE)
 
 if(ANDROID)
+    #[[
     include_directories(${LIB_ANCILLARY_DIR})
-
     LIST(APPEND SOURCE_FILES_CLIENT android.c)
     add_executable(ssr-client ${SOURCE_FILES_CLIENT})
     set_target_properties(ssr-client PROPERTIES COMPILE_DEFINITIONS MODULE_LOCAL)
     set_target_properties(ssr-client PROPERTIES PREFIX "lib" SUFFIX ".so")
     target_link_libraries(ssr-client ancillary json-c uv_a cstl mbedtls sodium bloom m log uv-mbed uri-encode)
+    ]]
+
+    include(FetchContent)
+    FetchContent_Declare(
+            fake-dlfcn
+            GIT_REPOSITORY https://github.com/ssrlive/fake-dlfcn.git
+            GIT_TAG        2ee50c763c85f67a3062bf65163ea63a19a53709
+    )
+    FetchContent_MakeAvailable(fake-dlfcn)
+
+    list ( APPEND SOURCE_FILES_CLIENT
+            android.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/getopt.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/getopt_long.c )
+
+    add_library(ssr-client SHARED ${SOURCE_FILES_CLIENT})
+    target_compile_definitions(ssr-client PRIVATE MODULE_LOCAL=1 HAVE_INT_OPTRESET=1)
+    target_link_libraries(ssr-client fake-dlfcn json-c uv_a cstl mbedtls sodium bloom m log uv-mbed uri-encode)
+    target_include_directories(ssr-client PRIVATE ${LIB_FAKE_DLFCN_DIR})
 else()
 
 add_executable(ssr-client ${SOURCE_FILES_CLIENT})
