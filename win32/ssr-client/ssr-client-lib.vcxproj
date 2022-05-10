@@ -22,6 +22,7 @@
     <ClCompile Include="..\..\depends\http-parser\http_parser.c" />
     <ClCompile Include="..\..\depends\http-parser\http_parser_wrapper.c" />
     <ClCompile Include="..\..\src\aead.c" />
+    <ClCompile Include="..\..\src\android.c" />
     <ClCompile Include="..\..\src\cache.c" />
     <ClCompile Include="..\..\src\client\client.c" />
     <ClCompile Include="..\..\src\client\listener.c" />
