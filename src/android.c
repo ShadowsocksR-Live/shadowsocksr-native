@@ -260,9 +260,6 @@ send_traffic_stat(uint64_t tx, uint64_t rx)
 }
 
 int log_tx_rx  = 0;
-uint64_t tx    = 0;
-uint64_t rx    = 0;
-uint64_t last  = 0;
 
 void set_flag_of_log_tx_rx(int log) {
     log_tx_rx = log;
@@ -271,6 +268,10 @@ void set_flag_of_log_tx_rx(int log) {
 #include <uv.h>
 
 void traffic_status_update(uint64_t delta_tx, uint64_t delta_rx) {
+    static uint64_t last  = 0;
+    static uint64_t tx    = 0;
+    static uint64_t rx    = 0;
+
     tx += delta_tx;
     rx += delta_rx;
     if (log_tx_rx) {
