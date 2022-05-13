@@ -133,7 +133,7 @@ char *generate_shadowsocks_uri(const struct server_config *config, void*(*alloc_
     userinfo = (char*)calloc(len, sizeof(char));
     sprintf(userinfo, "%s:%s", config->method, config->password);
 
-    userinfo_b64 = url_safe_base64_encode_alloc((uint8_t*)userinfo, len, &malloc);
+    userinfo_b64 = url_safe_base64_encode_alloc((uint8_t*)userinfo, strlen(userinfo), &malloc);
 
     if (config->remarks && strlen(config->remarks)) {
         size_t u_len = URI_ENCODE_BUFF_SIZE_MAX(strlen(config->remarks));
