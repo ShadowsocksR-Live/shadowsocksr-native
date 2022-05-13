@@ -158,7 +158,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_definitions("-D_DEFAULT_SOURCE -D_GNU_SOURCE -D__FUNCTION__=__func__")
 endif()
 
-if (UNIX AND (NOT APPLE))
+if (UNIX AND (NOT APPLE) AND (NOT ANDROID))
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread -static-libstdc++ -static-libgcc")
 endif()
 
