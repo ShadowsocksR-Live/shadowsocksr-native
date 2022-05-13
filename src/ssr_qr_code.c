@@ -129,10 +129,11 @@ char *generate_shadowsocks_uri(const struct server_config *config, void*(*alloc_
     {
         return NULL;
     }
-    userinfo = (char*)calloc(strlen(config->method) + PORT_STR_LENGTH_MAX + 2, sizeof(char));
-    sprintf(userinfo, "%s:%d", config->method, config->remote_port);
+    len = strlen(config->method) + strlen(config->password) + 2;
+    userinfo = (char*)calloc(len, sizeof(char));
+    sprintf(userinfo, "%s:%s", config->method, config->password);
 
-    userinfo_b64 = url_safe_base64_encode_alloc((uint8_t*)userinfo, strlen(userinfo), &malloc);
+    userinfo_b64 = url_safe_base64_encode_alloc((uint8_t*)userinfo, len, &malloc);
 
     if (config->remarks && strlen(config->remarks)) {
         size_t u_len = URI_ENCODE_BUFF_SIZE_MAX(strlen(config->remarks));
