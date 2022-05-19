@@ -187,7 +187,7 @@ void server_udp_remote_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* 
         pr_info("[udp] session %s <=> %s recv remote data length %ld",
             get_addr_str(&remote_ctx->incoming_addr.addr, tmp1, sizeof(tmp1)),
             get_addr_str(&remote_ctx->target_addr.addr, tmp2, sizeof(tmp2)),
-            buffer_get_length(buf));
+            (long)buffer_get_length(buf));
 
         {
             uint8_t *p;
@@ -427,7 +427,7 @@ server_udp_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* uvb
 
             pr_info(remote_ctx ? "[udp] session %s <=> %s reused, data length %ld" : "[udp] session %s <=> %s starting, data length %ld",
                 get_addr_str(addr, tmp1, sizeof(tmp1)),
-                get_addr_str(&target_addr.addr, tmp2, sizeof(tmp2)), (size_t)nread);
+                get_addr_str(&target_addr.addr, tmp2, sizeof(tmp2)), (long)nread);
 
             if (remote_ctx == NULL) {
                 remote_ctx = create_server_udp_remote(loop, listener_ctx->timeout, server_udp_remote_timeout_cb);
