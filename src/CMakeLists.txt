@@ -8,6 +8,11 @@ endif()
 if (MSVC)
     add_definitions("-DSODIUM_STATIC")
     add_definitions("-DMBEDTLS_API")
+
+    add_definitions("-D__MINGW32__ -D__MINGW64_VERSION_MAJOR")
+    add_definitions("-DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS")
+    add_definitions("-DUSE_CRYPTO_MBEDTLS -D_WINSOCK_DEPRECATED_NO_WARNINGS -DUDP_RELAY_ENABLE")
+    add_definitions("-DHAVE_PCRE_H")
 endif()
 
 set(SOURCE_FILES_SNI
