@@ -249,6 +249,8 @@ function nginx_install() {
         exit 5
     fi
 
+    systemctl enable nginx
+
     if [[ ! -f /etc/nginx/nginx.conf.bak ]]; then
         cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
         echo -e "${OK} ${GreenBG} nginx initial configuration backup completed ${Font}"
