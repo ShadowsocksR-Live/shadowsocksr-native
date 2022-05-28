@@ -250,7 +250,7 @@ bool config_is_user_exist(struct server_config *config, const char *user_id, con
     if (is_multi_user) {
         *is_multi_user = (config->user_id_auth_key != NULL);
     }
-    result = (cstl_map_exists(config->user_id_auth_key, &user_id) != cstl_false);
+    result = (cstl_map_exists(config->user_id_auth_key, &user_id) != false);
     if (result && auth_key) {
         *auth_key = *((const char **)cstl_map_find(config->user_id_auth_key, &user_id));
     }

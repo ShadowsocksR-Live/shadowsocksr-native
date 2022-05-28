@@ -265,7 +265,7 @@ static bool tunnel_is_terminated(struct tunnel_ctx* tunnel) {
     return (ctx->is_terminated != false);
 }
 
-static void _iterator_tunnel_shutdown(struct cstl_set* set, const void* obj, cstl_bool* stop, void* p) {
+static void _iterator_tunnel_shutdown(struct cstl_set* set, const void* obj, bool* stop, void* p) {
     struct tunnel_ctx* tunnel = (struct tunnel_ctx*)obj;
     tunnel->tunnel_shutdown(tunnel);
     (void)set; (void)stop; (void)p;
@@ -1588,7 +1588,7 @@ void udp_data_context_destroy(struct udp_data_context* ptr) {
     }
 }
 
-static void _do_find_upd_tunnel(struct cstl_set* set, const void* obj, cstl_bool* stop, void* p) {
+static void _do_find_upd_tunnel(struct cstl_set* set, const void* obj, bool* stop, void* p) {
     struct tunnel_ctx* tunnel = (struct tunnel_ctx*)obj;
     struct client_ctx* ctx = (struct client_ctx*)tunnel->data;
     struct udp_data_context* query_data = (struct udp_data_context*)p;
@@ -1598,7 +1598,7 @@ static void _do_find_upd_tunnel(struct cstl_set* set, const void* obj, cstl_bool
             (memcmp(&iter->target_addr, &query_data->target_addr, sizeof(struct socks5_address)) == 0))
         {
             query_data->owner = ctx;
-            if (stop) { *stop = cstl_true; }
+            if (stop) { *stop = true; }
         }
     }
     (void)set;
