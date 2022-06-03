@@ -151,8 +151,6 @@
 		3A9CCE3920CE318200D9E0DC /* tunnel.c in Sources */ = {isa = PBXBuildFile; fileRef = 3A9CCE3520CE318200D9E0DC /* tunnel.c */; };
 		B6771946278462CA0054EF9B /* c_algorithms.c in Sources */ = {isa = PBXBuildFile; fileRef = B677193E278462C90054EF9B /* c_algorithms.c */; };
 		B6771947278462CA0054EF9B /* c_algorithms.c in Sources */ = {isa = PBXBuildFile; fileRef = B677193E278462C90054EF9B /* c_algorithms.c */; };
-		B6771948278462CA0054EF9B /* c_rb.c in Sources */ = {isa = PBXBuildFile; fileRef = B677193F278462C90054EF9B /* c_rb.c */; };
-		B6771949278462CA0054EF9B /* c_rb.c in Sources */ = {isa = PBXBuildFile; fileRef = B677193F278462C90054EF9B /* c_rb.c */; };
 		B677194A278462CA0054EF9B /* c_deque.c in Sources */ = {isa = PBXBuildFile; fileRef = B6771940278462C90054EF9B /* c_deque.c */; };
 		B677194B278462CA0054EF9B /* c_deque.c in Sources */ = {isa = PBXBuildFile; fileRef = B6771940278462C90054EF9B /* c_deque.c */; };
 		B677194C278462CA0054EF9B /* c_set.c in Sources */ = {isa = PBXBuildFile; fileRef = B6771941278462CA0054EF9B /* c_set.c */; };
@@ -169,10 +167,6 @@
 		B6771961278462DA0054EF9B /* c_deque.h in Headers */ = {isa = PBXBuildFile; fileRef = B6771956278462DA0054EF9B /* c_deque.h */; };
 		B6771962278462DA0054EF9B /* c_map.h in Headers */ = {isa = PBXBuildFile; fileRef = B6771957278462DA0054EF9B /* c_map.h */; };
 		B6771963278462DA0054EF9B /* c_map.h in Headers */ = {isa = PBXBuildFile; fileRef = B6771957278462DA0054EF9B /* c_map.h */; };
-		B6771964278462DA0054EF9B /* c_rb.h in Headers */ = {isa = PBXBuildFile; fileRef = B6771958278462DA0054EF9B /* c_rb.h */; };
-		B6771965278462DA0054EF9B /* c_rb.h in Headers */ = {isa = PBXBuildFile; fileRef = B6771958278462DA0054EF9B /* c_rb.h */; };
-		B6771966278462DA0054EF9B /* c_lib.h in Headers */ = {isa = PBXBuildFile; fileRef = B6771959278462DA0054EF9B /* c_lib.h */; };
-		B6771967278462DA0054EF9B /* c_lib.h in Headers */ = {isa = PBXBuildFile; fileRef = B6771959278462DA0054EF9B /* c_lib.h */; };
 		B6771968278462DA0054EF9B /* c_algorithms.h in Headers */ = {isa = PBXBuildFile; fileRef = B677195A278462DA0054EF9B /* c_algorithms.h */; };
 		B6771969278462DA0054EF9B /* c_algorithms.h in Headers */ = {isa = PBXBuildFile; fileRef = B677195A278462DA0054EF9B /* c_algorithms.h */; };
 		B677196A278462DA0054EF9B /* c_errors.h in Headers */ = {isa = PBXBuildFile; fileRef = B677195B278462DA0054EF9B /* c_errors.h */; };
@@ -203,6 +197,12 @@
 		B69D2A43277493C60016B09B /* bloom.h in Headers */ = {isa = PBXBuildFile; fileRef = B69D2A3B277493C60016B09B /* bloom.h */; };
 		B6B7882627FEA5D0006A0CE9 /* udp_ssr_client.c in Sources */ = {isa = PBXBuildFile; fileRef = B6B7882527FEA5D0006A0CE9 /* udp_ssr_client.c */; };
 		B6B7882727FEA876006A0CE9 /* udp_ssr_client.c in Sources */ = {isa = PBXBuildFile; fileRef = B6B7882527FEA5D0006A0CE9 /* udp_ssr_client.c */; };
+		B6B94E8C2849F3FE00DDF9E4 /* rb-tree.c in Sources */ = {isa = PBXBuildFile; fileRef = B6B94E8B2849F3FE00DDF9E4 /* rb-tree.c */; };
+		B6B94E8D2849F3FE00DDF9E4 /* rb-tree.c in Sources */ = {isa = PBXBuildFile; fileRef = B6B94E8B2849F3FE00DDF9E4 /* rb-tree.c */; };
+		B6B94E902849F41300DDF9E4 /* c_stl_lib.h in Headers */ = {isa = PBXBuildFile; fileRef = B6B94E8E2849F41300DDF9E4 /* c_stl_lib.h */; };
+		B6B94E912849F41300DDF9E4 /* c_stl_lib.h in Headers */ = {isa = PBXBuildFile; fileRef = B6B94E8E2849F41300DDF9E4 /* c_stl_lib.h */; };
+		B6B94E922849F41300DDF9E4 /* rb-tree.h in Headers */ = {isa = PBXBuildFile; fileRef = B6B94E8F2849F41300DDF9E4 /* rb-tree.h */; };
+		B6B94E932849F41300DDF9E4 /* rb-tree.h in Headers */ = {isa = PBXBuildFile; fileRef = B6B94E8F2849F41300DDF9E4 /* rb-tree.h */; };
 		B6DEB0002781DBC400AE6896 /* uri_encode.c in Sources */ = {isa = PBXBuildFile; fileRef = B6DEAFFE2781DBC400AE6896 /* uri_encode.c */; };
 		B6DEB0012781DBC400AE6896 /* uri_encode.c in Sources */ = {isa = PBXBuildFile; fileRef = B6DEAFFE2781DBC400AE6896 /* uri_encode.c */; };
 		B6DEB0022781DBC400AE6896 /* uri_encode.h in Headers */ = {isa = PBXBuildFile; fileRef = B6DEAFFF2781DBC400AE6896 /* uri_encode.h */; };
@@ -374,7 +374,6 @@
 		3A9CCE3420CE318200D9E0DC /* tunnel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = tunnel.h; path = ../src/tunnel.h; sourceTree = "<group>"; };
 		3A9CCE3520CE318200D9E0DC /* tunnel.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = tunnel.c; path = ../src/tunnel.c; sourceTree = "<group>"; };
 		B677193E278462C90054EF9B /* c_algorithms.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = c_algorithms.c; path = ../depends/cstl/src/c_algorithms.c; sourceTree = "<group>"; };
-		B677193F278462C90054EF9B /* c_rb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = c_rb.c; path = ../depends/cstl/src/c_rb.c; sourceTree = "<group>"; };
 		B6771940278462C90054EF9B /* c_deque.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = c_deque.c; path = ../depends/cstl/src/c_deque.c; sourceTree = "<group>"; };
 		B6771941278462CA0054EF9B /* c_set.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = c_set.c; path = ../depends/cstl/src/c_set.c; sourceTree = "<group>"; };
 		B6771942278462CA0054EF9B /* c_map.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = c_map.c; path = ../depends/cstl/src/c_map.c; sourceTree = "<group>"; };
@@ -383,8 +382,6 @@
 		B6771945278462CA0054EF9B /* c_array.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = c_array.c; path = ../depends/cstl/src/c_array.c; sourceTree = "<group>"; };
 		B6771956278462DA0054EF9B /* c_deque.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = c_deque.h; path = ../depends/cstl/inc/c_deque.h; sourceTree = "<group>"; };
 		B6771957278462DA0054EF9B /* c_map.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = c_map.h; path = ../depends/cstl/inc/c_map.h; sourceTree = "<group>"; };
-		B6771958278462DA0054EF9B /* c_rb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = c_rb.h; path = ../depends/cstl/inc/c_rb.h; sourceTree = "<group>"; };
-		B6771959278462DA0054EF9B /* c_lib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = c_lib.h; path = ../depends/cstl/inc/c_lib.h; sourceTree = "<group>"; };
 		B677195A278462DA0054EF9B /* c_algorithms.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = c_algorithms.h; path = ../depends/cstl/inc/c_algorithms.h; sourceTree = "<group>"; };
 		B677195B278462DA0054EF9B /* c_errors.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = c_errors.h; path = ../depends/cstl/inc/c_errors.h; sourceTree = "<group>"; };
 		B677195C278462DA0054EF9B /* c_set.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = c_set.h; path = ../depends/cstl/inc/c_set.h; sourceTree = "<group>"; };
@@ -400,6 +397,9 @@
 		B69D2A3A277493C60016B09B /* MurmurHash2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = MurmurHash2.c; path = ../depends/libbloom/murmur2/MurmurHash2.c; sourceTree = "<group>"; };
 		B69D2A3B277493C60016B09B /* bloom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bloom.h; path = ../depends/libbloom/bloom.h; sourceTree = "<group>"; };
 		B6B7882527FEA5D0006A0CE9 /* udp_ssr_client.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = udp_ssr_client.c; path = ../src/udp_ssr_client.c; sourceTree = "<group>"; };
+		B6B94E8B2849F3FE00DDF9E4 /* rb-tree.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "rb-tree.c"; path = "../depends/cstl/src/rb-tree.c"; sourceTree = "<group>"; };
+		B6B94E8E2849F41300DDF9E4 /* c_stl_lib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = c_stl_lib.h; path = ../depends/cstl/inc/c_stl_lib.h; sourceTree = "<group>"; };
+		B6B94E8F2849F41300DDF9E4 /* rb-tree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "rb-tree.h"; path = "../depends/cstl/inc/rb-tree.h"; sourceTree = "<group>"; };
 		B6DEAFFE2781DBC400AE6896 /* uri_encode.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = uri_encode.c; path = "../depends/uri-encode/src/uri_encode.c"; sourceTree = "<group>"; };
 		B6DEAFFF2781DBC400AE6896 /* uri_encode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = uri_encode.h; path = "../depends/uri-encode/src/uri_encode.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -613,19 +613,19 @@
 				B6771956278462DA0054EF9B /* c_deque.h */,
 				B677195B278462DA0054EF9B /* c_errors.h */,
 				B677195F278462DA0054EF9B /* c_iterator.h */,
-				B6771959278462DA0054EF9B /* c_lib.h */,
 				B677195E278462DA0054EF9B /* c_list.h */,
 				B6771957278462DA0054EF9B /* c_map.h */,
-				B6771958278462DA0054EF9B /* c_rb.h */,
 				B677195C278462DA0054EF9B /* c_set.h */,
 				B677193E278462C90054EF9B /* c_algorithms.c */,
 				B6771945278462CA0054EF9B /* c_array.c */,
 				B6771940278462C90054EF9B /* c_deque.c */,
 				B6771943278462CA0054EF9B /* c_list.c */,
 				B6771942278462CA0054EF9B /* c_map.c */,
-				B677193F278462C90054EF9B /* c_rb.c */,
 				B6771941278462CA0054EF9B /* c_set.c */,
 				B6771944278462CA0054EF9B /* c_util.c */,
+				B6B94E8E2849F41300DDF9E4 /* c_stl_lib.h */,
+				B6B94E8F2849F41300DDF9E4 /* rb-tree.h */,
+				B6B94E8B2849F3FE00DDF9E4 /* rb-tree.c */,
 			);
 			name = cstl;
 			sourceTree = "<group>";
@@ -689,7 +689,6 @@
 				3A300B30206FF54000ABE7C2 /* obfsutil.h in Headers */,
 				B6771968278462DA0054EF9B /* c_algorithms.h in Headers */,
 				3A6C0C062304109700FFF1D9 /* uv-mbed.h in Headers */,
-				B6771964278462DA0054EF9B /* c_rb.h in Headers */,
 				3A300B3A206FF54000ABE7C2 /* crc32.h in Headers */,
 				3A27FF6D229974A200CFAD25 /* text_in_color.h in Headers */,
 				3A27FF71229974FD00CFAD25 /* tls_cli.h in Headers */,
@@ -701,7 +700,6 @@
 				3A95CC0B2070D26100E507E3 /* udprelay.h in Headers */,
 				B6771970278462DA0054EF9B /* c_list.h in Headers */,
 				3A300B69206FF69D00ABE7C2 /* ssr_cipher_names.h in Headers */,
-				B6771966278462DA0054EF9B /* c_lib.h in Headers */,
 				3A300B45206FF58300ABE7C2 /* s5.h in Headers */,
 				B69D2A362774936A0016B09B /* ppbloom.h in Headers */,
 				3A9CCE3620CE318200D9E0DC /* tunnel.h in Headers */,
@@ -711,6 +709,8 @@
 				B6771962278462DA0054EF9B /* c_map.h in Headers */,
 				3A300B3C206FF54000ABE7C2 /* base64.h in Headers */,
 				3A31839E22F869EE00E7D266 /* http_parser.h in Headers */,
+				B6B94E902849F41300DDF9E4 /* c_stl_lib.h in Headers */,
+				B6B94E922849F41300DDF9E4 /* rb-tree.h in Headers */,
 				B677196A278462DA0054EF9B /* c_errors.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -748,7 +748,6 @@
 				3A425B5125346B0200EE3AC5 /* ref_count_def.h in Headers */,
 				B6771969278462DA0054EF9B /* c_algorithms.h in Headers */,
 				3A6C0C072304109700FFF1D9 /* uv-mbed.h in Headers */,
-				B6771965278462DA0054EF9B /* c_rb.h in Headers */,
 				3A95CBB62070C8FD00E507E3 /* ssrbuffer.h in Headers */,
 				3A27FF6E229974A200CFAD25 /* text_in_color.h in Headers */,
 				3A27FF72229974FD00CFAD25 /* tls_cli.h in Headers */,
@@ -759,7 +758,6 @@
 				3A95CBB52070C8FD00E507E3 /* cache.h in Headers */,
 				B6771971278462DA0054EF9B /* c_list.h in Headers */,
 				3A95CC0C2070D26100E507E3 /* udprelay.h in Headers */,
-				B6771967278462DA0054EF9B /* c_lib.h in Headers */,
 				3A95CBCE2070C92200E507E3 /* http_simple.h in Headers */,
 				B69D2A372774936A0016B09B /* ppbloom.h in Headers */,
 				3A9CCE3720CE318200D9E0DC /* tunnel.h in Headers */,
@@ -769,6 +767,8 @@
 				B6771963278462DA0054EF9B /* c_map.h in Headers */,
 				3A95CBD62070C92200E507E3 /* verify.h in Headers */,
 				3A31839F22F869EE00E7D266 /* http_parser.h in Headers */,
+				B6B94E912849F41300DDF9E4 /* c_stl_lib.h in Headers */,
+				B6B94E932849F41300DDF9E4 /* rb-tree.h in Headers */,
 				B677196B278462DA0054EF9B /* c_errors.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -944,11 +944,11 @@
 				3A300B49206FF58300ABE7C2 /* s5.c in Sources */,
 				3A300B29206FF54000ABE7C2 /* obfs.c in Sources */,
 				3A300B2F206FF54000ABE7C2 /* auth.c in Sources */,
-				B6771948278462CA0054EF9B /* c_rb.c in Sources */,
 				3A27FF6B229974A200CFAD25 /* text_in_color.c in Sources */,
 				3A300B33206FF54000ABE7C2 /* verify.c in Sources */,
 				3A300B75206FFA0A00ABE7C2 /* ssrutils.c in Sources */,
 				3A300B2E206FF54000ABE7C2 /* obfsutil.c in Sources */,
+				B6B94E8C2849F3FE00DDF9E4 /* rb-tree.c in Sources */,
 				3A929D162472ED250070E466 /* websocket_basic.c in Sources */,
 				3A9CCE3820CE318200D9E0DC /* tunnel.c in Sources */,
 				B677194C278462CA0054EF9B /* c_set.c in Sources */,
@@ -996,12 +996,12 @@
 				3A95CBD52070C92200E507E3 /* verify.c in Sources */,
 				3A95CBD92070C92D00E507E3 /* listener.c in Sources */,
 				3A95CBDA2070C92D00E507E3 /* s5.c in Sources */,
-				B6771949278462CA0054EF9B /* c_rb.c in Sources */,
 				3A27FF6C229974A200CFAD25 /* text_in_color.c in Sources */,
 				3A95CBCF2070C92200E507E3 /* obfs.c in Sources */,
 				3A95CBC52070C92200E507E3 /* auth.c in Sources */,
 				3A95CBCD2070C92200E507E3 /* http_simple.c in Sources */,
 				3A929D172472ED250070E466 /* websocket_basic.c in Sources */,
+				B6B94E8D2849F3FE00DDF9E4 /* rb-tree.c in Sources */,
 				3A9CCE3920CE318200D9E0DC /* tunnel.c in Sources */,
 				B677194D278462CA0054EF9B /* c_set.c in Sources */,
 				3A95CBBE2070C90C00E507E3 /* ssr_cipher_names.c in Sources */,
