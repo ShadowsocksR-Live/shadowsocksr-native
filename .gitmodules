@@ -26,3 +26,11 @@
 	path = depends/libbloom
 	url = https://github.com/ShadowsocksR-Live/libbloom.git
 	branch = master
+[submodule "depends/uri-encode"]
+	path = depends/uri-encode
+	url = https://github.com/ShadowsocksR-Live/uri-encode-c.git
+	branch = master
+[submodule "depends/cstl"]
+	path = depends/cstl
+	url = https://github.com/ShadowsocksR-Live/cstl.git
+	branch = master

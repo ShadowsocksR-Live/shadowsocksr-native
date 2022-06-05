@@ -9,10 +9,14 @@
 
 #include "sockaddr_universal.h"
 
-bool socks5_address_parse(const uint8_t *data, size_t len, struct socks5_address *addr) {
+bool socks5_address_parse(const uint8_t *data, size_t len, struct socks5_address *addr, size_t *off) {
     size_t offset     = 0;
     size_t addr_size = 0;
     uint8_t addr_type = 0;
+
+    if (off) {
+        *off = 0;
+    }
 
     if (data==NULL || len==0 || addr==NULL) {
         return false;
@@ -56,6 +60,10 @@ bool socks5_address_parse(const uint8_t *data, size_t len, struct socks5_address
     addr->port = ntohs( *((uint16_t *)(data+offset)) );
 
     offset += sizeof(uint16_t);
+
+    if (off) {
+        *off = offset;
+    }
 
     return true;
 }

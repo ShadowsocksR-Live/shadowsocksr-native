@@ -358,10 +358,14 @@ uint8_t * websocket_build_close_frame(bool masking, ws_close_reason reason, cons
     if (allocator == NULL) {
         return NULL;
     }
+#if !defined(_MSC_VER)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#endif // _MSC_VER
     *((uint16_t *)(tmp + 0)) = ws_hton16((uint16_t)reason);
+#if !defined(_MSC_VER)
 #pragma GCC diagnostic pop
+#endif // _MSC_VER
     memcpy(tmp + sizeof(uint16_t), text_info, ti_size);
 
     result = websocket_build_frame(&info, tmp, sizeof(uint16_t) + ti_size, allocator);

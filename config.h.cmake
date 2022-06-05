@@ -3,8 +3,13 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
+#ifndef CONNECT_IN_PROGRESS
+
 /* errno for incomplete non-blocking connect(2) */
 #define CONNECT_IN_PROGRESS @CONNECT_IN_PROGRESS@
+
+#endif
+
 
 #ifdef _WIN32
 
@@ -17,8 +22,12 @@
 /* Override libev default handle conversion macro. */
 #define EV_WIN32_HANDLE_TO_FD(handle) (handle)
 
+#ifndef FD_SETSIZE
+
 /* Reset max file descriptor size. */
 #define FD_SETSIZE 2048
+
+#endif
 
 #endif
 

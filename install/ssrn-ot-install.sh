@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #==========================================================
-#   System Request: Debian 7+ / Ubuntu 14.04+ / Centos 6+
+#   System Request: Debian 7+ / Ubuntu 14.04+ / Centos 7+
 #   Author: ssrlive
 #   Dscription: ShadowsocksR over TLS onekey
 #   Version: 1.0.0
@@ -126,15 +126,13 @@ function dependency_install() {
 
     if [[ "${ID}" == "centos" ]]; then
        ${INS} -y install crontabs
-       ${INS} -y install make zlib zlib-devel gcc-c++ libtool openssl openssl-devel
+       ${INS} -y install python3 make zlib zlib-devel gcc-c++ libtool openssl openssl-devel
     else
         ${INS} install cron vim curl -y
         ${INS} update -y
-        ${INS} install cmake make zlib1g zlib1g-dev build-essential autoconf libtool openssl libssl-dev -y
+        ${INS} install python3 cmake make zlib1g zlib1g-dev build-essential autoconf libtool openssl libssl-dev -y
         if [[ "${ID}" == "ubuntu" && `echo "${VERSION_ID}" | cut -d '.' -f1` -ge 20 ]]; then
-            ${INS} install python3 python python2-minimal inetutils-ping -y
-        else
-            ${INS} install python3 python python-minimal -y
+            ${INS} install inetutils-ping -y
         fi
     fi
     judge "Installing crontab"
@@ -225,6 +223,8 @@ function nginx_install() {
         exit 5
     fi
 
+    systemctl enable nginx
+
     if [[ ! -f /etc/nginx/nginx.conf.bak ]]; then
         cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
         echo -e "${OK} ${GreenBG} nginx initial configuration backup completed ${Font}"
@@ -281,7 +281,7 @@ function do_lets_encrypt_certificate_authority() {
     judge "[CA] Create CSR file"
 
     curl -L https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py -o acme_tiny.py
-    python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir ${site_dir}/.well-known/acme-challenge/ > ./signed.crt
+    python3 acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir ${site_dir}/.well-known/acme-challenge/ > ./signed.crt
     judge "[CA] Obtain website certificate"
 
     wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > intermediate.pem
@@ -302,7 +302,7 @@ function acme_cron_update(){
 #!/bin/bash
 
 cd ${site_cert_dir}
-python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir ${site_dir}/.well-known/acme-challenge/ > ./signed.crt || exit
+python3 acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir ${site_dir}/.well-known/acme-challenge/ > ./signed.crt || exit
 wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > intermediate.pem
 cat signed.crt intermediate.pem > chained_cert.pem
 systemctl stop nginx
@@ -319,6 +319,7 @@ EOF
     fi
 
     systemctl stop ${cron_name}
+    sleep 2
     rm -rf tmp_info
     crontab -l > tmp_info
     echo "0 0 1 * * ${site_cert_dir}/renew_cert.sh >/dev/null 2>&1" >> tmp_info && crontab tmp_info && rm -rf tmp_info

@@ -255,10 +255,14 @@ enum s5_result s5_parse(struct s5_ctx *cx, uint8_t **data, size_t *size) {
 
         case s5_stage_req_dport1:
             port[1] = c;
+#if !defined(_MSC_VER)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#endif // _MSC_VER
             cx->dport = (uint16_t) ntohs(*(uint16_t *)port);
+#if !defined(_MSC_VER)
 #pragma GCC diagnostic pop
+#endif // _MSC_VER
             cx->stage = s5_stage_dead;
             result = s5_result_exec_cmd;
             goto out;
@@ -478,7 +482,7 @@ const uint8_t * s5_parse_upd_package(const uint8_t *pkg, size_t len, struct sock
         }
         offset = sizeof(uint16_t) + sizeof(uint8_t);
         address = pkg + offset;
-        if (socks5_address_parse(address, len - offset, dst_addr) == false) {
+        if (socks5_address_parse(address, len - offset, dst_addr, NULL) == false) {
             break;
         }
 

@@ -98,12 +98,15 @@ struct server_config* parse_config_file(bool is_server, const char* file)
     json_object *jso = NULL;
     struct server_config* config = config_create();
     do {
-        struct json_object_iter iter = { NULL };
+        struct json_object_iter iter;
+        bool svr_setting = false;
+        unsigned short svr_listen_port = 0;
 
         jso = json_object_from_file(file);
         if (jso == NULL) {
             break;
         }
+        memset(&iter, 0, sizeof(iter));
         json_object_object_foreachC(jso, iter) {
             int obj_int = 0;
             bool obj_bool = false;
@@ -174,13 +177,19 @@ struct server_config* parse_config_file(bool is_server, const char* file)
                     config->listen_port = obj_int;
                     continue;
                 }
+            } else {
+                if (json_iter_extract_int("server_port", &iter, &obj_int)) {
+                    svr_listen_port = obj_int;
+                    continue;
+                }
             }
 
             if (json_iter_extract_object("server_settings", &iter, &obj_obj)) {
-                struct json_object_iter iter2 = { NULL };
+                struct json_object_iter iter2;
                 if (is_server == false) {
                     continue;
                 }
+                memset(&iter2, 0, sizeof(iter2));
                 json_object_object_foreachC(obj_obj, iter2) {
                     const char *obj_str2 = NULL;
 
@@ -193,14 +202,16 @@ struct server_config* parse_config_file(bool is_server, const char* file)
                         continue;
                     }
                 }
+                svr_setting = true;
                 continue;
             }
 
             if (json_iter_extract_object("client_settings", &iter, &obj_obj)) {
-                struct json_object_iter iter2 = {NULL};
+                struct json_object_iter iter2;
                 if (is_server) {
                     continue;
                 }
+                memset(&iter2, 0, sizeof(iter2));
                 json_object_object_foreachC(obj_obj, iter2) {
                     const char *obj_str2 = NULL;
 
@@ -225,7 +236,8 @@ struct server_config* parse_config_file(bool is_server, const char* file)
             }
 
             if (json_iter_extract_object("over_tls_settings", &iter, &obj_obj)) {
-                struct json_object_iter iter2 = { NULL };
+                struct json_object_iter iter2;
+                memset(&iter2, 0, sizeof(iter2));
                 json_object_object_foreachC(obj_obj, iter2) {
                     const char *obj_str2 = NULL;
                     obj_bool = false;
@@ -250,6 +262,13 @@ struct server_config* parse_config_file(bool is_server, const char* file)
                 continue;
             }
         }
+
+        if (is_server && !svr_setting && (svr_listen_port != 0)) {
+            // "server_settings" item is missing.
+            config->listen_port = svr_listen_port;
+            string_safe_assign(&config->listen_host, DEFAULT_BIND_PUBLIC_HOST);
+        }
+
         result = true;
     } while (0);
     if (jso) {

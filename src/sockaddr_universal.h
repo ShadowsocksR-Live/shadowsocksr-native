@@ -36,7 +36,7 @@ struct socks5_address {
     enum SOCKS5_ADDRTYPE addr_type;
 };
 
-bool socks5_address_parse(const uint8_t *data, size_t len, struct socks5_address *addr);
+bool socks5_address_parse(const uint8_t *data, size_t len, struct socks5_address *addr, size_t *offset);
 char * socks5_address_to_string(const struct socks5_address *addr, void*(*allocator)(size_t), bool with_port);
 size_t socks5_address_size(const struct socks5_address *addr);
 uint8_t * socks5_address_binary(const struct socks5_address *addr, void*(*allocator)(size_t), size_t *size);

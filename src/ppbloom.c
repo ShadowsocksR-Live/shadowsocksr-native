@@ -59,15 +59,15 @@ ppbloom_init(int n, double e)
 }
 
 int
-ppbloom_check(const void *buffer, int len)
+ppbloom_check(const void *buffer, size_t len)
 {
     int ret;
 
-    ret = bloom_check(ppbloom + PING, buffer, len);
+    ret = bloom_check(ppbloom + PING, buffer, (int)len);
     if (ret)
         return ret;
 
-    ret = bloom_check(ppbloom + PONG, buffer, len);
+    ret = bloom_check(ppbloom + PONG, buffer, (int)len);
     if (ret)
         return ret;
 
@@ -75,10 +75,10 @@ ppbloom_check(const void *buffer, int len)
 }
 
 int
-ppbloom_add(const void *buffer, int len)
+ppbloom_add(const void *buffer, size_t len)
 {
     int err;
-    err = bloom_add(ppbloom + current, buffer, len);
+    err = bloom_add(ppbloom + current, buffer, (int)len);
     if (err == -1)
         return err;
 

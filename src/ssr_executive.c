@@ -40,7 +40,7 @@
 #include "ssrbuffer.h"
 #include "obfs.h"
 #include "crc32.h"
-#include "cstl_lib.h"
+#include <c_stl_lib.h>
 #include "strtrim.h"
 
 const char * ssr_strerror(enum ssr_error err) {
@@ -137,7 +137,7 @@ void config_release(struct server_config *cf) {
         return;
     }
 
-    obj_map_destroy(cf->user_id_auth_key);
+    cstl_map_delete(cf->user_id_auth_key);
 
     object_safe_free((void **)&cf->listen_host);
     object_safe_free((void **)&cf->remote_host);
@@ -168,13 +168,10 @@ void config_ssrot_revision(struct server_config* config) {
     assert(method != ss_cipher_max);
 
     if (config->over_tls_enable) {
+        // SSRoT don't support protocol and obfs features, downgrade to SS with TLS.
         string_safe_assign(&config->obfs, ssr_obfs_name_of_type(ssr_obfs_plain));
-        // don't support protocol recently.
         string_safe_assign(&config->protocol, ssr_protocol_name_of_type(ssr_protocol_origin));
     } else {
-        // support UDP in SSRoT only.
-        config->udp = false;
-
         if (ss_cipher_aes_128_gcm <= method && method <= ss_cipher_xchacha20_ietf_poly1305 ) {
             // AEAD and SSR are not compatible. So we downgraded it to SS
             string_safe_assign(&config->obfs, ssr_obfs_name_of_type(ssr_obfs_plain));
@@ -238,9 +235,9 @@ void config_add_user_id_with_auth_key(struct server_config *config, const char *
     char *a = strdup(auth_key);
 
     if (config->user_id_auth_key == NULL) {
-        config->user_id_auth_key = obj_map_create(uid_cmp, uid_destroy, uid_destroy);
+        config->user_id_auth_key = cstl_map_new(uid_cmp, uid_destroy, uid_destroy);
     }
-    obj_map_add(config->user_id_auth_key, &u, sizeof(void *), &a, sizeof(void *));
+    cstl_map_insert(config->user_id_auth_key, &u, sizeof(void *), &a, sizeof(void *));
 }
 
 bool config_is_user_exist(struct server_config *config, const char *user_id, const char **auth_key, bool *is_multi_user) {
@@ -253,9 +250,9 @@ bool config_is_user_exist(struct server_config *config, const char *user_id, con
     if (is_multi_user) {
         *is_multi_user = (config->user_id_auth_key != NULL);
     }
-    result = obj_map_exists(config->user_id_auth_key, &user_id);
+    result = (cstl_map_exists(config->user_id_auth_key, &user_id) != false);
     if (result && auth_key) {
-        *auth_key = *((const char **)obj_map_find(config->user_id_auth_key, &user_id));
+        *auth_key = *((const char **)cstl_map_find(config->user_id_auth_key, &user_id));
     }
     return result;
 }
@@ -284,8 +281,8 @@ struct server_env_t * ssr_cipher_env_create(struct server_config *config, void *
     // init obfs
     init_obfs(env, config->protocol, config->obfs);
 
-    env->tunnel_set = cstl_set_container_create(tunnel_ctx_compare_for_c_set, NULL);
-    
+    env->tunnel_set = cstl_set_new(tunnel_ctx_compare_for_c_set, NULL);
+
     return env;
 }
 
@@ -297,120 +294,14 @@ void ssr_cipher_env_release(struct server_env_t *env) {
     object_safe_free(&env->obfs_global);
     cipher_env_release(env->cipher);
 
-    cstl_set_container_destroy(env->tunnel_set);
-    
+    cstl_set_delete(env->tunnel_set);
+
     object_safe_free((void **)&env);
 }
 
 bool is_completed_package(struct server_env_t *env, const uint8_t *data, size_t size) {
     (void)data;
     return size > (size_t)(enc_get_iv_len(env->cipher) + 1);
-}
-
-struct cstl_set * cstl_set_container_create(int(*compare_objs)(const void*,const void*), void(*destroy_obj)(void*)) {
-    return cstl_set_new(compare_objs, destroy_obj);
-}
-
-void cstl_set_container_destroy(struct cstl_set *set) {
-    cstl_set_delete(set);
-}
-
-void cstl_set_container_add(struct cstl_set *set, void *obj) {
-    ASSERT(set && obj);
-    cstl_set_insert(set, &obj, sizeof(void *));
-}
-
-void cstl_set_container_remove(struct cstl_set *set, void *obj) {
-    ASSERT(cstl_true == cstl_set_exists(set, &obj));
-    cstl_set_remove(set, &obj);
-}
-
-void cstl_set_container_traverse(struct cstl_set *set, void(*fn)(struct cstl_set *set, const void *obj, bool *stop, void *p), void *p) {
-    struct cstl_iterator *iterator;
-    const void *element;
-    bool stop = false;
-    if (set==NULL || fn==NULL) {
-        return;
-    }
-    iterator = cstl_set_new_iterator(set);
-    while( (element = iterator->next(iterator)) ) {
-        const void *obj = *((const void **) iterator->current_value(iterator));
-        fn(set, obj, &stop, p);
-        if (stop != false) { break; }
-    }
-    cstl_set_delete_iterator(iterator);
-}
-
-struct cstl_list * obj_list_create(int(*compare_objs)(const void*,const void*), void (*destroy_obj)(void*)) {
-    return cstl_list_new(destroy_obj, compare_objs);
-}
-
-void obj_list_destroy(struct cstl_list *list) {
-    cstl_list_destroy(list);
-}
-
-void obj_list_clear(struct cstl_list *list) {
-    cstl_list_clear(list);
-}
-
-void obj_list_insert(struct cstl_list* pList, size_t pos, void* elem, size_t elem_size) {
-    cstl_list_insert(pList, pos, elem, elem_size);
-}
-
-void obj_list_for_each(struct cstl_list* pSlist, void (*fn)(const void *elem, void *p), void *p) {
-    cstl_list_for_each (pSlist, fn, p);
-}
-
-const void * obj_list_element_at(struct cstl_list* pList, size_t pos) {
-    return cstl_list_element_at(pList, pos);
-}
-
-size_t obj_list_size(struct cstl_list* pSlist) {
-    return cstl_list_size(pSlist);
-}
-
-
-struct cstl_map * obj_map_create(int(*compare_key)(const void*,const void*), void (*destroy_key)(void*), void (*destroy_value)(void*)) {
-    return cstl_map_new(compare_key, destroy_key, destroy_value);
-}
-
-void obj_map_destroy(struct cstl_map *map) {
-    cstl_map_delete(map);
-}
-
-bool obj_map_add(struct cstl_map *map, void *key, size_t k_size, void *value, size_t v_size) {
-    return CSTL_ERROR_SUCCESS == cstl_map_insert(map, key, k_size, value, v_size);
-}
-
-bool obj_map_exists(struct cstl_map *map, const void *key) {
-    return cstl_map_exists(map, key) != cstl_false;
-}
-
-bool obj_map_replace(struct cstl_map *map, const void *key, const void *value, size_t v_size) {
-    return CSTL_ERROR_SUCCESS == cstl_map_replace(map, key, value, v_size);
-}
-
-void obj_map_remove(struct cstl_map *map, const void *key) {
-    cstl_map_remove(map, key);
-}
-
-const void * obj_map_find(struct cstl_map *map, const void *key) {
-    return cstl_map_find(map, key);
-}
-
-void obj_map_traverse(struct cstl_map *map, void(*fn)(const void *key, const void *value, void *p), void *p) {
-    struct cstl_iterator *iterator;
-    const void *element;
-    if (map==NULL || fn==NULL) {
-        return;
-    }
-    iterator = cstl_map_new_iterator(map);
-    while( (element = iterator->next(iterator)) ) {
-        const void *key = iterator->current_key(iterator);
-        const void *value = iterator->current_value(iterator);
-        fn(key, value, p);
-    }
-    cstl_map_delete_iterator(iterator);
 }
 
 void init_obfs(struct server_env_t *env, const char *protocol, const char *obfs) {

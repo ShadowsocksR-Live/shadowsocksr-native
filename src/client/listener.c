@@ -34,11 +34,11 @@
 # define INET6_ADDRSTRLEN 63
 #endif
 
-struct udp_listener_ctx_t;
+struct client_ssrot_udp_listener_ctx;
 
 struct listener_t {
     uv_tcp_t *tcp_server;
-    struct udp_listener_ctx_t *udp_server;
+    void *udp_server;
 };
 
 enum running_state {
@@ -68,12 +68,12 @@ struct ssr_client_state {
     int error_code;
 };
 
-extern void udp_on_recv_data(struct udp_listener_ctx_t *udp_ctx, const union sockaddr_universal *src_addr, const struct buffer_t *data, void*p);
+extern void udp_on_recv_data(struct client_ssrot_udp_listener_ctx *udp_ctx, const union sockaddr_universal *src_addr, const struct buffer_t *data, void*p);
 
 static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrinfo *addrs);
 static void listen_incoming_connection_cb(uv_stream_t *server, int status);
 static void signal_quit(uv_signal_t* handle, int signum);
-static void idler_watcher_cb(uv_timer_t* handle);
+static void timer_quit_watcher_cb(uv_timer_t* handle);
 
 int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ssr_client_state *state, void *p), void *p) {
     uv_loop_t * loop = NULL;
@@ -89,6 +89,7 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
     uv_loop_init(loop);
 
     state = (struct ssr_client_state *) calloc(1, sizeof(*state));
+    state->running_state_flag = running_state_living;
     state->force_quit_delay_ms = 3000;
     state->listeners = NULL;
     state->env = ssr_cipher_env_create(cf, state);
@@ -128,7 +129,7 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
 
     state->exit_flag_timer = (uv_timer_t*) calloc(1, sizeof(uv_timer_t));
     uv_timer_init(loop, state->exit_flag_timer);
-    uv_timer_start(state->exit_flag_timer, idler_watcher_cb, 0, 500);
+    uv_timer_start(state->exit_flag_timer, timer_quit_watcher_cb, 0, 500);
 
     /* Start the event loop.  Control continues in getaddrinfo_done_cb(). */
     err = uv_run(loop, UV_RUN_DEFAULT);
@@ -144,6 +145,8 @@ int ssr_run_loop_begin(struct server_config *cf, void(*feedback_state)(struct ss
 #endif
         }
     }
+
+    /* uv_library_shutdown(); */
 
     ssr_cipher_env_release(state->env);
 
@@ -208,19 +211,21 @@ void _ssr_run_loop_shutdown(struct ssr_client_state* state) {
     uv_close((uv_handle_t*)state->exit_flag_timer, NULL);
 
     if (state->listeners && state->listener_count) {
+        bool is_ssrot = state->env->config->over_tls_enable;
         size_t n = 0;
         for (n = 0; n < (size_t) state->listener_count; ++n) {
-            struct udp_listener_ctx_t *udp_server;
             struct listener_t *listener = state->listeners + n;
+            void *udp_server = listener->udp_server;
 
             uv_tcp_t *tcp_server = listener->tcp_server;
             if (tcp_server) {
                 uv_close((uv_handle_t *)tcp_server, tcp_close_done_cb);
             }
 
-            udp_server = listener->udp_server;
-            if (udp_server) {
-                udprelay_shutdown(udp_server);
+            if (is_ssrot) {
+                client_ssrot_udprelay_shutdown((struct client_ssrot_udp_listener_ctx*)udp_server);
+            } else {
+                client_udprelay_shutdown((struct client_udp_listener_ctx *)udp_server);
             }
         }
     }
@@ -367,10 +372,16 @@ static void getaddrinfo_done_cb(uv_getaddrinfo_t *req, int status, struct addrin
         if (cf->udp) {
             union sockaddr_universal remote_addr = { {0} };
             universal_address_from_string(cf->remote_host, cf->remote_port, true, &remote_addr);
-
-            listener->udp_server = udprelay_begin(loop, cf->listen_host, port, &remote_addr, state->env->cipher);
-
-            udp_relay_set_udp_on_recv_data_callback(listener->udp_server, &udp_on_recv_data, NULL);
+            if (cf->over_tls_enable) {
+                struct client_ssrot_udp_listener_ctx *udp_server = 
+                    client_ssrot_udprelay_begin(loop, cf->listen_host, port, &remote_addr);
+                udp_relay_set_udp_on_recv_data_callback(udp_server, &udp_on_recv_data, NULL);
+                listener->udp_server = (void*)udp_server;
+            } else {
+                listener->udp_server = (void *)
+                    client_udprelay_begin(loop, cf->listen_host, port, &remote_addr,
+                    state->env->cipher, 0, (int)cf->udp_timeout, cf->protocol, cf->protocol_param);
+            }
         }
 
         n += 1;
@@ -410,7 +421,7 @@ static void signal_quit(uv_signal_t* handle, int signum) {
     }
 }
 
-static void idler_watcher_cb(uv_timer_t* handle) {
+static void timer_quit_watcher_cb(uv_timer_t* handle) {
     struct server_env_t* env;
     struct ssr_client_state* state;
     ASSERT(handle);

@@ -8,10 +8,11 @@ endif()
 if (MSVC)
     add_definitions("-DSODIUM_STATIC")
     add_definitions("-DMBEDTLS_API")
-endif()
 
-if(ANDROID)
-include_directories(${LIB_ANCILLARY_DIR})
+    add_definitions("-D__MINGW32__ -D__MINGW64_VERSION_MAJOR")
+    add_definitions("-DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_WARNINGS")
+    add_definitions("-DUSE_CRYPTO_MBEDTLS -D_WINSOCK_DEPRECATED_NO_WARNINGS -DUDP_RELAY_ENABLE")
+    add_definitions("-DHAVE_PCRE_H")
 endif()
 
 set(SOURCE_FILES_SNI
@@ -35,7 +36,6 @@ set(SOURCE_FILES_OBFS
         obfs/auth_chain.c
         obfs/base64.c
         obfs/crc32.c
-        obfs/cstl_lib.c
         obfs/http_simple.c
         obfs/obfs.c
         obfs/obfsutil.c
@@ -58,6 +58,7 @@ set(SOURCE_FILES_CLIENT
         ssrutils.h
         udprelay.c
         udprelay.h
+        udp_ssr_client.c
         client/defs.h
         client/listener.c
         client/main.c
@@ -65,6 +66,8 @@ set(SOURCE_FILES_CLIENT
         client/s5.h
         ssr_executive.c
         ssr_executive.h
+        ssr_qr_code.c
+        ssr_qr_code.h
         config_json.c
         config_json.h
         sockaddr_universal.h
@@ -108,6 +111,7 @@ set(SOURCE_FILES_SERVER
         ssrbuffer.h
         encrypt.c
         udprelay.c
+        udp_ssr_server.c
         cache.c
         ip_addr_cache.c
         ip_addr_cache.h
@@ -131,7 +135,7 @@ set(SOURCE_FILES_SERVER
 include_directories(obfs)
 include_directories(client)
 IF(MSVC)
-  include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../win32/include )
+  include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../win32/include ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src )
 ENDIF(MSVC)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -141,6 +145,8 @@ include_directories(${LIBUVDIR}/include)
 include_directories(${libsodium_include_dirs})
 include_directories(${LIB_JSON_C_BIN_DIR}/..)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../depends/http-parser)
+include_directories(${URI_ENCODE_DIR})
+include_directories(${CSTL_ROOT_DIR}/inc)
 
 if(USE_CRYPTO_MBEDTLS)
     include_directories(${MBEDTLS_ROOT_DIR}/include)
@@ -152,27 +158,45 @@ if (MSVC)
     list ( APPEND SOURCE_FILES_SERVER ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/getopt.c ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/getopt_long.c ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/strncasecmp.c )
 endif(MSVC)
 
-if (!APPLE)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
-endif()
-
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_definitions(-Wall -Werror -ggdb3 -std=c99 -Wextra -pedantic)
-    add_definitions("-D_DEFAULT_SOURCE -D_GNU_SOURCE")
+    add_definitions("-D_DEFAULT_SOURCE -D_GNU_SOURCE -D__FUNCTION__=__func__")
 endif()
 
-if (UNIX)
-if (APPLE)
-else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -static-libstdc++ -static-libgcc")
-endif()
+if (UNIX AND (NOT APPLE) AND (NOT ANDROID))
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread -static-libstdc++ -static-libgcc")
 endif()
 
 add_definitions(-DUDP_RELAY_ENABLE)
 
 if(ANDROID)
+    #[[
+    include_directories(${LIB_ANCILLARY_DIR})
     LIST(APPEND SOURCE_FILES_CLIENT android.c)
-endif()
+    add_executable(ssr-client ${SOURCE_FILES_CLIENT})
+    set_target_properties(ssr-client PROPERTIES COMPILE_DEFINITIONS MODULE_LOCAL)
+    set_target_properties(ssr-client PROPERTIES PREFIX "lib" SUFFIX ".so")
+    target_link_libraries(ssr-client ancillary json-c uv_a cstl mbedtls sodium bloom m log uv-mbed uri-encode)
+    ]]
+
+    include(FetchContent)
+    FetchContent_Declare(
+            fake-dlfcn
+            GIT_REPOSITORY https://github.com/ssrlive/fake-dlfcn.git
+            GIT_TAG        2ee50c763c85f67a3062bf65163ea63a19a53709
+    )
+    FetchContent_MakeAvailable(fake-dlfcn)
+
+    list ( APPEND SOURCE_FILES_CLIENT
+            android.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/getopt.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/../win32/src/getopt_long.c )
+
+    add_library(ssr-client SHARED ${SOURCE_FILES_CLIENT})
+    target_compile_definitions(ssr-client PRIVATE MODULE_LOCAL=1 HAVE_INT_OPTRESET=1)
+    target_link_libraries(ssr-client fake-dlfcn json-c uv_a cstl mbedtls sodium bloom m log uv-mbed uri-encode)
+    target_include_directories(ssr-client PRIVATE ${LIB_FAKE_DLFCN_DIR})
+else()
 
 add_executable(ssr-client ${SOURCE_FILES_CLIENT})
 add_executable(ssr-server ${SOURCE_FILES_SERVER})
@@ -186,6 +210,7 @@ set_target_properties(ssr-server PROPERTIES COMPILE_DEFINITIONS MODULE_REMOTE)
 set (ss_lib_common
         json-c
         uv_a
+        cstl
         )
 
 if (MSVC)
@@ -204,12 +229,7 @@ if (WIN32)
     list ( APPEND ss_lib_net Ws2_32 )
 endif()
 
-if(ANDROID)
-    LIST(APPEND ss_lib_net ancillary log)
-    set_target_properties(ssr-client PROPERTIES PREFIX "lib" SUFFIX ".so")
-endif()
-
-target_link_libraries(ssr-client ${ss_lib_net} uv-mbed)
+target_link_libraries(ssr-client ${ss_lib_net} uv-mbed uri-encode)
 target_link_libraries(ssr-server ${ss_lib_net})
 
 install(TARGETS ssr-server ssr-client
@@ -222,3 +242,4 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
     # target_compile_definitions(ssr-server PUBLIC __AUTO_EXIT__=1 __AUTO_EXIT_TIMEOUT__=10000)
 endif()
 
+endif()

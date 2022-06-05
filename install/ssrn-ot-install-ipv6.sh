@@ -148,15 +148,13 @@ function dependency_install() {
 
     if [[ "${ID}" == "centos" ]]; then
        ${INS} -y install crontabs
-       ${INS} -y install make zlib zlib-devel gcc-c++ libtool openssl openssl-devel
+       ${INS} -y install python3 make zlib zlib-devel gcc-c++ libtool openssl openssl-devel
     else
         ${INS} install cron vim curl -y
         ${INS} update -y
-        ${INS} install cmake make zlib1g zlib1g-dev build-essential autoconf libtool openssl libssl-dev -y
+        ${INS} install python3 cmake make zlib1g zlib1g-dev build-essential autoconf libtool openssl libssl-dev -y
         if [[ "${ID}" == "ubuntu" && `echo "${VERSION_ID}" | cut -d '.' -f1` -ge 20 ]]; then
-            ${INS} install python3 python python2-minimal inetutils-ping -y
-        else
-            ${INS} install python3 python python-minimal -y
+            ${INS} install inetutils-ping -y
         fi
     fi
     judge "Installing crontab"
@@ -235,7 +233,11 @@ function nginx_install() {
         return 0
     fi
 
-    ${INS} install nginx -y
+    if [[ "${ID}" == "ubuntu" ]]; then
+        ${INS} install nginx-extras -y
+    else
+        ${INS} install nginx -y
+    fi
 
     if [[ -d /etc/nginx ]]; then
         echo -e "${OK} ${GreenBG} nginx installation is complete ${Font}"
@@ -244,6 +246,8 @@ function nginx_install() {
         echo -e "${Error} ${RedBG} nginx installation failed ${Font}"
         exit 5
     fi
+
+    systemctl enable nginx
 
     if [[ ! -f /etc/nginx/nginx.conf.bak ]]; then
         cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
@@ -257,6 +261,8 @@ function nginx_web_server_config_begin() {
 
     rm -rf ${site_dir}
     mkdir -p ${site_dir}/.well-known/acme-challenge/
+    chown -R www-data:www-data ${site_dir}
+    chmod -R 777 ${site_dir}
     curl -L https://raw.githubusercontent.com/nginx/nginx/master/docs/html/index.html -o ${site_dir}/index.html
     curl -L https://raw.githubusercontent.com/nginx/nginx/master/docs/html/50x.html -o ${site_dir}/50x.html
     judge "[nginx] copy files"
@@ -267,7 +273,7 @@ function nginx_web_server_config_begin() {
         listen 80 default_server;
         listen [::]:80 default_server;
         server_name localhost;
-        index index.html index.htm index.nginx-debian.html;
+        index index.php index.html index.htm index.nginx-debian.html;
         root  ${site_dir};
     }
 EOF
@@ -294,20 +300,20 @@ function do_lets_encrypt_certificate_authority() {
         openssl_cnf="/etc/pki/tls/openssl.cnf"
     fi
 
-    openssl genrsa 4096 > domain.key
-    openssl req -new -sha256 -key domain.key -subj "/" -reqexts SAN -config <(cat ${openssl_cnf} <(printf "[SAN]\nsubjectAltName=DNS:${web_svr_domain}")) > domain.csr
+    openssl genrsa 4096 > private_key.pem
+    openssl req -new -sha256 -key private_key.pem -subj "/" -reqexts SAN -config <(cat ${openssl_cnf} <(printf "[SAN]\nsubjectAltName=DNS:${web_svr_domain}")) > domain.csr
     judge "[CA] Create CSR file"
 
     curl -L https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py -o acme_tiny.py
-    python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir ${site_dir}/.well-known/acme-challenge/ > ./signed.crt
+    python3 acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir ${site_dir}/.well-known/acme-challenge/ > ./signed.crt
     judge "[CA] Obtain website certificate"
 
     wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > intermediate.pem
-    cat signed.crt intermediate.pem > chained.pem
+    cat signed.crt intermediate.pem > chained_cert.pem
     judge "[CA] Merger of intermediate certificate and website certificate"
 
     wget -O - https://letsencrypt.org/certs/isrgrootx1.pem > root.pem
-    cat intermediate.pem root.pem > full_chained.pem
+    cat intermediate.pem root.pem > full_chained_cert.pem
     judge "[CA] Root certificate and intermediate certificate merge"
 
     cd ${org_pwd}
@@ -320,9 +326,9 @@ function acme_cron_update(){
 #!/bin/bash
 
 cd ${site_cert_dir}
-python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir ${site_dir}/.well-known/acme-challenge/ > ./signed.crt || exit
+python3 acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir ${site_dir}/.well-known/acme-challenge/ > ./signed.crt || exit
 wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > intermediate.pem
-cat signed.crt intermediate.pem > chained.pem
+cat signed.crt intermediate.pem > chained_cert.pem
 systemctl stop nginx
 sleep 2
 systemctl start nginx
@@ -353,14 +359,19 @@ function nginx_web_server_config_end() {
     server {
         listen ${web_svr_listen_port} ssl default_server;
         listen [::]:${web_svr_listen_port} ssl default_server;
-        ssl_certificate       ${site_cert_dir}/chained.pem;
-        ssl_certificate_key   ${site_cert_dir}/domain.key;
+        ssl_certificate       ${site_cert_dir}/chained_cert.pem;
+        ssl_certificate_key   ${site_cert_dir}/private_key.pem;
         ssl_protocols         TLSv1 TLSv1.1 TLSv1.2;
         ssl_ciphers           HIGH:!aNULL:!MD5;
         server_name           ${web_svr_domain};
-        index index.html index.htm index.nginx-debian.html;
+        index index.php index.html index.htm index.nginx-debian.html;
         root  ${site_dir};
         error_page 400 = /400.html;
+        
+        location ~ \\.php$ {
+            # include snippets/fastcgi-php.conf;
+            # fastcgi_pass unix:/run/php/php7.4-fpm.sock;
+        }
 
         location /${reverse_proxy_location}/ {
             proxy_redirect off;
@@ -376,8 +387,15 @@ function nginx_web_server_config_end() {
         listen 80 default_server;
         listen [::]:80 default_server;
         server_name ${web_svr_domain};
-        index index.html index.htm index.nginx-debian.html;
+        index index.php index.html index.htm index.nginx-debian.html;
         root  ${site_dir};
+
+        location /.well-known/acme-challenge/ {
+        }
+        
+        location / {
+            # rewrite ^/(.*)$ https://${web_svr_domain}:${web_svr_listen_port}/$1 permanent;
+        }
 
         location /${reverse_proxy_location}/ {
             proxy_redirect off;

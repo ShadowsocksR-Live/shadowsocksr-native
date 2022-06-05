@@ -23,7 +23,7 @@
 #include "ip_addr_cache.h"
 #include "s5.h"
 #include "base64.h"
-#include "cstl_lib.h"
+#include <c_stl_lib.h>
 
 #ifndef SSR_MAX_CONN
 #define SSR_MAX_CONN 1024
@@ -40,6 +40,8 @@ struct ssr_server_state {
 
     uv_tcp_t *tcp_listener;
     struct ip_addr_cache *resolved_ip_cache;
+
+    struct server_udp_listener_ctx *udp_listener;
 };
 
 #define TUNNEL_STAGE_MAP(V)                                                             \
@@ -75,7 +77,7 @@ static const char * tunnel_stage_string(enum tunnel_stage stage) {
 struct server_ctx {
     struct server_env_t *env; // __weak_ptr
     struct tunnel_cipher_ctx *cipher;
-    struct buffer_t *init_pkg;
+    struct buffer_t *target_address_with_data_pkg;
     enum tunnel_stage stage;
     size_t tcp_mss;
     size_t _overhead;
@@ -267,6 +269,14 @@ static int ssr_server_run_loop(struct server_config *config, bool force_quit) {
         }
         state->tcp_listener = listener;
 
+        if ((config->over_tls_enable == false) && config->udp) {
+            state->udp_listener = server_udprelay_begin(loop,
+                config->listen_host, config->listen_port,
+                state->env->cipher,
+                0, (int)config->udp_timeout,
+                config->protocol, config->protocol_param);
+        }
+
         state->resolved_ip_cache = ip_addr_cache_create(IP_CACHE_EXPIRE_INTERVAL_MIN);
     }
 
@@ -345,6 +355,10 @@ void ssr_server_shutdown(struct ssr_server_state *state) {
         uv_close((uv_handle_t *)state->tcp_listener, listener_close_done_cb);
     }
 
+    if (state->udp_listener) {
+        server_udprelay_shutdown(state->udp_listener);
+    }
+
     server_shutdown(state->env);
 
     pr_info("\n");
@@ -375,7 +389,7 @@ bool _init_done_cb(struct tunnel_ctx *tunnel, void *p) {
 
     struct server_ctx *ctx = (struct server_ctx *) calloc(1, sizeof(*ctx));
     ctx->env = env;
-    ctx->init_pkg = buffer_create(SSR_BUFF_SIZE);
+    ctx->target_address_with_data_pkg = buffer_create(SSR_BUFF_SIZE);
     ctx->_recv_buffer_size = TCP_BUF_SIZE_MAX;
     ctx->tunnel = tunnel;
     tunnel->data = ctx;
@@ -462,7 +476,7 @@ static void tunnel_destroying(struct tunnel_ctx* tunnel) {
     if (ctx->cipher) {
         tunnel_cipher_release(ctx->cipher);
     }
-    buffer_release(ctx->init_pkg);
+    buffer_release(ctx->target_address_with_data_pkg);
     object_safe_free((void**)&ctx->sec_websocket_key);
     buffer_release(ctx->client_delivery_cache);
     cstl_deque_delete(ctx->udp_recv_deque);
@@ -683,7 +697,7 @@ static bool is_legal_header(const struct buffer_t *buf) {
 
 static bool is_header_complete(const struct buffer_t *buf) {
     struct socks5_address addr = { {{0}}, 0, SOCKS5_ADDRTYPE_INVALID };
-    return socks5_address_parse(buffer_get_data(buf), buffer_get_length(buf), &addr);
+    return socks5_address_parse(buffer_get_data(buf), buffer_get_length(buf), &addr, NULL);
 }
 
 static size_t _get_read_size(struct tunnel_ctx *tunnel, struct socket_ctx *socket, size_t suggested_size) {
@@ -744,7 +758,7 @@ static void do_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *incomi
             break;
         }
 
-        buffer_replace(ctx->init_pkg, result);
+        buffer_replace(ctx->target_address_with_data_pkg, result);
 
         if (proto_confirm) {
             ASSERT(obfs_receipt == NULL);
@@ -765,7 +779,7 @@ static void do_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *incomi
 
 static void do_prepare_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     struct server_ctx *ctx = (struct server_ctx *) tunnel->data;
-    struct buffer_t *init_pkg = ctx->init_pkg;
+    struct buffer_t *target_address_pkg = ctx->target_address_with_data_pkg;
     do {
         struct server_info_t *info;
         struct obfs_t *protocol = NULL;
@@ -783,23 +797,25 @@ static void do_prepare_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socke
         }
 #endif
 
-        pre_parse_header(init_pkg);
+        pre_parse_header(target_address_pkg);
 
         info = protocol ? protocol->get_server_info(protocol) : (obfs ? obfs->get_server_info(obfs) : NULL);
         if (info) {
-            info->head_len = (int) get_s5_head_size(buffer_get_data(init_pkg), buffer_get_length(init_pkg), 30);
+            const uint8_t *data = buffer_get_data(target_address_pkg);
+            size_t size = buffer_get_length(target_address_pkg);
+            info->head_len = (int) get_s5_head_size(data, size, 30);
             ctx->_overhead = info->overhead;
             ctx->_recv_buffer_size = info->buffer_size;
         }
         ctx->_recv_d_max_size = TCP_BUF_SIZE_MAX;
 
-        if (is_legal_header(init_pkg) == false) {
+        if (is_legal_header(target_address_pkg) == false) {
             // report_addr(server->fd, MALFORMED);
             tunnel->tunnel_shutdown(tunnel);
             break;
         }
 
-        if (is_header_complete(init_pkg) == false) {
+        if (is_header_complete(target_address_pkg) == false) {
             tunnel->tunnel_shutdown(tunnel);
             break;
         }
@@ -831,7 +847,7 @@ static void do_handle_client_feedback(struct tunnel_ctx *tunnel, struct socket_c
             break;
         }
 
-        buffer_concatenate(ctx->init_pkg, result);
+        buffer_concatenate(ctx->target_address_with_data_pkg, result);
 
         if (proto_confirm) {
             tunnel_socket_ctx_write(tunnel, incoming, buffer_get_data(proto_confirm), buffer_get_length(proto_confirm));
@@ -876,21 +892,23 @@ static void do_parse(struct tunnel_ctx *tunnel, struct socket_ctx *socket) {
     struct socks5_address *s5addr;
     union sockaddr_universal target = { {0} };
     bool ipFound = false;
-    struct buffer_t *init_pkg = ctx->init_pkg;
+    struct buffer_t *target_address_pkg = ctx->target_address_with_data_pkg;
+    const uint8_t *data = buffer_get_data(target_address_pkg);
+    size_t len = buffer_get_length(target_address_pkg);
 
     ASSERT(socket == tunnel->incoming);
 
     // get remote addr and port
     s5addr = tunnel->desired_addr;
     memset(s5addr, 0, sizeof(*s5addr));
-    if (socks5_address_parse(buffer_get_data(init_pkg), buffer_get_length(init_pkg), s5addr) == false) {
+    if (socks5_address_parse(data, len, s5addr, &offset) == false) {
         // report_addr(server->fd, MALFORMED);
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
 
-    offset = socks5_address_size(s5addr);
-    buffer_shortened_to(init_pkg, offset, buffer_get_length(init_pkg) - offset, true);
+    ASSERT(offset == socks5_address_size(s5addr));
+    buffer_shortened_to(target_address_pkg, offset, len - offset, true);
 
     host = socks5_address_to_string(s5addr, &malloc, false);
 
@@ -1007,14 +1025,14 @@ static void do_connect_host_done(struct tunnel_ctx *tunnel, struct socket_ctx *s
     ASSERT(outgoing->wrstate == socket_state_stop);
 
     if (config->over_tls_enable) {
-        ASSERT(buffer_get_length(ctx->init_pkg) == 0);
+        ASSERT(buffer_get_length(ctx->target_address_with_data_pkg) == 0);
         do_tls_client_feedback(tunnel);
         return;
     }
 
     if (outgoing->result == 0) {
-        size_t len = buffer_get_length(ctx->init_pkg);
-        const uint8_t *data = buffer_get_data(ctx->init_pkg);
+        size_t len = buffer_get_length(ctx->target_address_with_data_pkg);
+        const uint8_t *data = buffer_get_data(ctx->target_address_with_data_pkg);
         if (len > 0) {
             tunnel_socket_ctx_write(tunnel, outgoing, data, len);
             ctx->stage = tunnel_stage_launch_streaming;
@@ -1153,10 +1171,10 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
             struct udp_remote_ctx_t *udp_ctx;
             uint8_t* addr_p;
 
-            buffer_store(ctx->init_pkg, data_p, data_len);
+            buffer_store(ctx->target_address_with_data_pkg, data_p, data_len);
 
             addr_p = url_safe_base64_decode_alloc(udp_field, &malloc, &p_len);
-            if (socks5_address_parse(addr_p, p_len, &target_addr) == false) {
+            if (socks5_address_parse(addr_p, p_len, &target_addr, NULL) == false) {
                 free(addr_p);
                 do_normal_response(tunnel);
                 break;
@@ -1179,7 +1197,7 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
             do_normal_response(tunnel);
             break;
         }
-        buffer_replace(ctx->init_pkg, result);
+        buffer_replace(ctx->target_address_with_data_pkg, result);
 
         do_prepare_parse(tunnel, socket);
         break;
@@ -1299,8 +1317,8 @@ static void do_udp_launch_streaming(struct tunnel_ctx *tunnel, struct socket_ctx
     }
 
     {
-        size_t p_len = buffer_get_length(ctx->init_pkg);
-        const uint8_t *p = buffer_get_data(ctx->init_pkg);
+        size_t p_len = buffer_get_length(ctx->target_address_with_data_pkg);
+        const uint8_t *p = buffer_get_data(ctx->target_address_with_data_pkg);
         udp_remote_send_data(ctx->udp_relay, p, p_len);
     }
 

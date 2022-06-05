@@ -46,4 +46,9 @@ struct buffer_t * auth_aes128_sha1_server_encode(struct obfs_t *obfs, const stru
 struct buffer_t * auth_aes128_sha1_server_decode(struct obfs_t *obfs, const struct buffer_t *buf, bool *need_decrypt, bool *need_feedback);
 struct buffer_t * auth_aes128_sha1_server_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, bool *need_feedback);
 
+ssize_t auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *obfs, uint8_t **pplaindata, size_t datalength, size_t* capacity);
+ssize_t auth_aes128_sha1_client_udp_post_decrypt(struct obfs_t *obfs, uint8_t **pplaindata, size_t datalength, size_t* capacity);
+bool auth_aes128_sha1_server_udp_pre_encrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t uid);
+bool auth_aes128_sha1_server_udp_post_decrypt(struct obfs_t *obfs, struct buffer_t *buf, uint32_t *uid);
+
 #endif // _OBFS_AUTH_H

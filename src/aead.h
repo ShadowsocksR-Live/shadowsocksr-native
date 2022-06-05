@@ -53,19 +53,19 @@ void aead_ctx_release(struct aead_cipher_ctx_t *cipher_ctx, int free_this);
 struct aead_cipher_t *aead_init(const char *pass, const char *key, const char *method);
 void aead_cipher_destroy(struct aead_cipher_t *);
 
-int crypto_derive_key(const char *, uint8_t *, size_t);
-int crypto_parse_key(const char *, uint8_t *, size_t);
+size_t crypto_derive_key(const char *, uint8_t *, size_t);
+size_t crypto_parse_key(const char *, uint8_t *, size_t);
 struct mbedtls_md_info_t;
 int crypto_hkdf(const struct mbedtls_md_info_t *md, const unsigned char *salt,
-                int salt_len, const unsigned char *ikm, int ikm_len,
-                const unsigned char *info, int info_len, unsigned char *okm,
-                int okm_len);
+                size_t salt_len, const unsigned char *ikm, size_t ikm_len,
+                const unsigned char *info, size_t info_len, unsigned char *okm,
+                size_t okm_len);
 int crypto_hkdf_extract(const struct mbedtls_md_info_t *md, const unsigned char *salt,
-                        int salt_len, const unsigned char *ikm, int ikm_len,
+                        size_t salt_len, const unsigned char *ikm, size_t ikm_len,
                         unsigned char *prk);
 int crypto_hkdf_expand(const struct mbedtls_md_info_t *md, const unsigned char *prk,
-                       int prk_len, const unsigned char *info, int info_len,
-                       unsigned char *okm, int okm_len);
+                       size_t prk_len, const unsigned char *info, size_t info_len,
+                       unsigned char *okm, size_t okm_len);
 
 struct aead_buffer_t* aead_buffer_create(size_t capacity);
 int balloc(struct aead_buffer_t *, size_t);

@@ -39,15 +39,20 @@
 #endif
 
 #if ANDROID
-int log_tx_rx  = 0;
-uint64_t tx    = 0;
-uint64_t rx    = 0;
-uint64_t last  = 0;
-char *stat_path = NULL;
 
 #include "ssrutils.h"
 static void dump_info_callback(int dump_level, const char* info, void* p) {
-    LOGI("dump_level = %d, info = %s", dump_level, info);
+    switch (dump_level) {
+    case 0:
+        LOGI("%s", info);
+        break;
+    case 1:
+        LOGW("%s", info);
+        break;
+    default:
+        LOGE("%s", info);
+        break;
+    }
     (void)p;
 }
 
@@ -100,8 +105,16 @@ int main(int argc, char * const argv[]) {
     int err = -1;
 
     #if (defined(__unix__) || defined(__linux__)) && !defined(__mips)
+    #if __ANDROID__
+    struct sigaction sa_pipe;
+    memset(&sa_pipe, 0, sizeof(sa_pipe));
+    sigemptyset(&sa_pipe.sa_mask);
+    sa_pipe.sa_handler = &sighandler;
+    sigaction(SIGPIPE, &sa_pipe, NULL);
+    #else
     struct sigaction sa = { {&sighandler}, {{0}}, 0, NULL };
     sigaction(SIGPIPE, &sa, NULL);
+    #endif
     #endif // defined(__unix__) || defined(__linux__)
 
     dead_loop_impl(argc, argv);
@@ -163,8 +176,8 @@ int main(int argc, char * const argv[]) {
         }
 
 #if ANDROID
-        log_tx_rx  = cmds->log_tx_rx;
-        stat_path = cmds->stat_path;
+        set_flag_of_log_tx_rx(cmds->log_tx_rx);
+        set_traffic_status_file_path(cmds->stat_path);
 #endif
 
         print_remote_info(config);

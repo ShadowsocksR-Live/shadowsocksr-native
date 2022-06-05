@@ -40,10 +40,13 @@
 #define USE_TTY()
 #define USE_SYSLOG(ident)
 #define LOGI(format, ...)                                                \
-    ((void)__android_log_print(ANDROID_LOG_DEBUG, "shadowsocks", \
+    ((void)__android_log_print(ANDROID_LOG_DEBUG, "ssrDroid", \
+                               (format), ## __VA_ARGS__))
+#define LOGW(format, ...)                                    \
+    ((void)__android_log_print(ANDROID_LOG_WARN, "ssrDroid", \
                                (format), ## __VA_ARGS__))
 #define LOGE(format, ...)                                                \
-    ((void)__android_log_print(ANDROID_LOG_ERROR, "shadowsocks", \
+    ((void)__android_log_print(ANDROID_LOG_ERROR, "ssrDroid", \
                                (format), ## __VA_ARGS__))
 
 #else
@@ -182,10 +185,15 @@ extern int use_syslog;
 
 #endif
 
+#define FATAL(error_msg)            \
+    do {                            \
+        LOGE("%s", (error_msg));    \
+        exit(-1);                   \
+    } while (0)
+
 char *ss_itoa(int i);
 int ss_isnumeric(const char *s);
 int run_as(const char *user);
-void FATAL(const char *msg);
 void daemonize(const char *path);
 char *ss_strndup(const char *s, size_t n);
 char *ss_strdup(const char *s);

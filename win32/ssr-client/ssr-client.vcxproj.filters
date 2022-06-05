@@ -87,9 +87,6 @@
     <ClCompile Include="..\..\src\ssr_cipher_names.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\obfs\cstl_lib.c">
-      <Filter>obfs</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ssr_executive.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -146,6 +143,12 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ppbloom.c">
       <Filter>aead</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\udp_ssr_client.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\android.c">
+      <Filter>client</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -206,16 +209,13 @@
     <ClInclude Include="..\..\src\ssr_cipher_names.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\obfs\cstl_lib.h">
-      <Filter>obfs</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ssr_executive.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\getopt_long.h">
+    <ClInclude Include="..\src\getopt_long.h">
       <Filter>getopt</Filter>
     </ClInclude>
     <ClInclude Include="..\include\stdbool.h">
@@ -227,7 +227,7 @@
     <ClInclude Include="..\include\unistd.h">
       <Filter>getopt</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\getopt.h">
+    <ClInclude Include="..\src\getopt.h">
       <Filter>getopt</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\sockaddr_universal.h">

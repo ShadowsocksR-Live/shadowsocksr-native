@@ -88,11 +88,9 @@
 
 #define DEFAULT_PACKET_SIZE MAX_UDP_PACKET_SIZE // 1492 - 1 - 28 - 2 - 64 = 1397, the default MTU for UDP relay
 
-struct udp_listener_ctx_t {
+struct client_ssrot_udp_listener_ctx {
     uv_udp_t udp;
     union sockaddr_universal remote_addr;
-    struct cipher_env_t *cipher_env;
-
     udp_on_recv_data_callback udp_on_recv_data;
     void* recv_p;
 };
@@ -119,13 +117,16 @@ static void udp_remote_reset_timer(struct udp_remote_ctx_t *remote_ctx);
 
 static size_t packet_size                            = DEFAULT_PACKET_SIZE;
 
-static void udp_uv_alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
+void udp_uv_alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
     char *tmp = (char *) calloc(suggested_size, sizeof(char));
-    (void)handle;
     *buf = uv_buf_init(tmp, (unsigned int)suggested_size);
+    (void)handle;
 }
 
-static void udp_uv_release_buffer(uv_buf_t *buf) {
+void udp_uv_release_buffer(uv_buf_t *buf) {
+    if (buf == NULL) {
+        return;
+    }
     if (buf->base) {
         free(buf->base);
         buf->base = NULL;
@@ -133,34 +134,128 @@ static void udp_uv_release_buffer(uv_buf_t *buf) {
     buf->len = 0;
 }
 
-int udp_create_remote_socket(bool ipv6, uv_loop_t *loop, uv_udp_t *udp) {
-    int err = 0;
-    union sockaddr_universal addr = { {0} };
+size_t
+udprelay_parse_header(const uint8_t *buf, size_t buf_len,
+    char *host, char *port, struct sockaddr_storage *storage)
+{
+    const uint8_t addr_type = *(uint8_t *)buf;
+    size_t offset = 1;
 
-    uv_udp_init(loop, udp);
+    // get remote addr and port
+    if ((addr_type & ADDRTYPE_MASK) == SOCKS5_ADDRTYPE_IPV4) {
+        // IP V4
+        size_t in_addr_len = sizeof(struct in_addr);
+        if (buf_len >= in_addr_len + 3) {
+            if (storage != NULL) {
+                struct sockaddr_in *addr = (struct sockaddr_in *)storage;
+                addr->sin_family = AF_INET;
+                addr->sin_addr   = *(struct in_addr *)(buf + offset);
+                addr->sin_port   = *(uint16_t *)(buf + offset + in_addr_len);
+            }
+            if (host != NULL) {
+                uv_inet_ntop(AF_INET, (const void *)(buf + offset),
+                    host, INET_ADDRSTRLEN);
+            }
+            offset += in_addr_len;
+        }
+    } else if ((addr_type & ADDRTYPE_MASK) == SOCKS5_ADDRTYPE_DOMAINNAME) {
+        // Domain name
+        uint8_t name_len = *(uint8_t *)(buf + offset);
+        if ((size_t)(name_len + 4) <= buf_len) {
+            if (storage != NULL) {
+                char tmp[257] = { 0 };
+                union sockaddr_universal addr_u = { {0} };
+                memcpy(tmp, buf + offset + 1, name_len);
 
-    if (ipv6) {
-        // Try to bind IPv6 first
-        addr.addr6.sin6_family = AF_INET6;
-        addr.addr6.sin6_addr   = in6addr_any;
-        addr.addr6.sin6_port   = 0;
-    } else {
-        // Or else bind to IPv4
-        addr.addr4.sin_family      = AF_INET;
-        addr.addr4.sin_addr.s_addr = INADDR_ANY;
-        addr.addr4.sin_port        = 0;
+                if (universal_address_from_string(tmp, 80, true, &addr_u) == 0) {
+                    if (addr_u.addr4.sin_family == AF_INET) {
+                        struct sockaddr_in *addr = (struct sockaddr_in *)storage;
+                        addr->sin_addr = addr_u.addr4.sin_addr;
+                        addr->sin_port   = *(uint16_t *)(buf + offset + 1 + name_len);
+                        addr->sin_family = AF_INET;
+                    } else if (addr_u.addr6.sin6_family == AF_INET6) {
+                        struct sockaddr_in6 *addr = (struct sockaddr_in6 *)storage;
+                        addr->sin6_addr = addr_u.addr6.sin6_addr;
+                        addr->sin6_port   = *(uint16_t *)(buf + offset + 1 + name_len);
+                        addr->sin6_family = AF_INET6;
+                    }
+                }
+            }
+            if (host != NULL) {
+                memcpy(host, buf + offset + 1, name_len);
+            }
+            offset += 1 + name_len;
+        }
+    } else if ((addr_type & ADDRTYPE_MASK) == SOCKS5_ADDRTYPE_IPV6) {
+        // IP V6
+        size_t in6_addr_len = sizeof(struct in6_addr);
+        if (buf_len >= in6_addr_len + 3) {
+            if (storage != NULL) {
+                struct sockaddr_in6 *addr = (struct sockaddr_in6 *)storage;
+                addr->sin6_family = AF_INET6;
+                addr->sin6_addr   = *(struct in6_addr *)(buf + offset);
+                addr->sin6_port   = *(uint16_t *)(buf + offset + in6_addr_len);
+            }
+            if (host != NULL) {
+                uv_inet_ntop(AF_INET6, (const void *)(buf + offset),
+                    host, INET6_ADDRSTRLEN);
+            }
+            offset += (int)in6_addr_len;
+        }
     }
-    err = uv_udp_bind(udp, &addr.addr, 0);
-    if (err != 0) {
-        char buff[256] = { 0 };
-        LOGE("[UDP] udp_create_remote_socket: %s\n", uv_strerror_r(err, buff, sizeof(buff)));
+
+    if (offset == 1) {
+        LOGE("[udp] invalid header with addr type %d", addr_type);
+        return 0;
     }
-    return err;
+
+    if (port != NULL) {
+        sprintf(port, "%d", ntohs(*(uint16_t *)(buf + offset)));
+    }
+    offset += 2;
+
+    return offset;
 }
 
-static int
-udp_create_local_listener(const char *host, uint16_t port, uv_loop_t *loop, uv_udp_t *udp)
-{
+char * get_addr_str(const struct sockaddr *sa, char* buf, size_t buf_len) {
+    char addr[INET6_ADDRSTRLEN] = { 0 };
+    char port[PORTSTRLEN]       = { 0 };
+    uint16_t p;
+    size_t addr_len;
+    size_t port_len;
+
+    ASSERT(buf && buf_len >= SS_ADDRSTRLEN);
+
+    memset(buf, 0, buf_len);
+    switch (sa->sa_family) {
+    case AF_INET:
+        uv_inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr),
+            addr, INET_ADDRSTRLEN);
+        p = ntohs(((struct sockaddr_in *)sa)->sin_port);
+        sprintf(port, "%d", p);
+        break;
+
+    case AF_INET6:
+        uv_inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr),
+            addr, INET6_ADDRSTRLEN);
+        p = ntohs(((struct sockaddr_in *)sa)->sin_port);
+        sprintf(port, "%d", p);
+        break;
+
+    default:
+        strncpy(buf, "Unknown AF", SS_ADDRSTRLEN);
+    }
+
+    addr_len = strlen(addr);
+    port_len = strlen(port);
+    memcpy(buf, addr, addr_len);
+    memcpy(buf + addr_len + 1, port, port_len);
+    buf[addr_len] = ':';
+
+    return buf;
+}
+
+int udp_create_listener(const char *host, uint16_t port, uv_loop_t *loop, uv_udp_t *udp) {
     struct addrinfo *result = NULL, *rp, *ipv4v6bindall;
     int s, server_sock = 0;
     char str_port[32] = { 0 };
@@ -169,7 +264,7 @@ udp_create_local_listener(const char *host, uint16_t port, uv_loop_t *loop, uv_u
 
     s = getaddrinfo(host, str_port, NULL, &result);
     if (s != 0) {
-        LOGE("[UDP] getaddrinfo: %s", gai_strerror(s));
+        LOGE("[udp] getaddrinfo: %s", gai_strerror(s));
         return -1;
     }
 
@@ -202,15 +297,15 @@ udp_create_local_listener(const char *host, uint16_t port, uv_loop_t *loop, uv_u
         if (r == 0) {
             break;
         }
-        LOGE("[UDP] udp_create_local_listener: %s\n", uv_strerror_r(r, buff, sizeof(buff)));
-    }
-
-    if (rp == NULL) {
-        LOGE("%s", "[UDP] cannot bind");
-        return -1;
+        LOGE("[udp] create udp listener: %s\n", uv_strerror_r(r, buff, sizeof(buff)));
     }
 
     freeaddrinfo(result);
+
+    if (rp == NULL) {
+        LOGE("%s", "[udp] cannot bind");
+        return -1;
+    }
 
     return server_sock;
 }
@@ -276,7 +371,7 @@ void udp_remote_destroy(struct udp_remote_ctx_t *ctx) {
 static void udp_remote_timeout_cb(uv_timer_t* handle) {
     struct udp_remote_ctx_t *remote_ctx = CONTAINER_OF(handle, struct udp_remote_ctx_t, rmt_expire);
 
-    pr_info("%s", "[UDP] connection timeout, shutting down");
+    pr_info("%s", "[udp] connection timeout, shutting down");
 
     udp_remote_shutdown(remote_ctx);
 }
@@ -337,7 +432,7 @@ struct udp_remote_ctx_t * udp_remote_launch_begin(uv_loop_t* loop, uint64_t time
     udp->data = remote_ctx;
 
     socks5_address_to_universal(dst_addr, true, &u_dst_addr);
-    uv_udp_bind(udp, &u_dst_addr.addr, 0);
+    uv_udp_bind(udp, &u_dst_addr.addr, 0); // FIXME: something went wrong.
     uv_udp_recv_start(udp, udp_uv_alloc_buffer, udp_remote_recv_cb);
 
     timer = &remote_ctx->rmt_expire;
@@ -394,7 +489,7 @@ static void udp_tls_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_b
     struct server_config* config = env->config;
 
     union sockaddr_universal addr_u = { {0} };
-    struct udp_listener_ctx_t *server_ctx;
+    struct client_ssrot_udp_listener_ctx *server_ctx;
     struct buffer_t *data = NULL;
     do {
         if (config->over_tls_enable == false) {
@@ -402,22 +497,22 @@ static void udp_tls_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_b
             break;
         }
 
-        server_ctx = CONTAINER_OF(handle, struct udp_listener_ctx_t, udp);
+        server_ctx = CONTAINER_OF(handle, struct client_ssrot_udp_listener_ctx, udp);
         if (server_ctx == NULL) {
             ASSERT(false);
             break;
         }
         (void)flags;
         if (nread < 0) {
-            pr_err("%s", "[UDP] udp_tls_listener_recv_cb something wrong.");
+            pr_err("%s", "[udp] udp_tls_listener_recv_cb something wrong.");
             break;
         } else if (nread > (ssize_t) packet_size) {
-            pr_err("%s", "[UDP] udp_tls_listener_recv_cb fragmentation");
+            pr_err("%s", "[udp] udp_tls_listener_recv_cb fragmentation");
             break;
         } else if (nread == 0) {
             if (addr == NULL) {
                 // there is nothing to read
-                pr_err("%s", "[UDP] udp_tls_listener_recv_cb there is nothing to read");
+                pr_err("%s", "[udp] udp_tls_listener_recv_cb there is nothing to read");
                 break;
             } else {
                 //  an empty UDP packet is received.
@@ -439,25 +534,24 @@ static void udp_tls_listener_recv_cb(uv_udp_t* handle, ssize_t nread, const uv_b
     buffer_release(data);
 }
 
-struct udp_listener_ctx_t *
-udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
-    const union sockaddr_universal *remote_addr, struct cipher_env_t *cipher_env)
+struct client_ssrot_udp_listener_ctx *
+client_ssrot_udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
+    const union sockaddr_universal *remote_addr)
 {
-    struct udp_listener_ctx_t *server_ctx;
+    struct client_ssrot_udp_listener_ctx *server_ctx;
     int serverfd;
 
     // ////////////////////////////////////////////////
     // Setup server context
 
-    server_ctx = (struct udp_listener_ctx_t *)calloc(1, sizeof(struct udp_listener_ctx_t));
+    server_ctx = (struct client_ssrot_udp_listener_ctx *)calloc(1, sizeof(struct client_ssrot_udp_listener_ctx));
 
     // Bind to port
-    serverfd = udp_create_local_listener(server_host, server_port, loop, &server_ctx->udp);
+    serverfd = udp_create_listener(server_host, server_port, loop, &server_ctx->udp);
     if (serverfd < 0) {
-        FATAL("[UDP] bind() error");
+        FATAL("[udp] bind() error");
     }
 
-    server_ctx->cipher_env = cipher_env;
     server_ctx->remote_addr     = *remote_addr;
 
     uv_udp_recv_start(&server_ctx->udp, udp_uv_alloc_buffer, udp_tls_listener_recv_cb);
@@ -466,37 +560,37 @@ udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_port,
 }
 
 static void udp_local_listener_close_done_cb(uv_handle_t* handle) {
-    struct udp_listener_ctx_t *server_ctx = CONTAINER_OF(handle, struct udp_listener_ctx_t, udp);
+    struct client_ssrot_udp_listener_ctx *server_ctx = CONTAINER_OF(handle, struct client_ssrot_udp_listener_ctx, udp);
     free(server_ctx);
 }
 
-void udprelay_shutdown(struct udp_listener_ctx_t *server_ctx) {
+void client_ssrot_udprelay_shutdown(struct client_ssrot_udp_listener_ctx *server_ctx) {
     if (server_ctx == NULL) {
         return;
     }
     uv_close((uv_handle_t *)&server_ctx->udp, udp_local_listener_close_done_cb);
 }
 
-void udp_relay_set_udp_on_recv_data_callback(struct udp_listener_ctx_t *udp_ctx, udp_on_recv_data_callback callback, void*p) {
+void udp_relay_set_udp_on_recv_data_callback(struct client_ssrot_udp_listener_ctx *udp_ctx, udp_on_recv_data_callback callback, void*p) {
     if (udp_ctx) {
         udp_ctx->udp_on_recv_data = callback;
         udp_ctx->recv_p = p;
     }
 }
 
-uv_loop_t * udp_relay_context_get_loop(struct udp_listener_ctx_t *udp_ctx) {
+uv_loop_t * udp_relay_context_get_loop(struct client_ssrot_udp_listener_ctx *udp_ctx) {
     return udp_ctx->udp.loop;
 }
 
 void udp_relay_sent_cb(uv_udp_send_t* req, int status) {
-    struct udp_listener_ctx_t* udp_ctx = CONTAINER_OF(req->handle, struct udp_listener_ctx_t, udp);
+    struct client_ssrot_udp_listener_ctx* udp_ctx = CONTAINER_OF(req->handle, struct client_ssrot_udp_listener_ctx, udp);
     uint8_t *dup_data = (uint8_t*)req->data;
     free(dup_data);
     free(req);
     (void)status; (void)udp_ctx;
 }
 
-void udp_relay_send_data(struct udp_listener_ctx_t *udp_ctx, union sockaddr_universal *addr, const uint8_t *data, size_t len) {
+void udp_relay_send_data(struct client_ssrot_udp_listener_ctx *udp_ctx, union sockaddr_universal *addr, const uint8_t *data, size_t len) {
     uv_udp_send_t* send_req;
     uint8_t* dup_data;
     uv_buf_t sndbuf;

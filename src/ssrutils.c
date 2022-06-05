@@ -217,13 +217,6 @@ ss_strdup(const char *s)
     return strdup(s);
 }
 
-void
-FATAL(const char *msg)
-{
-    LOGE("%s", msg);
-    exit(-1);
-}
-
 size_t
 ss_memory_size(void *ptr)
 {

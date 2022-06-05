@@ -408,7 +408,7 @@ aead_cipher_ctx_set_key(struct aead_cipher_ctx_t *cipher_ctx, int enc)
         return;
     }
     if (mbedtls_cipher_setkey(cipher_ctx->evp, cipher_ctx->skey,
-                              cipher_ctx->cipher->key_len * 8, (mbedtls_operation_t)enc) != 0) {
+                              (int)cipher_ctx->cipher->key_len * 8, (mbedtls_operation_t)enc) != 0) {
         FATAL("Cannot set mbed TLS cipher key");
     }
     if (mbedtls_cipher_reset(cipher_ctx->evp) != 0) {
@@ -600,7 +600,7 @@ aead_decrypt_all(struct aead_buffer_t *ciphertext, struct aead_cipher_t *cipher,
 
 static int
 aead_chunk_encrypt(struct aead_cipher_ctx_t *ctx, uint8_t *p, uint8_t *c,
-                   uint8_t *n, uint16_t plen)
+                   uint8_t *n, size_t plen)
 {
     int err;
     size_t clen;
@@ -612,7 +612,7 @@ aead_chunk_encrypt(struct aead_cipher_ctx_t *ctx, uint8_t *p, uint8_t *c,
 
     assert(plen <= CHUNK_SIZE_MASK);
 
-    t = htons(plen & CHUNK_SIZE_MASK);
+    t = htons(((uint16_t)plen) & CHUNK_SIZE_MASK);
     memcpy(len_buf, &t, CHUNK_SIZE_LEN);
 
     clen = CHUNK_SIZE_LEN + tlen;
@@ -916,7 +916,7 @@ aead_init(const char *pass, const char *key, const char *method)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int
+size_t
 crypto_derive_key(const char *pass, uint8_t *key, size_t key_len)
 {
     const digest_type_t *md;
@@ -963,9 +963,9 @@ crypto_derive_key(const char *pass, uint8_t *key, size_t key_len)
 /* HKDF-Extract + HKDF-Expand */
 int
 crypto_hkdf(const struct mbedtls_md_info_t *md, const unsigned char *salt,
-            int salt_len, const unsigned char *ikm, int ikm_len,
-            const unsigned char *info, int info_len, unsigned char *okm,
-            int okm_len)
+            size_t salt_len, const unsigned char *ikm, size_t ikm_len,
+            const unsigned char *info, size_t info_len, unsigned char *okm,
+            size_t okm_len)
 {
     unsigned char prk[MBEDTLS_MD_MAX_SIZE];
 
@@ -977,13 +977,13 @@ crypto_hkdf(const struct mbedtls_md_info_t *md, const unsigned char *salt,
 /* HKDF-Extract(salt, IKM) -> PRK */
 int
 crypto_hkdf_extract(const struct mbedtls_md_info_t *md, const unsigned char *salt,
-                    int salt_len, const unsigned char *ikm, int ikm_len,
+                    size_t salt_len, const unsigned char *ikm, size_t ikm_len,
                     unsigned char *prk)
 {
-    int hash_len;
+    size_t hash_len;
     unsigned char null_salt[MBEDTLS_MD_MAX_SIZE] = { '\0' };
 
-    if (salt_len < 0) {
+    if ((int)salt_len < 0) {
         return CRYPTO_ERROR;
     }
 
@@ -1000,20 +1000,19 @@ crypto_hkdf_extract(const struct mbedtls_md_info_t *md, const unsigned char *sal
 /* HKDF-Expand(PRK, info, L) -> OKM */
 int
 crypto_hkdf_expand(const struct mbedtls_md_info_t *md, const unsigned char *prk,
-                   int prk_len, const unsigned char *info, int info_len,
-                   unsigned char *okm, int okm_len)
+                   size_t prk_len, const unsigned char *info, size_t info_len,
+                   unsigned char *okm, size_t okm_len)
 {
-    int hash_len;
-    int N;
-    int T_len = 0, where = 0, i, ret;
+    int ret;
+    size_t hash_len, N, T_len = 0, where = 0, i;
     mbedtls_md_context_t ctx;
     unsigned char T[MBEDTLS_MD_MAX_SIZE];
 
-    if (info_len < 0 || okm_len < 0 || okm == NULL) {
+    if ((int)info_len < 0 || (int)okm_len < 0 || okm == NULL) {
         return CRYPTO_ERROR;
     }
 
-    hash_len = mbedtls_md_get_size(md);
+    hash_len = (size_t) mbedtls_md_get_size(md);
 
     if (prk_len < hash_len) {
         return CRYPTO_ERROR;
@@ -1042,7 +1041,7 @@ crypto_hkdf_expand(const struct mbedtls_md_info_t *md, const unsigned char *prk,
 
     /* Section 2.3. */
     for (i = 1; i <= N; i++) {
-        unsigned char c = i;
+        uint8_t c = (uint8_t)i;
 
         ret = mbedtls_md_hmac_starts(&ctx, prk, prk_len) ||
               mbedtls_md_hmac_update(&ctx, T, T_len) ||
@@ -1079,7 +1078,7 @@ crypto_hkdf_expand(const struct mbedtls_md_info_t *md, const unsigned char *prk,
 #define SIZE_FMT "%zu"
 #endif
 
-int
+size_t
 crypto_parse_key(const char *base64, uint8_t *key, size_t key_len)
 {
     size_t base64_len = strlen(base64);
@@ -1125,7 +1124,7 @@ balloc(struct aead_buffer_t *ptr, size_t capacity)
     sodium_memzero(ptr, sizeof(struct aead_buffer_t));
     ptr->data     = (char*) ss_malloc(capacity);
     ptr->capacity = capacity;
-    return capacity;
+    return (int)capacity;
 }
 
 int
@@ -1139,7 +1138,7 @@ brealloc(struct aead_buffer_t *ptr, size_t len, size_t capacity)
         ptr->data     = (char*) ss_realloc(ptr->data, real_capacity);
         ptr->capacity = real_capacity;
     }
-    return real_capacity;
+    return (int)real_capacity;
 }
 
 void bfree(struct aead_buffer_t *ptr, int free_this) {
@@ -1164,7 +1163,7 @@ bprepend(struct aead_buffer_t *dst, struct aead_buffer_t *src, size_t capacity)
     memmove(dst->data + src->len, dst->data, dst->len);
     memcpy(dst->data, src->data, src->len);
     dst->len = dst->len + src->len;
-    return dst->len;
+    return (int)dst->len;
 }
 
 void *

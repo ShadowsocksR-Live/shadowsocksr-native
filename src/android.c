@@ -30,15 +30,16 @@
 #include <unistd.h>
 
 #include <errno.h>
+
+#if __ANDROID__
+
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
-#if ANDROID
-
 #include <sys/un.h>
-#include <ancillary.h>
+#include <jni.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -47,9 +48,11 @@
 #include "ssrutils.h"
 #include "utils.h"
 
-int
-protect_socket(int fd)
-{
+#if 0
+
+#include <ancillary.h>
+
+int protect_socket(int fd) {
     int sock;
     struct sockaddr_un addr;
 
@@ -94,12 +97,122 @@ protect_socket(int fd)
     return ret;
 }
 
-extern char *stat_path;
+#else
+
+#include <assert.h>
+#include <ssr_client_api.h>
+int main(int argc, char * const argv[]);
+
+JNIEXPORT jint JNICALL
+Java_com_github_shadowsocks_bg_SsrClientWrapper_runSsrClient(JNIEnv *env, jclass clazz,
+                                                             jobject cmd) {
+    int result = -1;
+    jclass alCls = NULL;
+    do {
+        alCls = (*env)->FindClass(env, "java/util/ArrayList");
+        if (alCls == NULL) {
+            break;
+        }
+        jmethodID alGetId = (*env)->GetMethodID(env, alCls, "get", "(I)Ljava/lang/Object;");
+        jmethodID alSizeId = (*env)->GetMethodID(env, alCls, "size", "()I");
+        if (alGetId == NULL || alSizeId == NULL) {
+            break;
+        }
+
+        int arrayCount = (int) ((*env)->CallIntMethod(env, cmd, alSizeId));
+        if (arrayCount <= 0) {
+            break;
+        }
+
+        char ** argv = NULL;
+        argv = (char **) calloc(arrayCount, sizeof(char*));
+        if (argv == NULL) {
+            break;
+        }
+
+        for (int index = 0; index < arrayCount; ++index) {
+            jobject obj = (*env)->CallObjectMethod(env, cmd, alGetId, index);
+            assert(obj);
+            const char *cid = (*env)->GetStringUTFChars(env, obj, NULL);
+            assert(cid);
+
+            argv[index] = strdup(cid);
+            assert(argv[index]);
+            (*env)->DeleteLocalRef(env, obj);
+        }
+
+        result = main(arrayCount, argv);
+
+        for (int index = 0; index < arrayCount; ++index) {
+            free(argv[index]);
+            argv[index] = NULL;
+        }
+        free(argv);
+        argv = NULL;
+    } while (false);
+
+    if (alCls) {
+        (*env)->DeleteLocalRef(env, alCls);
+    }
+    (void)clazz;
+    return result;
+}
+
+JNIEXPORT jint JNICALL
+Java_com_github_shadowsocks_bg_SsrClientWrapper_stopSsrClient(JNIEnv *env, jclass clazz) {
+    extern struct ssr_client_state *g_state;
+    if (g_state) {
+        state_set_force_quit(g_state, true, 500);
+        ssr_run_loop_shutdown(g_state);
+        usleep(800);
+    }
+    (void)env;
+    (void)clazz;
+    return 0;
+}
+
+#include <dlfcn.h>
+#include <fake-dlfcn.h>
+
+int protect_socket(int fd) {
+#define LIB_NETD_CLIENT_SO "libnetd_client.so"
+    typedef int (*PFN_protectFromVpn)(int socketFd) ;
+    static PFN_protectFromVpn protectFromVpn = NULL;
+    if (protectFromVpn == NULL) {
+        struct fake_dl_ctx *handle = fake_dlopen(SYSTEM_LIB_PATH LIB_NETD_CLIENT_SO, RTLD_NOW);
+        if (!handle) {
+            assert(!"cannot load " LIB_NETD_CLIENT_SO);
+            return -1;
+        }
+        protectFromVpn = (PFN_protectFromVpn) fake_dlsym(handle, "protectFromVpn");
+        fake_dlclose(handle);
+        if (!protectFromVpn) {
+            assert(!"required function protectFromVpn missing in " LIB_NETD_CLIENT_SO);
+            return -1;
+        }
+        LOGI("%s", "==== protectFromVpn catched from " LIB_NETD_CLIENT_SO "! ====\n");
+    }
+    return protectFromVpn(fd);
+}
+
+#endif
+
+static char status_file_path[512] = { 0 };
+
+void set_traffic_status_file_path(const char *path) {
+    if (path) {
+        strncpy(status_file_path, path, sizeof(status_file_path));
+    }
+}
+
+const char * get_traffic_status_file_path(void) {
+    return status_file_path;
+}
 
 int
 send_traffic_stat(uint64_t tx, uint64_t rx)
 {
-    if (!stat_path) return 0;
+    if (strlen(get_traffic_status_file_path()) == 0) return 0;
     int sock;
     struct sockaddr_un addr;
 
@@ -117,7 +230,7 @@ send_traffic_stat(uint64_t tx, uint64_t rx)
 
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, stat_path, sizeof(addr.sun_path) - 1);
+    strncpy(addr.sun_path, get_traffic_status_file_path(), sizeof(addr.sun_path) - 1);
 
     if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
         LOGE("[android] connect() failed for stat_path: %s (socket fd = %d)\n",
@@ -146,4 +259,28 @@ send_traffic_stat(uint64_t tx, uint64_t rx)
     return ret;
 }
 
-#endif // ANDROID
+int log_tx_rx  = 0;
+
+void set_flag_of_log_tx_rx(int log) {
+    log_tx_rx = log;
+}
+
+#include <uv.h>
+
+void traffic_status_update(uint64_t delta_tx, uint64_t delta_rx) {
+    static uint64_t last  = 0;
+    static uint64_t tx    = 0;
+    static uint64_t rx    = 0;
+
+    tx += delta_tx;
+    rx += delta_rx;
+    if (log_tx_rx) {
+        uint64_t _now = uv_hrtime();
+        if (_now - last > 1000) {
+            send_traffic_stat(tx, rx);
+            last = _now;
+        }
+    }
+}
+
+#endif // __ANDROID__
