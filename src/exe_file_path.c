@@ -8,9 +8,11 @@
 
 #if defined(_WIN32)
 #include <Windows.h>
-#elif TARGET_OS_IPHONE
-#pragma message("exe_file_path will return NULL")
 #elif defined(__APPLE__)
+#include <TargetConditionals.h>
+#if TARGET_OS_IPHONE
+#pragma message("exe_file_path will return NULL in iOS")
+#endif
 #include <stdint.h>
 #include <mach-o/dyld.h>
 #include <sys/param.h>
@@ -47,6 +49,7 @@ char* exe_file_path(void* (*allocator)(size_t)) {
         break;
 
 #elif TARGET_OS_IPHONE
+        (void)bufsize;
         break;
 
 #elif defined(__APPLE__)
