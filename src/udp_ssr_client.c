@@ -315,7 +315,7 @@ struct matching_connect {
     struct client_udp_remote_ctx *remote_ctx;
 };
 
-static void find_matching_connection(struct cstl_set *set, const void *obj, bool *stop, void *p) {
+static void find_matching_connection(struct cstl_set *set, const void *obj, int *stop, void *p) {
     struct matching_connect *match = (struct matching_connect *)p;
     struct client_udp_remote_ctx *remote_ctx = (struct client_udp_remote_ctx *)obj;
     if (memcmp(&match->incoming_addr, &remote_ctx->incoming_addr, sizeof(match->incoming_addr)) == 0 &&
@@ -323,7 +323,7 @@ static void find_matching_connection(struct cstl_set *set, const void *obj, bool
     {
         match->remote_ctx = remote_ctx;
         if (stop) {
-            *stop = true;
+            *stop = 1;
         }
     }
     (void)set;
@@ -517,7 +517,7 @@ static void client_udp_listener_close_cb(uv_handle_t* handle) {
     free(ctx);
 }
 
-static void connection_release(struct cstl_set *set, const void *obj, bool *stop, void *p) {
+static void connection_release(struct cstl_set *set, const void *obj, int *stop, void *p) {
     (void)set; (void)obj; (void)stop; (void)p;
     client_udp_remote_ctx_shutdown((struct client_udp_remote_ctx *)obj);
 }

@@ -44,7 +44,7 @@ struct ip_addr_cache * ip_addr_cache_create(size_t expire_interval_seconds) {
 }
 
 void ip_addr_cache_add_address(struct ip_addr_cache *addr_cache, const char *host, const union sockaddr_universal *address) {
-    if (cstl_map_exists(addr_cache->resolved_ips, &host) == false) {
+    if (cstl_map_is_key_exists(addr_cache->resolved_ips, &host) == 0) {
         char *key = strdup(host);
         struct address_timestamp *addr =
             (struct address_timestamp *)calloc(1, sizeof(struct address_timestamp));
@@ -60,7 +60,7 @@ void ip_addr_cache_remove_address(struct ip_addr_cache* addr_cache, const char* 
     if (addr_cache == NULL || host == NULL) {
         return;
     }
-    if (cstl_map_exists(addr_cache->resolved_ips, &host)) {
+    if (cstl_map_is_key_exists(addr_cache->resolved_ips, &host) != 0) {
         if (cstl_map_remove(addr_cache->resolved_ips, &host) != CSTL_ERROR_SUCCESS) {
             assert(!"remove the item failed!");
         }
@@ -69,7 +69,7 @@ void ip_addr_cache_remove_address(struct ip_addr_cache* addr_cache, const char* 
     }
 }
 
-void expire_ip_remove_cb(struct cstl_map *map, const void *key, const void *value, bool *stop, void *p) {
+void expire_ip_remove_cb(struct cstl_map *map, const void *key, const void *value, int *stop, void *p) {
     struct ip_addr_cache *addr_cache = (struct ip_addr_cache *)p;
     struct address_timestamp **addr = (struct address_timestamp **)value;
     if (addr && *addr) {
