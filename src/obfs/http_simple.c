@@ -204,10 +204,10 @@ struct buffer_t * http_simple_client_encode(struct obfs_t *obfs, const struct bu
         head_size = datalength;
     }
     http_simple_encode_head(local, encryptdata, head_size);
-    if (obfs->server_info.param && strlen(obfs->server_info.param) == 0) {
-        obfs->server_info.param = NULL;
+    if (obfs->server_info.extra_param && strlen(obfs->server_info.extra_param) == 0) {
+        obfs->server_info.extra_param = NULL;
     }
-    strncpy(hosts, obfs->server_info.param ? obfs->server_info.param : obfs->server_info.host, sizeof(hosts)-1);
+    strncpy(hosts, obfs->server_info.extra_param ? obfs->server_info.extra_param : obfs->server_info.host, sizeof(hosts)-1);
     phost[host_num++] = hosts;
     for (pos = 0; hosts[pos]; ++pos) {
         if (hosts[pos] == ',') {
@@ -464,10 +464,10 @@ struct buffer_t * http_post_client_encode(struct obfs_t *obfs, const struct buff
     if ((size_t)head_size > datalength)
         head_size = datalength;
     http_simple_encode_head(local, encryptdata, head_size);
-    if (obfs->server_info.param && strlen(obfs->server_info.param) == 0) {
-        obfs->server_info.param = NULL;
+    if (obfs->server_info.extra_param && strlen(obfs->server_info.extra_param) == 0) {
+        obfs->server_info.extra_param = NULL;
     }
-    strncpy(hosts, obfs->server_info.param ? obfs->server_info.param : obfs->server_info.host, sizeof(hosts)-1);
+    strncpy(hosts, obfs->server_info.extra_param ? obfs->server_info.extra_param : obfs->server_info.host, sizeof(hosts)-1);
     phost[host_num++] = hosts;
     for (pos = 0; hosts[pos]; ++pos) {
         if (hosts[pos] == ',') {

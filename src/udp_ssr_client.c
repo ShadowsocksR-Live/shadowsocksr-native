@@ -568,7 +568,7 @@ client_udprelay_begin(uv_loop_t *loop, const char *server_host, uint16_t server_
     strcpy(server_info.host, server_host);
     server_info.port = server_port;
     server_info.g_data = listener_ctx->protocol_global;
-    server_info.param = (char *)protocol_param;
+    server_info.extra_param = (char *)protocol_param;
     server_info.key = enc_get_key(cipher_env);
     server_info.key_len = (uint16_t) enc_get_key_len(cipher_env);
 

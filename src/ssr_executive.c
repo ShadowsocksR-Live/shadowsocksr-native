@@ -349,7 +349,7 @@ struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, size_t
     server_info.buffer_size = SSR_BUFF_SIZE;
     server_info.cipher_env = env->cipher;
     {
-        server_info.param = config->obfs_param;
+        server_info.extra_param = config->obfs_param;
         server_info.g_data = env->obfs_global;
 
         tc->obfs = obfs_instance_create(config->obfs);
@@ -358,7 +358,7 @@ struct tunnel_cipher_ctx * tunnel_cipher_create(struct server_env_t *env, size_t
         }
     }
     {
-        server_info.param = config->protocol_param;
+        server_info.extra_param = config->protocol_param;
         server_info.g_data = env->protocol_global;
 
         tc->protocol = protocol_instance_create(config->protocol);

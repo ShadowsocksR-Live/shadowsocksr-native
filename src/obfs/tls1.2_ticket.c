@@ -310,8 +310,8 @@ struct buffer_t * tls12_ticket_auth_client_encode(struct obfs_t *obfs, const str
 
         buffer_concatenate_raw(ext_buf, (uint8_t *)tls_data1, tls_data1_len);
 
-        if (obfs->server_info.param && strlen(obfs->server_info.param) > 0) {
-            param = obfs->server_info.param;
+        if (obfs->server_info.extra_param && strlen(obfs->server_info.extra_param) > 0) {
+            param = obfs->server_info.extra_param;
         } else {
             param = obfs->server_info.host;
         }

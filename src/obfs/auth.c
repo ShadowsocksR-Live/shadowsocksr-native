@@ -1126,8 +1126,8 @@ auth_aes128_sha1_pack_auth_data(auth_simple_global_data *global, struct server_i
         uint8_t enc_key[16 + 1] = { 0 };
         char encrypt_key_base64[256] = {0};
         if (buffer_get_length(local->user_key) == 0) {
-            if(server->param != NULL && server->param[0] != 0) {
-                char* param = strdup(server->param);
+            if(server->extra_param != NULL && server->extra_param[0] != 0) {
+                char* param = strdup(server->extra_param);
                 char* delim = NULL;
                 if (param && ((delim = strchr(param, ':')) != NULL)) {
                     uint8_t hash[SHA1_BYTES + 1] = { 0 };
@@ -1599,8 +1599,8 @@ auth_aes128_sha1_client_udp_pre_encrypt(struct obfs_t *obfs, uint8_t **pplaindat
     uint8_t * out_buffer = (uint8_t *)calloc((datalength + 8), sizeof(uint8_t));
 
     if (buffer_get_length(local->user_key) == 0) {
-        if(obfs->server_info.param != NULL && obfs->server_info.param[0] != 0) {
-            char *param = obfs->server_info.param;
+        if(obfs->server_info.extra_param != NULL && obfs->server_info.extra_param[0] != 0) {
+            char *param = obfs->server_info.extra_param;
             char *delim = strchr(param, ':');
             if(delim != NULL) {
                 char key_str[128];

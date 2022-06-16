@@ -28,7 +28,7 @@ struct server_config;
 struct server_info_t {
     char host[256];
     uint16_t port;
-    char *param;
+    char *extra_param;
     void *g_data;
     uint8_t iv[64]; //const uint8_t *iv;
     size_t iv_len;

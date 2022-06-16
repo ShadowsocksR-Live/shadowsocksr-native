@@ -542,8 +542,8 @@ size_t auth_chain_a_pack_auth_data(struct obfs_t *obfs, char *data, size_t datal
         int i = 0;
         uint8_t uid[4];
         if (buffer_get_length(local->user_key) == 0) {
-            if(server_info->param != NULL && server_info->param[0] != 0) {
-                char *param = server_info->param;
+            if(server_info->extra_param != NULL && server_info->extra_param[0] != 0) {
+                char *param = server_info->extra_param;
                 char *delim = strchr(param, ':');
                 if(delim != NULL) {
                     char uid_str[16] = { 0 };
@@ -1497,8 +1497,8 @@ void auth_chain_f_set_server_info(struct obfs_t *obfs, struct server_info_t *ser
     int i = 0;
 
     set_server_info(obfs, server);
-    if (server->param != NULL && server->param[0] != 0) {
-        char *delim1 = strchr(server->param, '#');
+    if (server->extra_param != NULL && server->extra_param[0] != 0) {
+        char *delim1 = strchr(server->extra_param, '#');
         if (delim1 != NULL && delim1[1] != '\0') {
             char *delim2;
             size_t l;
@@ -1542,8 +1542,8 @@ ssize_t auth_chain_a_client_udp_pre_encrypt(struct obfs_t *obfs, uint8_t **pplai
     int i = 0;
 
     if (buffer_get_length(local->user_key) == 0) {
-        if(obfs->server_info.param != NULL && obfs->server_info.param[0] != 0) {
-            char *param = obfs->server_info.param;
+        if(obfs->server_info.extra_param != NULL && obfs->server_info.extra_param[0] != 0) {
+            char *param = obfs->server_info.extra_param;
             char *delim = strchr(param, ':');
             if(delim != NULL) {
                 char uid_str[16] = { 0 };
