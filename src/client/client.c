@@ -717,6 +717,7 @@ static struct tls_cli_ctx* tls_client_creator(struct client_ctx* ctx, struct ser
 
 static void do_common_connet_remote_server(struct tunnel_ctx* tunnel) {
     struct socket_ctx* outgoing = tunnel->outgoing;
+    struct socket_ctx* incoming = tunnel->incoming;
     struct client_ctx* ctx = (struct client_ctx*)tunnel->data;
     struct s5_ctx* parser = ctx->parser;
     struct server_env_t* env = ctx->env;
@@ -748,6 +749,7 @@ static void do_common_connet_remote_server(struct tunnel_ctx* tunnel) {
         ctx->tls_ctx = tls_client_creator(ctx, config);
         if (ctx->tls_ctx == NULL) {
             outgoing->result = UV_ENETUNREACH;
+            incoming->result = UV_ENETUNREACH;
             tunnel_dump_error_info(tunnel, outgoing, "connect failed");
             tunnel->tunnel_shutdown(tunnel);
         }
@@ -1243,8 +1245,6 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
     struct socket_ctx* outgoing = tunnel->outgoing;
     struct server_config* config = ctx->env->config;
 
-    assert(ctx->tls_ctx == tls_cli);
-
     ctx->connection_status = status;
 
     if (status < 0) {
@@ -1256,6 +1256,8 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
         tunnel->tunnel_shutdown(tunnel);
         return;
     }
+
+    assert(ctx->tls_ctx == tls_cli);
 
     if (tunnel->tunnel_is_terminated(tunnel)) {
         return;
