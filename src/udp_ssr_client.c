@@ -270,7 +270,7 @@ static void common_restart_timer(uv_timer_t *timer, uint64_t timeout) {
     uv_timer_start(timer, timer->timer_cb, timeout, 0);
 }
 
-static void android_udp_protect_socket(uv_udp_t* handle, void* p) {
+static void android_udp_protect_socket(uv_handle_t* handle, void* p) {
 #if __ANDROID__
     uv_os_fd_t fd = -1;
     if (uv_fileno((uv_handle_t *)handle, &fd) != 0) {
@@ -296,7 +296,7 @@ create_client_udp_remote(uv_loop_t* loop, uint64_t timeout, uv_timer_cb cb) {
 
     udp = &remote_ctx->rmt_udp;
 
-    uv_set_udp_socket_created_cb(udp, android_udp_protect_socket, remote_ctx);
+    uv_set_socket_create_cb((uv_handle_t*)udp, android_udp_protect_socket, remote_ctx);
 
     uv_udp_init(loop, udp);
     udp->data = remote_ctx;

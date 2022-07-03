@@ -807,9 +807,9 @@ static void do_resolve_ssr_server_host_aftercare(struct tunnel_ctx* tunnel) {
     do_connect_ssr_server(tunnel);
 }
 
-static void _android_protect_socket(uv_tcp_t* handle, void *p) {
+static void _android_protect_socket(uv_handle_t* handle, void *p) {
     struct tunnel_ctx* tunnel = (struct tunnel_ctx*)p;
-    _do_protect_socket(tunnel, uv_stream_fd(handle));
+    _do_protect_socket(tunnel, uv_stream_fd((uv_tcp_t*)handle));
 }
 
 /* Assumes that cx->outgoing.t.sa contains a valid AF_INET/AF_INET6 address. */
@@ -834,7 +834,7 @@ static void do_connect_ssr_server(struct tunnel_ctx* tunnel) {
         return;
     }
 
-    uv_set_tcp_socket_created_cb(&outgoing->handle.tcp, &_android_protect_socket, tunnel);
+    uv_set_socket_create_cb((uv_handle_t*)&outgoing->handle.tcp, &_android_protect_socket, tunnel);
 
     err = socket_ctx_connect(outgoing);
     if (err != 0) {
