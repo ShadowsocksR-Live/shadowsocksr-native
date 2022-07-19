@@ -142,9 +142,12 @@ struct server_config* parse_config_file(bool is_server, const char* file)
                 continue;
             }
 
-            if (json_iter_extract_bool("udp", &iter, &obj_bool)) {
+            {
+            char udp[10] = UDP_STR;
+            if (json_iter_extract_bool(strlwr(udp), &iter, &obj_bool)) {
                 config->udp = obj_bool;
                 continue;
+            }
             }
             if (json_iter_extract_int("idle_timeout", &iter, &obj_int)) {
                 config->idle_timeout = obj_int * MILLISECONDS_PER_SECOND;

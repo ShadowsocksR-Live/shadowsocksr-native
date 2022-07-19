@@ -91,6 +91,8 @@ void string_safe_assign(char **target, const char *value);
 #define DEFAULT_UDP_TIMEOUT      (6 * MILLISECONDS_PER_SECOND)
 #define DEFAULT_METHOD        "aes-128-ctr"
 #define DEFAULT_SSROT_PATH    "/abcd1234/"
+#define TARGET_ADDRESS_STR      "Target-Address"
+#define UDP_STR                 "UDP"
 
 #if !defined(TCP_BUF_SIZE_MAX)
 #define TCP_BUF_SIZE_MAX (16 * 1024 - 1) // 16383 (0x3FFF) Bytes, equals to the max chunk size

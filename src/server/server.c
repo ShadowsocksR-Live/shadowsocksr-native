@@ -159,9 +159,11 @@ int main(int argc, char * const argv[]) {
     sigaction(SIGPIPE, &sa, NULL);
     #endif // defined(__unix__) || defined(__linux__)
 
+#if CHECK_MEM_LEAK
     MEM_CHECK_BEGIN();
     MEM_CHECK_BREAK_ALLOC(63);
     MEM_CHECK_BREAK_ALLOC(64);
+#endif
     atexit(on_atexit);
 
     do {
@@ -1146,7 +1148,7 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
         {
             uint8_t* addr_p;
             size_t p_len = 0;
-            const char* addr_field = http_headers_get_field_val(hdrs, "Target-Address");
+            const char* addr_field = http_headers_get_field_val(hdrs, TARGET_ADDRESS_STR);
             if (addr_field == NULL) {
                 do_normal_response(tunnel);
                 break;
@@ -1162,7 +1164,7 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
         ASSERT(obfs_receipt == NULL);
         ASSERT(proto_confirm == NULL);
 
-        udp_field = http_headers_get_field_val(hdrs, "UDP");
+        udp_field = http_headers_get_field_val(hdrs, UDP_STR);
         if (udp_field != NULL) {
             uv_loop_t *loop = socket->handle.tcp.loop;
             struct socks5_address target_addr = { {{0}}, 0, SOCKS5_ADDRTYPE_INVALID };
