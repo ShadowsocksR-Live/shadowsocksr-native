@@ -379,6 +379,13 @@ function build_ssr_native() {
     git submodule update --init
     git submodule foreach -q 'git checkout $(git config -f $toplevel/.gitmodules submodule.$name.branch || echo master)'
 
+    if [[ "${ID}" == "centos" ]]; then
+        # try to fix bug #231
+        cd depends/libuv
+        git checkout 71932a9fc9e234b3ebac90de0dd061fb00ba191b
+        cd ../..
+    fi
+
     # build ShadowsocksR-native
     cmake . && make
 
