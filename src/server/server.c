@@ -1399,12 +1399,16 @@ static struct buffer_t * build_websocket_frame_from_raw(struct server_ctx *ctx, 
     struct buffer_t *tmp = tunnel_cipher_server_encrypt(cipher_ctx, src);
     uint8_t *frame;
     struct buffer_t *buf;
+#if 0
     if (!ctx->ws_tls_beginning) {
         ctx->ws_tls_beginning = true;
         ws_frame_binary_first(false, &info);
     } else {
         ws_frame_binary_continuous(false, &info);
     }
+#else
+    ws_frame_binary_alone(false, &info);
+#endif
     frame = websocket_build_frame(&info, buffer_get_data(tmp), buffer_get_length(tmp), &malloc);
     buf = buffer_create_from(frame, info.frame_size);
     free(frame);
