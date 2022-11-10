@@ -1499,7 +1499,10 @@ static uint8_t* tunnel_extract_data(struct tunnel_ctx* tunnel, struct socket_ctx
         const uint8_t *p = buffer_get_data(buf);
         *size = len;
         result = (uint8_t *)allocator(len + 1);
-        memcpy(result, p, len);
+        if (result) {
+            result[len] = 0;
+            memcpy(result, p, len);
+        }
 
         buffer_release(buf);
     }

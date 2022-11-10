@@ -1,3 +1,5 @@
+.VSCodeCounter/
+.vscode/
 .vs/
 Debug/
 Release/
