@@ -112,8 +112,7 @@ progress of data flow
 ### Distribution-specific guide
 
 - [Debian & Ubuntu](#debian--ubuntu)
-- [Fedora & RHEL](#fedora--rhel)
-- [CentOS](#centos)
+- [Fedora & RHEL & CentOS](#centos)
 - [macOS](#macos)
 - [Windows](#windows)
 
@@ -134,11 +133,8 @@ sudo apt-get install git gcc g++ gdb cmake automake -y
 sudo apt-get -f install -y
 
 # cd /                          # switch to root directory
-git clone https://github.com/ShadowsocksR-Live/shadowsocksr-native.git
-mv shadowsocksr-native ssr-n  # rename shadowsocksr-native to ssr-n
+git clone --recursive https://github.com/ShadowsocksR-Live/shadowsocksr-native.git ssr-n
 cd ssr-n                      # enter ssr-n directory. 
-git submodule update --init
-git submodule foreach -q 'git checkout $(git config -f $toplevel/.gitmodules submodule.$name.branch || echo master)'
 
 # build ShadowsocksR-native
 mkdir build && cd build
@@ -153,7 +149,7 @@ cmake -D CMAKE_C_FLAGS=-m32 .. && make
 
 ```
 
-The target binaries are `ssr-n/build/src/ssr-server`, `ssr-n/build/src/ssr-client` and `ssr-n/build/src/ssr-local`.
+The target binaries are `ssr-n/build/src/ssr-server`, `ssr-n/build/src/ssr-client`.
 
 ### CentOS
 
@@ -165,21 +161,25 @@ Before build `ssr-Native`, we must install `cmake` 3.x first. following [this](#
 # CentOS / Fedora / RHEL
 sudo su
 yum install wget git gcc gcc-c++ gdb autoconf automake libtool make asciidoc xmlto -y
-curl https://cmake.org/files/v3.14/cmake-3.14.0-Linux-x86_64.sh -o a.sh
+curl https://cmake.org/files/v3.25/cmake-3.25.1-linux-x86_64.sh -o a.sh
 sh a.sh --prefix=/usr/ --exclude-subdir && rm -rf a.sh
 cd /
-git clone https://github.com/ShadowsocksR-Live/shadowsocksr-native.git
-mv shadowsocksr-native ssr-n
+git clone --recursive https://github.com/ShadowsocksR-Live/shadowsocksr-native.git ssr-n
 cd ssr-n
-git submodule update --init
-git submodule foreach -q 'git checkout $(git config -f $toplevel/.gitmodules submodule.$name.branch || echo master)'
 
-cmake . && make
+# Since there no stdatomic.h exist in CentOS 7, we have to use older libuv version.
+# Fedora / RHEL can skip the steps.
+cd depends/libuv
+git checkout 71932a9fc9e234b3ebac90de0dd061fb00ba191b
+cd ../..
+
+mkdir build && cd build
+cmake .. && make
 # make install
 # /bin/cp -rfa src/ssr-* /usr/bin
 ```
 
-The target binaries are `ssr-n/src/ssr-server`, `ssr-n/src/ssr-client` and `ssr-n/src/ssr-local`.
+The target binaries are `ssr-n/build/src/ssr-server`, `ssr-n/build/src/ssr-client`.
 
 ### macOS
 
@@ -195,25 +195,21 @@ brew upgrade git cmake automake libtool
 ```
 Now get source code and build it.
 ```bash
-git clone https://github.com/ShadowsocksR-Live/shadowsocksr-native.git
-mv shadowsocksr-native ssr-n
+git clone --recursive https://github.com/ShadowsocksR-Live/shadowsocksr-native.git ssr-n
 cd ssr-n
-git submodule update --init
-git submodule foreach -q 'git checkout $(git config -f $toplevel/.gitmodules submodule.$name.branch || echo master)'
 
-cmake . && make
+mkdir build && cd build
+cmake .. && make
 ```
 
-The target binaries are `ssr-n/src/ssr-server`, `ssr-n/src/ssr-client` and `ssr-n/src/ssr-local`.
+The target binaries are `ssr-n/build/src/ssr-server`, `ssr-n/build/src/ssr-client`.
 
 ### Windows
 
 For Windows, chekout the project using the following commands then open win32/ssr-native.sln with Visual Studio 2010. Enjoy it!
 
 ```bash
-git clone https://github.com/ShadowsocksR-Live/shadowsocksr-native.git 
-git submodule update --init
-git submodule foreach -q 'git checkout $(git config -f $toplevel/.gitmodules submodule.$name.branch || echo master)'
+git clone --recursive https://github.com/ShadowsocksR-Live/shadowsocksr-native.git ssr-n
 ```
 
 ## Usage
@@ -277,7 +273,7 @@ So we must install it by ourselves.
 ```bash
 sudo su
 cd /
-wget --no-check-certificate https://cmake.org/files/v3.22/cmake-3.22.0-linux-x86_64.sh -O a.sh
+wget --no-check-certificate https://cmake.org/files/v3.25/cmake-3.25.1-linux-x86_64.sh -O a.sh
 bash a.sh  --prefix=/usr/ --exclude-subdir
 rm -rf a.sh
 cmake --version
@@ -285,7 +281,7 @@ cmake --version
 
 And the `cmake --version` command will output message likes:
 ```
-cmake version 3.22.0
+cmake version 3.25.0
 CMake suite maintained and supported by Kitware (kitware.com/cmake).
 ```
 
