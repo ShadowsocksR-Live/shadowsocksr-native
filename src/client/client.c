@@ -1273,6 +1273,7 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
         if (ctx->udp_data_ctx) {
             const void* udp_pkg = cstl_deque_front(ctx->udp_data_ctx->send_deque);
             if (udp_pkg) {
+                // target_address *NOT* contain address info, only UPD data instead.
                 buffer_replace(target_address, *((const struct buffer_t**)udp_pkg));
                 cstl_deque_pop_front(ctx->udp_data_ctx->send_deque);
             }
@@ -1283,15 +1284,15 @@ static void tls_cli_on_connection_established(struct tls_cli_ctx* tls_cli, int s
             unsigned short domain_port = config->remote_port;
             uint8_t* buf = NULL;
             size_t len = 0;
-            size_t typ_len = buffer_get_length(target_address);
-            const uint8_t* typ = buffer_get_data(target_address);
+            size_t data_len = buffer_get_length(target_address);
+            const uint8_t* data = buffer_get_data(target_address);
             char* key = websocket_generate_sec_websocket_key(&malloc);
             string_safe_assign(&ctx->sec_websocket_key, key);
             free(key);
 
             buf = websocket_connect_request(domain, domain_port, url_path, ctx->sec_websocket_key, &malloc, &len);
             {
-                char* b64addr = std_base64_encode_alloc(typ, (size_t)typ_len, &malloc);
+                char* b64addr = std_base64_encode_alloc(data, (size_t)data_len, &malloc);
                 static const char* addr_fmt = TARGET_ADDRESS_STR ": %s\r\n";
                 char* addr_field = (char*)calloc(strlen(addr_fmt) + strlen(b64addr) + 1, sizeof(*addr_field));
                 sprintf(addr_field, addr_fmt, b64addr);

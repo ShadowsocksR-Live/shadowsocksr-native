@@ -1119,7 +1119,7 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
     struct buffer_t *result = NULL;
     struct http_headers *hdrs = NULL;
     char *domain = NULL;
-#define SAFE_GET_DOMAIN() (domain ? domain : config->over_tls_server_domain)
+#define SAFE_GET_DOMAIN(domain, config) (domain ? domain : config->over_tls_server_domain)
     do {
         uint8_t *indata = (uint8_t *)socket->buf->base;
         size_t len = (size_t)socket->result;
@@ -1154,7 +1154,7 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
             const char *key = http_headers_get_field_val(hdrs, SEC_WEBSOKET_KEY);
             const char *url = http_headers_get_url(hdrs);
             if (key==NULL || url==NULL || 0 != strcmp(url, config->over_tls_path)) {
-                do_normal_response(tunnel, SAFE_GET_DOMAIN());
+                do_normal_response(tunnel, SAFE_GET_DOMAIN(domain, config));
                 break;
             }
             string_safe_assign(&ctx->sec_websocket_key, key);
@@ -1164,12 +1164,12 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
             size_t p_len = 0;
             const char* addr_field = http_headers_get_field_val(hdrs, TARGET_ADDRESS_STR);
             if (addr_field == NULL) {
-                do_normal_response(tunnel, SAFE_GET_DOMAIN());
+                do_normal_response(tunnel, SAFE_GET_DOMAIN(domain, config));
                 break;
             }
             addr_p = std_base64_decode_alloc(addr_field, &malloc, &p_len);
             if (addr_p == NULL) {
-                do_normal_response(tunnel, SAFE_GET_DOMAIN());
+                do_normal_response(tunnel, SAFE_GET_DOMAIN(domain, config));
                 break;
             }
             result = buffer_create_from(addr_p, p_len);
@@ -1192,7 +1192,7 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
             addr_p = url_safe_base64_decode_alloc(udp_field, &malloc, &p_len);
             if (socks5_address_parse(addr_p, p_len, &target_addr, NULL) == false) {
                 free(addr_p);
-                do_normal_response(tunnel, SAFE_GET_DOMAIN());
+                do_normal_response(tunnel, SAFE_GET_DOMAIN(domain, config));
                 break;
             }
             free(addr_p);
@@ -1210,7 +1210,7 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
         }
 
         if (result==NULL || is_legal_header(result) == false) {
-            do_normal_response(tunnel, SAFE_GET_DOMAIN());
+            do_normal_response(tunnel, SAFE_GET_DOMAIN(domain, config));
             break;
         }
         buffer_replace(ctx->target_address_with_data_pkg, result);
