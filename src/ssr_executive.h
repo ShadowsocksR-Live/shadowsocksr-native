@@ -92,7 +92,7 @@ void string_safe_assign(char **target, const char *value);
 #define DEFAULT_METHOD        "aes-128-ctr"
 #define DEFAULT_SSROT_PATH    "/abcd1234/"
 #define TARGET_ADDRESS_STR      "Target-Address"
-#define UDP_STR                 "UDP"
+#define UDP_TUNNEL              "UDP-Tunnel"
 #define HOST_STR                "Host"
 
 #if !defined(TCP_BUF_SIZE_MAX)

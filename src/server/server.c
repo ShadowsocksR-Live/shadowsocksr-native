@@ -1178,7 +1178,7 @@ static void do_tls_init_package(struct tunnel_ctx *tunnel, struct socket_ctx *so
         ASSERT(obfs_receipt == NULL);
         ASSERT(proto_confirm == NULL);
 
-        udp_field = http_headers_get_field_val(hdrs, UDP_STR);
+        udp_field = http_headers_get_field_val(hdrs, UDP_TUNNEL);
         if (udp_field != NULL) {
             uv_loop_t *loop = socket->handle.tcp.loop;
             struct socks5_address target_addr = { {{0}}, 0, SOCKS5_ADDRTYPE_INVALID };
