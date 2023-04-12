@@ -1,3 +1,13 @@
+<br /><br /><br />
+# Please use <a href="https://github.com/ShadowsocksR-Live/overtls">overtls</a> instead
+<br /><br />
+
+**請使用 [overtls](https://github.com/ShadowsocksR-Live/overtls), 一個新代理，相當於 SSRoT 去掉 SSR 和 SS, 唯獨保留 OT 的 Rust 實現，速度飛快，穩如老狗。**
+
+**Please use [overtls](https://github.com/ShadowsocksR-Live/overtls), a Rust implementation of SSRoT without SSR and SS, only retaining OT, which is fast and stable.**
+
+<br /><br /><br /><br /><br />
+
 ![shadowsocksr-native](https://avatars0.githubusercontent.com/u/30504070?s=200&v=4)
 
 <!--
