@@ -22,6 +22,8 @@ config_create
 config_clone
 config_release
 config_ssrot_revision
+config_is_overtls
+config_convert_to_overtls_json
 
 ss_cipher_name_of_type
 ss_cipher_type_of_name

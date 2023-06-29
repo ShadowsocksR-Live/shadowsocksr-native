@@ -250,8 +250,8 @@ int ssr_get_listen_socket_fd(struct ssr_client_state *state) {
     return (int) uv_stream_fd(state->listeners[0].tcp_server);
 }
 
-int ssr_get_client_error_code(struct ssr_client_state *state) {
-    return state->error_code;
+int ssr_get_client_error_code(struct ssr_client_state* state) {
+    return state ? state->error_code : -1;
 }
 
 /* Bind a server to each address that getaddrinfo() reported. */

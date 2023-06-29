@@ -100,9 +100,11 @@ void string_safe_assign(char **target, const char *value);
 #endif
 
 struct server_config * config_create(void);
-struct server_config * config_clone(struct server_config* src);
+struct server_config * config_clone(const struct server_config* src);
 void config_release(struct server_config *cf);
 void config_ssrot_revision(struct server_config* config);
+bool config_is_overtls(const struct server_config* config);
+char* config_convert_to_overtls_json(const struct server_config* config, void* (*allocator)(size_t));
 
 void config_parse_protocol_param(struct server_config *config, const char *param);
 void config_add_user_id_with_auth_key(struct server_config *config, const char *user_id, const char *auth_key);
