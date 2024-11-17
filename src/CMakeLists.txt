@@ -179,13 +179,7 @@ if(ANDROID)
     target_link_libraries(ssr-client ancillary json-c uv_a cstl mbedtls sodium bloom m log uv-mbed uri-encode)
     ]]
 
-    include(FetchContent)
-    FetchContent_Declare(
-            fake-dlfcn
-            GIT_REPOSITORY https://github.com/ssrlive/fake-dlfcn.git
-            GIT_TAG        2ee50c763c85f67a3062bf65163ea63a19a53709
-    )
-    FetchContent_MakeAvailable(fake-dlfcn)
+    include_directories(${LIB_FAKE_DLFCN_DIR})
 
     list ( APPEND SOURCE_FILES_CLIENT
             android.c
